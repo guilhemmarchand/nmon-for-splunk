@@ -1,0 +1,165 @@
+<form stylesheet="Home.css,singlevalue.css,ui_simple.css">
+  <label>NMON CONFIG, Simple Inventory</label>
+  <description/>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="time" searchWhenChanged="true">
+      <default>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+  </fieldset>
+  <searchTemplate>`nmon_config_inventory`</searchTemplate>
+  <row>
+    <html>
+      <div class="custom">
+        <h1>Inventory Summary</h1>
+      </div>
+    </html>
+  </row>
+  <row>
+    <single>
+      <searchPostProcess>stats count</searchPostProcess>
+      <option name="afterLabel">Hosts known within this period</option>
+      <option name="beforeLabel">Found</option>
+    </single>
+  </row>
+  <row>
+    <single>
+      <searchPostProcess>where OStype="AIX" | stats count As AIX_Hosts</searchPostProcess>
+      <option name="afterLabel">Hosts</option>
+      <option name="beforeLabel">AIX OS:</option>
+    </single>
+    <single>
+      <searchPostProcess>where OStype="Linux" | stats count As Linux_Hosts</searchPostProcess>
+      <option name="afterLabel">Hosts</option>
+      <option name="beforeLabel">LINUX OS:</option>
+    </single>
+    <single>
+      <searchPostProcess>where OStype="Solaris" | stats count As Solaris_Hosts</searchPostProcess>
+      <option name="afterLabel">Hosts</option>
+      <option name="beforeLabel">SOLARIS OS:</option>
+    </single>
+  </row>
+  <row>
+    <chart>
+      <title>Hosts by OS</title>
+      <searchPostProcess>stats count by OStype</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>      
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <chart>
+      <title>Hosts by Nmon version</title>
+      <searchPostProcess>stats count by nmon_version</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>      
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+  </row>
+  <row grouping ="1,1,1">
+    <html>
+      <div class="custom">
+        <h1>AIX Systems</h1>
+      </div>
+    </html>
+    <html>
+      <div class="custom">
+        <h1>Linux Systems</h1>
+      </div>
+    </html>
+    <html>
+      <div class="custom">
+        <h1>Solaris Systems</h1>
+      </div>
+    </html>
+  </row>
+  <row grouping="1,1,1">
+    <chart>
+      <title>Nmon versions</title>
+      <searchPostProcess>where OStype="AIX" | stats count by nmon_version</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>      
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <chart>
+      <title>Nmon versions</title>
+      <searchPostProcess>where OStype="Linux" | stats count by nmon_version</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>      
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <chart>
+      <title>Nmon versions:</title>
+      <searchPostProcess>where OStype="Solaris" | stats count by nmon_version</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+  </row>
+</form>

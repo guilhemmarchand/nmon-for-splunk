@@ -1,0 +1,196 @@
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON - MEM, Solaris Memory and Swap Usage</label>
+  <description></description>
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" searchWhenChanged="true">
+      <label>TimeRange:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+      <choice value="">Inactive</choice>
+    </input>
+
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Select a Host:</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>none</default>
+      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
+      </populatingSearch>
+    </input>
+
+    <input type="radio" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>Max (recommended)</default>
+      <choice value="max">Max (recommended)</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+    </input>
+
+    <input type="radio" token="memmode" searchWhenChanged="true">
+      <label>Show Mem load by:</label>
+      <default>fields _time,memused,memtotal,swapused,swaptotal</default>
+      <choice value="fields _time,memused,memtotal,swapused,swaptotal">Activity in Data Volume (MB)</choice>
+      <choice value="fields _time,memused_PCT,swapused_PCT">Usage in percentage (%)</choice>
+      <choice value="fields _time,memfree_PCT,swapfree_PCT">Free in percentage (%)</choice>
+    </input>
+
+    <input type="radio" token="chart" searchWhenChanged="true">
+      <label>Select a type of chart:</label>
+      <default>line</default>
+      <choice value="area">Area</choice>
+      <choice value="line">Line (recommended)</choice>
+      <choice value="column">Column</choice>
+		<choice value="bar">Bar</choice>
+    </input>
+
+    <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <label>Select a stacking mode:</label>
+      <default>unstacked</default>
+      <choice value="stacked">stacked</choice>
+      <choice value="unstacked">unstacked (recommended)</choice>
+    </input>
+
+    <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <label>Missing Data:</label>
+      <default>gaps</default>
+      <choice value="gaps">Gaps</choice>
+      <choice value="connect">Connect</choice>
+      <choice value="zero">Zero</choice>
+    </input>
+    
+    <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+      <label>Legend placement:</label>
+      <default>bottom</default>
+      <choice value="bottom">Bottom</choice>
+      <choice value="top">Top</choice>
+      <choice value="left">left</choice>
+      <choice value="right">right</choice>
+      <choice value="center">center</choice>
+      <choice value="none">none</choice>
+    </input>    
+
+  </fieldset>
+  
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+| eval memused=round((memtotal-memfree),0)
+| eval swapused=round((swaptotal-swapfree),0)
+| eval memfree_PCT=round(((memfree/memtotal)*100),0)
+| eval memused_PCT=round(((memused/memtotal)*100),0)
+| eval swapfree_PCT=round(((swapfree/swaptotal)*100),0)
+| eval swapused_PCT=round(((swapused/swaptotal)*100),0)
+| timechart `inline_customspan`
+$statsmode$(memtotal) As memtotal, $statsmode$(memused) As memused, $statsmode$(memfree) As memfree,
+$statsmode$(swaptotal) As swaptotal, $statsmode$(swapused) As swapused, $statsmode$(swapfree) As swapfree,
+$statsmode$(memfree_PCT) As memfree_PCT, $statsmode$(swapfree_PCT) As swapfree_PCT,
+$statsmode$(memused_PCT) As memused_PCT, $statsmode$(swapused_PCT) As swapused_PCT
+</searchTemplate>  
+  
+  <row grouping="3">
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link10">    
+      <title>Memory Usage</title>
+      <searchPostProcess>$memmode$ | fields _time, mem*</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+
+    <chart id="link11">    
+      <title>Swap Usage</title>
+      <searchPostProcess>$memmode$ | fields _time,swap*</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+
+  </row>
+
+  <row grouping="1,1">
+
+    <table>
+      <title>MEM - Memory Table Stats</title>
+      <searchString>
+index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+| eval memused=round((memtotal-memfree),0)
+| stats
+$statsmode$(memfree) As memfree, $statsmode$(memused) As memused, $statsmode$(memtotal) As memtotal
+by hostname
+| eval memfree=round(memfree,0)
+| eval memused=round(memused,0)
+| eval memtotal=round(memtotal,0)
+      </searchString>
+      <option name="wrap">true</option>
+      <option name="rowNumbers">false</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">10</option>
+	</table>
+
+    <table>
+      <title>MEM - Swap Table Stats</title>
+      <searchString>
+index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+| eval swapused=round((swaptotal-swapfree),0)
+| stats
+max(swaptotal) As swaptotal, max(swapused) As swapused, max(swapfree) As swapfree by _time,hostname
+| stats
+$statsmode$(swapfree) As swapfree, $statsmode$(swapused) As swapused, $statsmode$(swaptotal) As swaptotal
+by hostname
+| eval swapfree=round(swapfree,0)
+| eval swapused=round(swapused,0)
+| eval swaptotal=round(swaptotal,0)
+      </searchString>
+      <option name="wrap">true</option>
+      <option name="rowNumbers">false</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">10</option>
+	</table>
+
+  </row>
+
+</form>

@@ -1,0 +1,220 @@
+{% extends "UI_Datacollect_body.html" %}
+
+{% load splunkmvc %}
+{% load splunk_wftoolkit %}
+
+5: {% block title %}Calendar Heatmap - Web Framework Toolkit{% endblock title %}
+
+{% block css %}
+{{block.super}}
+{% endblock css %}
+
+    {% block heading %}
+    
+	<div class="customimgheader">
+	
+	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.png" alt="Nmon"/>	
+	<h1>NMON Data Collect Analysis, collecting statistics per NMON Data type</h1>
+
+	</div>
+	
+	{% endblock heading %}
+    
+    {% block example %}
+
+		{% searchcontrols
+			id="searchcontrol1" 
+			managerid="search1" %}
+	
+		{% calendarheatmap 
+                id="myheat"
+                managerid="search1"
+                domain="month"
+                subDomain="x_day" %}
+		
+    {% endblock example %}
+	
+    {% block usage%}
+        <p>Select your parameters:</p>
+		<p> </p>
+
+		
+        <table class="table table-striped table-bordered">
+
+
+            <tr>
+                <td>
+					 <p></p>
+                <b>TimeRange:</b>.
+                </td>
+                <td>
+                	<p></p>
+    					{% timerange id="example-timerange" 
+						managerid="example-search" 
+        				preset="Last 30 days"
+        				earliest_time="$earlyval$"|token_safe
+        				latest_time="$lateval$"|token_safe %}                
+						<p></p>                
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                <b>Stats by:</b>.
+                </td>
+                <td>
+					 <p </p>
+                {% radiogroup id="statmode-radiogroup" default="dc(hostname) As Hosts_Collected_per_day" value="$statmode$"|token_safe %}
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                <b>Filter by NMON data type:</b>.
+                </td>
+                <td>
+					 <p </p>
+                {% dropdown id="filter-dropdowngroup" default="CPU_ALL" value="$filtermode$"|token_safe %}
+                </td>
+            </tr>
+
+
+            <tr>
+                <td>
+					 <p></p>
+                <b>High Unity:
+                </b>.</td>
+                <td>
+					 <p></p>
+                {% dropdown id="domain-dropdown" default="month" %}
+                </td>
+            </tr>
+            <tr>
+                <td>
+					 <p></p>
+                <b>Low Unity:
+                </b>.</td>
+                <td>
+					 <p></p>
+                {% dropdown id="subDomain-dropdown" default="x_day" %}
+                </td>
+            </tr>
+        </table>
+
+		
+    {% endblock usage%}
+	
+{% block managers %}
+    
+	{% searchmanager id="search1"
+      	search='index=nmon sourcetype=nmon_data earliest="$earlyval$" latest="$lateval$" type=$filtermode$ | timechart span=1d $statmode$ by index'|token_safe
+	cache=True
+	preview=True %} 
+
+{% endblock managers %}
+
+
+
+{% block js %}
+{{ block.super }}
+<script>
+    require(["splunkjs/ready!",
+            "jquery",
+            "splunkjs/mvc/dropdownview",
+            "splunk_wftoolkit/components/calendarheatmap/calendarheatmap"
+            ], 
+            function(
+                mvc,
+                $,
+                Dropdown,
+                CalHeat) {
+        var heat = mvc.Components.getInstance("myheat");
+        var domaindd = mvc.Components.getInstance("domain-dropdown");
+        var subDomaindd = mvc.Components.getInstance("subDomain-dropdown");
+        heat.settings.set("options", {
+            // Define options here. Options defined in this
+            // 'options' dictionary are passed to the wrapped
+            // cal heat control. For more usage info see
+            // http://kamisama.github.io/cal-heatmap/
+            range: 5,
+			cellSize : 30,
+			subDomainTextFormat: "%d",
+			legendCellPadding: 5,
+			legendCellSize: 15,
+			domainLabelFormat: function(date) {
+			moment.lang("en");
+			return moment(date).format("MMMM").toUpperCase();
+			},
+        });
+
+		var choices = [
+        {label: " Number of hosts collected per day ", value: "dc(hostname) As Hosts_Collected_per_day"},
+        {label: " Number of events collected per day ", value: "count As Events_Collected_per_day"}] 
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("statmode-radiogroup").settings.set("choices", choices);		
+
+
+		var choices = [
+        {label: " All (No filter) ", value: "*"},
+        {label: " CPU_ALL ", value: "CPU_ALL"},
+        {label: " DISKBSIZE ", value: "DISKBSIZE"},
+        {label: " DISKBUSY ", value: "DISKBUSY"},
+        {label: " DISKREAD ", value: "DISKREAD"},
+        {label: " DISKWRITE ", value: "DISKWRITE"},
+        {label: " DISKXFER ", value: "DISKXFER"},
+        {label: " FILE ", value: "FILE"},
+        {label: " IOADAPT ", value: "IOADAPT"},
+        {label: " LPAR ", value: "LPAR"},
+        {label: " MEM ", value: "MEM"},
+        {label: " MEMNEW ", value: "MEMNEW"},
+        {label: " MEMUSE ", value: "MEMUSE"},
+        {label: " NET ", value: "NET"},
+        {label: " NETERROR ", value: "NETERROR"},
+        {label: " NETPACKET ", value: "NETPACKET"},
+        {label: " PAGE ", value: "PAGE"},
+        {label: " PROC ", value: "PROC"},
+        {label: " PROCSOL ", value: "PROCSOL"},		
+        {label: " TOP ", value: "TOP"}]
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("filter-dropdowngroup").settings.set("choices", choices);	
+
+ 		
+        domainChoices = [
+                        {label: "hour", value: "hour"},
+                        {label: "day", value: "day"},
+                        {label: "week", value: "week"},
+                        {label: "month", value: "month"},
+                        {label: "year", value: "year"},
+                        ];
+        domaindd.settings.set("choices", domainChoices);
+        domaindd.on("change", function(){
+            heat.settings.set("domain", domaindd.val());
+        });
+		
+		
+        subDomainChoices = [
+                        {label: "min", value: "min"},
+                        {label: "hour", value: "hour"},
+                        {label: "day", value: "day"},
+                        {label: "week", value: "week"},
+                        {label: "month", value: "month"},
+                        {label: "x_min", value: "x_min"},
+                        {label: "x_hour", value: "x_hour"},
+                        {label: "x_day", value: "x_day"},
+                        {label: "x_week", value: "x_week"},
+                        {label: "x_month", value: "x_month"}
+                        
+                        ];
+        subDomaindd.settings.set("choices", subDomainChoices);
+        subDomaindd.on("change", function(){
+            heat.settings.set("subDomain", subDomaindd.val());
+        });
+		
+        heat.on("click", function(e){console.log("Event:");console.log(e);})	
+		
+    });
+</script>
+
+{% endblock js %}

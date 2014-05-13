@@ -1,0 +1,4644 @@
+{
+    "modelName": "NMON_Data_Performance_Metrics", 
+    "objects": [
+        {
+            "objectName": "CPU_Usage_Statistics", 
+            "constraints": [
+                {
+                    "search": "index=nmon sourcetype=nmon_data type=CPU_ALL OR type=LPAR"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": false
+                }
+            ], 
+            "displayName": "CPU Usage Statistics", 
+            "parentName": "BaseEvent", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Percentage_Usage_of_CPU_CPU_ALL", 
+            "constraints": [
+                {
+                    "search": "type=CPU_ALL"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "CPU_Usage_Statistics"
+                }
+            ], 
+            "displayName": "Percentage Usage of CPU (CPU_ALL)", 
+            "parentName": "CPU_Usage_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "rs01b0mlnu5idx6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "(Sys_PCT+User_PCT+Wait_PCT)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "cpu_PCT", 
+                            "type": "number", 
+                            "displayName": "Percentage of CPU Usage", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Virtual_Partitions_CPU_Statistics", 
+            "constraints": [
+                {
+                    "search": "type=LPAR"
+                }
+            ], 
+            "comment": "", 
+            "fields": [], 
+            "displayName": "Virtual Partitions CPU Statistics (AIX, Linux)", 
+            "parentName": "CPU_Usage_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Partitions_Virtual_CPU_Usage", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "CPU_Usage_Statistics"
+                }
+            ], 
+            "displayName": "Partitions Virtual CPU Usage", 
+            "parentName": "Virtual_Partitions_CPU_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "otietaxw8kgfogvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled/100),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "lpar_ecconso", 
+                            "type": "number", 
+                            "displayName": "Virtual CPU Usage (vs EC)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "vp77dr5xp2rl766r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled)/virtualCPUs),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "lpar_ec_pct_conso", 
+                            "type": "number", 
+                            "displayName": "Virtual Percent CPU Usage (vs EC)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "k4lh79f8qa3e4s4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "lpar_vpconso", 
+                            "type": "number", 
+                            "displayName": "Virtual CPU Usage (vs VP)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "movlgj1swggv6lxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "lpar_vp_pct_conso", 
+                            "type": "number", 
+                            "displayName": "Virtual Percent CPU Usage (vs VP)", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Pools_CPU_Usage", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "CPU_Usage_Statistics"
+                }
+            ], 
+            "displayName": "Pools CPU Usage", 
+            "parentName": "Virtual_Partitions_CPU_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "j6gu1ua5opqfr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((poolCPUs-PoolIdle),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pool_conso", 
+                            "type": "number", 
+                            "displayName": "Pool CPU Usage (VP)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "b6hh3i8ktqmbcsor", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((poolCPUs-PoolIdle)*poolCPUs/100),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pool_pct_conso", 
+                            "type": "number", 
+                            "displayName": "Pool Percent CPU Usage", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Process_Kernel_IO_Statistics", 
+            "constraints": [
+                {
+                    "search": "index=nmon sourcetype=nmon_data type=TOP OR type=FILE OR type=IOADAPT OR type=PROC OR type=PROCSOL OR type=PAGE OR type=VM"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": false
+                }
+            ], 
+            "displayName": "Process, Kernel, I/O Statistics", 
+            "parentName": "BaseEvent", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Process_Resources_Usage_TOP", 
+            "constraints": [
+                {
+                    "search": "type=TOP"
+                }
+            ], 
+            "comment": "", 
+            "fields": [], 
+            "displayName": "Process Resources Usage (TOP)", 
+            "parentName": "Process_Kernel_IO_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "fdw0bcybvnbi6bt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(PID), PID)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "PID", 
+                            "type": "number", 
+                            "displayName": "PID", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "mmpua7me5vzpvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(Command), Command)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Command", 
+                            "type": "string", 
+                            "displayName": "Command", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Kernel_File_Statistics_FILE", 
+            "constraints": [
+                {
+                    "search": "type=FILE"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Kernel File Statistics (FILE)", 
+            "parentName": "Process_Kernel_IO_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "dejim23qril766r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(readch), readch)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Read_Sys_Calls", 
+                            "type": "number", 
+                            "displayName": "Read System Calls", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "snkioi1d3ldcayvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(writech), writech)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Write_Sys_Calls", 
+                            "type": "number", 
+                            "displayName": "Write System Calls", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "o5y49qa9f6e6ogvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(iget), iget)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "iget", 
+                            "type": "number", 
+                            "displayName": "iget", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "ymsaprja7dxtj4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(namei), namei)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "namei", 
+                            "type": "number", 
+                            "displayName": "namei", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "706y8tt4umqgp66r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(dirblk), dirblk)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "dirblk", 
+                            "type": "number", 
+                            "displayName": "dirblk", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "IO_Adapters_ReadWrite_Operations_IOADAPT", 
+            "constraints": [
+                {
+                    "search": "type=IOADAPT"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "I/O Adapters Read/Write Operations (IOADAPT) - AIX Only", 
+            "parentName": "Process_Kernel_IO_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Kernel_Internal_Statistics_PROC", 
+            "constraints": [
+                {
+                    "search": "type=PROC"
+                }
+            ], 
+            "comment": "", 
+            "fields": [], 
+            "displayName": "Kernel Internal Statistics (PROC)", 
+            "parentName": "Process_Kernel_IO_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Paging_Statistics_PAGE", 
+            "constraints": [
+                {
+                    "search": "type=PAGE"
+                }
+            ], 
+            "comment": "", 
+            "fields": [], 
+            "displayName": "Paging Statistics (PAGE) - AIX ONLY", 
+            "parentName": "Process_Kernel_IO_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Threads_in_run_queue_and_to_be_paged_RunQueue_SwapIn", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Threads in run queue and to be paged (RunQueue, Swap-In)", 
+            "parentName": "Kernel_Internal_Statistics_PROC", 
+            "calculations": [
+                {
+                    "calculationID": "1dlesupymm67p66r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(Runnable), Runnable)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "RunQueue", 
+                            "type": "number", 
+                            "displayName": "RunQueue", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "4pzmebbmynly2e29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(Swap_in), Swap_in)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Swap_in", 
+                            "type": "number", 
+                            "displayName": "Swap_in", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Context_Switches_and_Systems_Calls", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Context Switches and Systems Calls", 
+            "parentName": "Kernel_Internal_Statistics_PROC", 
+            "calculations": [
+                {
+                    "calculationID": "s3jdxtm7bp722o6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case (isnotnull(pswitch), pswitch)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pswitch_per_sec", 
+                            "type": "number", 
+                            "displayName": "pswitch/sec", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "5lgqomidfquayvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(syscall), syscall)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "syscall_per_sec", 
+                            "type": "number", 
+                            "displayName": "syscall/sec", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Fork_and_Exec_Systems_Calls_fork_exec", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Fork and Exec Systems Calls (fork, exec)", 
+            "parentName": "Kernel_Internal_Statistics_PROC", 
+            "calculations": [
+                {
+                    "calculationID": "lgox8gm3nv1jor", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(fork), fork)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "fork", 
+                            "type": "number", 
+                            "displayName": "pswitch/sec", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "izxt1fl5wo3nxw29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(exec), exec)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "exec", 
+                            "type": "number", 
+                            "displayName": "exec/sec", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Pages_In__Pages_Out_pgsin__pgsout", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Pages In / Pages Out (pgsin / pgsout)", 
+            "parentName": "Paging_Statistics_PAGE", 
+            "calculations": [
+                {
+                    "calculationID": "rmfp8agwdq3680k9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pgsin), pgsin)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pgsin", 
+                            "type": "number", 
+                            "displayName": "pgsin", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "zd4vhmedf3iyhkt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pgsout), pgsout)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pgsout", 
+                            "type": "number", 
+                            "displayName": "pgsout", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Fs_In__Fs_Out_sum_of_pginpgsin_and_pgoutpgsout_per_interval", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Fs In / Fs Out (sum of pgin/pgsin and pgout/pgsout per interval)", 
+            "parentName": "Paging_Statistics_PAGE", 
+            "calculations": [
+                {
+                    "calculationID": "m4oyjzxzk9be29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "(pgin+pgsin)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "fsin", 
+                            "type": "number", 
+                            "displayName": "FS IN", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "90lbo0fth4f2mx6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "(pgout+pgsout)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "fsout", 
+                            "type": "number", 
+                            "displayName": "FS OUT", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Scan_Free_Ratio_Pages_scans_by_reclaims_per_interval", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Scan Free Ratio (Pages scans by reclaims per interval)", 
+            "parentName": "Paging_Statistics_PAGE", 
+            "calculations": [
+                {
+                    "calculationID": "i9gvy3g3p05m6lxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((scans/reclaims),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "scanfree", 
+                            "type": "number", 
+                            "displayName": "ScanFree Ratio", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "MEMORY_Statistics", 
+            "constraints": [
+                {
+                    "search": "index=nmon sourcetype=nmon_data type=MEM*"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": false
+                }
+            ], 
+            "displayName": "MEMORY Statistics", 
+            "parentName": "BaseEvent", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "DISKS_Statistics", 
+            "constraints": [
+                {
+                    "search": "index=nmon sourcetype=nmon_data type=DISK*"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": false
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": false
+                }
+            ], 
+            "displayName": "DISKS Statistics", 
+            "parentName": "BaseEvent", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "NETWORK_Statistics", 
+            "constraints": [
+                {
+                    "search": "index=nmon sourcetype=nmon_data type=NET*"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": false
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": false
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "value", 
+                    "type": "number", 
+                    "displayName": "value", 
+                    "required": false
+                }
+            ], 
+            "displayName": "NETWORK Statistics", 
+            "parentName": "BaseEvent", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Percentage_of_Memory_Allocation_MEMNEW", 
+            "constraints": [
+                {
+                    "search": "type=MEMNEW"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Percentage of Memory Allocation (MEMNEW) - AIX Only", 
+            "parentName": "MEMORY_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "6kvv1y9gszrjatt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "(FScache_PCT+Process_PCT+System_PCT)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memused_PCT", 
+                            "type": "number", 
+                            "displayName": "Percentage Used of Memory", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Real_Memory_and_Paging_Space_Usage_MEM", 
+            "constraints": [
+                {
+                    "search": "type=MEM"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Memory Usage (MEM)", 
+            "parentName": "MEMORY_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Vmtune_Statistics_AIX_Only_MEMUSE", 
+            "constraints": [
+                {
+                    "search": "type=MEMUSE"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Various Statistics (MEMUSE)", 
+            "parentName": "MEMORY_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Average_Data_Transfer_Size_DISKBSIZE", 
+            "constraints": [
+                {
+                    "search": "type=DISKBSIZE"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }
+            ], 
+            "displayName": "Average Data Transfer Size (DISKBSIZE)", 
+            "parentName": "DISKS_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "ipekizhx6rw1att9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value),  value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "data_rate", 
+                            "type": "number", 
+                            "displayName": "Data Transfer Rate for read/write Operations", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Percent_of_time_busy_Disk_DISKBUSY", 
+            "constraints": [
+                {
+                    "search": "type=DISKBUSY"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }
+            ], 
+            "displayName": "Percent of time busy Disk (DISKBUSY)", 
+            "parentName": "DISKS_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "q4ubcyfuwqiio1or", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value),  value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "busy_time", 
+                            "type": "number", 
+                            "displayName": "Disk Busy Percent of time", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Disk_Read_Data_Rate_DISKREAD", 
+            "constraints": [
+                {
+                    "search": "type=DISKREAD"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": true, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Disk Read Data Rate (DISKREAD)", 
+            "parentName": "DISKS_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "nhfpa1h7hdijxlxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value),  value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "read_data_rate", 
+                            "type": "number", 
+                            "displayName": "Read Data Rate", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Disk_Write_Data_Rate_DISKWRITE", 
+            "constraints": [
+                {
+                    "search": "type=DISKWRITE"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Disk Write Data Rate (DISKWRITE)", 
+            "parentName": "DISKS_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "4ndgo91z9oz5b3xr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value), value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "write_data_rate", 
+                            "type": "number", 
+                            "displayName": "Write Data Rate", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Disk_IO_Operations_Per_Second_DISKXFER", 
+            "constraints": [
+                {
+                    "search": "type=DISKXFER"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "DISKS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Disk I/O Operations Per Second (DISKXFER)", 
+            "parentName": "DISKS_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "v94wuc6drlgfd2t9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value), value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "IOPS", 
+                            "type": "number", 
+                            "displayName": "IO Per Second", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Traffic_Data_Rate_per_Interface_NET", 
+            "constraints": [
+                {
+                    "search": "type=NET"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "value", 
+                    "type": "number", 
+                    "displayName": "value", 
+                    "required": false, 
+                    "owner": "NETWORK_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }
+            ], 
+            "displayName": "Traffic Data Rate per Interface (NET)", 
+            "parentName": "NETWORK_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "pvy2rqw5idkdfgvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((value/1000),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "rate_MBps", 
+                            "type": "number", 
+                            "displayName": "Rate (MBps)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "3f16f602t1paxlxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((value),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "rate_KBps", 
+                            "type": "number", 
+                            "displayName": "Rate (KBps)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "rhqlc1nfa28uayvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((value/1000/1000),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "rate_GBps", 
+                            "type": "number", 
+                            "displayName": "Rate (GBps)", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "ReadWrite_packets_per_Interface_NETPACKET", 
+            "constraints": [
+                {
+                    "search": "type=NETPACKET"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }
+            ], 
+            "displayName": "Read/Write packets per Interface (NETPACKET)", 
+            "parentName": "NETWORK_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "13fhiv96l40zr529", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value), value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "nbr_packets", 
+                            "type": "number", 
+                            "displayName": "Number of Packets", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Error_packets_per_Interface_NETERROR", 
+            "constraints": [
+                {
+                    "search": "type=NETERROR"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }
+            ], 
+            "displayName": "Error packets per Interface (NETERROR)", 
+            "parentName": "NETWORK_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "xwgo9nyd0jdobt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value), value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "nbr_packets", 
+                            "type": "number", 
+                            "displayName": "Number of Packets", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "FILESSYSTEMS_Statistics", 
+            "constraints": [
+                {
+                    "search": "index=nmon sourcetype=nmon_data type=JFS*"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": false
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": false
+                }
+            ], 
+            "displayName": "FILES-SYSTEMS Statistics", 
+            "parentName": "BaseEvent", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Percentage_Usage_of_FileSystems", 
+            "constraints": [
+                {
+                    "search": "type=JFSFILE"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "FILESSYSTEMS_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Percentage Usage of File-Systems (JFSFILE)", 
+            "parentName": "FILESSYSTEMS_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "b62jztp36pta9k9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value), value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pct_Used", 
+                            "type": "number", 
+                            "displayName": "Percentage Used", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Percentage_Inode_Usage_of_FileSystems", 
+            "constraints": [
+                {
+                    "search": "type=JFSINODE"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Percentage Inode Usage of File-Systems (JFSINODE) - AIX Only", 
+            "parentName": "FILESSYSTEMS_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Vmstats_Statistics_VM_Linux_and_Solaris_Only", 
+            "constraints": [
+                {
+                    "search": "type=VM"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Kernel Virtual Memory Statistics (VM)", 
+            "parentName": "Process_Kernel_IO_Statistics", 
+            "calculations": [
+                {
+                    "calculationID": "r4z2ijgkjn6rbe29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pgpgin), pgpgin)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Pages_IN", 
+                            "type": "number", 
+                            "displayName": "Pages IN", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "wikb899zn03eg66r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pgpgout), pgpgout)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Pages_OUT", 
+                            "type": "number", 
+                            "displayName": "Pages OUT", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "cnr3fqu4rf869a4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pswpin), pswpin)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Swap_IN", 
+                            "type": "number", 
+                            "displayName": "Swap_IN", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "0y53bvvexlx1dcxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pswpout), pswpout)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Swap_OUT", 
+                            "type": "number", 
+                            "displayName": "Swap OUT", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "AIX", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "AIX (TOP)", 
+            "parentName": "Process_Resources_Usage_TOP", 
+            "calculations": [
+                {
+                    "calculationID": "za5b5sqceqbedn29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "(pct_CPU/100)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "conso_per_core", 
+                            "type": "number", 
+                            "displayName": "conso_per_core", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "ibax5i64o5rejyvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((ResData+ResText)/1024),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "used_memory_MB", 
+                            "type": "number", 
+                            "displayName": "used_memory_MB", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "zc9n4eaiha198uxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(CharIO),  CharIO)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "CharIO", 
+                            "type": "number", 
+                            "displayName": "CharIO", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "9vm7d596647vi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(Paging), Paging)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Paging", 
+                            "type": "number", 
+                            "displayName": "Paging", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "316gqwtingiafw29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(Threads), Threads)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Threads", 
+                            "type": "number", 
+                            "displayName": "Threads", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "SOLARIS", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "SOLARIS (TOP)", 
+            "parentName": "Process_Resources_Usage_TOP", 
+            "calculations": [
+                {
+                    "calculationID": "3r3oj0g0vf8byb9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "(pct_CPU/100)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "conso_per_core", 
+                            "type": "number", 
+                            "displayName": "conso_per_core", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "a3fcja8kvypkfbt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((ResSize)/1024),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "physical_memory_MB", 
+                            "type": "number", 
+                            "displayName": "physical_memory_MB", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "31gvkoomixgk3xr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((Size)/1024),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "virtual_memory_MB", 
+                            "type": "number", 
+                            "displayName": "virtual_memory_MB", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "d97w2qq1luiyhkt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(Paging), Paging)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Paging", 
+                            "type": "number", 
+                            "displayName": "Paging", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "bl8jye0sg9l766r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(Threads), Threads)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Threads", 
+                            "type": "number", 
+                            "displayName": "Threads", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "q7w17u04eug6tj4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(CharIO), CharIO)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "CharIO", 
+                            "type": "number", 
+                            "displayName": "CharIO", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "LINUX", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "LINUX (TOP)", 
+            "parentName": "Process_Resources_Usage_TOP", 
+            "calculations": [
+                {
+                    "calculationID": "5d6z9jvijw09t3xr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "(pct_CPU/100)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "conso_per_core", 
+                            "type": "number", 
+                            "displayName": "conso_per_core", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "wp8rgrx3grzzolxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((ResData+ResText)/1024),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "used_memory_MB", 
+                            "type": "number", 
+                            "displayName": "used_memory_MB", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "fbfutr49a8257b9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((Size/1024),2)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "virtual_memory_MB", 
+                            "type": "number", 
+                            "displayName": "virtual_memory_MB", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "98agbp3a0qwwxw29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(MinorFault), MinorFault)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "MinorFault", 
+                            "type": "number", 
+                            "displayName": "MinorFault", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "71t1s9gs9c29ms4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(MajorFault), MajorFault)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "MajorFault", 
+                            "type": "number", 
+                            "displayName": "MajorFault", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "hvv97e5vrb4t2o6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(ShdLib), ShdLib)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "shared_lib_pages", 
+                            "type": "number", 
+                            "displayName": "shared_lib_pages", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "AIX_FILE", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "AIX (FILE)", 
+            "parentName": "Kernel_File_Statistics_FILE", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "SOLARIS_FILE", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "SOLARIS (FILE)", 
+            "parentName": "Kernel_File_Statistics_FILE", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "AIX_IOADAPT", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "AIX (IOADAPT)", 
+            "parentName": "IO_Adapters_ReadWrite_Operations_IOADAPT", 
+            "calculations": [
+                {
+                    "calculationID": "9e66gxvn9zppsyvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(device), device)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "device", 
+                            "type": "string", 
+                            "displayName": "device", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "ReadWrite_Operations_Kbytessec", 
+            "constraints": [
+                {
+                    "search": "device!=*tps*"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Read/Write Operations (Kbytes/sec)", 
+            "parentName": "AIX_IOADAPT", 
+            "calculations": [
+                {
+                    "calculationID": "coij4vxm60xp3nmi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value), value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "rate_KBsec", 
+                            "type": "number", 
+                            "displayName": "rate (Kbytes/sec)", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Total_IO_Operations_per_second_tps", 
+            "constraints": [
+                {
+                    "search": "device=*tps*"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Total I/O Operations per second (tps)", 
+            "parentName": "AIX_IOADAPT", 
+            "calculations": [
+                {
+                    "calculationID": "1ppda27kjwsqyqfr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(value), value)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "IO_per_sec", 
+                            "type": "number", 
+                            "displayName": "IO per second (tps)", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Percentage_of_Time_spent_by_processes", 
+            "constraints": [
+                {
+                    "search": "type=PROCSOL"
+                }
+            ], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Percentage of Time spent by processes (PROCSOL) - SOLARIS Only", 
+            "parentName": "Process_Kernel_IO_Statistics", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "SOLARIS_PROCSOL", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "SOLARIS (PROCSOL)", 
+            "parentName": "Percentage_of_Time_spent_by_processes", 
+            "calculations": [
+                {
+                    "calculationID": "044br5h5pe486w29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(USR), USR)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "USR", 
+                            "type": "number", 
+                            "displayName": "%time in User Mode", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "0b76zmd6dclnb3xr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(SYS), SYS)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "SYS", 
+                            "type": "number", 
+                            "displayName": "%time in System Mode", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "tchqo6bjh03vj9k9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(TRP), TRP)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "TRP", 
+                            "type": "number", 
+                            "displayName": "%time Processing system traps", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "vyq3kdouutmx6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(TFL), TFL)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "TFL", 
+                            "type": "number", 
+                            "displayName": "%time Processing text page faults", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "pi5ak1cb7f1or", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(DFL), DFL)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "DFL", 
+                            "type": "number", 
+                            "displayName": "%time Processing data page faults", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "hbvjspom9jh8h0k9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(LAT), LAT)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "LAT", 
+                            "type": "number", 
+                            "displayName": "%time Waiting for CPU", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "SOLARIS_VM", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "SOLARIS (VM)", 
+            "parentName": "Vmstats_Statistics_VM_Linux_and_Solaris_Only", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "LINUX_VM", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "Process_Kernel_IO_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "LINUX (VM)", 
+            "parentName": "Vmstats_Statistics_VM_Linux_and_Solaris_Only", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "AIX_MEM", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "AIX (MEM)", 
+            "parentName": "Real_Memory_and_Paging_Space_Usage_MEM", 
+            "calculations": [
+                {
+                    "calculationID": "j60ulnbgjv1dzpvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((Real_total_MB-Real_free_MB),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Real_used_MB", 
+                            "type": "number", 
+                            "displayName": "Real Used Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "4uukln6pgijp2e29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(Real_total_MB,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Real_total_MB", 
+                            "type": "number", 
+                            "displayName": "Real Total Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "8a998qnry4rhpvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(Real_free_MB,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Real_free_MB", 
+                            "type": "number", 
+                            "displayName": "Real Free Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "9bmhhr6elrhbmx6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((Real_used_MB/Real_total_MB)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Real_used_PCT", 
+                            "type": "number", 
+                            "displayName": "Real Memory Used in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "zeynp3nvlyx03sor", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(Real_Free_PCT,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Real_Free_PCT", 
+                            "type": "number", 
+                            "displayName": "Real Free Memory in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "ej382q8v7jeb3xr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((Virtual_total_MB-Virtual_free_MB),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Virtual_used_MB", 
+                            "type": "number", 
+                            "displayName": "Virtual Used Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "fzghp2urferbpgb9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((Virtual_total_MB),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Virtual_total_MB", 
+                            "type": "number", 
+                            "displayName": "Virtual Total Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "lvqqgy92x89tfbt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(Virtual_free_MB,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Virtual_free_MB", 
+                            "type": "number", 
+                            "displayName": "Virtual Free Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "sjwvhpmycpi4quxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((Virtual_used_MB/Virtual_total_MB)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Virtual_used_PCT", 
+                            "type": "number", 
+                            "displayName": "Virtual Used Memory in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "5k85lx378eu92j4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(Virtual_free_PCT,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "Virtual_free_PCT", 
+                            "type": "number", 
+                            "displayName": "Virtual Free Memory in %", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "SOLARIS_MEM", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "SOLARIS (MEM)", 
+            "parentName": "Real_Memory_and_Paging_Space_Usage_MEM", 
+            "calculations": [
+                {
+                    "calculationID": "b978wytxxbmuc8fr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((memtotal-memfree),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memused", 
+                            "type": "number", 
+                            "displayName": "Used Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "g1ru48qyvlk57b9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(memtotal,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memtotal", 
+                            "type": "number", 
+                            "displayName": "Total Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "9g9oy2lwv9wtrzfr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(memfree,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memfree", 
+                            "type": "number", 
+                            "displayName": "Free Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "kfhjwbp80igxecdi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((memused/memtotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memused_PCT", 
+                            "type": "number", 
+                            "displayName": "Used Memory in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "38jl8ykiicat6gvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((memfree/memtotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memfree_PCT", 
+                            "type": "number", 
+                            "displayName": "Free Memory in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "9majnpx577c1h5mi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((swaptotal-swapfree),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapused", 
+                            "type": "number", 
+                            "displayName": "Used Swap (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "icdr7z4vtbe53ik9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(swaptotal,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swaptotal", 
+                            "type": "number", 
+                            "displayName": "Total Swap (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "498e9iho10wfjemi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(swapfree,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapfree", 
+                            "type": "number", 
+                            "displayName": "Free Swap (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "gw773f2r3r9hpvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((swapused/swaptotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapused_PCT", 
+                            "type": "number", 
+                            "displayName": "Used Swap in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "9do2l44bzmewxw29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((swapfree/swaptotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapfree_PCT", 
+                            "type": "number", 
+                            "displayName": "Free Swap in %", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "LINUX_MEM", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "LINUX (MEM)", 
+            "parentName": "Real_Memory_and_Paging_Space_Usage_MEM", 
+            "calculations": [
+                {
+                    "calculationID": "p1ntmlt9h1hpk3xr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((memtotal-memfree),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memused", 
+                            "type": "number", 
+                            "displayName": "Used Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "2gadzisig2satt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(memtotal,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memtotal", 
+                            "type": "number", 
+                            "displayName": "Total Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "v3bpr06us0q0vn29", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(memfree,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memfree", 
+                            "type": "number", 
+                            "displayName": "Free Memory (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "q7b8pdor29ox0f6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((memused/memtotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memused_PCT", 
+                            "type": "number", 
+                            "displayName": "Used Memory in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "f0xpau3qtqog8pvi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((memfree/memtotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "memfree_PCT", 
+                            "type": "number", 
+                            "displayName": "Free Memory in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "5f77p1gcvqdunmi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round((swaptotal-swapfree),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapused", 
+                            "type": "number", 
+                            "displayName": "Used Swap (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "3vpubymxdgvf5hfr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(swaptotal,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swaptotal", 
+                            "type": "number", 
+                            "displayName": "Total Swap (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "xkjj5x6wj0vpwrk9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(swapfree,0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapfree", 
+                            "type": "number", 
+                            "displayName": "Free Swap (MB)", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "simqo29au1fqd7vi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((swapused/swaptotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapused_PCT", 
+                            "type": "number", 
+                            "displayName": "Used Swap in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "4dfo0kygj7q1if6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "round(((swapfree/swaptotal)*100),0)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "swapfree_PCT", 
+                            "type": "number", 
+                            "displayName": "Free Swap in %", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "xr3ag87ud8qto6r", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(buffers)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "buffers", 
+                            "type": "number", 
+                            "displayName": "buffers", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "34b1vwhdo45qm2t9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(cached), cached)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "cached", 
+                            "type": "number", 
+                            "displayName": "cached", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "p9w370kp3gbsxlxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(inactive), inactive)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "inactive", 
+                            "type": "number", 
+                            "displayName": "inactive", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "AIX_MEMUSE", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "AIX (MEMUSE)", 
+            "parentName": "Vmtune_Statistics_AIX_Only_MEMUSE", 
+            "calculations": [
+                {
+                    "calculationID": "zl0srs77irckrzfr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(PCTnumperm), PCTnumperm)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "PCTnumperm", 
+                            "type": "number", 
+                            "displayName": "PCTnumperm", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "ui24e12na39v0a4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(PCTminperm), PCTminperm)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "PCTminperm", 
+                            "type": "number", 
+                            "displayName": "PCTminperm", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "8yhq4krfxraoflxr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(PCTmaxperm), PCTmaxperm)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "PCTmaxperm", 
+                            "type": "number", 
+                            "displayName": "PCTmaxperm", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "SOLARIS_MEMUSE", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "SOLARIS (MEMUSE)", 
+            "parentName": "Vmtune_Statistics_AIX_Only_MEMUSE", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "Cache_Hit_Ratio_", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Cache Hit Ratio (%)", 
+            "parentName": "SOLARIS_MEMUSE", 
+            "calculations": [
+                {
+                    "calculationID": "0lsf4sgu3mr6bt9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(PCT_rcache), PCT_rcache)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "PCT_rcache", 
+                            "type": "number", 
+                            "displayName": "PCT_rcache", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "1ykjo1e5rpy14i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(PCT_wcache), PCT_wcache)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "PCT_wcache", 
+                            "type": "number", 
+                            "displayName": "PCT_wcache", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "System_Buffer_Accesses", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "System Buffer Accesses", 
+            "parentName": "SOLARIS_MEMUSE", 
+            "calculations": [
+                {
+                    "calculationID": "uj9tok353fpqfr", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(lread), lread)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "lread", 
+                            "type": "number", 
+                            "displayName": "lread", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "zvobjaiakyo2bj4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(lwrite), lwrite)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "lwrite", 
+                            "type": "number", 
+                            "displayName": "lwrite", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Transfers_using_raw_physical_device_mechanism", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Transfers using raw (physical) device mechanism", 
+            "parentName": "SOLARIS_MEMUSE", 
+            "calculations": [
+                {
+                    "calculationID": "69l62o5or8wd0a4i", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pread), pread)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pread", 
+                            "type": "number", 
+                            "displayName": "pread", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "tkrov96rpw91wcdi", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(pwrite), pwrite)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "pwrite", 
+                            "type": "number", 
+                            "displayName": "pwrite", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "Transfer_of_data_between_system_buffers_and_disk_or_other_block_device", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "MEMORY_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }
+            ], 
+            "displayName": "Transfer of data between system buffers and disk or other block device", 
+            "parentName": "SOLARIS_MEMUSE", 
+            "calculations": [
+                {
+                    "calculationID": "rejr2uidxxzb0529", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(bread), bread)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "bread", 
+                            "type": "number", 
+                            "displayName": "bread", 
+                            "required": false
+                        }
+                    ]
+                }, 
+                {
+                    "calculationID": "wxbx1we19mkakyb9", 
+                    "calculationType": "Eval", 
+                    "comment": "", 
+                    "expression": "case(isnotnull(bwrite), bwrite)", 
+                    "outputFields": [
+                        {
+                            "multivalue": false, 
+                            "comment": "", 
+                            "hidden": false, 
+                            "fieldName": "bwrite", 
+                            "type": "number", 
+                            "displayName": "bwrite", 
+                            "required": false
+                        }
+                    ]
+                }
+            ]
+        }, 
+        {
+            "objectName": "AIX_NETERROR", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }
+            ], 
+            "displayName": "AIX (NETERROR)", 
+            "parentName": "Error_packets_per_Interface_NETERROR", 
+            "calculations": []
+        }, 
+        {
+            "objectName": "SOLARIS_NETERROR", 
+            "constraints": [], 
+            "comment": "", 
+            "fields": [
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "sourcetype", 
+                    "type": "string", 
+                    "displayName": "sourcetype", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "source", 
+                    "type": "string", 
+                    "displayName": "source", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "hostname", 
+                    "type": "string", 
+                    "displayName": "hostname", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": true, 
+                    "fieldName": "host", 
+                    "type": "string", 
+                    "displayName": "host", 
+                    "required": false, 
+                    "owner": "BaseEvent"
+                }, 
+                {
+                    "multivalue": false, 
+                    "comment": "", 
+                    "hidden": false, 
+                    "fieldName": "device", 
+                    "type": "string", 
+                    "displayName": "device", 
+                    "required": true, 
+                    "owner": "NETWORK_Statistics"
+                }
+            ], 
+            "displayName": "SOLARIS (NETERROR)", 
+            "parentName": "Error_packets_per_Interface_NETERROR", 
+            "calculations": []
+        }
+    ], 
+    "displayName": "NMON Data - Performance Metrics", 
+    "objectSummary": {
+        "Event-Based": 58, 
+        "Interface Implementations": 0, 
+        "Transaction-Based": 0, 
+        "Search-Based": 0, 
+        "Interfaces": 0
+    }, 
+    "description": "NMON Metrics Pivot Models", 
+    "objectNameList": [
+        "CPU_Usage_Statistics", 
+        "Percentage_Usage_of_CPU_CPU_ALL", 
+        "Virtual_Partitions_CPU_Statistics", 
+        "Partitions_Virtual_CPU_Usage", 
+        "Pools_CPU_Usage", 
+        "Process_Kernel_IO_Statistics", 
+        "Process_Resources_Usage_TOP", 
+        "Kernel_File_Statistics_FILE", 
+        "IO_Adapters_ReadWrite_Operations_IOADAPT", 
+        "Kernel_Internal_Statistics_PROC", 
+        "Paging_Statistics_PAGE", 
+        "Threads_in_run_queue_and_to_be_paged_RunQueue_SwapIn", 
+        "Context_Switches_and_Systems_Calls", 
+        "Fork_and_Exec_Systems_Calls_fork_exec", 
+        "Pages_In__Pages_Out_pgsin__pgsout", 
+        "Fs_In__Fs_Out_sum_of_pginpgsin_and_pgoutpgsout_per_interval", 
+        "Scan_Free_Ratio_Pages_scans_by_reclaims_per_interval", 
+        "MEMORY_Statistics", 
+        "DISKS_Statistics", 
+        "NETWORK_Statistics", 
+        "Percentage_of_Memory_Allocation_MEMNEW", 
+        "Real_Memory_and_Paging_Space_Usage_MEM", 
+        "Vmtune_Statistics_AIX_Only_MEMUSE", 
+        "Average_Data_Transfer_Size_DISKBSIZE", 
+        "Percent_of_time_busy_Disk_DISKBUSY", 
+        "Disk_Read_Data_Rate_DISKREAD", 
+        "Disk_Write_Data_Rate_DISKWRITE", 
+        "Disk_IO_Operations_Per_Second_DISKXFER", 
+        "Traffic_Data_Rate_per_Interface_NET", 
+        "ReadWrite_packets_per_Interface_NETPACKET", 
+        "Error_packets_per_Interface_NETERROR", 
+        "FILESSYSTEMS_Statistics", 
+        "Percentage_Usage_of_FileSystems", 
+        "Percentage_Inode_Usage_of_FileSystems", 
+        "Vmstats_Statistics_VM_Linux_and_Solaris_Only", 
+        "AIX", 
+        "SOLARIS", 
+        "LINUX", 
+        "AIX_FILE", 
+        "SOLARIS_FILE", 
+        "AIX_IOADAPT", 
+        "ReadWrite_Operations_Kbytessec", 
+        "Total_IO_Operations_per_second_tps", 
+        "Percentage_of_Time_spent_by_processes", 
+        "SOLARIS_PROCSOL", 
+        "SOLARIS_VM", 
+        "LINUX_VM", 
+        "AIX_MEM", 
+        "SOLARIS_MEM", 
+        "LINUX_MEM", 
+        "AIX_MEMUSE", 
+        "SOLARIS_MEMUSE", 
+        "Cache_Hit_Ratio_", 
+        "System_Buffer_Accesses", 
+        "Transfers_using_raw_physical_device_mechanism", 
+        "Transfer_of_data_between_system_buffers_and_disk_or_other_block_device", 
+        "AIX_NETERROR", 
+        "SOLARIS_NETERROR"
+    ]
+}

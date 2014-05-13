@@ -1,0 +1,1260 @@
+<form stylesheet="Help.css,Home.css,hover.css,singlevalue.css,hide_timeindicator.css">
+  <label>NMON Performance Monitor</label>
+  <description></description>
+
+  <row>
+
+    <html>
+
+		<br />
+
+		<div class="round-button">
+			<a href="Home">
+			<img src="../../static/app/nmon/icons/Home_Icon.svg" alt="Home" />
+			</a>
+		</div>
+
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/logos/NMON_simplelogo.png"/>
+      </div>
+      
+      <div class="logosubtitle">        
+        <h2>Performance Monitor for Unix and Linux Systems</h2>
+		</div>
+
+		<br />
+		<br />
+
+    </html>
+
+	</row>
+	
+	<row>
+
+
+	 <html>
+
+
+<p>Copyright 2014 Guilhem Marchand	<br/>
+	<br/>
+   Licensed under the Apache License, Version 2.0 (the "License");<br/>
+   you may not use this file except in compliance with the License.<br/>
+   You may obtain a copy of the License at<br/>
+	<br/>
+     http://www.apache.org/licenses/LICENSE-2.0<br/>
+	<br/>
+   Unless required by applicable law or agreed to in writing, software<br/>
+   distributed under the License is distributed on an "AS IS" BASIS,<br/>
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<br/>
+   See the License for the specific language governing permissions and<br/>
+   limitations under the License.<br/>
+	<br/>
+nmon release 1.1.6<br/>
+</p>
+
+	</html>
+	
+	</row>
+	
+	<row>
+	
+	<html>
+	 
+<h1>Welcome in Splunk for NMON, Performance Monitor for Unix and Linux Systems</h1>
+
+<h2>TABLE OF CONTENT</h2>
+
+<ol>
+
+<li>INTRODUCTION</li>
+<li>PREREQUISITES</li>
+<li>INSTALLATION</li>
+<li>DEPLOYMENT SCENARIOS</li>
+<li>ADVANCED CONFIGURATION</li>
+<li>USAGE</li>
+<li>UPGRADE INSTRUCTIONS</li>
+<li>REFERENCE MATERIAL</li>
+
+</ol>
+	 
+
+	</html>
+	
+	</row>
+	
+	<row>
+	
+	<html>	
+
+<h1>1. INTRODUCTION</h1>
+
+<p>
+NMON is short for Nigel's Performance Monitor and is available on AIX Systems, Solaris (with Sarmon), Linux and now ARM Systems.
+<br/>
+This is a great all in one Performance Monitor tool that gives a large amount of system performance informations and can be used in different scenarios.
+<br/>
+<br/>
+It first can be used for Realtime monitoring within a terminal by simply issuing the "nmon" command, giving you access to many system informations within a single screen.
+<br/>
+
+<br />
+<img src="../../static/app/nmon/various/nmon_screen.png" alt="Nmon" />
+<br />
+
+<br/>
+Beyond RealTime Analysis, NMON is very often used as a Capacity Planning tool by running NMON in csv generating mode all along it's run time, for later cold Analyse.
+</p>
+
+
+<p>
+There is very few (or none) solutions to Analyse these data with a global and historical vision (Excel has its limits), fortunately Splunk's power is here and this Application
+will, i hope, answer to your needs.
+</p>
+
+<p>
+
+<h2>
+Here are some useful links about NMON:
+</h2>
+
+<a href="http://nmon.sourceforge.net/pmwiki.php">http://nmon.sourceforge.net/pmwiki.php</a>
+
+<br/>
+
+<a href="http://www.ibm.com/developerworks/aix/library/au-analyze_aix">http://www.ibm.com/developerworks/aix/library/au-analyze_aix</a>
+
+<br />
+
+<br />
+
+</p>
+
+<p>
+
+Analysing NMON csv data is not easy because of a very specific format Splunk cannot directly manage. (One big problem stands in the event timestamp identification which is very uncommon and defined by a non timestamp pattern)<br />
+
+This is why i decided to develop this App, based on my own professional experience in Unix systems Capacity Planning, to provide to anyone interested a powerful too to Analyse NMON data with an Enterprise Class Application.<br />
+
+<h2>In a few words, here is how the App works:</h2>
+
+<lu>
+
+<li>
+After installation, the App is ready to be used, out of the Box
+</li>
+
+<li>
+Default installation has a file monitor that watches for any new nmon file located in "/opt/splunk/etc/apps/nmon/var/nmon_repository"
+</li>
+
+<li>
+When a new file is found by Splunk Archive Processor (such as any monitored file or directory), Splunk will call a third party perl script
+</li>
+
+<li>
+The perl script "nmon2csv" will translate nmon data into several csv files in "/opt/splunk/etc/apps/nmon/var/csv_repository"
+</li>
+
+<li>
+By default, Splunk will watch for this this directory running in "batch" mode, meaning any csv file within this directory will be indexed then deleted (you should not need to keep these files)
+</li>
+
+<li>
+Once indexed, NMON Data will be ready to be analysed within any available views
+</li>
+
+</lu>
+
+</p>
+
+<br />
+
+<p>
+
+<h2>You can verify NMON workflow indexing by requesting on index with nmon processing sourcetype:</h2>
+
+<code>
+    	index="nmon" sourcetype="nmon_processing"
+</code>
+
+<br />
+<br />
+This will output the NMON file processing timestamp that has been threaten by Splunk. (identified by standard "source" field)
+<br />
+The real data itself will be identified by it's "type" field and indexed in "nmon" Splunk index, currently here are NMON sections (type field) threaten by the third party script:
+<br />
+
+<lu>
+
+<li>CPU_ALL</li>
+<li>DISKBSIZE</li>
+<li>DISKBUSY</li>
+<li>DISKREAD</li>
+<li>DISKWRITE</li>
+<li>DISKXFER</li>
+<li>FILE</li>
+<li>IOADAPT</li>
+<li>LPAR</li>
+<li>MEM</li>
+<li>MEMNEW</li>
+<li>MEMUSE</li>
+<li>NET</li>
+<li>NETERROR</li>
+<li>NETPACKET</li>
+<li>PAGE</li>
+<li>PROC</li>
+<li>PROCSOL</li>
+<li>TOP</li>
+<li>JFSFILE</li>
+<li>JFSINODE</li>
+
+</lu>
+
+<br />
+<br />
+
+
+<h2>Accessing Performance Metrics Raw data will be achieved as follows:</h2>
+
+<code>
+		index="nmon" sourcetype="nmon_data"
+</code>
+
+<br />
+
+<h2>Technical informations about these system metrics and how they are collected are well described in NMON Analyser Documentation:</h2>
+
+<a href="https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/Power%20Systems/page/nmon_analyser">https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/Power%20Systems/page/nmon_analyser</a>
+
+<br />
+
+<h3>Sarmon site for Solaris version has also a very nice description of NMON Metrics (with some specifics to Sarmon):</h3>
+
+<a href="http://www.geckotechnology.com/fr/sarmon">http://www.geckotechnology.com/fr/sarmon</a>
+
+
+<br />
+<br />
+
+
+<h2>Host Configuration data (AAA and BBB sections of NMON) can be retrieved as follows:</h2>
+
+<code>
+		index="nmon" sourcetype="nmon_config"
+</code>
+
+<br />
+<br />
+
+
+<h2>Installing NMON</h2>
+
+Installing NMON is out of the scope of this document, here are some links which should help installing NMON for your OS:
+
+<br/>
+
+<h3>AIX NMON Installation:</h3>
+
+<a href="http://www.ibm.com/developerworks/aix/library/au-analyze_aix/">http://www.ibm.com/developerworks/aix/library/au-analyze_aix/</a>
+
+<h3>LINUX NMON Installation:</h3>
+
+For many distributions, NMON shall be available in distrib repository packages (rpm, deb and so on)
+
+<br />
+You can also download the last binary for you OS:
+<br />
+
+<a href="http://nmon.sourceforge.net/pmwiki.php?n=Site.Download">http://nmon.sourceforge.net/pmwiki.php?n=Site.Download</a>
+
+<h3>SOLARIS NMON (SARMON) Installation:</h3>
+
+Download and installation procedure:
+<br />
+
+<a href="http://www.geckotechnology.com/fr/sarmon">http://www.geckotechnology.com/fr/sarmon</a>
+
+
+<p>
+<br />
+One great goal of this App is to take huge benefit of Splunk Archive processor system to identify and manage NMON files as it would do with any other standard log file, through a custom archive command stanza
+<br />
+Splunk call when required the third party script which will convert NMON data in log files Splunk can easily manage.
+<br />
+<br />
+Beyond this, NMON data takes great advantage of Splunk intelligence to exploit this large amount of technical data.
+<br />
+This Application comes as it is, with absolutely no warranty.
+Still i think and hope you will find this very very useful and will answer to your need.
+<br />
+<br />
+Do not hesitate to contact me if you have any further question or comment, any feedback will be greatly appreciated !
+<br />
+</p>
+
+
+<h2>WARNING and DISCLAIMER:</h2>
+
+Depending on your nmon command settings, a huge amount of data may be generated by nmon2csv conversion script, don't expect to manage thousands of servers with a free Splunk licence.
+<br />	 
+
+</p>
+
+
+	 </html>
+
+  </row>
+
+
+
+  <row>
+  
+  	<html>
+  	
+<h1>2. PREREQUISITES</h1>
+
+<p>
+<h2>Here are requirements for successfully install and use Splunk for NMON</h2>
+
+<br />
+
+<h3>- The Splunk Web Framework Toolkit, freely available</h3> 
+
+<a href="http://apps.splunk.com/app/1613">http://apps.splunk.com/app/1613</a>
+
+<br />
+<br />
+
+<h3>- PERL environment: The third party script required a standard and functional perl environment, thus no additional library are required</h3>
+
+<br />
+
+<h3>- NMON installation: Only if you intend to collect NMON data using Splunk (see sections below)</h3>
+
+<br />
+Nothing else is required, this App can be used with a free Splunk licence without any limitation, but as said above remember a very large amount of data may have to be indexed.
+<br />
+  	
+</p>
+
+	</html>
+
+	</row>
+
+
+
+	<row>
+	
+	<html>
+	
+
+<h1>3. INSTALLATION</h1>
+
+<p>
+
+<h2>Splunk for NMON installation is very easy to achieve as for any standard Splunk application:</h2>
+
+<lu>
+<li>
+Under SPlunk Application manager, getting the App online or downloaded as a file from Splunk Base
+</li>
+
+<li>
+By directly uncompressing the Archive file content under your Splunk installation directory: $SPLUNK_HOME/etc/apps
+</li>
+
+</lu>
+
+<br />
+Once installed, please restart Splunk to make the App fully available.
+<br />
+
+
+<h2>Default installation:</h2>
+
+<lu>
+
+<li>
+Every NMON data will indexed into an index called "nmon"
+</li>
+
+<li>
+The App watches for nmon file available within the directory "/opt/splunk/etc/apps/nmon/nmon_repository"
+</li>
+
+<li>
+The directory "/opt/splunk/etc/apps/nmon/spool" will be used as temporary directory by the nmon2csv third party script
+</li>
+
+<li>
+The nmon2scv generates csv files within the directory "/opt/splunk/etc/apps/nmon/csv_repository" and immediately indexed and deleted
+</li>
+
+</lu>
+
+
+<h2>NOTE: Path above are full path i could not yet adapt them with environment variables, if you have a non standard Splunk Home installation, please copy settings from:</h2>
+
+<lu>
+
+<li>
+props.conf
+</li>
+
+<li>
+inputs.conf
+</li>
+
+</lu>
+
+<br />
+And adapt them to match your Splunk home path
+
+<h2>Additional Monitor:</h2>
+
+You can easily add additional NMON files monitors, therefore please set these monitors in the "local" directory bases on "props.conf" and "inputs.conf" default examples you will
+find within the App.
+<br />
+
+<br />
+Note about conversation and indexing system cost:
+<br />
+
+Please keep in mind than converting and indexing NMON files will temporarily have an important impact on local system load if they are very large files. (such as a full day Nmon file)
+
+</p>
+
+	
+	</html>
+	
+	</row>
+
+
+	<row>
+	
+	<html>
+	
+<h1>4. DEPLOYMENT SCENARIOS</h1>
+
+
+<br />
+<h1>Scenario 1 "Distributed Environment": Splunk indexer(s) And Splunk Forwarders Agents used to collect Nmon data on servers</h1>
+
+<h2>In this scenario, Splunk indexer(s) will collect NMON Metrics data from clients servers using Splunk Forwarders.
+<br />
+Indexers themselves will collect local NMON Data.</h2>
+
+<img src="../../static/app/nmon/various/diagram_forwarding.png" alt="Diagram" />
+
+
+<br />
+<br />
+
+<h3>Step 1: Activate local Nmon data collect in Splunk indexers</h3>
+
+<br />
+
+<p>
+
+You will probably want to be able to have Usage statistics of Splunk indexer(s) themselves.
+<br />
+
+<br />
+
+<h3>At installation time, activate the input accorded to your local OS type:</h3>
+
+<br />
+
+<img src="../../static/app/nmon/various/settings.png" alt="Settings" />
+
+<br />
+<br />
+
+
+<h3>This can also be set at any time accessing the Settings menu within Nmon application:</h3>
+
+<br />
+
+<img src="../../static/app/nmon/various/settings_menu.png" alt="Settings_menu" />
+
+
+<br />
+<br />
+
+
+<br />
+<h3>Manually:</h3>
+<br />
+
+<code>
+- Copy defaults/inputs.conf to local/, edit the file and look for the adapted nmon_collect entry
+</code>
+
+<br />
+<br />
+Change "disabled = true" to "false", and restart Splunk.
+<br />
+
+</p>
+
+
+<br />
+<h3>Step 2: Enable Receiving input on the Index Server</h3>
+
+<p>
+
+<br />
+Configure the Splunk Index Server to receive data, either in the manager:
+
+<br />
+
+<code>
+Manager -> sending and receiving -> configure receiving -> new 
+</code>
+
+<br />
+<br />
+or via the CLI:
+<br />
+
+<code>
+		/opt/splunk/bin/splunk enable listen 9997 
+</code>
+
+<br />
+Where 9997 (default) is the receiving port for Splunk Forwarder connections
+<br />
+
+
+</p>
+
+
+
+<br />
+<h3>Step 3: Prepare your package to be deployed</h3>
+
+<br />
+
+<p>
+
+<h4>First, extract the content of TA-nmon App provided in $SPLUNK/etc/apps/nmon/resources to $SPLUNK_HOME/etc/deployment-apps, example:</h4>
+
+<br />
+
+<code>
+cd /opt/splunk/etc/deployment-apps
+
+<br />
+<br />
+
+tar -xvzf /opt/splunk/etc/apps/nmon/resources/TA-nmon*.tar.gz
+</code>
+
+
+<br />
+
+
+<br />
+
+<h4>Then, configure the outputs.conf to enable communication between the Forwarder and your Splunk server, example:</h4>
+
+<br />
+
+edit /opt/splunk/etc/deployment-apps/TA-nmon/local/outputs.conf
+
+<br />
+<br />
+
+<h4>Example of simple configuration:</h4>
+
+<br />
+
+<xmp>
+	[tcpout]
+	defaultGroup = default-autolb-group
+
+	[tcpout:default-autolb-group]
+	server = mysplunk-server:9997
+
+	[tcpout-server://mysplunk-server:9997]
+</xmp>
+
+
+
+
+<br />
+<h3>Step 4: Activate and Configure the Splunk Deployment server</h3>
+
+<p>
+
+<br />
+
+<h4>Configure the Splunk Server to act as a Deployment Server:</h4>
+
+<br />
+In CLI:
+<br />
+
+<code>
+/opt/splunk/bin/splunk enable deploy-server -auth admin 
+</code>
+
+<br />
+
+<br />
+Configure your serverclass.conf file, the following simple example will filter your hosts based on their hostname, and automatically deploy the TA-nmon App:
+
+<br />
+<br />
+Edit the file "$SPLUNK_HOME/etc/system/local/serverclass.conf" with section:
+<br />
+
+<xmp>
+		[serverClass:linux_hosts]
+		whitelist.0 = *linux*
+
+		[serverClass:solaris_hosts]
+		whitelist.0 = *solaris*
+
+		[serverClass:solaris_hosts:app:TA-nmon]
+		restartSplunkWeb = 0
+		restartSplunkd = 1
+		stateOnClient = enabled
+
+		[serverClass:linux_hosts:app:TA-nmon]
+		restartSplunkWeb = 0
+		restartSplunkd = 1
+		stateOnClient = enabled
+</xmp>
+
+<br />
+
+<br />
+Restart your Splunk server.
+<br />
+<br />
+
+
+</p>
+
+
+
+
+
+<h4>Go in the "Forwarder Management" page in Splunk Manager (distributed environment)</h4>
+
+
+<br />
+You should see 2 Applications and Classes:
+
+<br />
+<br />
+<img src="../../static/app/nmon/various/splunk_forwarder_manage1.png" alt="Settings1" />
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/splunk_forwarder_manage1.png" alt="Settings2" />
+
+<br />
+<br />
+
+
+<h4>The Splunk server is now ready to act as Deployment server, next steps will concern client installation and initial configuration.</h4>
+
+
+</p>
+
+
+<br />
+<br />
+
+<h3>Step 5: Clients Forwarders Installation and configuration</h3>
+
+<p>
+
+<br />
+Note: If forwarders are already installed and connected to your deployment server, you can off course bypass this section
+
+<br />
+<br />
+
+Steps for Installing/Configuring *nix forwarders:
+
+</p>
+
+<br />
+<h4>2.1 Download Splunk Universal Forwarder:</h4>
+
+<p>
+
+<a href="http://www.splunk.com/download/universalforwarder">http://www.splunk.com/download/universalforwarder</a>
+
+</p>
+
+<br />
+<h4>2.2 Install Forwarder</h4>
+
+<br />
+<h4>2.3 Enable boot-start/init script:</h4>
+
+<p>
+
+<br />
+Activate the forwarder at boot time:
+<br />
+
+<code>
+		/opt/splunkforwarder/bin/splunk enable boot-start
+</code>
+
+<br />
+<br />
+To start the forwarder:
+<br />
+
+<code>
+		/opt/splunkforwarder/splunk start
+</code>
+
+</p>
+
+<br />
+<h4>2.4 Connect the Forwarder to your Server:</h4>
+
+<p>
+
+<br />
+
+On Forwarders:
+
+<br />
+
+
+<br />
+On the deployment client, run these CLI commands:
+<br />
+<br />
+
+
+<code>
+splunk set deploy-poll &lt;IP_address/hostname&gt;:&lt;management_port&gt;
+
+<br />
+<br />
+
+splunk restart
+</code>
+
+<br />
+
+<br />
+Use the IP_address/hostname and management_port of the deployment server you want the client to connect with.
+
+<br />
+<br />
+
+For example:
+
+<br />
+
+<code>
+splunk set deploy-poll deploymentserver.splunk.mycompany.com:8089
+
+<br />
+<br />
+
+splunk restart
+</code>
+
+
+
+
+</p>
+
+
+
+<br />
+<br />
+
+<h3>FINAL: Check your clients deployments:</h3>
+
+<p>
+
+<br />
+
+After your restarted the client (upon initial configuration above), wait a few minutes (be patient, this can require time) and if everything is ok you will quickly see the application being deployed within your client.
+
+<br />
+
+Congratulations :-)
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/splunk_forwarder_manage3.png" alt="Settings3" />
+
+
+
+
+
+</p>
+
+
+
+
+
+<br />
+<br />
+
+
+
+
+<h1>Scenario 2: Manage NMON Data collected into centralized shares</h1>
+
+<h2>
+In a scenario where there is no Splunk forwarders installed in servers but there is another process in place which periodically collect Nmon data, all you need is a central share (such as an NFS share)
+which Splunk indexer has access.</h2>
+
+<br />
+
+<h3>Step 1: Splunk indexer Nmon metrics local collect</h3>
+
+<p>
+
+<br />
+
+In such a scenario, you will still probably want to have Splunk indexer metrics being collected locally, to do so:
+<br />
+<br />
+
+
+<h3>At installation time, activate the input accorded to your local OS type:</h3>
+
+<br />
+
+<img src="../../static/app/nmon/various/settings.png" alt="Settings" />
+
+<br />
+<br />
+
+
+<h3>This can also be set at any time accessing the Settings menu within Nmon application:</h3>
+
+<br />
+
+<img src="../../static/app/nmon/various/settings_menu.png" alt="Settings_menu" />
+
+
+<br />
+<br />
+
+
+<br />
+<h3>Manually:</h3>
+<br />
+
+<code>
+- Copy defaults/inputs.conf to local/, edit the file and look for the adapted nmon_collect entry
+</code>
+
+<br />
+<br />
+Change "disabled = true" to "false", and restart Splunk.
+<br />
+
+</p>
+
+<br />
+<br />
+
+<h3>Step 2: Add Splunk Monitors </h3>
+
+<p>
+
+<br />
+Then, simply add a monitor that will watch for any new or updated Nmon file and will convert and index Nmon data.
+
+<br />
+<br />
+Copy defaults/inputs.conf and defaults/props.conf to local/, edit each config file to configure your additional monitor.
+
+<br />
+<br />
+Restart Splunk and Nmon collect will start.
+	
+	
+<br />
+<br />	
+	
+</p>	
+	
+	
+	</html>
+	
+	</row>
+
+	<row>
+	
+	<html>
+	
+<h1>5. ADVANCED CONFIGURATION</h1>
+
+
+<br />
+Splunk for NMON works out the box after installation and does not require additional configuration to manage NMON files, just copy them to "/opt/splunk/etc/apps/nmon/nmon_repository" and files will
+immediately be managed.
+
+<br />
+
+
+<h2>Beyond this, you can add as many monitor as you which to threat other NMON files repository (such as an NFS share), achieving this is very simple:</h2>
+
+<p>
+- Copy "props.conf" and "inputs.con" files to local directory (don't edit files in default directory to be upgrade resilient) and adapt/add sections as described in configuration files.
+</p>
+
+<br />
+
+<h2>IBM PSeries Environments: Mapping Partitions with PSeries names</h2>
+
+<p>
+If you are planning to manage many partitions in IBM Pseries environment, you will take advantages of mapping lpars (also called micro-partitions) with your PSeries identification hostname.
+<br />
+<br />
+This will add a supplementary filter (interfaces, reports...) using the PSeries name, very useful in big environment.
+<br />
+<br />
+This can be achieved by adding a csv lookup based on "serialnum" field present in every NMON data section.
+<br />
+<br />
+In IBM Pseries environments, this serial number is in fact the PSeries serial number, create a csv lookup adapted to your need and store in SPLUNK_HOME/etc/apps/nmon/lookups, such as:
+<br />
+</p>
+
+<xmp>
+		PSERIES_NAME,serialnum<br />
+		PSERIESfoo,xxxxxxxxxxx
+		PSERIESbar,xxxxxxxxxxx
+</xmp>
+
+Create a stanza in "$SPLUNK_HOME/etc/apps/nmon/local/transforms.conf" such as:
+
+<br />
+<br />
+
+<xmp>
+		[mylookup]
+		filename = mylookupfile.csv
+</xmp>
+
+<br />
+<br />
+Then, copy "props.conf" from default directory to local directory, within the [nmon_data] stanza, add your csv lookup mapping such as: 
+
+<xmp>
+		# mylookup Mapping
+		lookup_mylookup = mylookup serialnum OUTPUTNEW PSERIES
+</xmp>
+
+<br />
+Restart Splunk (or refresh the configuration using debug URL), once this is done every lpar host will be associated with its PSeries.
+
+<br />
+Beyond this point, you are free to modify views to include this information as a new important filter within dropdowns and so on... As always ensure you are working with files located in "local"
+directory to be upgrade resilient.
+
+<br />
+You can off course add many other technical of functional informations depending on your environment to improve the way you exploit your data.
+
+<br />
+<br />
+
+<h2>Time Interval definition: Custom macros used by App to dynamically define the more accurate span value</h2>
+
+<br />
+
+<p>
+
+NMON Splunk App uses an advanced search (eg. macro) to dynamically define the more accurate interval time definition possible within charts.
+
+<br />
+<br />
+
+Splunk has a charting limit of 1000 points per series, an adapted span value (time interval) has to be defined if we want charts to be more accurate than when Splunk sets itself this value
+
+<br />
+
+This is why this custom macro is being defined based on analysing Time ranges supplied by users, see:
+
+</p>
+
+
+<code>
+${SPLUNK_HOME}/etc/apps/nmon/default/macros.conf
+</code>
+
+<br />
+<br />
+
+
+<p>
+
+If you have a different minimal time interval than 1 minute, you can customize these macro to adapt them to your data. (as for an example if you generate NMON data with an other process than Splunk)
+
+<br />
+
+Simply copy macros.conf to your local/ directory and issue your modifications, please note a 5 minute time interval macro example if provided within configuration file.
+
+</p>
+
+<br />
+<br />
+
+
+	</html>
+	
+	</row>
+	
+	<row>
+	
+	<html>
+
+
+<h1>6. USAGE</h1>
+
+<h2>NMON files conversion:</h2>
+
+As soon as NMON files are present in default monitor location or your own, NMON files conversion and Splunk indexing will start.
+<br />
+<br />
+NMON conversion treatment can be checked with request over "nmon" index and "nmon_processing" sourcetype, such as:
+<br />
+
+<code>
+		index="nmon" sourcetype="nmon_processing" | stats count by _time,source,md5sum
+</code>		
+
+<br />
+<br />		
+source is equivalent to the full path and name of NMON files proceeded.
+
+<h2>Splunk NMON data indexing:</h2>
+
+Once converted, NMON data are generated into multiple csv files. (one file per kind of metric)
+<br />
+
+In default configuration these files are located in $SPLUNK_HOME/etc/apps/nmon/var/csv_repository.
+<br />
+<br />
+Splunk will immediately index any csv file located within this directory in batch mode, meaning file deletion after being indexed.
+
+<br />
+Please note that in a massive NMON data integration operation, this directory size may temporary greatly increase.
+
+<h2>Duplicate Events Management and re-indexing Data</h2>
+
+Because the Splunk archive processor manages itself NMON files (watch for them as it would any other file instead of running a standalone script input),
+<br />
+a side effect of this was in first App versions resulting in the third party script being called multiple times by Splunk,
+and the data to be indexed being generated multiple times.
+
+To deal with this, a built-in md5sum feature had been included in the third party script.
+<br />
+<br />
+For each copy of an NMON file, an md5sum key is added to the file $SPLUNK_HOME/etc/apps/nmon/var/md5sum_reference.txt.
+
+Before generating data, the third party script will check if an md5sum key exists, if it does, the script won't generate any new data.
+<br />
+The md5sum key / NMON file association can be checked within the nmon index / processing sourcetype. (see above)
+<br />
+
+<h3>If you need to re-index NMON data, you can proceed as follows:</h3>
+
+<lu>
+
+<li>
+Stop Splunk
+</li>
+
+<li>
+Delete $SPLUNK_HOME/etc/apps/nmon/var/md5sum_reference.txt
+</li>
+
+<li>
+Delete nmon index (ensure you have backups if required !)
+</li>
+
+<li>
+Verify Splunk has still access to previously proceeded NMON files
+</li>
+
+<li>
+Start index and check indexing process
+</li>
+
+</lu>
+
+
+<h2>Accessing NMON Metrics Raw Data:</h2>
+
+Every NMON Metrics are available through the "nmon" index and "nmon_data" sourcetype:
+
+<br />
+
+<code>
+		index=nmon sourcetype=nmon_data any other filters
+</code>		
+
+
+<br />
+<br />		
+For example, Percentage of CPU Usage (known as CPU_ALL in NMON context) Raw data are available in inline search by:
+
+<br />
+<code>
+		index=nmon sourcetype=nmon_data type=CPU_ALL
+</code>
+
+<p>
+
+
+<br />
+For information, fields identification within Splunk is automatically achieved using the csv file header generated by the third party script.
+<br />
+<br />
+Beyond this, many views will work with computed fields or aggregation of fields and other filters such as time.
+
+<br />
+The App Home Page will you give direct access to every content and views available.
+
+<br />
+
+</p>
+
+	</html>
+	
+	</row>
+	
+	<row>
+	
+	<html>	
+
+<h1>7. UPGRADE INSTRUCTIONS</h1>
+
+<br />
+
+<h2>Upgrade of Splunk Indexer</h2>
+
+<p>
+
+Upgrading Splunk for NMON App should be as easy as with any other App, just upgrade the App through the manager and you're done.
+<br />
+<br />
+Please note any configuration file located in "local" directory shall not be affected by any update process.
+
+<br />
+<br />
+Therefore, as with any upgrade or update operation, i strongly recommend to have up to date backups before trying any update, moreover on Production systems.
+
+</p>
+
+<br />
+
+<h2>Upgrade of light Forwarders</h2>
+
+<p>
+
+When using Splunk Deployment server (see scenario 1), upgrading the TA-nmon Application will be achieved very easily by extracting the new TA-nmon archive version, note that local configuration will never be touched or overwritten
+
+<lu>
+
+<li>Upgrade the nmon application on Deployment server</li>
+
+<br />
+
+<li>In CLI, go within the deployment directory and extract the new TA-nmon version:</li>
+
+<br />
+
+<code>
+$ cd /opt/splunk/etc/deployment-apps
+</code>
+
+<br />
+<br />
+
+<code>
+$ tar -xvzf $HOME_SPLUNK/etc/apps/nmon/TA-nmon*.tar.gz
+</code>
+
+
+<br />
+<br />
+
+<li>You can restart the Splunk Deployment server to force it analysing immediately the new version and automatically deploying it to your clients, or simply wait for it.</li>
+
+</lu>
+
+<br />
+
+</p>
+
+<br />
+
+	</html>
+	
+	</row>
+
+	<row>
+
+	<html>
+
+<h1>8. REFERENCE MATERIAL</h1>
+
+<p>
+
+<lu>
+
+<li>
+<b>- nmon2csv.pl:</b> 
+</li>
+
+<br />
+third party script located in "SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl"
+
+<br />
+Invoked by the Splunk Archive Processor whenever required, this script will translate NMON data into data Splunk can successfully exploit
+
+<br />
+This is a standard perl script with no uncommon perl requirement 
+
+<br />
+<br />
+
+<li>
+<b>- nmon_for_linux.sh:</b> third party script to collect NMON data for Linux indexer or forwarder
+</li>
+
+<li>
+<b>- nmon_for_solaris.sh:</b> third party script to collect NMON data for Solaris indexer or forwarder
+</li>
+
+<li>
+<b>- purge_nmon_repository.sh:</b> third party script to purge NMON repository (activated by default)
+</li>
+
+
+</lu>
+
+</p>
+
+	</html>
+	
+	</row>
+
+
+
+
+
+</form>

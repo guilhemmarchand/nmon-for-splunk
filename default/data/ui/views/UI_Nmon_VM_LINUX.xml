@@ -1,0 +1,458 @@
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON - VM, Linux Virtual Memory Statistics</label>
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" searchWhenChanged="true">
+      <label>TimeRange:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+      <choice value="">Inactive</choice>
+    </input>
+
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Select a Host:</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>none</default>
+      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_data type=VM | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
+      </populatingSearch>
+    </input>
+
+    <input type="radio" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+    </input>
+
+    <input type="radio" token="chart" searchWhenChanged="true">
+      <label>Select a type of chart:</label>
+      <default>line</default>
+      <choice value="area">Area</choice>
+      <choice value="line">Line (recommended)</choice>
+      <choice value="column">Column</choice>
+      <choice value="bar">Bar</choice>
+    </input>
+
+    <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <label>Select a stacking mode:</label>
+      <default>unstacked</default>
+      <choice value="stacked">stacked</choice>
+      <choice value="unstacked">unstacked (recommended)</choice>
+    </input>
+
+    <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <label>Missing Data:</label>
+      <default>gaps</default>
+      <choice value="gaps">Gaps</choice>
+      <choice value="connect">Connect</choice>
+      <choice value="zero">Zero</choice>
+    </input>
+    
+    <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+      <label>Legend placement:</label>
+      <default>bottom</default>
+      <choice value="bottom">Bottom</choice>
+      <choice value="top">Top</choice>
+      <choice value="left">left</choice>
+      <choice value="right">right</choice>
+      <choice value="center">center</choice>
+      <choice value="none">none</choice>
+    </input>    
+
+  </fieldset>
+
+
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
+| timechart `inline_customspan`
+$statsmode$(nr_dirty) As nr_dirty,
+$statsmode$(nr_writeback) As nr_writeback,
+$statsmode$(nr_unstable) As nr_unstable,
+$statsmode$(nr_page_table_pages) As nr_page_table_pages,
+$statsmode$(nr_mapped) As nr_mapped,
+$statsmode$(nr_slab) As nr_slab,
+$statsmode$(pgpgin) As pgpgin,
+$statsmode$(pgpgout) As pgpgout,
+$statsmode$(pswpin) As pswpin,
+$statsmode$(pswpout) As pswpout,
+$statsmode$(pgalloc_high) As pgalloc_high,
+$statsmode$(pgalloc_normal) As pgalloc_normal,
+$statsmode$(pgalloc_dma32) As pgalloc_dma32,
+$statsmode$(pgalloc_dma) As pgalloc_dma,
+$statsmode$(pgfree) As pgfree,
+$statsmode$(pgactivate) As pgactivate,
+$statsmode$(pgdeactivate) As pgdeactivate,
+$statsmode$(pgfault) As pgfault,
+$statsmode$(pgmajfault) As pgmajfault,
+$statsmode$(pgrefill_high) As pgrefill_high,
+$statsmode$(pgrefill_normal) As pgrefill_normal,
+$statsmode$(pgrefill_dma32) As pgrefill_dma32,
+$statsmode$(pgrefill_dma) As pgrefill_dma,
+$statsmode$(pgsteal_high) As pgsteal_high, 
+$statsmode$(pgsteal_normal) As pgsteal_normal,
+$statsmode$(pgsteal_dma32) As pgsteal_dma32,
+$statsmode$(pgsteal_dma) As pgsteal_dma,
+$statsmode$(pgscan_kswapd_high) As pgscan_kswapd_high,
+$statsmode$(pgscan_kswapd_normal) As pgscan_kswapd_normal,
+$statsmode$(pgscan_kswapd_dma32) As pgscan_kswapd_dma32,
+$statsmode$(pgscan_kswapd_dma) As pgscan_kswapd_dma,
+$statsmode$(pgscan_direct_high) As pgscan_direct_high,
+$statsmode$(pgscan_direct_normal) As pgscan_direct_normal,
+$statsmode$(pgscan_direct_dma32) As pgscan_direct_dma32,
+$statsmode$(pgscan_direct_dma) As pgscan_direct_dma,
+$statsmode$(pginodesteal) As pginodesteal,
+$statsmode$(slabs_scanned) As slabs_scanned,
+$statsmode$(kswapd_steal) As kswapd_steal,
+$statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
+$statsmode$(pageoutrun) As pageoutrun,
+$statsmode$(allocstall) As allocstall,
+$statsmode$(pgrotated) As pgrotated,
+$statsmode$(nr_bounce) As nr_bounce
+</searchTemplate>
+  
+
+  <row grouping="13">
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link1,link2,link3,link4,link5,link6,link7,link8,link9,link10,link11,link12">Select a view:<!--Links go here-->
+      </div>
+    </html>
+    
+    <chart id="link1">
+      <title>Pages dirty, under writeback or unstable</title>
+      <searchPostProcess>fields _time,nr_dirty,nr_writeback,nr_unstable</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+    
+    
+    <chart id="link2">
+      <title>Pages allocated to page tables, mapped by files or allocated by the kernel slab allocator</title>
+      <searchPostProcess>fields _time,nr_page_table_pages,nr_mapped,nr_slab</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+    
+    <chart id="link3">
+      <title>Pageins and pageouts (since last boot)</title>
+      <searchPostProcess>fields _time,pgpgin,pgpgout</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link4">
+      <title>swapins and swapouts (since last boot)</title>
+      <searchPostProcess>fields _time,pswpin,pswpout</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+    
+    <chart id="link5">
+      <title>Page allocations per zone (since last boot)</title>
+      <searchPostProcess>fields _time,pgalloc_high,pgalloc_normal,pgalloc_dma32,pgalloc_dma</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link6">
+      <title>Page frees, activations and deactivations (since last boot)</title>
+      <searchPostProcess>fields _time,pgfree,pgactivate,pgdeactivate</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link7">
+      <title>Minor and major page faults (since last boot)</title>
+      <searchPostProcess>fields _time,pgfault,pgmajfault</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link8">
+      <title>Page refills (per zone, since last boot):</title>
+      <searchPostProcess>fields _time,pgrefill_high,pgrefill_normal,pgrefill_dma32,pgrefill_dma</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link9">
+      <title>Page steals (per zone, since last boot)</title>
+      <searchPostProcess>fields _time,pgsteal_high,pgsteal_normal,pgsteal_dma32,pgsteal_dma</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link10">
+      <title>Pages scanned by kswapd daemon (per zone, since last boot)</title>
+      <searchPostProcess>fields _time,pgscan_kswapd_high,pgscan_kswapd_normal,pgscan_kswapd_dma32,pgscan_kswapd_dma</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link11">
+      <title>Pages reclaimed directly (per zone, since last boot)</title>
+      <searchPostProcess>fields _time,pgscan_direct_high,pgscan_direct_normal,pgscan_direct_dma32,pgscan_direct_dma</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link12">
+      <title>Miscellaneous statistics</title>
+      <searchPostProcess>fields _time,pginodesteal,slabs_scanned,kswapd_steal,kswapd_inodesteal,pageoutrun,allocstall,pgrotated,nr_bounce</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+  </row>
+
+
+  <row grouping="1">
+
+    <table>
+      <title>Global Table Stats</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
+| stats
+$statsmode$(nr_dirty) As nr_dirty,
+$statsmode$(nr_writeback) As nr_writeback,
+$statsmode$(nr_unstable) As nr_unstable,
+$statsmode$(nr_page_table_pages) As nr_page_table_pages,
+$statsmode$(nr_mapped) As nr_mapped,
+$statsmode$(nr_slab) As nr_slab,
+$statsmode$(pgpgin) As pgpgin,
+$statsmode$(pgpgout) As pgpgout,
+$statsmode$(pswpin) As pswpin,
+$statsmode$(pswpout) As pswpout,
+$statsmode$(pgalloc_high) As pgalloc_high,
+$statsmode$(pgalloc_normal) As pgalloc_normal,
+$statsmode$(pgalloc_dma32) As pgalloc_dma32,
+$statsmode$(pgalloc_dma) As pgalloc_dma,
+$statsmode$(pgfree) As pgfree,
+$statsmode$(pgactivate) As pgactivate,
+$statsmode$(pgdeactivate) As pgdeactivate,
+$statsmode$(pgfault) As pgfault,
+$statsmode$(pgmajfault) As pgmajfault,
+$statsmode$(pgrefill_high) As pgrefill_high,
+$statsmode$(pgrefill_normal) As pgrefill_normal,
+$statsmode$(pgrefill_dma32) As pgrefill_dma32,
+$statsmode$(pgrefill_dma) As pgrefill_dma,
+$statsmode$(pgsteal_high) As pgsteal_high, 
+$statsmode$(pgsteal_normal) As pgsteal_normal,
+$statsmode$(pgsteal_dma32) As pgsteal_dma32,
+$statsmode$(pgsteal_dma) As pgsteal_dma,
+$statsmode$(pgscan_kswapd_high) As pgscan_kswapd_high,
+$statsmode$(pgscan_kswapd_normal) As pgscan_kswapd_normal,
+$statsmode$(pgscan_kswapd_dma32) As pgscan_kswapd_dma32,
+$statsmode$(pgscan_kswapd_dma) As pgscan_kswapd_dma,
+$statsmode$(pgscan_direct_high) As pgscan_direct_high,
+$statsmode$(pgscan_direct_normal) As pgscan_direct_normal,
+$statsmode$(pgscan_direct_dma32) As pgscan_direct_dma32,
+$statsmode$(pgscan_direct_dma) As pgscan_direct_dma,
+$statsmode$(pginodesteal) As pginodesteal,
+$statsmode$(slabs_scanned) As slabs_scanned,
+$statsmode$(kswapd_steal) As kswapd_steal,
+$statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
+$statsmode$(pageoutrun) As pageoutrun,
+$statsmode$(allocstall) As allocstall,
+$statsmode$(pgrotated) As pgrotated,
+$statsmode$(nr_bounce) As nr_bounce</searchString>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="wrap">true</option>
+      <option name="rowNumbers">false</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">10</option>
+    </table>
+
+  </row>
+</form>

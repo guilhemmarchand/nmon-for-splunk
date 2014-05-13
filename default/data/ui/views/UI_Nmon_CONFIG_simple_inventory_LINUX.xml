@@ -1,0 +1,55 @@
+<form stylesheet="Home.css,singlevalue.css,ui_simple.css">
+  <label>NMON CONFIG, Linux Simple Inventory</label>
+  <description/>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="time" searchWhenChanged="true">
+      <default>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+  </fieldset>
+  <searchTemplate>`nmon_config_inventory` | where OStype="Linux"</searchTemplate>
+  <row>
+    <html>
+      <div class="custom">
+        <h1>Linux Inventory Summary</h1>
+      </div>
+    </html>
+  </row>
+  <row>
+    <single>
+      <searchPostProcess>stats count</searchPostProcess>
+      <option name="afterLabel">Linux Hosts known within this period</option>
+      <option name="beforeLabel">Found</option>
+    </single>
+  </row>
+	<row grouping="1,1">
+    <chart>
+      <title>Hosts by Nmon version</title>
+      <searchPostProcess>stats count by nmon_version</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>      
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+    </table>
+  </row>
+</form>

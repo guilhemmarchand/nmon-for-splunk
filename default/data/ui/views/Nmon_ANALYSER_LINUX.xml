@@ -1,0 +1,758 @@
+<form stylesheet="standard.css,singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON Analyser LINUX</label>
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" searchWhenChanged="true">
+      <label>TimeRange:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+      <choice value="">Inactive</choice>
+    </input>
+    
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Select a Host:</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>none</default>
+      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_data | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
+      </populatingSearch>
+    </input>
+
+  </fieldset>
+  <row>
+    <html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/logos/NMON_simplelogo.png"/>
+      </div>
+      <div style="text-align: center;">
+        <h1>Global Analysis per Host</h1>
+      </div>
+    </html>
+  </row>
+  
+  <row>
+    <html>
+      <div style="text-align: center;">
+        <h1>System Summary</h1>
+      </div>
+    </html>
+  </row>  
+  
+  <row>
+    <chart>
+      <title>CPU Usage</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$
+| eval lpar_vpconso=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) 
+| eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT)
+| stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname
+| eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso)
+| timechart `inline_customspan` max(conso) As "CPU Usage"</searchString>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">CPU Usage</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+    <chart>
+      <title>I/O Per second</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$
+| stats sum(value) As iosec by _time,hostname
+| timechart `inline_customspan` max(iosec) As "IO Per sec"</searchString>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">I/O per Sec</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>    
+  </row>
+
+  
+  <row>
+    <html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
+        <h1>CPU Usage Statistics</h1>
+      </div>
+    </html>
+  </row>
+    
+  <row grouping="3">
+  
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link1,link2">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+
+    <chart id="link1">
+      <title>CPU_ALL, % by category</title>
+	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` avg(Sys_PCT) As Sys_PCT, avg(User_PCT) As User_PCT, avg(Wait_PCT) As Wait_PCT, avg(Idle_PCT) As Idle_PCT</searchString> 
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">% CPUs</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.maximumNumber">100</option>
+    </chart>
+
+    <chart id="link2">
+      <title>CPU_ALL, % global usage</title>
+	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` max(cpu_PCT) As "%CPU Max Usage", avg(cpu_PCT) As "%CPU Avg Usage"</searchString> 
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">% CPUs</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.maximumNumber">100</option>
+    </chart>
+
+  </row>  
+
+
+  <row>
+    <html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="Process"/>
+        <h1>Process, Kernel, I/O Statistics</h1>
+      </div>
+    </html>
+  </row>  
+
+  <row grouping="6">
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link10,link11,link13,link14,link15">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link10">
+      <title>TOP, CPU Usage per logical core</title>
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+| eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit      
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval conso_per_core=(pct_CPU/100)
+| stats sum(conso_per_core) As conso_per_core by _time,Command
+| timechart `inline_customspan` useother=f limit=0
+max(conso_per_core) as "CPU Usage per core" by Command</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">stacked</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Logical Core</option>
+    </chart>
+
+    <chart id="link11">
+      <title>TOP, Memory Usage per command invocation</title>
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s
+| stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
+| eval Used_Mem_MB=((ResData+ResText)/1024)
+| stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
+| timechart `inline_customspan` useother=f limit=0
+max(Used_Mem_MB) as "Used_Memory" by Command</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+    </chart>
+
+    <chart id="link13">
+      <title>TOP, MinorFault per Command invocation</title>
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,MinorFault,PID,Command,hostname | bucket _time span=1s
+| stats sum(MinorFault) As MinorFault by _time,Command
+| timechart `inline_customspan` useother=f limit=0
+max(MinorFault) as "MinorFault" by Command</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Pages/sec</option>
+    </chart>
+
+    <chart id="link14">
+      <title>TOP, MajorFault per Command invocation</title>
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,MajorFault,PID,Command,hostname | bucket _time span=1s
+| stats sum(MajorFault) As MajorFault by _time,Command
+| timechart `inline_customspan` useother=f limit=0
+max(MajorFault) as "MajorFault" by Command</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Pages/sec</option>
+    </chart>
+
+    <chart id="link15">
+      <title>TOP, Shared library pages per Command invocation</title>
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,ShdLib,PID,Command,hostname | bucket _time span=1s
+| stats sum(ShdLib) As ShdLib By _time,Command
+| timechart `inline_customspan` useother=f limit=0
+max(ShdLib) as ShdLib by Command
+</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Pages/sec</option>
+    </chart>
+
+  </row>
+
+  <row grouping="4">
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link30,link31,link32">Select a view:<!--Links go here-->
+      </div>
+    </html>
+    
+    <chart id="link30">
+      <title>PROC, Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(Runnable) As "RunQueue", max(Swap_in) As "Swap_in"</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Value</option>
+    </chart>
+
+    <chart id="link31">
+      <title>PROC, Context switches and system calls (pswitch, syscall) </title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(pswitch) As "pswitch/sec", max(syscall) As "syscall/sec"</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Rates per Second</option>
+    </chart>
+
+    <chart id="link32">
+      <title>PROC, Fork and Exec system calls (fork, exec)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(fork) As "pswitch/sec", max(exec) As "exec/sec"</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Rates per Second</option>
+    </chart>
+
+  </row>
+  
+  <row grouping="3">
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link35,link36">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link35">
+      <title>VM, Pageins and pageouts (since last boot)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
+| timechart `inline_customspan`
+max(pgpgin) As pgpgin,
+max(pgpgout) As pgpgout</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+    <chart id="link36">
+      <title>VM, swapins and swapouts (since last boot)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
+| timechart `inline_customspan`
+max(pswpin) As pswpin,
+max(pswpout) As pswpout</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Pages</option>
+    </chart>
+
+  </row>
+
+
+
+  <row>
+    <html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/icons/grey_theme/memory.png" alt="Memory"/>
+        <h1>MEMORY Usage Statistics</h1>
+      </div>
+    </html>
+  </row>
+
+  <row grouping="3">
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link40,link41">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link40">
+      <title>MEM, Memory usage</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+| eval memused=round((memtotal-memfree),0)
+| timechart `inline_customspan` Max(memtotal) As memtotal, Max(memused) As memused</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+
+    <chart id="link41">    
+      <title>MEM, Swap usage</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ 
+| eval swapused=round((swaptotal-swapfree),0)
+| timechart `inline_customspan` Max(swaptotal) As swaptotal, Max(swapused) As swapused</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+
+  </row>
+
+
+  <row>
+    <html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="Drive"/>
+        <h1>DISKS and File-Systems Statistics</h1>
+      </div>
+    </html>
+  </row>
+  
+
+  <row grouping="6">
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link50,link51,link52,link53,link54">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link50">
+      <title>DISKBSIZE, Average data transfer size</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ | stats sum(value) As avg_transfer_size by _time | timechart `inline_customspan` max(avg_transfer_size) As avg_transfer_size</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">KBytes per transfer</option>
+    </chart>
+
+    <chart id="link51">
+      <title>DISKBUSY, Disk Busy Activity</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBUSY" $hostname$ | stats sum(value) As busy_time by _time | timechart `inline_customspan` max(busy_time) As busy_time</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">% Time Busy Disk</option>
+    </chart>
+
+    <chart id="link52">
+      <title>DISKREAD, Disk Read Data Rate</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD" $hostname$ | stats sum(value) As read_data_rate by _time | timechart `inline_customspan` max(read_data_rate) As read_data_rate</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">KBytes/Sec</option>
+    </chart>
+
+    <chart id="link53">
+      <title>DISKWRITE, Disk Write Data Rate</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE" $hostname$ | stats sum(value) As write_data_rate by _time | timechart `inline_customspan` max(write_data_rate) As write_data_rate</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">KBytes/Sec</option>
+    </chart>
+
+    <chart id="link54">
+      <title>DISKXFER, Disk I/O Operations per second (IOPS)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$ | stats sum(value) As IOPS by _time | timechart `inline_customspan` max(IOPS) As IOPS</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">I/O per Sec</option>
+    </chart>
+
+	</row>
+
+	<row grouping="2">	
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link55">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link55">
+      <title>JFSFILE, Percentage Usage of File-systems</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="JFSFILE" $hostname$ | timechart limit=0 useother=f `inline_customspan` avg(value) As pct_fs_used by device</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Percentage (%)</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.maximumNumber">100</option>	  
+    </chart>
+	
+	</row>
+	
+
+  <row>
+    <html>
+      <div style="text-align: center;">
+		  <img src="../../static/app/nmon/icons/grey_theme/network.png" alt="Network"/>
+        <h1>NETWORK Usage Statistics</h1>
+      </div>
+    </html>
+  </row>
+
+
+  <row grouping="3">
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link60,link61">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link60">
+      <title>NET - Network Interfaces Activity by Host</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ | eval rate=round((value/1000),2) | timechart limit=0 `inline_customspan` max(rate) As rate by device</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">MBps</option>
+    </chart>
+
+    <chart id="link61">
+      <title>NETPACKET - Number of read/write packets</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ | timechart limit=0 `inline_customspan` max(value) As value by device</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Number of Network Packets</option>
+    </chart>
+
+	</row>
+
+
+</form>

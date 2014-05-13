@@ -1,0 +1,177 @@
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON - DISKREAD/WRITE, Disk Read/Write Data Rate (Linux)</label>
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" searchWhenChanged="true">
+      <label>TimeRange:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+      <choice value="">Inactive</choice>
+    </input>
+
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Select a Host:</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>none</default>
+      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_data type=DISKREAD OR type=DISKWRITE | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
+      </populatingSearch>
+    </input>
+
+    <input type="dropdown" token="device" searchWhenChanged="true">
+      <label>Select Disks:</label>
+      <prefix>device="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+      <choice value="*">All</choice>
+      <populatingSearch fieldForValue="device" fieldForLabel="device">
+        <![CDATA[index=nmon sourcetype=nmon_data type=DISKREAD OR type=DISKWRITE $hostname$ | stats count by device | dedup device | sort device]]>
+      </populatingSearch>
+    </input>
+
+    <input type="radio" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>Max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+    </input>
+
+    <input type="radio" token="chart" searchWhenChanged="true">
+      <label>Select a type of chart:</label>
+      <default>line</default>
+      <choice value="area">Area</choice>
+      <choice value="line">Line (recommended)</choice>
+      <choice value="column">Column</choice>
+		<choice value="bar">Bar</choice>
+    </input>
+
+    <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <label>Select a stacking mode:</label>
+      <default>unstacked</default>
+      <choice value="stacked">stacked</choice>
+      <choice value="unstacked">unstacked (recommended)</choice>
+    </input>
+
+    <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <label>Missing Data:</label>
+      <default>gaps</default>
+      <choice value="gaps">Gaps</choice>
+      <choice value="connect">Connect</choice>
+      <choice value="zero">Zero</choice>
+    </input>
+    
+    <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+      <label>Legend placement:</label>
+      <default>bottom</default>
+      <choice value="bottom">Bottom</choice>
+      <choice value="top">Top</choice>
+      <choice value="left">left</choice>
+      <choice value="right">right</choice>
+      <choice value="center">center</choice>
+      <choice value="none">none</choice>
+    </input>    
+
+  </fieldset>
+
+  <row grouping="3">
+
+    <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
+      </div>
+    </html>
+
+    <chart id="link10">
+      <title>DISKREAD - Disk Read Data Rate</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD" $hostname$ $device$ | timechart limit=0 `inline_customspan` $statsmode$(value) As value by device</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">Kbytes/sec</option>
+    </chart>
+
+    <chart id="link11">
+      <title>DISKWRITE - Disk Write Data Rate</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE" $hostname$ $device$ | timechart limit=0 `inline_customspan` $statsmode$(value) As value by device</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisY.minimumNumber">0</option>      
+      <option name="charting.axisTitleY.text">Kbytes/sec</option>
+    </chart>
+
+  </row>
+  
+  <row>
+  
+    <table>
+      <title>DISKREAD - Disk Read Table Stats (Kbytes/sec)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As spk_read_maxvalue by device | eval avg_value=round(avg_value,2) | sort device</searchString>
+      <option name="wrap">true</option>
+      <option name="rowNumbers">true</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">10</option>
+      <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+      <format type="sparkline" field="spk_read_maxvalue">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>
+    </table>
+
+    <table>
+      <title>DISKWRITE - Disk Wite Table Stats (Kbytes/sec)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As spk_write_maxvalue by device | eval avg_value=round(avg_value,2) | sort device</searchString>
+      <option name="wrap">true</option>
+      <option name="rowNumbers">true</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">10</option>
+      <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+      <format type="sparkline" field="spk_write_maxvalue">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>
+    </table>
+    
+  </row>
+</form>

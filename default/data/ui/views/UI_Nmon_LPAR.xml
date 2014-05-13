@@ -1,0 +1,190 @@
+<form stylesheet="singlevalue.css,ui_simple.css">
+  <label>NMON - LPAR, Virtual CPU Usage</label>
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" searchWhenChanged="true">
+      <label>TimeRange:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>| search [ search `nmon_config` | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ search `nmon_config` | stats count by hostname | fields hostname ]">Any OS</choice>
+      <choice value="| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]">AIX</choice>
+      <choice value="| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+      <choice value="">Inactive</choice>
+    </input>
+        
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Select a Host:</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>none</default>
+      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_data type=LPAR | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
+      </populatingSearch>
+    </input>
+    <input type="radio" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max (recommended)</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+    </input>
+    <input type="radio" token="indicator" searchWhenChanged="true">
+      <label>Show CPU load by:</label>
+      <default>eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval limit=virtualCPUs</default>
+      <choice value="eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval limit=virtualCPUs">CPU Usage vs VirtualCPUs</choice>
+      <choice value="eval usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2) | eval limit=100">CPU Usage vs VirtualCPUs Percent Utilization</choice>
+      <choice value="eval usage=round(((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled/100),2) | eval limit=virtualCPUs">CPU Usage vs Entitled</choice>
+      <choice value="eval usage=round((((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled)/virtualCPUs),2) | eval limit=100">CPU Usage vs Entitled Percent Utilization</choice>
+    </input>
+    <input type="radio" token="addindicator" searchWhenChanged="true">
+      <label>Lpar additionnal Series:</label>
+      <default>none</default>
+      <choice value="">none</choice>
+      <choice value="max(entitled) As entitled">Entitled</choice>
+      <choice value="max(virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
+      <choice value="max(entitled) As entitled, max(virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
+    </input>
+    <input type="radio" token="chart" searchWhenChanged="true">
+      <label>Select a type of chart:</label>
+      <default>line</default>
+      <choice value="area">Area</choice>
+      <choice value="line">Line (recommended)</choice>
+      <choice value="column">Column</choice>
+		<choice value="bar">Bar</choice>
+    </input>
+    <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <label>Select a stacking mode:</label>
+      <default>unstacked</default>
+      <choice value="stacked">stacked</choice>
+      <choice value="unstacked">unstacked (recommended)</choice>
+    </input>
+    <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <label>Missing Data:</label>
+      <default>gaps</default>
+      <choice value="gaps">Gaps</choice>
+      <choice value="connect">Connect</choice>
+      <choice value="zero">Zero</choice>
+    </input>    
+    <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+      <label>Legend placement:</label>
+      <default>bottom</default>
+      <choice value="bottom">Bottom</choice>
+      <choice value="top">Top</choice>
+      <choice value="left">left</choice>
+      <choice value="right">right</choice>
+      <choice value="center">center</choice>
+      <choice value="none">none</choice>
+    </input>    
+    
+
+  </fieldset>
+  <row>
+    <chart>
+      <title>LPAR Virtual CPU Load</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso, $addindicator$</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+		<option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Virtual CPUs</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+  </row>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0</searchTemplate>
+  <row>
+    <chart>
+      <title>Higher CPU Load</title>
+      <searchPostProcess>stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">radialGauge</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+      <option name="height">200px</option>
+    </chart>
+    <chart>
+      <title>Average CPU Load</title>
+      <searchPostProcess>stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">radialGauge</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+      <option name="height">200px</option>
+    </chart>
+    <chart>
+      <title>Min CPU Load</title>
+      <searchPostProcess>stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | $indicator$ | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">radialGauge</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+      <option name="height">200px</option>
+    </chart>
+  </row>
+  <row>
+    <single>
+      <searchPostProcess>stats max(conso) As max by _time | sort - max | eval time=strftime(_time, "%m/%d/%Y %H:%M") | fields time</searchPostProcess>
+      <option name="beforeLabel">Date of first higher load:</option>
+      <option name="linkView">search</option>
+    </single>
+    <single>
+      <searchPostProcess>stats avg(conso) As avg | eval avg=round(avg,2)</searchPostProcess>
+      <option name="beforeLabel">Average load:</option>
+      <option name="afterLabel">CPUs</option>
+      <option name="linkView">search</option>
+    </single>
+    <single>
+      <searchPostProcess>stats min(conso) As min | eval min=round(min,2)</searchPostProcess>
+      <option name="beforeLabel">Minimal load:</option>
+      <option name="afterLabel">CPUs</option>
+      <option name="linkView">search</option>
+    </single>
+  </row>
+</form>

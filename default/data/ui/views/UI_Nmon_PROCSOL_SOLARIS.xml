@@ -1,0 +1,202 @@
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON - PROCSOL, Percentage of Time Processes have spent in (Solaris)</label>
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" searchWhenChanged="true">
+      <label>TimeRange:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Select a Host:</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>none</default>
+      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_data type=PROCSOL | stats count by hostname | dedup hostname | sort hostname]]>
+      </populatingSearch>
+    </input>
+
+    <input type="radio" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>Max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+    </input>
+
+    <input type="radio" token="chart" searchWhenChanged="true">
+      <label>Select a type of chart:</label>
+      <default>line</default>
+      <choice value="area">Area</choice>
+      <choice value="line">Line (recommended)</choice>
+      <choice value="column">Column</choice>
+		<choice value="bar">Bar</choice>
+    </input>
+
+    <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <label>Select a stacking mode:</label>
+      <default>unstacked</default>
+      <choice value="stacked">stacked</choice>
+      <choice value="unstacked">unstacked (recommended)</choice>
+    </input>
+
+    <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <label>Missing Data:</label>
+      <default>gaps</default>
+      <choice value="gaps">Gaps</choice>
+      <choice value="connect">Connect</choice>
+      <choice value="zero">Zero</choice>
+    </input>
+    
+    <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+      <label>Legend placement:</label>
+      <default>bottom</default>
+      <choice value="bottom">Bottom</choice>
+      <choice value="top">Top</choice>
+      <choice value="left">left</choice>
+      <choice value="right">right</choice>
+      <choice value="center">center</choice>
+      <choice value="none">none</choice>
+    </input>
+
+  </fieldset>
+  
+  <row>
+
+    <chart>
+      <title>Percentage of Time All processes have spent in: (estimation since terminated processes are not accounted)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROCSOL" $hostname$ | timechart `inline_customspan`
+$statsmode$(USR) As "USR (%time in User Mode)",
+$statsmode$(SYS) As "SYS (%time in System Mode)",
+$statsmode$(TRP) As "TRP (%time Processing system traps)",
+$statsmode$(TFL) As "TFL (%time Processing text page faults)",
+$statsmode$(DFL) As "DFL (%time Processing data page faults)",
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)"</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">$chart$</option>
+      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">% Of Time</option>
+    </chart>
+
+  </row>
+
+  <row>  
+
+	<html>
+
+		<div style="text-aligne: left;">	
+	
+		<h1>Statistics Table:</h1>
+		
+		</div>
+	
+	</html>
+
+  </row>  
+
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="PROCSOL" $hostname$ | stats
+$statsmode$(USR) As "USR (%time in User Mode)", sparkline($statsmode$(USR)) As "spk_USR",
+$statsmode$(SYS) As "SYS (%time in System Mode)", sparkline($statsmode$(SYS)) As "spk_SYS",
+$statsmode$(TRP) As "TRP (%time Processing system traps)", sparkline($statsmode$(TRP)) As "spk_TRP",
+$statsmode$(TFL) As "TFL (%time Processing text page faults)", sparkline($statsmode$(TFL)) As "spk_TFL",
+$statsmode$(DFL) As "DFL (%time Processing data page faults)", sparkline($statsmode$(DFL)) As "spk_DFL",
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) As "spk_LAT"</searchTemplate> 
+
+  <row>  
+
+    <table>
+      <title></title>
+
+  		<searchPostProcess>fields "USR (%time in User Mode)", "spk_USR","SYS (%time in System Mode)", "spk_SYS","TRP (%time Processing system traps)","spk_TRP"</searchPostProcess> 
+
+      <option name="wrap">true</option>
+      <option name="rowNumbers">false</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">10</option>
+
+      <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+      <format type="sparkline" field="spk_USR">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>
+
+      <format type="sparkline" field="spk_SYS">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>
+
+      <format type="sparkline" field="spk_TRP">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>
+
+    </table>
+
+	</row>
+	
+	<row>
+
+    <table>
+      <title></title>
+
+  		<searchPostProcess>fields, "TFL (%time Processing text page faults)", "spk_TFL", "DFL (%time Processing data page faults)", "spk_DFL", "LAT (%time Waiting for CPU)", "spk_LAT"</searchPostProcess>
+
+      <option name="wrap">true</option>
+      <option name="rowNumbers">false</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">10</option>
+
+      <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+
+      <format type="sparkline" field="spk_TFL">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>
+
+      <format type="sparkline" field="spk_DFL">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>
+      
+      <format type="sparkline" field="spk_LAT">
+        <option name="lineColor">#5379af</option>
+        <option name="fillColor">#CCDDFF</option>
+        <option name="lineWidth">1</option>
+        <option name="height">25px</option>
+      </format>      
+
+    </table>
+
+
+  </row>
+  
+</form>

@@ -1,0 +1,278 @@
+{% extends "System_body.html" %}
+
+{% load splunkmvc %}
+{% load splunk_wftoolkit %}
+
+5: {% block title %}NMON Application Statistics{% endblock title %}
+
+{% block css %}
+{{block.super}}
+<style type="text/css">
+
+</style>
+{% endblock css %}
+
+
+{% block heading %}
+	
+	<div class="customimgheader">
+	
+	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.png" alt="Nmon"/>	
+	<h1>NMON Application Internal Statistics</h1>
+
+	</div>
+	
+{% endblock heading %}
+
+{% block usage%}
+		
+	<p></p>
+	{% timerange id="main-timerange" 
+	managerid="search" 
+	preset="Last 24 hours"
+   earliest_time="$earlyval$"|token_safe
+   latest_time="$lateval$"|token_safe %}                
+	<p></p>                
+	
+{% endblock usage%}
+
+{% block eventcount%}
+
+	<div style="text-align: center;">
+
+	<h2>Eventcount Statistics : Number of Events and Index Sizes</h2>	
+	
+	</div>		
+		
+		{% table 
+            id="eventcount-table" 
+            managerid="eventcount-search"
+            resizable="true"
+            drilldown="cell"
+            pageSize="20" %}
+	
+{% endblock eventcount%}
+
+
+{% block metric%}
+
+	<div style="text-align: center;">
+
+	<h2>Metric Statistics : Indexing volumes (MB)</h2>	
+	
+	</div>		
+		
+		{% table 
+            id="metric-table" 
+            managerid="metric-search"
+            resizable="true"
+            drilldown="cell"
+            pageSize="20" %}
+	
+{% endblock metric%}
+
+
+{% block metric-timechart%}
+
+	<div style="text-align: center;">
+
+	<h2>Indexing volumes over time (MB)</h2>	
+	
+	</div>		
+		
+		{% chart 
+            id="metric-chart" 
+            managerid="metric-timechartsearch"
+            resizable="true"
+            drilldown="all"
+            type="column"
+            height="350px" %}
+	
+{% endblock metric-timechart%}
+
+{% block metadata%}
+
+	<div style="text-align: center;">
+
+	<h2>Metadata Statistics : Indexes first and last event dates</h2>	
+	
+	</div>		
+		
+		{% table 
+            id="metadata-table" 
+            managerid="metadata-search"
+            resizable="true"
+            drilldown="cell"
+            pageSize="20" %}
+	
+{% endblock metadata%}
+
+
+{% block hitsperpage%}
+
+	<div style="text-align: center;">
+
+	<h2>Application Activity : Number of hits per page</h2>	
+	
+	</div>		
+		
+		{% chart 
+            id="hitsperpage-chart" 
+            managerid="hitsperpage-chart-search"
+            resizable="true"
+            drilldown="all"
+            type="column"
+            height="500px" %}
+	
+	<div style="text-align: center;">
+
+	<p></p>
+	<h2>Application Activity : Popular views</h2>	
+	
+	</div>		
+		
+		{% table 
+            id="hitsperpage-table" 
+            managerid="hitsperpage-table-search"
+            resizable="true"
+            drilldown="cell"
+            pageSize="20" %}
+	
+	
+{% endblock hitsperpage%}
+
+
+{% block scheduler%}
+
+	<div style="text-align: center;">
+
+	<h2>Scheduler Activity : Number of jobs over time</h2>	
+	
+	</div>		
+		
+		{% chart 
+            id="scheduler-chart" 
+            managerid="scheduler-chart-search"
+            resizable="true"
+            drilldown="all"
+            type="column"
+            height="500px" %}
+
+{% endblock scheduler%}
+
+
+{% block managers %}
+
+<!-- #########################################################################	MAIN SEARCHES	######################################################################### -->	
+	
+<!-- Event Count -->	
+		
+	{% searchmanager
+		id="eventcount-search"
+		search='| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, "Size (MB)", "Millions of Events"'|token_safe
+		preview=True
+		cache=True %}
+
+<!-- Metadata -->
+
+	{% searchmanager
+		id="metadata-search"
+		search='| `indexes_datestats`'
+		preview=True
+		cache=False %}
+
+<!-- Metric -->
+
+	{% searchmanager
+		id="metric-search"
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="$earlyval$" latest="$lateval$" | eval MB = round(kb/1024,2) | bucket _time span=1d | rename series As index | stats avg(MB) as avg, max(MB) As "Max (MB)", sum(MB) As "Total (MB)" by _time,index | sort - _time | eval avg=round(avg,2) | rename avg As "Average (MB)"'|token_safe
+		preview=True
+		cache=True %}
+	
+	{% searchmanager
+		id="metric-timechartsearch"
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="$earlyval$" latest="$lateval$" | eval MB = round(kb/1024,2) | timechart limit=0 useother=f sum(MB) by series | fillnull value=0'|token_safe
+		preview=True
+		cache=True %}
+	
+<!-- Application Activity -->
+
+<!-- Hits per page -->
+
+	{% searchmanager
+		id="hitsperpage-search"
+		search='index=_internal earliest="$earlyval$" latest="$lateval$" sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home*'|token_safe
+		preview=True
+		cache=True %}
+
+	{% postprocessmanager
+		id="hitsperpage-chart-search"
+		managerid="hitsperpage-search"
+		search=' | timechart limit=45 useother=f count by file' %}
+
+	{% postprocessmanager
+		id="hitsperpage-table-search"
+		managerid="hitsperpage-search"
+		search='| top 1000 file | eval percent=round(percent,2)' %}
+
+<!-- Scheduler Activity for the Application -->
+
+	{% searchmanager
+		id="scheduler-chart-search"
+		search='index=_internal earliest="$earlyval$" latest="$lateval$" host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app'|token_safe
+		preview=True
+		cache=True %}
+
+{% endblock managers %}
+
+
+
+{% block js %}
+{{ block.super }}
+<script>
+    require([
+        "splunkjs/ready!", 
+        "splunkjs/mvc/utils",
+        "underscore",
+        "jquery",
+        "splunkjs/mvc/dropdownview"		
+        ], 
+        function(
+            mvc, 
+            utils,
+            _, 
+            $,
+            DropdownView
+        		){
+				
+			
+				splunkjs.mvc.Components.getInstance("metric-chart").settings.set({
+				"charting.axisY.minimumNumber": "0",
+				"charting.legend.placement": "bottom",
+				"charting.axisTitleX.text": "Time",
+				"charting.axisTitleY.text": "Volume (MB)",
+				"charting.chart.nullValueMode": "gaps",
+				"charting.chart.stackMode": "stacked",
+				});									
+
+				splunkjs.mvc.Components.getInstance("hitsperpage-chart").settings.set({
+				"charting.axisY.minimumNumber": "0",
+				"charting.legend.placement": "bottom",
+				"charting.axisTitleX.text": "Time",
+				"charting.axisTitleY.text": "Nbr of Hits per page",
+				"charting.chart.nullValueMode": "gaps",
+				"charting.chart.stackMode": "stacked",				
+				});
+				
+				splunkjs.mvc.Components.getInstance("scheduler-chart").settings.set({
+				"charting.axisY.minimumNumber": "0",
+				"charting.legend.placement": "bottom",
+				"charting.axisTitleX.text": "Time",
+				"charting.axisTitleY.text": "Jobs",
+				"charting.chart.nullValueMode": "gaps",
+				"charting.chart.stackMode": "unstacked",				
+				});
+				
+    });
+</script>
+{% endblock js %}
