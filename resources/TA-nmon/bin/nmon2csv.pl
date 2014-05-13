@@ -3,9 +3,10 @@
 # Purpose - convert nmon.csv file(s) into csv file
 # Author - Guilhem Marchand with code partially based on Bruce Spencer's perl mysql convert script
 # Disclaimer:  this provided "as is".  
-# Date - March 2014
+# Date - May 2014
+# Modified by Barak Griffis 05/06/2014
 #
-$nmon2csv_ver="1.0.4 May 2014";
+$nmon2csv_ver="1.0.5 May 2014";
 
 use Time::Local;
 
@@ -17,18 +18,31 @@ use Time::Local;
 # Default Environment Variable SPLUNK_HOME, this shall be automatically defined if as the script shall be launched by Splunk
 my $SPLUNK_HOME=$ENV{SPLUNK_HOME};
 
-# Application dir name
-my $APP="TA-nmon";
+my $APP="";
+
+if ( $SPLUNK_HOME =~ /.*splunkforwarder.*/) {
+	$APP="$SPLUNK_HOME/etc/apps/TA-nmon";	
+}elsif (-d "/opt/splunk/etc/slave-apps/_cluster" ){
+	$APP="$SPLUNK_HOME/etc/slave-apps/PA-nmon";
+}else{
+	$APP="$SPLUNK_HOME/etc/apps/nmon";
+}
+
+if ( ! -d "$APP/var" ) { mkdir "$APP/var"; }
 
 # Spool directory for NMON files processing
-my $SPOOL_DIR="$SPLUNK_HOME/etc/apps/$APP/var/spool";
+my $SPOOL_DIR="$APP/var/spool";
+if ( ! -d "$SPOOL_DIR" ) { print("Making $SPOOL_DIR");mkdir "$SPOOL_DIR"; }
 
 #  Output directory of csv files to be consummated by Splunk
-my $OUTPUT_DIR="$SPLUNK_HOME/etc/apps/$APP/var/csv_repository";
-my $OUTPUTCONF_DIR="$SPLUNK_HOME/etc/apps/$APP/var/config_repository";
+my $OUTPUT_DIR="$APP/var/csv_repository";
+if ( ! -d "$OUTPUT_DIR" ) { mkdir "$OUTPUT_DIR"; }
+
+my $OUTPUTCONF_DIR="$APP/var/config_repository";
+if ( ! -d "$OUTPUTCONF_DIR" ) { mkdir "$OUTPUTCONF_DIR"; } 
 
 # sha1sum file referencing known NMON file
-my $MD5SUM_REF="$SPLUNK_HOME/etc/apps/$APP/var/md5sum_reference.txt";
+my $CKSUM_REF="$APP/var/cksum_reference.txt";
 
 ####################################################################
 #############		Main Program 			############
@@ -66,26 +80,25 @@ while (<STDIN>) {
 close $fh;
 
 ###################################################################################################################################
-# MD5SUM
+# CKSUM
 
-# Compute MD5SUM of file to avoid Splunk duplicating data by relaunching multiple times this script
+# Compute CKSUM of file to avoid Splunk duplicating data by relaunching multiple times this script
 
 # Open temp nmon
 open FILE, $file or die "can't open file!";
 
-# Compute md5sum
+# Compute cksum
 
-my $md5_hash = `cat $file | md5sum | awk '{print \$1}'`;
+my $cksum_hash = `cat $file | cksum | awk '{print \$1}'`;
 
-print "NMON file md5sum: $md5_hash";
+print "NMON file cksum: $cksum_hash";
 
-# Open MD5SUM_REF file
-open(MD5,$MD5SUM_REF);
+# Open CKSUM_REF file
+open(CKSUM,$CKSUM_REF);
 
+# If cksum is found in CKSUM_REF, no need to go, else continue and save cksum
 
-# If md5sum is found in MD5SUM_REF, no need to go, else continue and save md5sum
-
-if (grep{/$md5_hash/} <MD5>){
+if (grep{/$cksum_hash/} <CKSUM>){
 
    print "Process done.\n";
    
@@ -94,22 +107,23 @@ if (grep{/$md5_hash/} <MD5>){
 	exit;
 
 }else{
-   print "md5sum unknown, let's convert data.\n";
+   print "cksum unknown, let's convert data.\n";
 
-	# Save md5sum
+	# Savecksum
 	
 	# Open for writing
-		unless (open(MD5, ">>$MD5SUM_REF")) { 
-		die("Can not open $$MD5SUM_REF\n"); 
+		unless (open(CKSUM, ">>$CKSUM_REF")) { 
+		die("Can not open $$CKSUM_REF\n"); 
 		}
 	
-		print (MD5 $md5_hash."\n");
-		close MD5;   
+		print (CKSUM $cksum_hash."\n");
+		close CKSUM;   
 }
 
-close MD5;
+close CKSUM;
 
 ###################################################################################################################################
+
 
 
 

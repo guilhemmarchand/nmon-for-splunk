@@ -49,7 +49,7 @@
    See the License for the specific language governing permissions and<br/>
    limitations under the License.<br/>
 	<br/>
-nmon release 1.1.6<br/>
+nmon release 1.1.7<br/>
 </p>
 
 	</html>
@@ -1032,7 +1032,7 @@ NMON conversion treatment can be checked with request over "nmon" index and "nmo
 <br />
 
 <code>
-		index="nmon" sourcetype="nmon_processing" | stats count by _time,source,md5sum
+		index="nmon" sourcetype="nmon_processing" | stats count by _time,source,*sum
 </code>		
 
 <br />
@@ -1059,14 +1059,14 @@ Because the Splunk archive processor manages itself NMON files (watch for them a
 a side effect of this was in first App versions resulting in the third party script being called multiple times by Splunk,
 and the data to be indexed being generated multiple times.
 
-To deal with this, a built-in md5sum feature had been included in the third party script.
+To deal with this, a built-in cksum feature had been included in the third party script.
 <br />
 <br />
-For each copy of an NMON file, an md5sum key is added to the file $SPLUNK_HOME/etc/apps/nmon/var/md5sum_reference.txt.
+For each copy of an NMON file, an cksum key is added to the file $SPLUNK_HOME/etc/apps/nmon/var/cksum_reference.txt.
 
-Before generating data, the third party script will check if an md5sum key exists, if it does, the script won't generate any new data.
+Before generating data, the third party script will check if an cksum key exists, if it does, the script won't generate any new data.
 <br />
-The md5sum key / NMON file association can be checked within the nmon index / processing sourcetype. (see above)
+The cksum key / NMON file association can be checked within the nmon index / processing sourcetype. (see above)
 <br />
 
 <h3>If you need to re-index NMON data, you can proceed as follows:</h3>
@@ -1078,7 +1078,7 @@ Stop Splunk
 </li>
 
 <li>
-Delete $SPLUNK_HOME/etc/apps/nmon/var/md5sum_reference.txt
+Delete $SPLUNK_HOME/etc/apps/nmon/var/cksum_reference.txt
 </li>
 
 <li>
@@ -1233,11 +1233,7 @@ This is a standard perl script with no uncommon perl requirement
 <br />
 
 <li>
-<b>- nmon_for_linux.sh:</b> third party script to collect NMON data for Linux indexer or forwarder
-</li>
-
-<li>
-<b>- nmon_for_solaris.sh:</b> third party script to collect NMON data for Solaris indexer or forwarder
+<b>- nmon_helper.sh:</b> third party script to collect NMON data for AIX / Linux / Solaris indexer or forwarder
 </li>
 
 <li>
