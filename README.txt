@@ -17,7 +17,7 @@ Copyright 2014 Guilhem Marchand
 
 ReadMe
 
-nmon release 1.1.7
+nmon release 1.1.8
 
 #Welcome in Splunk for NMON, Performance Monitor for Unix and Linux Systems#
 
@@ -113,9 +113,12 @@ Sarmon site for Solaris version has also a very nice description of NMON Metrics
 
 		index="nmon" sourcetype="nmon_config"
 
+##Installing NMON (recommended for Linux, optional for Solaris, required for AIX)##
 
-##Installing NMON##
+Beginning with Version 1.1.8, NMON App (and Forwarder version) comes with Linux and Solaris (sparc and X86) NMON prepackages versions. 
 
+If the "nmon" binary for Linux or "sadc" binary for Solaris is not found within $PATH, then the App will use prepackages versions. NMON for AIX should some installed in default configuration. 
+You can also (and this recommended for Linux to be sure you have the better NMON version for your distribution) install NMON: 
 Installing NMON is out of the scope of this document, here are some links which should help installing NMON for your OS: 
 
 ###AIX NMON Installation:###
@@ -159,7 +162,7 @@ Depending on your nmon command settings, a huge amount of data may be generated 
 
 ###PERL environment: The third party script required a standard and functional perl environment, thus no additional library are required###
 
-###NMON installation: Only if you intend to collect NMON data using Splunk (see sections below)###
+###NMON installation: See section below, optional but recommended for Linux, optional for Solaris and required for AIX###
 
 Nothing else is required, this App can be used with a free Splunk licence without any limitation, but as said above remember a very large amount of data may have to be indexed. 
 
