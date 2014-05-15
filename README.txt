@@ -17,7 +17,7 @@ Copyright 2014 Guilhem Marchand
 
 ReadMe
 
-nmon release 1.1.8
+nmon release 1.1.10
 
 #Welcome in Splunk for NMON, Performance Monitor for Unix and Linux Systems#
 
