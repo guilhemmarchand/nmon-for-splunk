@@ -49,7 +49,7 @@
    See the License for the specific language governing permissions and<br/>
    limitations under the License.<br/>
 	<br/>
-nmon release 1.1.10<br/>
+nmon release 1.2.0<br/>
 </p>
 
 	</html>
@@ -91,18 +91,23 @@ nmon release 1.1.10<br/>
 <p>
 NMON is short for Nigel's Performance Monitor and is available on AIX Systems, Solaris (with Sarmon), Linux and now ARM Systems.
 <br/>
-This is a great all in one Performance Monitor tool that gives a large amount of system performance informations and can be used in different scenarios.
+This is a great all in one Performance Monitor tool which provides a very large amount of system performance informations and can be used in different scenarios.
 <br/>
 <br/>
-It first can be used for Realtime monitoring within a terminal by simply issuing the "nmon" command, giving you access to many system informations within a single screen.
+The classical way to use NMON, running the "nmon" command in terminal, opens a Real time monitoring interface, giving you access to many system informations within a single screen:
 <br/>
 
 <br />
 <img src="../../static/app/nmon/various/nmon_screen.png" alt="Nmon" />
 <br />
 
+<br />
+<img src="../../static/app/nmon/various/nmon_screen2.png" alt="Nmon2" />
+<br />
+
+
 <br/>
-Beyond RealTime Analysis, NMON is very often used as a Capacity Planning tool by running NMON in csv generating mode all along it's run time, for later cold Analyse.
+Beyond this terminal interface, NMON is very often used as a Capacity Planning and Performance tool by running NMON in csv generating mode all along it's run time, for later cold Analyse.
 </p>
 
 
@@ -119,7 +124,8 @@ Here are some useful links about NMON:
 
 <a href="http://nmon.sourceforge.net/pmwiki.php">http://nmon.sourceforge.net/pmwiki.php</a>
 
-<br/>
+<br />
+<br />
 
 <a href="http://www.ibm.com/developerworks/aix/library/au-analyze_aix">http://www.ibm.com/developerworks/aix/library/au-analyze_aix</a>
 
@@ -174,14 +180,28 @@ Once indexed, NMON Data will be ready to be analysed within any available views
 <h2>You can verify NMON workflow indexing by requesting on index with nmon processing sourcetype:</h2>
 
 <code>
+    	index="nmon" sourcetype="nmon_collect"
+</code>
+
+<h2>And:</h2>
+
+<code>
     	index="nmon" sourcetype="nmon_processing"
 </code>
 
 <br />
 <br />
+The "nmon_collect" sourcetype contains iteration of nmon command launched by Splunk, if you collect NMON performance data in your host.
+<br />
+
+<br />
+<br />
+The "nmon_collect" sourcetype contains outputs of the nmon2csv.pl perl script which converts NMON files to csv files eaten by Splunk.
 This will output the NMON file processing timestamp that has been threaten by Splunk. (identified by standard "source" field)
 <br />
 The real data itself will be identified by it's "type" field and indexed in "nmon" Splunk index, currently here are NMON sections (type field) threaten by the third party script:
+
+<br />
 <br />
 
 <lu>
@@ -249,13 +269,13 @@ The real data itself will be identified by it's "type" field and indexed in "nmo
 
 <h2>Installing NMON (recommended for Linux, optional for Solaris, required for AIX)</h2>
 
-Beginning with Version 1.1.8, NMON App (and Forwarder version) comes with Linux and Solaris (sparc and X86) NMON prepackages versions.
+Beginning with Version 1.1.8, NMON App (and Forwarder TA-nmon version) comes with Linux and Solaris (sparc and X86) NMON pre-packages versions.
 
 <br />
 <br />
 
 If the "nmon" binary for Linux or "sadc" binary for Solaris is not found within $PATH, then the App will use prepackages versions.
-NMON for AIX should some installed in default configuration.
+NMON for AIX should be installed in default configuration today, if the nmon binary isn't found in path, an error message will be shown
 
 <br />
 
@@ -300,7 +320,7 @@ Splunk call when required the third party script which will convert NMON data in
 Beyond this, NMON data takes great advantage of Splunk intelligence to exploit this large amount of technical data.
 <br />
 This Application comes as it is, with absolutely no warranty.
-Still i think and hope you will find this very very useful and will answer to your need.
+Still i think and hope you will find this very useful and will answer to your needs.
 <br />
 <br />
 Do not hesitate to contact me if you have any further question or comment, any feedback will be greatly appreciated !
@@ -367,6 +387,16 @@ Nothing else is required, this App can be used with a free Splunk licence withou
 <h1>3. INSTALLATION</h1>
 
 <p>
+Please note that only the standard Application installation is covered in this section. (the one you download from Splunk Base)
+<br />
+
+A specific version "TA-nmon" for Splunk Universal Forwarder, and a specific version "PA-nmon" for Cluster Peer nodes are available within "resources" directory of the App.
+<br />
+Installation of these Apps are covered in Deployment scenarios section.
+
+</p>
+
+<p>
 
 <h2>Splunk for NMON installation is very easy to achieve as for any standard Splunk application:</h2>
 
@@ -409,7 +439,7 @@ The nmon2scv generates csv files within the directory "/opt/splunk/etc/apps/nmon
 </lu>
 
 
-<h2>NOTE: Path above are full path i could not yet adapt them with environment variables, if you have a non standard Splunk Home installation, please copy settings from:</h2>
+<h2>NOTE: Path above are full path as they cannot be relative or variable paths, if you have a non standard Splunk Home installation, please copy settings from:</h2>
 
 <lu>
 
@@ -454,9 +484,10 @@ Please keep in mind than converting and indexing NMON files will temporarily hav
 
 
 <br />
-<h1>Scenario 1 "Distributed Environment": Splunk indexer(s) And Splunk Forwarders Agents used to collect Nmon data on servers</h1>
+<h1>Scenario 1 "Simple Distributed Environment": Splunk indexer And Splunk Forwarders Agents used to collect Nmon data on servers, Forwarder being deployed by a Splunk Deployment server</h1>
 
-<h2>In this scenario, Splunk indexer(s) will collect NMON Metrics data from clients servers using Splunk Forwarders.
+<h2>In this scenario, A single Splunk indexer will collect NMON Metrics data from clients servers using Splunk Forwarders
+
 <br />
 Indexers themselves will collect local NMON Data.</h2>
 
@@ -466,18 +497,16 @@ Indexers themselves will collect local NMON Data.</h2>
 <br />
 <br />
 
-<h3>Step 1: Activate local Nmon data collect in Splunk indexers</h3>
+<h2>STEP 1: Activate local Nmon data collect in Splunk indexer</h2>
 
 <br />
 
 <p>
 
-You will probably want to be able to have Usage statistics of Splunk indexer(s) themselves.
-<br />
 
 <br />
 
-<h3>At installation time, activate the input accorded to your local OS type:</h3>
+<h3>At installation time, activate the input Nmon data collect:</h3>
 
 <br />
 
@@ -515,7 +544,7 @@ Change "disabled = true" to "false", and restart Splunk.
 
 
 <br />
-<h3>Step 2: Enable Receiving input on the Index Server</h3>
+<h2>STEP 2: Enable Receiving input on the Index Server</h2>
 
 <p>
 
@@ -547,7 +576,7 @@ Where 9997 (default) is the receiving port for Splunk Forwarder connections
 
 
 <br />
-<h3>Step 3: Prepare your package to be deployed</h3>
+<h2>STEP 3: Prepare your package to be deployed</h2>
 
 <br />
 
@@ -599,7 +628,7 @@ edit /opt/splunk/etc/deployment-apps/TA-nmon/local/outputs.conf
 
 
 <br />
-<h3>Step 4: Activate and Configure the Splunk Deployment server</h3>
+<h2>STEP 4: Activate and Configure the Splunk Deployment server</h2>
 
 <p>
 
@@ -670,7 +699,7 @@ You should see 2 Applications and Classes:
 <br />
 <br />
 
-<img src="../../static/app/nmon/various/splunk_forwarder_manage1.png" alt="Settings2" />
+<img src="../../static/app/nmon/various/splunk_forwarder_manage2.png" alt="Settings2" />
 
 <br />
 <br />
@@ -685,7 +714,7 @@ You should see 2 Applications and Classes:
 <br />
 <br />
 
-<h3>Step 5: Clients Forwarders Installation and configuration</h3>
+<h2>STEP 5: Clients Forwarders Installation and configuration</h2>
 
 <p>
 
@@ -730,7 +759,7 @@ To start the forwarder:
 <br />
 
 <code>
-		/opt/splunkforwarder/splunk start
+		/opt/splunkforwarder/bin/splunk start
 </code>
 
 </p>
@@ -793,7 +822,7 @@ splunk restart
 <br />
 <br />
 
-<h3>FINAL: Check your clients deployments:</h3>
+<h2>FINAL: Check your clients deployments:</h2>
 
 <p>
 
@@ -811,22 +840,577 @@ Congratulations :-)
 <img src="../../static/app/nmon/various/splunk_forwarder_manage3.png" alt="Settings3" />
 
 
+</p>
+
+
+
+<br />
+<br />
+
+
+<br />
+<h1>Scenario 2 "Cluster Distributed Environment": Each member of Splunk Cluster (master, peers, deployment server and search heads) will be monitored using Nmon, Cluster clients will have the Forwarder App deployed to collect Nmon data and send them to Cluster</h1>
+
+<br />
+
+<img src="../../static/app/nmon/various/Basic_cluster_60.png" alt="Basic Cluster" />
+
+<br />
+<br />
+
+
+<h2>
+This scenario is a full Cluster and Clients Splunk implementation taking the benefit of Nmon Performance Monitor, things will work as follows:</h2>
+
+<br />
+
+<p>
+Please note the following configuration can be adapted to whatever you need or prefer.
+</p>
+
+<lu>
+
+<li>You have a functional Splunk cluster running: master node, peers nodes, heads searches and a deployment server</li>
+<br />
+
+<li>Manually deploy the "PA-nmon" Application to the master node (thus the PA-nmon could be deployed by the deployment server, this introduces more complication than interest)</li>
+<br />
+
+<li>The master node will deploy the bundle configuration (containing the PA-nmon App) to all of its peers nodes (also known as indexers)</li>
+<br />
+
+<li>Upon bundle configuration update, each peer node will automatically generate and collect Nmon data to the replicated nmon Index</li>
+<br />
+
+<li>The deployment server deploys the "TA-nmon" Application to Forwarders (for clients and non peers members of the cluster)</li>
+<br />
+
+<li>The standard Nmon Application is installed in all search head nodes of the Cluster (but don't generate and collect Nmon data themselves)</li>
+<br />
+
+<li>On master node, head search nodes and Deployment Server a Splunk Forwarder will be installed (and linked to the Deployment Server) to collect Nmon data of these hosts, and send them to the replicated index</li>
+<br />
+
+<li>Each piece of the Cluster has Nmon performance data available and searchable, in such a way you will be able to analyse system load of every Cluster members and clients</li>
+<br /> 
+
+
+</lu>
+
+<br />
+
+<lu>
+
+<h2>Additional Notes:</h2>
+
+<li>In this configuration scenario, performance data collecting will be achieved by peers node running the TA-nmon application</li>
+<br />
+
+<li>When a peer node indexes data, these data will be available and searchable for all the cluster, so performance data on peers node will achieved with no additional operation</li>
+<br />
+
+<li>Because master node, head search nodes and deployment server are not designed to index data, we will install the universal Splunk Forwarder in each non peers node, and deploy the TA-nmon App (as for any standard client)</li>
+<br />
+
+<li>Every Forwarder will be managed by the Deployment Server, and the TA-nmon App deployed through it</li>  
+<br />
+
+</lu>
+
+
+
+<br />
+<h2>Here we go !!!</h2>
+
+<br />
+
+<h3>For the tutorial purposes, i will assume we have:</h3>
+
+<br />
+
+<lu>
+
+<li><b>A Splunk master node:</b> splunk-master</li>
+<br />
+
+<li><b>Peers node:</b> splunk-peer1, splunk-peer2, splunk-peer3</li>
+<br />
+
+<li><b>2 search head nodes:</b> splunk-head1, splunk-head2</li>
+<br />
+
+<li><b>A Splunk deployment instance:</b> splunk-deployment</li>
+
+</lu>
+
+
+<br />
+<br />
+<br />
+
+<h2>STEP 1: Deploy the PA-nmon (bundle configuration) to the master node</h2>
+
+<br />
+
+<p>
+
+Download the NMON Splunk App, extract its content and upload the "PA-nmon" App archive available within "resources" directory. (to /tmp directory for example)
+
+<br />
+Then, extract the PA-nmon App to to the master-apps directory in the master mode, example:
+
+<br />
+<br />
+
+
+<code>cd /opt/splunk/etc/master-apps</code>
+
+<br />
+<br />
+
+<code>tar -xvzf /tmp/PA-nmon_V*.tar.gz</code>
+
+<br />
+<br />
+
+</p>
+
+
+
+<h2>STEP 2: Deploy bundle configuration from to the master node to your peer nodes</h2>
+
+<p>
+
+<br />
+
+In master node, Push the configuration to your peers:
+
+<br />
+<br />
+
+<code>splunk apply cluster-bundle</code>
+
+<br />
+<br />
+
+<code>splunk show cluster-bundle-status</code>
+
+<br />
+<br />
+
+After all peers have restarted, you should see a new index replicated within the master dashboard (be patient and wait a few minutes before seeing your new replicated index) :
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/cluster1.png" alt="Cluster1" />
+
+<br />
+
+</p>
+
+
+<br />
+
+<h2>STEP 3: Enable Receiving input on each peers node</h2>
+
+<p>
+
+<br />
+Configure each peer node to receive data, either in the manager:
+
+<br />
+
+<code>
+Manager -> sending and receiving -> configure receiving -> new 
+</code>
+
+<br />
+<br />
+or via the CLI:
+<br />
+
+<code>
+		/opt/splunk/bin/splunk enable listen 9997 
+</code>
+
+<br />
+Where 9997 (default) is the receiving port for Splunk Forwarder connections
+<br />
+
+
+</p>
+
+<br />
+
+
+<br />
+<h2>STEP 4: Deployment Server configuration, prepare TA-nmon for deployments</h2>
+
+<br />
+
+<p>
+
+<h4>First, extract the content of TA-nmon App provided in $SPLUNK/etc/apps/nmon/resources to $SPLUNK_HOME/etc/deployment-apps in your deployment server, example:</h4>
+
+<br />
+
+<code>
+cd /opt/splunk/etc/deployment-apps
+
+<br />
+<br />
+
+tar -xvzf /opt/splunk/etc/apps/nmon/resources/TA-nmon*.tar.gz
+</code>
+
+
+<br />
+
+
+<br />
+
+<h4>Then, configure the outputs.conf to enable communication between the Forwarder and peers with redundancy, example:</h4>
+
+<br />
+
+edit /opt/splunk/etc/deployment-apps/TA-nmon/local/outputs.conf
+
+<br />
+<br />
+
+<h4>Example: A load-balancing configuration with indexer acknowledgment</h4>
+
+<br />
+
+<xmp>
+		[tcpout]
+		defaultGroup=my_LB_peers
+		
+		[tcpout:my_LB_peers]
+		autoLBFrequency=40
+		server=splunk-peer1:9997,splunk-peer2:9997,splunk-peer3:9997
+		useACK=true
+</xmp>
+
 
 
 
 </p>
 
 
+<br />
+<h2>STEP 5: Deployment Server configuration, Activate and configure serverclass.conf</h2>
 
 
+<p>
+
+<br />
+
+<h4>Activate the deployment server:</h4>
+
+<br />
+In CLI:
+<br />
+
+<code>
+/opt/splunk/bin/splunk enable deploy-server
+</code>
+
+<br />
+
+<br />
+Configure your serverclass.conf file, the following simple example will filter hosts based on hostnames, and automatically deploy the TA-nmon App for "*clients*":
+
+<br />
+<br />
+Edit the file "$SPLUNK_HOME/etc/system/local/serverclass.conf" with section:
+<br />
+
+<xmp>
+
+		[serverClass:cluster-nodes]
+		whitelist.0 = splunk-*
+
+		[serverClass:clients]
+		whitelist.0 = *clients*
+
+		[serverClass:cluster-nodes:app:TA-nmon]
+		restartSplunkWeb = 0
+		restartSplunkd = 1
+		stateOnClient = enabled
+		
+		[serverClass:clients:app:TA-nmon]
+		restartSplunkWeb = 0
+		restartSplunkd = 1
+		stateOnClient = enabled
+</xmp>
+
+<br />
+
+<br />
+Restart the deployment server.
+<br />
+<br />
+
+
+</p>
+
+
+<h2>STEP 6: Install the standard NMON Application in all head search nodes to collect Nmon data to the Cluster</h2>
+
+<p>
+
+<br />
+
+As for a normal installation, Install the Application Nmon for Splunk as usual for every search heads node of your cluster.
+
+<br />
+
+Each head search node won't index or collect Nmon data, but you will access to data through these nodes, this is why this is where you need the full App to be installed:
+
+<br />
+<br />
+
+<b>Example with Online installation:</b>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/install_app1.png" alt="Install1" />
+
+<br />
+
+<br />
+<br />
+
+<b>Search for the Nmon Splunk App:</b>
+
+<br />
+<br />
+
+
+<img src="../../static/app/nmon/various/install_app2.png" alt="Install2" />
+
+<br />
+
+<b>Once the Application is installed, Splunk will propose you to set up the App, please set up it now and UNCHECK all boxes:</b>
+
+<br />
+<br />
+
+NOTE: We deactivate every monitor because we don't want the search head to collect and index data, if we would these data would be available only for this host and not replicated to the Cluster.
+<br />
+We will use the Forwarder to generate Nmon performance data collect on non peers host (following section)
+
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/install_app3.png" alt="Install3" />
+
+<br />
+
+
+</p>
+
+
+
+<br />
+<br />
+<br />
+
+
+<h2>STEP 7: Install Forwarders on non peer nodes: master node, head search nodes and deployment server</h2>
+
+<p>
+
+<br />
+Because we want to collect NMON Performance data on every piece of our Cluster and want this data to be indexed in the Replicated clustered index, we will install the Universal Forwarder on all non peer nodes.
+<br />
+If we would install the standard NMON App on non peer nodes (master, head search and deployment server), NMON performance data would searchable only in this host and the global clustered index
+<br />
+If you don't want to be able to analyse system load on non peer nodes, then you can bypass this section. 
+
+
+<br />
+<br />
+
+<b>Install and configure Splunk Forwarder on following instances:</b>
+
+<br />
+
+<lu>
+
+<li>splunk-master (master node)</li>
+<li>splunk-head* (head search nodes)</li>
+<li>splunk-deloyment (Deployment Server)</li>
+
+</lu>
+
+<br />
+<br />
+
+<b>Steps for Installing/Configuring *nix forwarders:</b>
+
+</p>
+
+<br />
+<h4>2.1 Download Splunk Universal Forwarder:</h4>
+
+<p>
+
+<a href="http://www.splunk.com/download/universalforwarder">http://www.splunk.com/download/universalforwarder</a>
+
+</p>
+
+<br />
+<h4>2.2 Install Forwarder</h4>
+
+<br />
+<h4>2.3 Enable boot-start/init script:</h4>
+
+<p>
+
+<br />
+Activate the forwarder at boot time:
+<br />
+
+<code>
+		/opt/splunkforwarder/bin/splunk enable boot-start
+</code>
+
+
+<br />
+<br />
+Start the forwarder:
+<br />
+
+<code>
+		/opt/splunkforwarder/bin/splunk start
+</code>
+
+
+<br />
+
+Because we already have the main Splunk instance running, when prompted, please change the Forwarder splunkd port by an increased number:
+
+
+<br />
+
+<xmp>
+
+/opt/splunkforwarder/bin/splunk start
+
+Splunk> Needle. Haystack. Found.
+
+Checking prerequisites...
+	Checking mgmt port [8089]: already bound
+ERROR: The mgmt port [8089] is already bound.  Splunk needs to use this port.
+Would you like to change ports? [y/n]: 
+
+Enter a new mgmt port: 8090
+Setting mgmt to port: 8090
+The server's splunkd port has been changed.
+	Checking mgmt port [8090]: open
+		Creating: /opt/splunkforwarder/var/run/splunk/appserver/i18n
+		Creating: /opt/splunkforwarder/var/run/splunk/appserver/modules/static/css
+		Creating: /opt/splunkforwarder/var/run/splunk/upload
+		Creating: /opt/splunkforwarder/var/spool/splunk
+		Creating: /opt/splunkforwarder/var/spool/dirmoncache
+		Creating: /opt/splunkforwarder/var/lib/splunk/authDb
+		Creating: /opt/splunkforwarder/var/lib/splunk/hashDb
+New certs have been generated in '/opt/splunkforwarder/etc/auth'.
+	Checking conf files for problems...
+	Done
+All preliminary checks passed.
+
+Starting splunk server daemon (splunkd)...  
+Declared role=universal_forwarder.
+Done
+
+</xmp>
+
+
+
+</p>
+
+<br />
+<h4>2.4 Connect the Forwarder to the Deployment Server:</h4>
+
+<p>
+
+<br />
+
+On Forwarders:
+
+<br />
+<br />
+
+<code>
+/opt/splunkforwarder/bin/splunk set deploy-poll splunk-deployment:8089
+
+<br />
+<br />
+
+/opt/splunkforwarder/bin/splunk restart
+</code>
+
+<br />
+<br />
+
+
+<b>Check the Deployment Manager console, and after a few minutes you will the TA-nmon application being deployed over all Cluster members:</b>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/deployment_cluster.png" alt="Deployment_Cluster" />
+
+<br />
+<br />
+
+
+<b>Finally, Install Splunk Forwarders for other clients you may have following the same procedure as above (but the port change), you will be done ! Congratulations !</b>
+
+<br />
+<br />
+
+
+</p>
 
 <br />
 <br />
 
 
 
+<h2>FINAL: Access your data</h2>
 
-<h1>Scenario 2: Manage NMON Data collected into centralized shares</h1>
+<p>
+
+<br />
+
+<b>Every member of your Splunk Cluster has now NMON Performance Data being collected, and searchable over all your Cluster! Cool no ? !</b>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/cluster_search1.png" alt="Cluster_Search1" />
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/cluster_search2.png" alt="Cluster_Search2" />
+
+<br />
+<br />
+
+
+
+</p>
+
+
+<h1>Scenario 3: Manage NMON Data collected into centralized shares</h1>
 
 <h2>
 In a scenario where there is no Splunk forwarders installed in servers but there is another process in place which periodically collect Nmon data, all you need is a central share (such as an NFS share)
@@ -834,7 +1418,7 @@ which Splunk indexer has access.</h2>
 
 <br />
 
-<h3>Step 1: Splunk indexer Nmon metrics local collect</h3>
+<h2>STEP 1: Splunk indexer Nmon metrics local collect</h2>
 
 <p>
 
@@ -884,7 +1468,7 @@ Change "disabled = true" to "false", and restart Splunk.
 <br />
 <br />
 
-<h3>Step 2: Add Splunk Monitors </h3>
+<h2>STEP 2: Add Splunk Monitors </h2>
 
 <p>
 
