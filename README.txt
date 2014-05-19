@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-nmon release 1.2.0
+nmon release 1.2.1
 
 
 
@@ -386,7 +386,7 @@ Congratulations :-)
 
 
 
-##Scenario 2 "Cluster Distributed Environment": Each member of Splunk Cluster (master, peers, deployment server and search heads) will be monitored using Nmon, Cluster clients will have the Forwarder App deployed to collect Nmon data and send them to Cluster##
+##Scenario 2 "Cluster Distributed Environment": Each member of Splunk Cluster (master, peers, deployment server and search heads) will be monitored using Nmon, client hosts will have the Forwarder App deployed to collect Nmon data and send them to the Cluster##
 
  ![](79b2cd30-de71-11e3-9cc2-02b791857185.png)
 
@@ -397,28 +397,28 @@ Please note the following configuration can be adapted to whatever you need or p
 
 - You have a functional Splunk cluster running: master node, peers nodes, heads searches and a deployment server
 
-- Manually deploy the "PA-nmon" Application to the master node (thus the PA-nmon could be deployed by the deployment server, this introduces more complication than interest)
+- Manually deploy the "PA-nmon" Application to the master node (thus the PA-nmon could be deployed by the deployment server, this introduces more complications than interest)
 
-- The master node will deploy the bundle configuration (containing the PA-nmon App) to all of its peers nodes (also known as indexers)
+- The master node will deploy the bundle configuration (containing the PA-nmon App) to all of its peer nodes (also known as indexers)
 
 - Upon bundle configuration update, each peer node will automatically generate and collect Nmon data to the replicated nmon Index
 
 - The deployment server deploys the "TA-nmon" Application to Forwarders (for clients and non peers members of the cluster)
 
-- The standard Nmon Application is installed in all search head nodes of the Cluster (but don't generate and collect Nmon data themselves)
+- The standard Nmon Application is installed in all search head nodes of the Cluster (but don't generate and collect Nmon data themselves, this is the where the application frontal is being used)
 
-- On master node, head search nodes and Deployment Server a Splunk Forwarder will be installed (and linked to the Deployment Server) to collect Nmon data of these hosts, and send them to the replicated index
+- On master node, head search nodes and on the Deployment Server a Splunk Forwarder will be installed (and linked to the Deployment Server) to collect Nmon data of these hosts, and send them to the replicated index
 
 - Each piece of the Cluster has Nmon performance data available and searchable, in such a way you will be able to analyse system load of every Cluster members and clients
 
 
 Additional Notes:
 
-- In this configuration scenario, performance data collecting will be achieved by peers node running the TA-nmon application
+- In this configuration scenario, performance data indexing is being achieved by peer nodes only (and so available for all)
 
-- When a peer node indexes data, these data will be available and searchable for all the cluster, so performance data on peers node will achieved with no additional operation
+- When a peer node indexes data, these data will be available and searchable for all the cluster, so performance data on peers node will be achieved with no additional operation (the PA-nmon is ready as it is, you just need to push it from the master)
 
-- Because master node, head search nodes and deployment server are not designed to index data, we will install the universal Splunk Forwarder in each non peers node, and deploy the TA-nmon App (as for any standard client)
+- Because master node, head search nodes and deployment server are not designed to index data themselves, we will install the universal Splunk Forwarder in each non peers node, and deploy the TA-nmon App (as for any standard client)
 
 - Every Forwarder will be managed by the Deployment Server, and the TA-nmon App deployed through it
 

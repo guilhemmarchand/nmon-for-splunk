@@ -11,17 +11,16 @@
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ search `nmon_config` | stats count by hostname | fields hostname ]">Any OS</choice>
       <choice value="| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]">Linux</choice>
       <choice value="">Inactive</choice>
     </input>
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=LPAR | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
-      </populatingSearch>
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
@@ -52,7 +51,7 @@
       <choice value="area">Area</choice>
       <choice value="line">Line (recommended)</choice>
       <choice value="column">Column</choice>
-		<choice value="bar">Bar</choice>
+      <choice value="bar">Bar</choice>
     </input>
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
@@ -66,7 +65,7 @@
       <choice value="gaps">Gaps</choice>
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
-    </input>    
+    </input>
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -76,14 +75,14 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-    
-
+    </input>
   </fieldset>
   <row>
     <chart>
       <title>LPAR Virtual CPU Load</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso, $addindicator$</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(usage) As conso, $addindicator$ by hostname</searchString>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -96,18 +95,23 @@
       <option name="charting.layout.splitSeries">0</option>
       <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
       <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-		<option name="charting.legend.placement">$charting.legend.placement$</option>
+      <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">Virtual CPUs</option>
       <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+      <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+      <option name="charting.axisTitleY2.visibility">visible</option>
+      <option name="charting.axisY2.enabled">false</option>
+      <option name="charting.axisY2.scale">inherit</option>
     </chart>
   </row>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0</searchTemplate>
   <row>
     <chart>
       <title>Higher CPU Load</title>
-      <searchPostProcess>stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchPostProcess>
+      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -126,7 +130,7 @@
     </chart>
     <chart>
       <title>Average CPU Load</title>
-      <searchPostProcess>stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchPostProcess>
+      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -145,7 +149,7 @@
     </chart>
     <chart>
       <title>Min CPU Load</title>
-      <searchPostProcess>stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | $indicator$ | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchPostProcess>
+      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | $indicator$ | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>

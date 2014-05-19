@@ -2,7 +2,6 @@
   <label>NMON - PAGE, Paging Statistics (AIX)</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -10,17 +9,13 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=PAGE | stats count by hostname | dedup hostname | sort hostname]]>
-      </populatingSearch>
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PAGE | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
-
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -28,23 +23,20 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-
     <input type="radio" token="chart" searchWhenChanged="true">
       <label>Select a type of chart:</label>
       <default>line</default>
       <choice value="area">Area</choice>
       <choice value="line">Line (recommended)</choice>
       <choice value="column">Column</choice>
-		<choice value="bar">Bar</choice>
+      <choice value="bar">Bar</choice>
     </input>
-
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
       <default>unstacked</default>
       <choice value="stacked">stacked</choice>
       <choice value="unstacked">unstacked (recommended)</choice>
     </input>
-
     <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
       <label>Missing Data:</label>
       <default>gaps</default>
@@ -52,7 +44,6 @@
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
     </input>
-    
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -62,8 +53,7 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-
+    </input>
   </fieldset>
   <row grouping="4">
     <html>
@@ -73,7 +63,7 @@
     </html>
     <chart id="link10">
       <title>Pages In / Pages Out (pgsin / pgsout)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | timechart `inline_customspan` $statsmode$(pgsin) As "pgsin", $statsmode$(pgsout) As "pgsout"</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(pgsin) As "pgsin", $statsmode$(pgsout) As "pgsout" by hostname</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -89,7 +79,7 @@
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Pages</option>
     </chart>
     <chart id="link11">
@@ -97,7 +87,7 @@
       <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ 
 | eval fsin=(pgin+pgsin)
 | eval fsout=(pgout+pgsout)
-| timechart `inline_customspan` Max(fsin) As "fsin", Max(fsout) As "fsout"</searchString>
+| timechart `inline_customspan` limit=0 useother=f Max(fsin) As "fsin", Max(fsout) As "fsout" by hostname</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -113,14 +103,14 @@
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Pages</option>
     </chart>
     <chart id="link12">
       <title>Scan Free Ratio (Pages scans by reclaims per interval)</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$
 | eval scanfree=round((scans/reclaims),2)
-| timechart `inline_customspan` max(scanfree) As scanfree_ratio
+| timechart `inline_customspan` limit=0 useother=f max(scanfree) As scanfree_ratio by hostname
 | fillnull value="0"</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
@@ -137,14 +127,14 @@
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Pages</option>
     </chart>
   </row>
   <row grouping="1,1">
     <table>
       <title>Global Table Stats</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | stats  $statsmode$(faults) As faults, $statsmode$(pgin) As pgin, $statsmode$(pgout) As pgout,  $statsmode$(pgsin) As pgsin, $statsmode$(pgsout) As pgsout,  $statsmode$(reclaims) As reclaims, $statsmode$(scans) As scans, $statsmode$(cycles) As cyles, $statsmode$(pgsout) As pgsout</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | stats  $statsmode$(faults) As faults, $statsmode$(pgin) As pgin, $statsmode$(pgout) As pgout,  $statsmode$(pgsin) As pgsin, $statsmode$(pgsout) As pgsout,  $statsmode$(reclaims) As reclaims, $statsmode$(scans) As scans, $statsmode$(cycles) As cyles, $statsmode$(pgsout) As pgsout by hostname</searchString>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
       <option name="wrap">true</option>
@@ -155,7 +145,7 @@
     </table>
     <table>
       <title>Fs In/Out and Scan Free Ratio Table Stats</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | eval fsin=(pgin+pgsin) | eval fsout=(pgout+pgsout) | eval scanfree=round((scans/reclaims),2) | stats $statsmode$(fsin) As "fsin", $statsmode$(fsout) As "fsout", $statsmode$(scanfree) As scanfree_ratio</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | eval fsin=(pgin+pgsin) | eval fsout=(pgout+pgsout) | eval scanfree=round((scans/reclaims),2) | stats $statsmode$(fsin) As "fsin", $statsmode$(fsout) As "fsout", $statsmode$(scanfree) As scanfree_ratio by hostname</searchString>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
       <option name="wrap">true</option>

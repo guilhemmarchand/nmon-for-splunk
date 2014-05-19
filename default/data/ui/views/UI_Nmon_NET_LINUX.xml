@@ -2,7 +2,6 @@
   <label>NMON - NET, Network Interfaces Analysis (Linux)</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -10,14 +9,12 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]</default>
       <choice value="| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]">Linux</choice>
       <choice value="">Inactive</choice>
     </input>
-
     <input type="dropdown" token="hostname" searchWhenChanged="true">
       <label>Select a Host:</label>
       <prefix>hostname="</prefix>
@@ -27,18 +24,14 @@
         <![CDATA[index=nmon sourcetype=nmon_data type=NET | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
       </populatingSearch>
     </input>
-
-    <input type="dropdown" token="device" searchWhenChanged="true">
+    <input type="multiselect" token="device" searchWhenChanged="true">
       <label>Select Network Interfaces:</label>
-      <prefix>device="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-      <choice value="*">All</choice>
-      <populatingSearch fieldForValue="device" fieldForLabel="device">
-        <![CDATA[index=nmon sourcetype=nmon_data type=NET $hostname$ | stats count by device | dedup device | sort device]]>
-      </populatingSearch>
+      <choice value="*">ALL INTERFACES</choice>
+      <populatingSearch fieldForLabel="device" fieldForValue="device">index=nmon sourcetype=nmon_data type=NET $hostname$ | stats count by device | dedup device | sort device</populatingSearch>
+      <valuePrefix>device="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
-
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>Max</default>
@@ -46,7 +39,6 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-
     <input type="radio" token="dataconvert" searchWhenChanged="true">
       <label>Data Conversion:</label>
       <default>eval rate=round((value/1000),2)</default>
@@ -54,23 +46,20 @@
       <choice value="eval rate=round((value/1000/1000),2)">GBps</choice>
       <choice value="eval rate=round((value),2)">KBps</choice>
     </input>
-
     <input type="radio" token="chart" searchWhenChanged="true">
       <label>Select a type of chart:</label>
       <default>line</default>
       <choice value="area">Area</choice>
       <choice value="line">Line (recommended)</choice>
       <choice value="column">Column</choice>
-		<choice value="bar">Bar</choice>
+      <choice value="bar">Bar</choice>
     </input>
-
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
       <default>unstacked</default>
       <choice value="stacked">stacked</choice>
       <choice value="unstacked">unstacked (recommended)</choice>
     </input>
-
     <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
       <label>Missing Data:</label>
       <default>gaps</default>
@@ -78,7 +67,6 @@
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
     </input>
-    
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -88,13 +76,14 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-    
+    </input>
   </fieldset>
   <row>
     <chart>
       <title>NET - Network Interfaces Activity by Host</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ $device$ | $dataconvert$ | timechart limit=0 `inline_customspan` $statsmode$(rate) As rate by device</searchString>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -110,20 +99,26 @@
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-      <option name="charting.axisY.minimumNumber">0</option>      
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Network Traffic</option>
+      <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+      <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+      <option name="charting.axisTitleY2.visibility">visible</option>
+      <option name="charting.axisY2.enabled">false</option>
+      <option name="charting.axisY2.scale">inherit</option>
     </chart>
   </row>
   <row>
     <table>
       <title>NET - Network Interfaces Table Stats by Host</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ $device$ | $dataconvert$ | stats max(rate) As max_rate, avg(rate) As avg_rate, min(rate) As min_rate, sparkline(max(rate)) As sparkline by device | eval avg_rate=round(avg_rate,2) | sort device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ $device$ | $dataconvert$ | stats max(rate) As max_rate, avg(rate) As avg_rate, min(rate) As min_rate, sparkline(max(rate)) As sparkline by hostname, device | eval avg_rate=round(avg_rate,2) | sort hostname, device</searchString>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
       <option name="wrap">true</option>
-      <option name="rowNumbers">true</option>
+      <option name="rowNumbers">false</option>
       <option name="dataOverlayMode">none</option>
       <option name="drilldown">cell</option>
       <option name="count">10</option>
-      <!-- Set sparkline options here; make sure that field matches field name of the search results -->
       <format type="sparkline" field="sparkline">
         <option name="lineColor">#5379af</option>
         <option name="fillColor">#CCDDFF</option>

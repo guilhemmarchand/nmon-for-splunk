@@ -31,15 +31,13 @@
       </populatingSearch>
     </input>
 
-    <input type="dropdown" token="device" searchWhenChanged="true">
+    <input type="multiselect" token="device" searchWhenChanged="true">
       <label>Select Disks:</label>
-      <prefix>device="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-      <choice value="*">All</choice>
-      <populatingSearch fieldForValue="device" fieldForLabel="device">
-        <![CDATA[index=nmon sourcetype=nmon_data type=DISKXFER $hostname$ | stats count by device | dedup device | sort device]]>
-      </populatingSearch>
+      <choice value="*">ALL DISKS</choice>
+      <populatingSearch fieldForLabel="device" fieldForValue="device">index=nmon sourcetype=nmon_data type=DISKXFER $hostname$ | stats count by device | dedup device | sort device</populatingSearch>
+      <valuePrefix>device="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
 
     <input type="radio" token="statsmode" searchWhenChanged="true">
@@ -89,7 +87,7 @@
   <row>
     <chart>
       <title>DISKXFER - Disk I/O Operations per second (IOPS)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$ $device$ | timechart limit=0 `inline_customspan` $statsmode$(value) As value by device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$ $device$ | timechart limit=0 useother=f `inline_customspan` $statsmode$(value) As value by device</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -112,9 +110,9 @@
   <row>
     <table>
       <title>DISKXFER - Disk I/O Operations per second Table Stats</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by device | eval avg_value=round(avg_value,2) | sort device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname, device | eval avg_value=round(avg_value,2) | sort device</searchString>
       <option name="wrap">true</option>
-      <option name="rowNumbers">true</option>
+      <option name="rowNumbers">false</option>
       <option name="dataOverlayMode">none</option>
       <option name="drilldown">cell</option>
       <option name="count">10</option>

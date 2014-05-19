@@ -1,7 +1,6 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - VM, Linux Virtual Memory Statistics</label>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -9,24 +8,19 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]</default>
       <choice value="| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]">Linux</choice>
       <choice value="">Inactive</choice>
     </input>
-
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=VM | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
-      </populatingSearch>
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=VM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
-
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -34,7 +28,6 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-
     <input type="radio" token="chart" searchWhenChanged="true">
       <label>Select a type of chart:</label>
       <default>line</default>
@@ -43,14 +36,12 @@
       <choice value="column">Column</choice>
       <choice value="bar">Bar</choice>
     </input>
-
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
       <default>unstacked</default>
       <choice value="stacked">stacked</choice>
       <choice value="unstacked">unstacked (recommended)</choice>
     </input>
-
     <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
       <label>Missing Data:</label>
       <default>gaps</default>
@@ -58,7 +49,6 @@
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
     </input>
-    
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -68,11 +58,8 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-
+    </input>
   </fieldset>
-
-
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
 | timechart `inline_customspan`
 $statsmode$(nr_dirty) As nr_dirty,
@@ -117,20 +104,16 @@ $statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
 $statsmode$(pageoutrun) As pageoutrun,
 $statsmode$(allocstall) As allocstall,
 $statsmode$(pgrotated) As pgrotated,
-$statsmode$(nr_bounce) As nr_bounce
-</searchTemplate>
-  
-
+$statsmode$(nr_bounce) As nr_bounce by hostname</searchTemplate>
   <row grouping="13">
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link1,link2,link3,link4,link5,link6,link7,link8,link9,link10,link11,link12">Select a view:<!--Links go here-->
       </div>
     </html>
-    
     <chart id="link1">
       <title>Pages dirty, under writeback or unstable</title>
-      <searchPostProcess>fields _time,nr_dirty,nr_writeback,nr_unstable</searchPostProcess>
+      <searchPostProcess>fields _time,*nr_dirty*,*nr_writeback*,*nr_unstable*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -146,14 +129,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-    
-    
     <chart id="link2">
       <title>Pages allocated to page tables, mapped by files or allocated by the kernel slab allocator</title>
-      <searchPostProcess>fields _time,nr_page_table_pages,nr_mapped,nr_slab</searchPostProcess>
+      <searchPostProcess>fields _time,*nr_page_table_pages*,*nr_mapped*,*nr_slab*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -169,13 +150,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-    
     <chart id="link3">
       <title>Pageins and pageouts (since last boot)</title>
-      <searchPostProcess>fields _time,pgpgin,pgpgout</searchPostProcess>
+      <searchPostProcess>fields _time,*pgpgin*,*pgpgout*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -191,13 +171,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link4">
       <title>swapins and swapouts (since last boot)</title>
-      <searchPostProcess>fields _time,pswpin,pswpout</searchPostProcess>
+      <searchPostProcess>fields _time,*pswpin*,*pswpout*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -213,13 +192,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-    
     <chart id="link5">
       <title>Page allocations per zone (since last boot)</title>
-      <searchPostProcess>fields _time,pgalloc_high,pgalloc_normal,pgalloc_dma32,pgalloc_dma</searchPostProcess>
+      <searchPostProcess>fields _time,*pgalloc_high*,*pgalloc_normal*,*pgalloc_dma32*,*pgalloc_dma*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -235,13 +213,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link6">
       <title>Page frees, activations and deactivations (since last boot)</title>
-      <searchPostProcess>fields _time,pgfree,pgactivate,pgdeactivate</searchPostProcess>
+      <searchPostProcess>fields _time,*pgfree*,*pgactivate*,*pgdeactivate*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -257,13 +234,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link7">
       <title>Minor and major page faults (since last boot)</title>
-      <searchPostProcess>fields _time,pgfault,pgmajfault</searchPostProcess>
+      <searchPostProcess>fields _time,*pgfault*,*pgmajfault*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -279,13 +255,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link8">
       <title>Page refills (per zone, since last boot):</title>
-      <searchPostProcess>fields _time,pgrefill_high,pgrefill_normal,pgrefill_dma32,pgrefill_dma</searchPostProcess>
+      <searchPostProcess>fields _time,*pgrefill_high*,*pgrefill_normal*,*pgrefill_dma32*,*pgrefill_dma*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -301,13 +276,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link9">
       <title>Page steals (per zone, since last boot)</title>
-      <searchPostProcess>fields _time,pgsteal_high,pgsteal_normal,pgsteal_dma32,pgsteal_dma</searchPostProcess>
+      <searchPostProcess>fields _time,*pgsteal_high*,*pgsteal_normal*,*pgsteal_dma32*,*pgsteal_dma*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -323,13 +297,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link10">
       <title>Pages scanned by kswapd daemon (per zone, since last boot)</title>
-      <searchPostProcess>fields _time,pgscan_kswapd_high,pgscan_kswapd_normal,pgscan_kswapd_dma32,pgscan_kswapd_dma</searchPostProcess>
+      <searchPostProcess>fields _time,*pgscan_kswapd_high*,*pgscan_kswapd_normal*,*pgscan_kswapd_dma32*,*pgscan_kswapd_dma*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -345,13 +318,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link11">
       <title>Pages reclaimed directly (per zone, since last boot)</title>
-      <searchPostProcess>fields _time,pgscan_direct_high,pgscan_direct_normal,pgscan_direct_dma32,pgscan_direct_dma</searchPostProcess>
+      <searchPostProcess>fields _time,*pgscan_direct_high*,*pgscan_direct_normal*,*pgscan_direct_dma32*,*pgscan_direct_dma*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -367,13 +339,12 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
     <chart id="link12">
       <title>Miscellaneous statistics</title>
-      <searchPostProcess>fields _time,pginodesteal,slabs_scanned,kswapd_steal,kswapd_inodesteal,pageoutrun,allocstall,pgrotated,nr_bounce</searchPostProcess>
+      <searchPostProcess>fields _time,*pginodesteal*,*slabs_scanned*,*kswapd_steal*,*kswapd_inodesteal*,*pageoutrun*,*allocstall*,*pgrotated*,*nr_bounce*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -389,15 +360,11 @@ $statsmode$(nr_bounce) As nr_bounce
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
-
   </row>
-
-
   <row grouping="1">
-
     <table>
       <title>Global Table Stats</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
@@ -444,7 +411,7 @@ $statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
 $statsmode$(pageoutrun) As pageoutrun,
 $statsmode$(allocstall) As allocstall,
 $statsmode$(pgrotated) As pgrotated,
-$statsmode$(nr_bounce) As nr_bounce</searchString>
+$statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
       <option name="wrap">true</option>
@@ -453,6 +420,5 @@ $statsmode$(nr_bounce) As nr_bounce</searchString>
       <option name="drilldown">cell</option>
       <option name="count">10</option>
     </table>
-
   </row>
 </form>

@@ -1,8 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - MEM, AIX Free Memory and Paging space activity</label>
-  <description></description>
+  <description/>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -10,24 +9,19 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]</default>
       <choice value="| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]">AIX</choice>
       <choice value="">Inactive</choice>
     </input>
-
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
-      </populatingSearch>
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
-
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -35,31 +29,27 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-
     <input type="radio" token="memmode" searchWhenChanged="true">
       <label>Show Mem load by:</label>
-      <default>fields _time,*MB</default>
-      <choice value="fields _time,*MB">Activity in Data Volume (MB)</choice>
-      <choice value="fields _time,Real_used_PCT,Virtual_used_PCT">Usage in percentage (%)</choice>
-      <choice value="fields _time,Real_Free_PCT,Virtual_free_PCT">Free in percentage (%)</choice>
+      <default>fields _time,*MB*</default>
+      <choice value="fields _time,*MB*">Activity in Data Volume (MB)</choice>
+      <choice value="fields _time,*Real_used_PCT*,*Virtual_used_PCT*">Usage in percentage (%)</choice>
+      <choice value="fields _time,*Real_Free_PCT*,*Virtual_free_PCT*">Free in percentage (%)</choice>
     </input>
-
     <input type="radio" token="chart" searchWhenChanged="true">
       <label>Select a type of chart:</label>
       <default>line</default>
       <choice value="area">Area</choice>
       <choice value="line">Line (recommended)</choice>
       <choice value="column">Column</choice>
-		<choice value="bar">Bar</choice>
+      <choice value="bar">Bar</choice>
     </input>
-
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
       <default>unstacked</default>
       <choice value="stacked">stacked</choice>
       <choice value="unstacked">unstacked (recommended)</choice>
     </input>
-
     <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
       <label>Missing Data:</label>
       <default>gaps</default>
@@ -67,7 +57,6 @@
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
     </input>
-    
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -77,34 +66,28 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-
+    </input>
   </fieldset>
-  
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
 | eval Virtual_total_MB=round((Virtual_total_MB),0)
 | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
 | eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),0)
 | eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),0)
-| timechart `inline_customspan`
+| timechart `inline_customspan` limit=0 useother=f
 $statsmode$(Real_total_MB) As Real_total_MB, $statsmode$(Real_used_MB) As Real_used_MB, 
 $statsmode$(Virtual_total_MB) As Virtual_total_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB
 $statsmode$(Real_Free_PCT) As Real_Free_PCT, $statsmode$(Virtual_free_PCT) As Virtual_free_PCT
-$statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Virtual_used_PCT
-</searchTemplate>  
-  
+$statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Virtual_used_PCT by hostname</searchTemplate>
   <row grouping="3">
-
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
       </div>
     </html>
-
-    <chart id="link10">    
+    <chart id="link10">
       <title>Real Memory</title>
-      <searchPostProcess>$memmode$ | fields _time, Real*</searchPostProcess>
+      <searchPostProcess>$memmode$ | fields _time, *Real*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -123,10 +106,9 @@ $statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Vi
       <option name="charting.axisTitleY.text">Real Memory (MB)</option>
       <option name="charting.axisY.minimumNumber">0</option>
     </chart>
-
-    <chart id="link11">    
+    <chart id="link11">
       <title>Paging Space</title>
-      <searchPostProcess>$memmode$ | fields _time,Virtual*</searchPostProcess>
+      <searchPostProcess>$memmode$ | fields _time,*Virtual*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -145,49 +127,39 @@ $statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Vi
       <option name="charting.axisTitleY.text">Paging Space (MB)</option>
       <option name="charting.axisY.minimumNumber">0</option>
     </chart>
-
   </row>
-
   <row grouping="1,1">
-
     <table>
       <title>MEM - Real Memory Table Stats</title>
-      <searchString>
-index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+      <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
 | stats
 $statsmode$(Real_free_MB) As Real_free_MB, $statsmode$(Real_used_MB) As Real_used_MB, $statsmode$(Real_total_MB) As Real_total_MB
 by hostname
 | eval Real_free_MB=round(Real_free_MB,0)
 | eval Real_used_MB=round(Real_used_MB,0)
-| eval Real_total_MB=round(Real_total_MB,0)
-      </searchString>
+| eval Real_total_MB=round(Real_total_MB,0)</searchString>
       <option name="wrap">true</option>
       <option name="rowNumbers">false</option>
       <option name="dataOverlayMode">none</option>
       <option name="drilldown">cell</option>
       <option name="count">10</option>
-	</table>
-
+    </table>
     <table>
       <title>MEM - Paging Space Table Stats</title>
-      <searchString>
-index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+      <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
 | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
 | stats
 $statsmode$(Virtual_free_MB) As Virtual_free_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB, $statsmode$(Virtual_total_MB) As Virtual_total_MB
 by hostname
 | eval Virtual_free_MB=round(Virtual_free_MB,0)
 | eval Virtual_used_MB=round(Virtual_used_MB,0)
-| eval Virtual_total_MB=round(Virtual_total_MB,0)
-      </searchString>
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</searchString>
       <option name="wrap">true</option>
       <option name="rowNumbers">false</option>
       <option name="dataOverlayMode">none</option>
       <option name="drilldown">cell</option>
       <option name="count">10</option>
-	</table>
-
+    </table>
   </row>
-
 </form>

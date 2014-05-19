@@ -1,7 +1,6 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - FILE, Kernel file statistics (AIX)</label>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -9,24 +8,19 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]</default>
       <choice value="| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]">AIX</choice>
       <choice value="">Inactive</choice>
     </input>
-
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=FILE | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
-      </populatingSearch>
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=FILE | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
-
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>Max</default>
@@ -34,23 +28,20 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-
     <input type="radio" token="chart" searchWhenChanged="true">
       <label>Select a type of chart:</label>
       <default>line</default>
       <choice value="area">Area</choice>
       <choice value="line">Line (recommended)</choice>
       <choice value="column">Column</choice>
-		<choice value="bar">Bar</choice>
+      <choice value="bar">Bar</choice>
     </input>
-
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
       <default>unstacked</default>
       <choice value="stacked">stacked</choice>
       <choice value="unstacked">unstacked (recommended)</choice>
     </input>
-
     <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
       <label>Missing Data:</label>
       <default>gaps</default>
@@ -58,7 +49,6 @@
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
     </input>
-    
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -68,13 +58,11 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-
-
+    </input>
   </fieldset>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
-| timechart `inline_customspan` $statsmode$(readch) As readch, $statsmode$(writech) As writech,
-$statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As dirblk</searchTemplate>
+| timechart `inline_customspan` limit=0 useother=f $statsmode$(readch) As readch, $statsmode$(writech) As writech,
+$statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As dirblk by hostname</searchTemplate>
   <row grouping="3">
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -83,7 +71,7 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
     </html>
     <chart id="link10">
       <title>FILE - Read/Write system calls</title>
-      <searchPostProcess>fields _time,readch,writech</searchPostProcess>
+      <searchPostProcess>fields _time,*readch*,*writech*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -99,12 +87,12 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Rate/Sec</option>
     </chart>
     <chart id="link11">
       <title>FILE - Other statistics</title>
-      <searchPostProcess>fields _time,iget,namei,dirblk</searchPostProcess>
+      <searchPostProcess>fields _time,*iget,namei*,*dirblk*</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -120,7 +108,7 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Rate/Sec</option>
     </chart>
   </row>

@@ -2,7 +2,6 @@
   <label>NMON - DISKBSIZE, Average data transfer size (block size) for read/write operations (AIX)</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -10,14 +9,12 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]</default>
       <choice value="| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]">AIX</choice>
       <choice value="">Inactive</choice>
     </input>
-
     <input type="dropdown" token="hostname" searchWhenChanged="true">
       <label>Select a Host:</label>
       <prefix>hostname="</prefix>
@@ -27,18 +24,14 @@
         <![CDATA[index=nmon sourcetype=nmon_data type=DISKBSIZE | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
       </populatingSearch>
     </input>
-
-    <input type="dropdown" token="device" searchWhenChanged="true">
+    <input type="multiselect" token="device" searchWhenChanged="true">
       <label>Select Disks:</label>
-      <prefix>device="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-      <choice value="*">All</choice>
-      <populatingSearch fieldForValue="device" fieldForLabel="device">
-        <![CDATA[index=nmon sourcetype=nmon_data type=DISKBSIZE $hostname$ | stats count by device | dedup device | sort device]]>
-      </populatingSearch>
+      <choice value="*">ALL DISKS</choice>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="device" fieldForValue="device">index=nmon sourcetype=nmon_data type=DISKBSIZE $hostname$ | stats count by device | dedup device | sort device</populatingSearch>
+      <valuePrefix>device="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
-
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>Max</default>
@@ -46,7 +39,6 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-
     <input type="radio" token="chart" searchWhenChanged="true">
       <label>Select a type of chart:</label>
       <default>line</default>
@@ -55,14 +47,12 @@
       <choice value="column">Column</choice>
       <choice value="bar">Bar</choice>
     </input>
-
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
       <default>unstacked</default>
       <choice value="stacked">stacked</choice>
       <choice value="unstacked">unstacked (recommended)</choice>
     </input>
-
     <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
       <label>Missing Data:</label>
       <default>gaps</default>
@@ -70,7 +60,6 @@
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
     </input>
-    
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -80,8 +69,7 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-
+    </input>
   </fieldset>
   <row>
     <chart>
@@ -102,20 +90,21 @@
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-      <option name="charting.axisY.minimumNumber">0</option>      
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">KBytes per transfer</option>
     </chart>
   </row>
   <row>
     <table>
       <title>DISKBSIZE - Table Stats, Average data size per block device transfer</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by device | eval avg_value=round(avg_value,2) | sort device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname, device | eval avg_value=round(avg_value,2) | sort hostname, device</searchString>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
       <option name="wrap">true</option>
-      <option name="rowNumbers">true</option>
+      <option name="rowNumbers">false</option>
       <option name="dataOverlayMode">none</option>
       <option name="drilldown">cell</option>
       <option name="count">10</option>
-      <!-- Set sparkline options here; make sure that field matches field name of the search results -->
       <format type="sparkline" field="sparkline">
         <option name="lineColor">#5379af</option>
         <option name="fillColor">#CCDDFF</option>

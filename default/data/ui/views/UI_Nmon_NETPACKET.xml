@@ -30,15 +30,13 @@
       </populatingSearch>
     </input>
 
-    <input type="dropdown" token="device" searchWhenChanged="true">
+    <input type="multiselect" token="device" searchWhenChanged="true">
       <label>Select Network Interfaces:</label>
-      <prefix>device="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-      <choice value="*">All</choice>
-      <populatingSearch fieldForValue="device" fieldForLabel="device">
-        <![CDATA[index=nmon sourcetype=nmon_data type=NETPACKET $hostname$ | stats count by device | dedup device | sort device]]>
-      </populatingSearch>
+      <choice value="*">ALL INTERFACES</choice>
+      <populatingSearch fieldForLabel="device" fieldForValue="device">index=nmon sourcetype=nmon_data type=NETPACKET $hostname$ | stats count by device | dedup device | sort device</populatingSearch>
+      <valuePrefix>device="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
 
     <input type="radio" token="statsmode" searchWhenChanged="true">
@@ -113,7 +111,7 @@
       <title>NETPACKET - Number of read/write packets Table Stats</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname,device | eval avg_value=round(avg_value,2) | sort device</searchString>
       <option name="wrap">true</option>
-      <option name="rowNumbers">true</option>
+      <option name="rowNumbers">false</option>
       <option name="dataOverlayMode">none</option>
       <option name="drilldown">cell</option>
       <option name="count">10</option>
