@@ -1,6 +1,6 @@
 <form stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css">
   <label>NMON Performance Monitor</label>
-  <description>Version 1.2.1</description>
+  <description>Version 1.2.3</description>
   <row>
     <html>
 
@@ -64,7 +64,7 @@
       </div>
     </html>
   </row>
-  <searchTemplate>| metadata type=hosts index="nmon" | setfields index=nmon | eventstats min(firstTime) as min, max(lastTime) as max | eval min=strftime(min,"%m/%d/%Y %H:%M") | eval max=strftime(max,"%m/%d/%Y %H:%M") | fields index,min,max</searchTemplate>    
+  <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>    
   <row grouping="1">
     <single>
       <searchPostProcess>fields index</searchPostProcess>
@@ -72,12 +72,12 @@
       <option name="linkView">search</option>
     </single>
     <single>
-      <searchPostProcess>fields min</searchPostProcess>
+      <searchPostProcess>fields First*</searchPostProcess>
       <option name="beforeLabel">First event date:</option>
       <option name="linkView">search</option>
     </single>
     <single>
-      <searchPostProcess>fields max</searchPostProcess>
+      <searchPostProcess>fields Last*</searchPostProcess>
       <option name="beforeLabel">Last event date:</option>
       <option name="linkView">search</option>
     </single>

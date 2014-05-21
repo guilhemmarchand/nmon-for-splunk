@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-nmon release 1.2.1
+nmon release 1.2.3
 
 
 
@@ -587,13 +587,16 @@ If you don't want to be able to analyse system load on non peer nodes, then you 
 
 #####2.3 Enable boot-start/init script:#####
 
-Activate the forwarder at boot time: 
+Activate the forwarder at boot time:
+
+As you already have a Splunk instance running on the same machine, you cannot use the enable boot-start command as this would replace managing splunk in rc levels by the splunkforwarder. 
+Instead of this and depending on your preference, you can edit:
+
+		/etc/init.d/splunk
 		
-		/opt/splunkforwarder/bin/splunk enable boot-start 
+And Simply add the splunkforwarder instance. 
 
-Start the forwarder: 
-
-		/opt/splunkforwarder/bin/splunk start 
+You may also prefer copying the existing init script, adapting it to the Splunk Forwarder and activating it in required rc levels. (See your OS specific procedure)  
 
 Because we already have the main Splunk instance running, when prompted, please change the Forwarder splunkd port by an increased number: 
 

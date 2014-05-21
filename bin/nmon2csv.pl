@@ -5,8 +5,10 @@
 # Disclaimer:  this provided "as is".  
 # Date - May 2014
 # Modified by Barak Griffis 05/06/2014
-#
-$nmon2csv_ver="1.0.5 May 2014";
+# Modified by Guilhem Marchand 05/20/2014: missing timestamp in cksum output resulting in bad Splunk interpretation
+# Modified by Guilhem Marchand 05/21/2014: clear content of cksum reference file for each iteration after check step
+
+$nmon2csv_ver="1.0.7 May 2014";
 
 use Time::Local;
 
@@ -85,13 +87,15 @@ close $fh;
 # Compute CKSUM of file to avoid Splunk duplicating data by relaunching multiple times this script
 
 # Open temp nmon
-open FILE, $file or die "can't open file!";
+open FILE, $file or die "$curr_date Error can't open file!";
 
 # Compute cksum
 
+$curr_date=`date`; 
+
 my $cksum_hash = `cat $file | cksum | awk '{print \$1}'`;
 
-print "NMON file cksum: $cksum_hash";
+print "$curr_date NMON file cksum: $cksum_hash";
 
 # Open CKSUM_REF file
 open(CKSUM,$CKSUM_REF);
@@ -100,20 +104,20 @@ open(CKSUM,$CKSUM_REF);
 
 if (grep{/$cksum_hash/} <CKSUM>){
 
-   print "Process done.\n";
+   print "$curr_date Process done.\n";
    
    # Delete temp nmon file
 	unlink $file;
 	exit;
 
 }else{
-   print "cksum unknown, let's convert data.\n";
+   print "$curr_date cksum unknown, let's convert data.\n";
 
 	# Savecksum
-	
+
 	# Open for writing
-		unless (open(CKSUM, ">>$CKSUM_REF")) { 
-		die("Can not open $$CKSUM_REF\n"); 
+		unless (open(CKSUM, ">$CKSUM_REF")) { 
+		die("$curr_date Error Can not open $$CKSUM_REF\n"); 
 		}
 	
 		print (CKSUM $cksum_hash."\n");
@@ -141,7 +145,7 @@ foreach $FILENAME ( @nmon_files ) {
   
   $curr_date=`date`;  
   
-  print ("$curr_date: Begin processing file = $FILENAME\n");
+  print ("$curr_date Begin processing file = $FILENAME\n");
   
   # Parse nmon file, skip if unsuccessful
   if (( &get_nmon_data ) gt 0 ) { next; }
