@@ -1,7 +1,7 @@
 {% extends "UI_Usage_per_process_body.html" %}
 
 {% load splunkmvc %}
-{% load splunk_wftoolkit %}
+{% load nmon %}
 
 
 {% block css %}
@@ -85,6 +85,23 @@
                 <b>Hosts:</b>                             
                 <p></p>
                 {% dropdown id="hostname-dropdown" managerid="hostname-populate" valueField="hostname" default="none" value="$valueshostname$"|token_safe %}	
+					 </td>
+            </tr>            	
+
+            <tr>
+                <td>
+					 <p></p>
+
+					 <p></p>
+                <b>Optional: Filter by Command name</b>
+                </td>
+                <td>
+                
+                <p></p>                
+                <b>Command:</b>
+                <p></p>                
+					 {% textinput id="command-textinput" value="$valuescommand$"|token_safe default="*" %}
+
 					 </td>
             </tr>            	
 			
@@ -251,7 +268,7 @@
     
 	{% searchmanager 
 	id="search-cpu" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ earliest="$earlyval$" latest="$lateval$" | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | stats $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ earliest="$earlyval$" latest="$lateval$" | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | stats $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
 	preview=True %}
 	
 	{% postprocessmanager 
@@ -266,14 +283,14 @@
 
 	{% searchmanager 
 	id="timesearch-cpu" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ earliest="$earlyval$" latest="$lateval$" | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | timechart span=$valuesspan$ useother=f limit=0 $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ earliest="$earlyval$" latest="$lateval$" | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | timechart span=$valuesspan$ useother=f limit=0 $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
 	preview=True %}
 
 <!-------------------------------------------------------------------- MEMORY Usage -------------------------------------------------------------------->
 
 	{% searchmanager 
 	id="search-memory" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ earliest="$earlyval$" latest="$lateval$" | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=round(((ResData+ResText)/1024),0) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | stats $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command | eval Used_Memory_MB=round(Used_Memory_MB,2)'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ earliest="$earlyval$" latest="$lateval$" | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=round(((ResData+ResText)/1024),0) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | stats $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command | eval Used_Memory_MB=round(Used_Memory_MB,2)'|token_safe 
 	preview=True %}
 	
 	{% postprocessmanager 
@@ -288,7 +305,7 @@
 
 	{% searchmanager 
 	id="timesearch-memory" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ earliest="$earlyval$" latest="$lateval$" | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=round(((ResData+ResText)/1024),0) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | timechart span=$valuesspan$ useother=f limit=0 $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ earliest="$earlyval$" latest="$lateval$" | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=round(((ResData+ResText)/1024),0) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | timechart span=$valuesspan$ useother=f limit=0 $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command'|token_safe 
 	preview=True %}
 
 	

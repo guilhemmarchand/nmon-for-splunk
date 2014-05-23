@@ -60,6 +60,12 @@
       <choice value="center">center</choice>
       <choice value="none">none</choice>
     </input>
+    <input type="text" token="Command" searchWhenChanged="true">
+      <label>Optional: Filter by Command</label>
+      <prefix>Command="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>
   </fieldset>
   <row grouping="6">
     <html>
@@ -70,7 +76,7 @@
     <chart id="link10">
       <title>CPU Usage per logical core</title>
       <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit      
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval conso_per_core=(pct_CPU/100)
@@ -97,7 +103,7 @@ $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
     </chart>
     <chart id="link11">
       <title>Memory Usage per command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s
 | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
@@ -123,7 +129,7 @@ $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</searchString>
     </chart>
     <chart id="link13">
       <title>Read / Write System Calls</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
 | stats sum(CharIO) As CharIO by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(CharIO) as "I/O" by Command</searchString>
@@ -147,7 +153,7 @@ $statsmode$(CharIO) as "I/O" by Command</searchString>
     </chart>
     <chart id="link14">
       <title>Paging, Sum of page faults</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
 | stats sum(Paging) As Paging by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Paging) as "Paging" by Command</searchString>
@@ -171,7 +177,7 @@ $statsmode$(Paging) as "Paging" by Command</searchString>
     </chart>
     <chart id="link15">
       <title>Threads per Command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
 | stats sum(Threads) As Threads By _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Threads) as Threads by Command</searchString>
@@ -197,7 +203,7 @@ $statsmode$(Threads) as Threads by Command</searchString>
   <row>
     <table>
       <title>Table stats: CPU Usage per logical core</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
@@ -221,7 +227,7 @@ $statsmode$(Threads) as Threads by Command</searchString>
     </table>
     <table>
       <title>Table stats: Memory Usage per command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,ResText,ResData,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,ResText,ResData,PID,Command,hostname | bucket _time span=1s
 | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats $statsmode$(Used_Mem_MB) as Used_Mem_MB, sparkline($statsmode$(Used_Mem_MB)) as spk_memusage_per_cmd by Command

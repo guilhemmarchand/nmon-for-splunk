@@ -1,7 +1,7 @@
 {% extends "UI_Compare_body.html" %}
 
 {% load splunkmvc %}
-{% load splunk_wftoolkit %}
+{% load nmon %}
 
 5: {% block title %}NMON CPU Usage Compare Interface{% endblock title %}
 
@@ -161,9 +161,19 @@
             <tr>
                 <td>
 					 <p></p>
-                <b>Select Hostname:</b>.
+
+					 <p></p>
+                <b>Select Hostname:</b>
                 </td>
                 <td>
+                
+                <p></p>                
+                <b>Filter OS Type:</b>
+                <p></p>                
+                {% radiogroup id="osfilter-radiogroup" default="" value="$valuesosfilter$"|token_safe%}
+
+                <p></p>                
+                <b>Hosts:</b>                             
                 <p></p>
                 {% dropdown id="hostname-dropdown" managerid="hostname-populate" valueField="hostname" default="none" value="$valueshostname$"|token_safe %}	
 					 </td>
@@ -253,7 +263,7 @@
 	<!-- Populate dropdown (main search) -->
 	
 	{% searchmanager
-		id="hostname-populate" search='index=nmon earliest_time="$earlyval1$" latest_time="$lateval1$" $valuesmonitor$ | stats count by hostname'|token_safe
+		id="hostname-populate" search='index=nmon sourcetype=nmon_data earliest_time="$earlyval1$" latest_time="$lateval1$" $valuesmonitor$ | stats count by hostname $valuesosfilter$'|token_safe
 		cache=True
 		preview=True %}
 
@@ -359,6 +369,16 @@
  
 		// Assign them to the button group
 		splunkjs.mvc.Components.getInstance("hostname-dropdown").settings.set("choices", choices);		
+
+		var choices = [
+        {label: " Any OS", value: ""},
+        {label: " AIX", value: "| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]"},
+        {label: " Linux", value: "| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]"},
+        {label: " Solaris", value: "| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]"}
+        ] 
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);
 		
     });
 </script>

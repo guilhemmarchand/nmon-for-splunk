@@ -2,7 +2,6 @@
   <label>NMON - TOP, Solaris Processes System Resources statistics</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -10,14 +9,12 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]</default>
       <choice value="| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
       <choice value="">Inactive</choice>
     </input>
-
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Select a Host:</label>
       <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=TOP | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
@@ -25,7 +22,6 @@
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-
     <input type="radio" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -33,23 +29,20 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-
     <input type="radio" token="chart" searchWhenChanged="true">
       <label>Select a type of chart:</label>
       <default>area</default>
       <choice value="area">Area (recommended)</choice>
       <choice value="line">Line</choice>
       <choice value="column">Column</choice>
-      <choice value="bar">Bar</choice>      
+      <choice value="bar">Bar</choice>
     </input>
-
     <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
       <label>Select a stacking mode:</label>
       <default>stacked</default>
       <choice value="stacked">stacked (recommended)</choice>
       <choice value="unstacked">unstacked</choice>
     </input>
-
     <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
       <label>Missing Data:</label>
       <default>gaps</default>
@@ -57,7 +50,6 @@
       <choice value="connect">Connect</choice>
       <choice value="zero">Zero</choice>
     </input>
-    
     <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
       <label>Legend placement:</label>
       <default>bottom</default>
@@ -67,22 +59,24 @@
       <choice value="right">right</choice>
       <choice value="center">center</choice>
       <choice value="none">none</choice>
-    </input>    
-
+    </input>
+    <input type="text" token="Command" searchWhenChanged="true">
+      <label>Optional: Filter by Command</label>
+      <default>*</default>
+      <prefix>Command="</prefix>
+      <suffix>"</suffix>
+    </input>
   </fieldset>
-
   <row grouping="7">
-
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11,link12,link13,link14,link15">Select a view:<!--Links go here-->
       </div>
     </html>
-
     <chart id="link10">
       <title>CPU Usage per logical core</title>
       <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit      
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval conso_per_core=(pct_CPU/100)
@@ -104,13 +98,12 @@ $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Logical Core</option>
     </chart>
-
     <chart id="link11">
       <title>Physical Memory (RSS) Usage per command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
 | stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
@@ -131,13 +124,12 @@ $statsmode$(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Megabytes (MB)</option>
     </chart>
-
     <chart id="link12">
       <title>Virtual Memory (SIZE) Usage per command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,Size,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,PID,Command,Size,hostname | bucket _time span=1s
 | stats count(Command) As count, max(Size) As Size by _time,hostname,Command
 | eval Virt_Mem_MB=round(((Size)/1024),2)
 | stats sum(Virt_Mem_MB) As Virt_Mem_MB by _time,Command
@@ -158,13 +150,12 @@ $statsmode$(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Megabytes (MB)</option>
     </chart>
-
     <chart id="link13">
       <title>Paging, Sum of page faults</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
 | stats sum(Paging) As Paging by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Paging) as "Paging" by Command</searchString>
@@ -183,17 +174,15 @@ $statsmode$(Paging) as "Paging" by Command</searchString>
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Page</option>
     </chart>
-
     <chart id="link14">
       <title>Threads per Command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
 | stats sum(Threads) As Threads By _time,Command
 | timechart `inline_customspan` useother=f limit=0
-$statsmode$(Threads) as Threads by Command
-</searchString>
+$statsmode$(Threads) as Threads by Command</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -209,17 +198,15 @@ $statsmode$(Threads) as Threads by Command
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Number of Threads</option>
     </chart>
-
     <chart id="link15">
       <title>CharIO (Read/Write system calls) per Command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
 | stats sum(CharIO) As CharIO By _time,Command
 | timechart `inline_customspan` useother=f limit=0
-$statsmode$(CharIO) as CharIO by Command
-</searchString>
+$statsmode$(CharIO) as CharIO by Command</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -235,17 +222,14 @@ $statsmode$(CharIO) as CharIO by Command
       <option name="charting.legend.placement">$charting.legend.placement$</option>
       <option name="height">450px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">bytes/sec</option>
     </chart>
-
   </row>
-
-   <row>
-
+  <row>
     <table>
       <title>Table stats: CPU Usage per logical core</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
@@ -267,17 +251,14 @@ $statsmode$(CharIO) as CharIO by Command
         <option name="height">25px</option>
       </format>
     </table>
-
     <table>
       <title>Table stats: Physical Memory Usage per command invocation</title>
-      <searchString>
-index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
+      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
 | stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
 | stats $statsmode$(Phys_Mem_MB) As Phys_Mem_MB, sparkline($statsmode$(Phys_Mem_MB)) As spk_Phys_Mem_MB by Command
-| sort - Phys_Mem_MB, hostname | rename Phys_Mem_MB As "Physical Memory (MB)"
-</searchString>
+| sort - Phys_Mem_MB, hostname | rename Phys_Mem_MB As "Physical Memory (MB)"</searchString>
       <option name="wrap">true</option>
       <option name="rowNumbers">false</option>
       <option name="dataOverlayMode">none</option>
@@ -291,7 +272,5 @@ index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,Re
         <option name="height">25px</option>
       </format>
     </table>
-
   </row>
-
 </form>
