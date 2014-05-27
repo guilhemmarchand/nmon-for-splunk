@@ -50,7 +50,7 @@
    limitations under the License.<br/>
 	<br/>
 	
-<b>nmon release 1.2.5</b>
+<b>nmon release 1.2.6</b>
 
 <br/>
 
@@ -1641,24 +1641,70 @@ Change "disabled = true" to "false", and restart Splunk.
 <br />
 <br />
 
-<h2>STEP 2: Add Splunk Monitors </h2>
+<h2>STEP 2: Add an addional monitor that watches for files and directories, and finally convert/index nmon files </h2>
 
 <p>
 
 <br />
-Then, simply add a monitor that will watch for any new or updated Nmon file and will convert and index Nmon data.
+So you have a central file server share where Nmon files are being centralized, the better option is probrably having it mounted using NFS.
 
 <br />
 <br />
-Copy defaults/inputs.conf and defaults/props.conf to local/, edit each config file to configure your additional monitor.
+
+<b>Based on this point, let's say for the example that your nmon files are being collected as follows:</b>
+
+<xmp>
+		/mnt/NFS-SHARE/nmon-repository/YYYY-MM-DD
+</xmp>
+
+
+
+<b>All you need is creating your "inputs.conf" and "props.conf" in the local directory, with stanza based on default configuration, example:</b>
 
 <br />
 <br />
-Restart Splunk and Nmon collect will start.
-	
-	
+
+<b>"local/inputs.conf" </b>
+
+<xmp>
+		[monitor:///mnt/NFS-SHARE/nmon-repository/*/*nmon]
+		
+		disabled = false
+		index = nmon
+		sourcetype = nmon_processing
+		crcSalt = &lt;SOURCE&gt;
+</xmp>
+
+<b>"local/props.conf" </b>
+
+<xmp>
+		[source::/mnt/NFS-SHARE/nmon-repository/*/*nmon]
+		
+		invalid_cause = archive
+		unarchive_cmd = $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl
+		sourcetype = nmon_processing
+		NO_BINARY_CHECK = true
+</xmp>
+
 <br />
 <br />	
+
+<b>Then restart Splunk.</b>
+
+<br />
+<br />	
+
+<b>Depending on the number of files and directory, Splunk may requires some times before beginning to start files conversion and indexing.</b>
+
+<br />
+<br />	
+
+NOTE: Keep in mind that if many files are present, an heavy and long process of conversion and indexing data will have to done, which can also result in a licence violation because a massive indexing operation. (thus that's not necessary a problem)
+
+<br />
+<br />	
+
+
 	
 </p>	
 	
@@ -1919,11 +1965,11 @@ The App Home Page will you give direct access to every content and views availab
 
 <br />
 
-<h2>Upgrade of Splunk Indexer</h2>
+<h2>Upgrade "nmon" standard Application for Indexers and Head search nodes</h2>
 
 <p>
 
-Upgrading Splunk for NMON App should be as easy as with any other App, just upgrade the App through the manager and you're done.
+Upgrading Splunk for NMON App should be as easy as with any other App, just upgrade the App through the manager and you're done. (this can also be done manually but i would recommend using the Manager)
 <br />
 <br />
 Please note any configuration file located in "local" directory shall not be affected by any update process.
@@ -1936,7 +1982,7 @@ Therefore, as with any upgrade or update operation, i strongly recommend to have
 
 <br />
 
-<h2>Upgrade of light Forwarders</h2>
+<h2>Upgrade of TA-nmon for Universal Forwarders</h2>
 
 <p>
 
@@ -1948,7 +1994,7 @@ When using Splunk Deployment server (see scenario 1), upgrading the TA-nmon Appl
 
 <br />
 
-<li>In CLI, go within the deployment directory and extract the new TA-nmon version:</li>
+<li>In CLI, go within the deployment directory and extract the new TA-nmon version: (that you uploaded in /tmp for example)</li>
 
 <br />
 
@@ -1960,7 +2006,7 @@ $ cd /opt/splunk/etc/deployment-apps
 <br />
 
 <code>
-$ tar -xvzf $HOME_SPLUNK/etc/apps/nmon/TA-nmon*.tar.gz
+$ tar -xvzf /tmp/TA-nmon*.tar.gz
 </code>
 
 
@@ -1974,6 +2020,46 @@ $ tar -xvzf $HOME_SPLUNK/etc/apps/nmon/TA-nmon*.tar.gz
 <br />
 
 </p>
+
+
+<h2>Upgrade of PA-nmon for Splunk Clusters (bundle configuration to deploy to master node, and then pushed to peer nodes)</h2>
+
+<p>
+
+<lu>
+
+<li>Upload the new version of the PA-nmon App to your master node (in /tmp for example)</li>
+
+<br />
+
+<li>In CLI, Apply the new bundle configuration:</li>
+
+<br />
+
+<code>
+$ splunk apply cluster-bundle
+</code>
+
+<br />
+<br />
+
+<code>
+$ splunk show cluster-bundle-status
+</code>
+
+
+<br />
+<br />
+
+</lu>
+
+<br />
+
+</p>
+
+
+
+
 
 <br />
 

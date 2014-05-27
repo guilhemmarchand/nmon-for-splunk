@@ -263,14 +263,18 @@
 	<!-- Populate dropdown (main search) -->
 	
 	{% searchmanager
-		id="hostname-populate" search='index=nmon sourcetype=nmon_data earliest_time="$earlyval1$" latest_time="$lateval1$" $valuesmonitor$ | stats count by hostname $valuesosfilter$'|token_safe
+		id="hostname-populate" search='index=nmon sourcetype=nmon_data $valuesmonitor$ | stats count by hostname $valuesosfilter$'|token_safe
+		earliest_time="$earlyval1$"|token_safe
+		latest_time="$lateval1$"|token_safe
 		cache=True
 		preview=True %}
 
 	<!-- Interval Definition (span) -->
 	
 	{% searchmanager
-		id="interval-definition" search='index=nmon sourcetype=nmon_data earliest_time="$earlyval1$" latest_time="$lateval1$" hostname=$valueshostname$ type=$valuesmonitor$ | `inline_customspan_django`'|token_safe
+		id="interval-definition" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `inline_customspan_django`'|token_safe
+		earliest_time="$earlyval1$"|token_safe
+		latest_time="$lateval1$"|token_safe
 		autostart=True	
 		cache=False
 		preview=True %}
@@ -278,31 +282,41 @@
 	<!-- Date show for both periods -->
 	
 	{% searchmanager
-		id="showtime-period1" search='index=nmon sourcetype=nmon_data earliest_time="$earlyval1$" latest_time="$lateval1$" hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | addinfo | eval earliest_period1=info_min_time | eval latest_period1=if(info_max_time == "+Infinity", info_search_time,info_max_time) | eval start_period1=strftime(earliest_period1,"%m/%d/%Y %H:%M") | eval end_period1=strftime(latest_period1,"%m/%d/%Y %H:%M")'|token_safe
+		id="showtime-period1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | addinfo | eval earliest_period1=info_min_time | eval latest_period1=if(info_max_time == "+Infinity", info_search_time,info_max_time) | eval start_period1=strftime(earliest_period1,"%m/%d/%Y %H:%M") | eval end_period1=strftime(latest_period1,"%m/%d/%Y %H:%M")'|token_safe
+		earliest_time="$earlyval1$"|token_safe
+		latest_time="$lateval1$"|token_safe
 		autostart=True	
 		cache=False %}
 	
 	{% searchmanager
-		id="showtime-period2" search='index=nmon sourcetype=nmon_data earliest_time="$earlyval2$" latest_time="$lateval2$" hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | addinfo | eval earliest_period2=info_min_time | eval latest_period2=if(info_max_time == "+Infinity", info_search_time,info_max_time) | eval start_period2=strftime(earliest_period2,"%m/%d/%Y %H:%M") | eval end_period2=strftime(latest_period2,"%m/%d/%Y %H:%M")'|token_safe
+		id="showtime-period2" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | addinfo | eval earliest_period2=info_min_time | eval latest_period2=if(info_max_time == "+Infinity", info_search_time,info_max_time) | eval start_period2=strftime(earliest_period2,"%m/%d/%Y %H:%M") | eval end_period2=strftime(latest_period2,"%m/%d/%Y %H:%M")'|token_safe
+		earliest_time="$earlyval2$"|token_safe
+		latest_time="$lateval2$"|token_safe
 		autostart=True	
 		cache=False %}
 	
 	<!-- Main Searches -->
 
 	{% searchmanager
-		id="search1" search='index=nmon sourcetype=nmon_data earliest_time="$earlyval1$" latest_time="$lateval1$" hostname=$valueshostname$ type=$valuesmonitor$ | stats $valuesstats$(usage) As usage_period1, $valuesstats$(pct_usage) As pct_usage_period1, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | join hostname [ search index=nmon sourcetype=nmon_data earliest_time="$earlyval2$" latest_time="$lateval2$" hostname=$valueshostname$ type=$valuesmonitor$ | stats $valuesstats$(usage) As usage_period2, $valuesstats$(pct_usage) As pct_usage_period2 by hostname] | `eval_compare`'|token_safe
+		id="search1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | stats $valuesstats$(usage) As usage_period1, $valuesstats$(pct_usage) As pct_usage_period1, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | join hostname [ search index=nmon sourcetype=nmon_data earliest_time="$earlyval2$" latest_time="$lateval2$" hostname=$valueshostname$ type=$valuesmonitor$ | stats $valuesstats$(usage) As usage_period2, $valuesstats$(pct_usage) As pct_usage_period2 by hostname] | `eval_compare`'|token_safe
+		earliest_time="$earlyval1$"|token_safe
+		latest_time="$lateval1$"|token_safe
 		autostart=True		
 		cache=True
 		preview=True %}
 
 	{% searchmanager
-		id="search-period1" search='index=nmon sourcetype=nmon_data earliest="$earlyval1$" latest="$lateval1$" hostname=$valueshostname$ type=$valuesmonitor$ | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period1 by hostname'|token_safe
-		autostart=True		
+		id="search-period1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period1 by hostname'|token_safe
+		earliest_time="$earlyval1$"|token_safe
+		latest_time="$lateval1$"|token_safe
+		autostart=True
 		cache=False
 		preview=True %}
 	
 	{% searchmanager
-		id="search-period2" search='index=nmon sourcetype=nmon_data earliest="$earlyval2$" latest="$lateval2$" hostname=$valueshostname$ type=$valuesmonitor$ | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period2 by hostname'|token_safe
+		id="search-period2" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period2 by hostname'|token_safe
+		earliest_time="$earlyval2$"|token_safe
+		latest_time="$lateval2$"|token_safe
 		autostart=True		
 		cache=False
 		preview=True %}

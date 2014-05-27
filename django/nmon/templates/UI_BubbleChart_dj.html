@@ -103,7 +103,7 @@
         {% d3chart 
             id="d3chart1"
             managerid="post1"
-			type="discreteBarChart"
+				type="discreteBarChart"
             valueField="usage"
             labelField="hostname"
             categoryField="hostname" %}
@@ -124,12 +124,16 @@
     
 	{% searchmanager 
 	id="search1"
-	search='index=nmon earliest="$earlyval$" latest="$lateval$" type=$valuesmonitor$ | stats $valuesstats$(usage) As usage by hostname | sort - usage | head 100'|token_safe 
+	search='index=nmon type=$valuesmonitor$ | stats $valuesstats$(usage) As usage by hostname | sort - usage | head 100'|token_safe 
+	earliest_time="$earlyval$"|token_safe
+	latest_time="$lateval$"|token_safe
 	preview=True %}
 	
 	{% searchmanager 
 	id="search2" 
-	search='index=nmon earliest="$earlyval$" latest="$lateval$" type=$valuesmonitor$ | stats $valuesstats$(usage) As usage, $valuesstats$(pct_usage) As pct_usage, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | fields hostname,usage,pct_usage,*'|token_safe 
+	search='index=nmon type=$valuesmonitor$ | stats $valuesstats$(usage) As usage, $valuesstats$(pct_usage) As pct_usage, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | fields hostname,usage,pct_usage,*'|token_safe 
+	earliest_time="$earlyval$"|token_safe
+	latest_time="$lateval$"|token_safe
 	preview=True %}
 	
 	{% postprocessmanager 

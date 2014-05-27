@@ -12,11 +12,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-nmon release 1.2.5
+nmon release 1.2.6
 
 
 
-#PLEASE SEE THE HELP PAGE accessible from Home page within the Application for the most up to date documentation!
+#PLEASE SEE THE HELP PAGE accessible from Home page within the Application for the most up to date and complete documentation (limited size in Splunk Base)
 
 
 #Welcome in Splunk for NMON, Performance Monitor for Unix and Linux Systems#

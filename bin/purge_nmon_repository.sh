@@ -8,7 +8,7 @@
 # Disclaimer:  this provided "as is".  
 # Date - May 2014
 
-# Version 1.1.2
+# Version 1.1.3
 
 # For AIX / Linux / Solaris
 
@@ -17,20 +17,19 @@
 #################################################
 
 # App directory definition
-echo $SPLUNK_HOME|grep -q forwarder
+echo $SPLUNK_HOME|grep forwarder >/dev/null
 case $? in
 
 0 )
-	APP=$SPLUNK_HOME/etc/apps/TA-nmon ;;
+        APP=$SPLUNK_HOME/etc/apps/TA-nmon ;;
 * )
-	APP=$SPLUNK_HOME/etc/apps/nmon ;;
+        APP=$SPLUNK_HOME/etc/apps/nmon ;;
 
 esac
 
-if [ -d $SPLUNK_HOME/etc/slave-apps/_cluster ];then
+if [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
         APP=$SPLUNK_HOME/etc/slave-apps/PA-nmon
 fi
-
 
 # Clean various dir
 NMON_REPO=${APP}/var/nmon_repository

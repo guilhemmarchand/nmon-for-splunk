@@ -169,9 +169,9 @@
 		
 	{% searchmanager
 		id="eventcount-search"
-		search='| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, "Size (MB)", "Millions of Events"'|token_safe
+		search='| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"'|token_safe
 		preview=True
-		cache=True %}
+		cache=False %}
 
 <!-- Metadata -->
 
@@ -185,13 +185,17 @@
 
 	{% searchmanager
 		id="metric-search"
-		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="$earlyval$" latest="$lateval$" | eval MB = round(kb/1024,2) | bucket _time span=1d | rename series As index | stats avg(MB) as avg, max(MB) As "Max (MB)", sum(MB) As "Total (MB)" by _time,index | sort - _time | eval avg=round(avg,2) | rename avg As "Average (MB)"'|token_safe
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | bucket _time `internal_table_stats_span` | rename series As index | stats avg(MB) as avg, max(MB) As "Max (MB)", sum(MB) As "Total (MB)" by _time,index | sort - _time | eval avg=round(avg,2) | rename avg As "Average (MB)"'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
 		preview=True
 		cache=True %}
 	
 	{% searchmanager
 		id="metric-timechartsearch"
-		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="$earlyval$" latest="$lateval$" | eval MB = round(kb/1024,2) | timechart limit=0 useother=f sum(MB) by series | fillnull value=0'|token_safe
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart limit=0 useother=f sum(MB) by series | fillnull value=0'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
 		preview=True
 		cache=True %}
 	
@@ -201,7 +205,9 @@
 
 	{% searchmanager
 		id="hitsperpage-search"
-		search='index=_internal earliest="$earlyval$" latest="$lateval$" sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home*'|token_safe
+		search='index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home*'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
 		preview=True
 		cache=True %}
 
@@ -219,7 +225,9 @@
 
 	{% searchmanager
 		id="scheduler-chart-search"
-		search='index=_internal earliest="$earlyval$" latest="$lateval$" host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app'|token_safe
+		search='index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
 		preview=True
 		cache=True %}
 
