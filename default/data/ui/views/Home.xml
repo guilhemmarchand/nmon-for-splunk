@@ -1,14 +1,14 @@
 <form stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css">
   <label>NMON Performance Monitor</label>
-  <description>Version 1.2.6</description>
+  <description>Version 1.2.7</description>
   <row>
     <html>
 
-		<br />
+		<br/>
 
 		<div class="round-button">
 			<a href="Help">
-			<img src="../../static/app/nmon/icons/Help_Icon.svg" alt="Help" />
+			<img src="../../static/app/nmon/icons/Help_Icon.svg" alt="Help"/>
 			</a>
 		</div>
 
@@ -20,7 +20,7 @@
         <h2>Performance Monitor for Unix and Linux Systems</h2>
 		</div>
 
-		<br />
+		<br/>
 		
 
 		<div class="custom">
@@ -39,9 +39,9 @@
 		  
 			<a class="button glow" href="Home_SOLARIS">SOLARIS SYSTEM</a>
 
-        <br />
+        <br/>
         
-        <br />
+        <br/>
         
 		</div>
 
@@ -53,49 +53,68 @@
 			<a class="button2 glow" target="_blank" href="Home_NMON_Analyser">NMON ANALYSER</a>
 		</div>
 		
-		<br />
+		<br/>
 		 
     </html>
   </row>
+  <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>
+  <row>
+    <panel>
+     <html>
+      <div class="custom">
+        <h1>INDEXING INFORMATIONS</h1>
+      </div>
+     </html>
+      <single>
+        <searchPostProcess>fields index</searchPostProcess>
+        <option name="linkView">search</option>
+        <option name="underLabel">DATA INDEX NAME</option>
+        <option name="drilldown">none</option>
+        <option name="drilldown">all</option>
+        <option name="linkFields">result</option>
+		<option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>        
+      </single>
+      <single>
+        <searchPostProcess>fields First*</searchPostProcess>
+        <option name="linkView">search</option>
+        <option name="underLabel">DATE OF FIRST EVENT</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.auto.interval">30</option>
+        <option name="drilldown">all</option>
+        <option name="linkFields">result</option>
+		<option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>        
+      </single>
+      <single>
+        <searchString>| `indexes_datestats` | where (sourcetype == "nmon_data") | fields Last*</searchString>
+        <option name="linkView">search</option>
+        <option name="underLabel">DATE OF LAST EVENT</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.auto.interval">30</option>
+        <option name="drilldown">all</option>
+        <option name="linkFields">result</option>
+		<option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>        
+      </single>
+      <single>
+        <searchName>Hosts with data within last 7 days</searchName>
+        <option name="beforeLabel">There have been</option>
+        <option name="linkView">search</option>
+        <option name="afterLabel">Host(s) with activity</option>
+        <option name="underLabel">IN THE LAST 7 DAYS</option>
+        <option name="refresh.auto.interval">30</option>
+        <option name="field">count</option>
+        <option name="drilldown">all</option>
+        <option name="linkFields">result</option>
+		<option name="linkSearch">index=nmon sourcetype=nmon_data earliest="-7d@d" latest="now" | stats dc(hostname) As count</option>        
+      </single>
+    </panel>
+  </row>
   <row>
     <html>
       <div class="custom">
-        <h1>Indexing Informations</h1>
+        <h1>INTERFACES PER CATEGORY</h1>
       </div>
     </html>
   </row>
-  <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>    
-  <row grouping="1">
-    <single>
-      <searchPostProcess>fields index</searchPostProcess>
-      <option name="beforeLabel">Data Index:</option>
-      <option name="linkView">search</option>
-    </single>
-    <single>
-      <searchPostProcess>fields First*</searchPostProcess>
-      <option name="beforeLabel">First event date:</option>
-      <option name="linkView">search</option>
-    </single>
-    <single>
-      <searchPostProcess>fields Last*</searchPostProcess>
-      <option name="beforeLabel">Last event date:</option>
-      <option name="linkView">search</option>
-    </single>
-    <single>
-      <searchName>Hosts with data within last 7 days</searchName>
-      <option name="beforeLabel">Hosts with data within last 7 days:</option>
-      <option name="linkView">search</option>
-    </single>
-  </row>
-
-  <row>
-    <html>
-      <div class="custom">
-        <h1>User Interfaces per Category</h1>
-      </div>
-    </html>
-  </row>
-
   <row grouping="1">
     <html>
 
@@ -106,41 +125,40 @@
       
 		<div class="ui_list">		
       
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_CPU_ALL" target="_blank">CPU_ALL: CPU Percentage of Utilization</a>
 			</li>
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_LPAR" target="_blank">LPAR: Virtual Partition CPU Utilization</a>
 			</li>
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_LPAR_poolconso" target="_blank">LPAR: Pool Virtual CPU Utilization</a>
 			</li>          
           
           
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       </div>
       
     </html>
-
     <html>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="Process"/>
           <h2>Process, Kernel, I/O Statistics</h2>
           
-         <br />
-         <br />
+         <br/>
+         <br/>
 		</div>
 		      
       <div class="ui_list">
@@ -149,50 +167,49 @@
 				<a href="Home_NMON_TOP" target="_blank">TOP: Detailed Processes Ressources Usage</a>
 			</li>          
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_FILE" target="_blank">FILE (AIX, Solaris): Kernel File Statistics</a>
 			</li>          
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_IOADAPT" target="_blank">IOADAPT (AIX): I/O Adapters Read/Write Operations</a>
 			</li>
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_PROC" target="_blank">PROC: Kernel Internal Statistics</a>
 			</li>
           
-         <br />
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_PROCSOL_SOLARIS" target="_blank">PROCSOL (Solaris): Percentage of Time Processes have spent in</a>
 			</li>
           
-         <br />          
+         <br/>          
           
       	<li>
 				<a href="UI_Nmon_PAGE_AIX" target="_blank">PAGE (AIX): Paging Statistics</a>
 			</li>
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="Home_NMON_VM" target="_blank">VM: Kernel Virtual Memory Statistics</a>
 			</li>
 
 
-         <br />
-         <br />          
+         <br/>
+         <br/>          
           
 		</div>
 
     </html>
-
     <html>
 
 		<div class="imgheader">
@@ -204,35 +221,34 @@
 		
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       	<li>
 				<a href="UI_Nmon_MEMNEW_AIX" target="_blank">MEMNEW (AIX): Percentage of Memory Allocation</a>
 			</li>
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="Home_NMON_MEM" target="_blank">MEM: Memory Usage</a>
 			</li>          
 
-         <br />
+         <br/>
           
       	<li>
 				<a href="Home_NMON_MEMUSE" target="_blank">MEMUSE (AIX, Solaris): Various Memory Statistics</a>
 			</li>
 
           
-         <br />
-         <br />
+         <br/>
+         <br/>
 
 
 		</div>
           
           
     </html>
-
     <html>
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="Drive"/>
@@ -241,55 +257,52 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
 
       	<li>
               <a href="UI_Nmon_DISKBSIZE" target="_blank">DISKBSIZE: Average Data Transfer Size</a>
 			</li>      
       
-      	<br />
+      	<br/>
       
       	<li>
               <a href="UI_Nmon_DISKBUSY" target="_blank">DISKBUSY: Percent of time busy Disk</a>
 			</li>
       
-      	<br />
+      	<br/>
       
       	<li>
               <a href="UI_Nmon_DISKREAD-WRITE" target="_blank">DISKREAD/WRITE, Disk Read/Write Data Rate</a>
 			</li>      
 
-         <br />
+         <br/>
       
       	<li>
               <a href="UI_Nmon_DISKXFER" target="_blank">DISKXFER: Disk I/O Operations Per Second (IOPS)</a>
 			</li>      
 
-         <br />
+         <br/>
       
       	<li>
               <a href="UI_Nmon_JFSFILE" target="_blank">JFSFILE: Filesystems Percentage Usage</a>
 			</li>          
           
-         <br />
+         <br/>
       
       	<li>
               <a href="UI_Nmon_JFSINODE_AIX" target="_blank">JFSINODE (AIX): Filesystems Inode Percentage Usage</a>
 			</li>           
           
-         <br />
-         <br />
+         <br/>
+         <br/>
 
 		</div>
 
     </html>
-
   </row>
-
   <row grouping="1">
-
-     <html>
+    <html>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/network.png" alt="Network"/>
@@ -298,32 +311,31 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       	<li>
               <a href="UI_Nmon_NET" target="_blank">NET: Traffic Data Rate per Interface</a>
 			</li>      
 
-         <br />
+         <br/>
           
       	<li>
               <a href="UI_Nmon_NETPACKET" target="_blank">NETPACKET: Read/Write packets per Interface</a>
 			</li>
 
-         <br />
+         <br/>
           
       	<li>
               <a href="UI_Nmon_NETERROR" target="_blank">NETERROR (AIX, Solaris): Error packets per Interface</a>
 			</li>
       
-         <br />
-         <br />
+         <br/>
+         <br/>
 
 		</div>      
 
-    </html> 
-
+    </html>
     <html>
 
 		<div class="imgheader">
@@ -333,14 +345,14 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       	<li>
               <a href="../../../dj/en-us/nmon/UI_Predict_dj" target="_blank">CPU Usage Predictive Interface</a>
 		</li>      
 
-         <br />
+         <br/>
       </div>
       
 		<div class="imgheader">
@@ -350,20 +362,19 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
 
       	<li>
               <a href="../../../dj/en-us/nmon/UI_Compare_dj" target="_blank">CPU Usage Compare Interface</a>
 		</li>          
           
-         <br />
-         <br />         
+         <br/>
+         <br/>         
 
       </div>	  
 	  
     </html>
-	
     <html>
 
 		<div class="imgheader">
@@ -373,26 +384,26 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
       
       	<li>
               <a href="../../../dj/en-us/nmon/UI_BubbleChart_dj" target="_blank">BubbleChart: TOP Hosts CPU Usage</a>
 		</li>	  
 	  
-         <br />
+         <br/>
 
       	<li>
               <a href="../../../dj/en-us/nmon/UI_TOPChart_dj" target="_blank">PieChart: TOP Hosts CPU and Memory Usage</a>
 		</li>	  
 	  
-         <br />
+         <br/>
 
       	<li>
               <a href="Home_NMON_TOP_dj" target="_blank">D3chart: Processes CPU and Memory Usage</a>
 		</li>	  
 
-         <br />
+         <br/>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/server_info.png" alt="ServerInfo"/>
@@ -401,14 +412,14 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       	<li>
               <a href="UI_Nmon_CONFIG" target="_blank">CONFIG: Hosts Configuration Show Interface</a>
 			</li>      
 
-         <br />
+         <br/>
           
       	<li>
               <a href="UI_Nmon_CONFIG_simple_inventory" target="_blank">CONFIG: Hosts Simple Inventory</a>
@@ -416,13 +427,12 @@
 
 		</div>
 
-         <br />
-         <br />
+         <br/>
+         <br/>
 		
 		</div>	
 	
-    </html>	
-	
+    </html>
     <html>
 
 		<div class="imgheader">
@@ -432,20 +442,20 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       	<li>
               <a href="../../../dj/en-us/nmon/UI_Datacollect_processing_dj" target="_blank">NMON Processing: Collect Analysis (Calendar heatmap)</a>
 		</li>      
 
-         <br />
+         <br/>
 		
       	<li>
               <a href="../../../dj/en-us/nmon/UI_Datacollect_data_dj" target="_blank">NMON Data: Collect Analysis (Calendar heatmap)</a>
 		</li>      
 
-         <br />		
+         <br/>		
 		
 		</div>      
       
@@ -456,23 +466,19 @@
 
 		<div class="ui_list">
 
-         <br />
-         <br />
+         <br/>
+         <br/>
           
       	<li>
               <a href="../../../dj/en-us/nmon/System_dj" target="_blank">Application Internal Statistics</a>
 			</li>      
 
-         <br />
-         <br />
+         <br/>
+         <br/>
          
 		</div>
 
       
     </html>
-
   </row>
-
-
-  
 </form>

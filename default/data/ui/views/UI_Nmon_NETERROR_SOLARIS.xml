@@ -38,77 +38,81 @@
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
     </input>
-    <input type="radio" token="chart" searchWhenChanged="true">
-      <label>Select a type of chart:</label>
-      <default>line</default>
-      <choice value="area">Area</choice>
-      <choice value="line">Line (recommended)</choice>
-      <choice value="column">Column</choice>
-      <choice value="bar">Bar</choice>
-    </input>
-    <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-      <label>Select a stacking mode:</label>
-      <default>unstacked</default>
-      <choice value="stacked">stacked</choice>
-      <choice value="unstacked">unstacked (recommended)</choice>
-    </input>
-    <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
-      <label>Missing Data:</label>
-      <default>gaps</default>
-      <choice value="gaps">Gaps</choice>
-      <choice value="connect">Connect</choice>
-      <choice value="zero">Zero</choice>
-    </input>
-    <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-      <label>Legend placement:</label>
-      <default>bottom</default>
-      <choice value="bottom">Bottom</choice>
-      <choice value="top">Top</choice>
-      <choice value="left">left</choice>
-      <choice value="right">right</choice>
-      <choice value="center">center</choice>
-      <choice value="none">none</choice>
-    </input>
   </fieldset>
   <row>
-    <chart>
-      <title>NETERROR - Number of errors packets</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="NETERROR" $hostname$ $device$ | timechart limit=0 useother=f `inline_customspan` $statsmode$(value) As value by device</searchString>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">$chart$</option>
-      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-      <option name="charting.chart.style">shiny</option>
-      <option name="charting.drilldown">all</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">$charting.legend.placement$</option>
-      <option name="height">450px</option>
-      <option name="charting.axisTitleX.text">Time</option>
-      <option name="charting.axisY.minimumNumber">0</option>
-      <option name="charting.axisTitleY.text">Number of Network Packets</option>
-    </chart>
+    <panel>
+      <input type="radio" token="chart" searchWhenChanged="true">
+        <label>Select a type of chart:</label>
+        <default>line</default>
+        <choice value="area">Area</choice>
+        <choice value="line">Line (recommended)</choice>
+        <choice value="column">Column</choice>
+        <choice value="bar">Bar</choice>
+      </input>
+      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked</choice>
+        <choice value="unstacked">unstacked (recommended)</choice>
+      </input>
+      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+        <label>Missing Data:</label>
+        <default>gaps</default>
+        <choice value="gaps">Gaps</choice>
+        <choice value="connect">Connect</choice>
+        <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+        <label>Legend placement:</label>
+        <default>bottom</default>
+        <choice value="bottom">Bottom</choice>
+        <choice value="top">Top</choice>
+        <choice value="left">left</choice>
+        <choice value="right">right</choice>
+        <choice value="center">center</choice>
+        <choice value="none">none</choice>
+      </input>
+      <chart>
+        <title>NETERROR - Number of errors packets</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="NETERROR" $hostname$ $device$ | timechart limit=0 useother=f `inline_customspan` $statsmode$(value) As value by device</searchString>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Number of Network Packets</option>
+      </chart>
+    </panel>
   </row>
   <row>
-    <table>
-      <title>NETERROR - Number of errors packets Table Stats</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="NETERROR" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname,device | eval avg_value=round(avg_value,2) | sort hostname,device</searchString>
-      <option name="wrap">true</option>
-      <option name="rowNumbers">false</option>
-      <option name="dataOverlayMode">none</option>
-      <option name="drilldown">cell</option>
-      <option name="count">10</option>
-      <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-      <format type="sparkline" field="sparkline">
-        <option name="lineColor">#5379af</option>
-        <option name="fillColor">#CCDDFF</option>
-        <option name="lineWidth">1</option>
-        <option name="height">25px</option>
-      </format>
-    </table>
+    <panel>
+      <table>
+        <title>NETERROR - Number of errors packets Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="NETERROR" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname,device | eval avg_value=round(avg_value,2) | sort hostname,device</searchString>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
   </row>
 </form>

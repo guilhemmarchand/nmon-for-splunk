@@ -45,145 +45,176 @@
       <choice value="max(virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
       <choice value="max(entitled) As entitled, max(virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
     </input>
-    <input type="radio" token="chart" searchWhenChanged="true">
-      <label>Select a type of chart:</label>
-      <default>line</default>
-      <choice value="area">Area</choice>
-      <choice value="line">Line (recommended)</choice>
-      <choice value="column">Column</choice>
-      <choice value="bar">Bar</choice>
-    </input>
-    <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-      <label>Select a stacking mode:</label>
-      <default>unstacked</default>
-      <choice value="stacked">stacked</choice>
-      <choice value="unstacked">unstacked (recommended)</choice>
-    </input>
-    <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
-      <label>Missing Data:</label>
-      <default>gaps</default>
-      <choice value="gaps">Gaps</choice>
-      <choice value="connect">Connect</choice>
-      <choice value="zero">Zero</choice>
-    </input>
-    <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-      <label>Legend placement:</label>
-      <default>bottom</default>
-      <choice value="bottom">Bottom</choice>
-      <choice value="top">Top</choice>
-      <choice value="left">left</choice>
-      <choice value="right">right</choice>
-      <choice value="center">center</choice>
-      <choice value="none">none</choice>
-    </input>
   </fieldset>
-  <row>
-    <chart>
-      <title>LPAR Virtual CPU Load</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(usage) As conso, $addindicator$ by hostname</searchString>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">$chart$</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-      <option name="charting.chart.style">shiny</option>
-      <option name="charting.drilldown">all</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-      <option name="charting.legend.placement">$charting.legend.placement$</option>
-      <option name="height">450px</option>
-      <option name="charting.axisTitleX.text">Time</option>
-      <option name="charting.axisTitleY.text">Virtual CPUs</option>
-      <option name="charting.axisY.minimumNumber">0</option>
-      <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-      <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-      <option name="charting.axisTitleY2.visibility">visible</option>
-      <option name="charting.axisY2.enabled">false</option>
-      <option name="charting.axisY2.scale">inherit</option>
-    </chart>
-  </row>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0</searchTemplate>
   <row>
-    <chart>
-      <title>Higher CPU Load</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">radialGauge</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-      <option name="height">200px</option>
-    </chart>
-    <chart>
-      <title>Average CPU Load</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">radialGauge</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-      <option name="height">200px</option>
-    </chart>
-    <chart>
-      <title>Min CPU Load</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | $indicator$ | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">radialGauge</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-      <option name="height">200px</option>
-    </chart>
+    <panel>
+      <input type="radio" token="chart" searchWhenChanged="true">
+        <label>Select a type of chart:</label>
+        <default>line</default>
+        <choice value="area">Area</choice>
+        <choice value="line">Line (recommended)</choice>
+        <choice value="column">Column</choice>
+        <choice value="bar">Bar</choice>
+      </input>
+      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked</choice>
+        <choice value="unstacked">unstacked (recommended)</choice>
+      </input>
+      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+        <label>Missing Data:</label>
+        <default>gaps</default>
+        <choice value="gaps">Gaps</choice>
+        <choice value="connect">Connect</choice>
+        <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+        <label>Legend placement:</label>
+        <default>bottom</default>
+        <choice value="bottom">Bottom</choice>
+        <choice value="top">Top</choice>
+        <choice value="left">left</choice>
+        <choice value="right">right</choice>
+        <choice value="center">center</choice>
+        <choice value="none">none</choice>
+      </input>
+      <chart>
+        <title>LPAR Virtual CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(usage) As conso, $addindicator$ by hostname</searchString>
+        <earliestTime>$earliest$</earliestTime>
+        <latestTime>$latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Virtual CPUs</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+    </panel>
   </row>
   <row>
-    <single>
-      <searchPostProcess>stats max(conso) As max by _time | sort - max | eval time=strftime(_time, "%m/%d/%Y %H:%M") | fields time</searchPostProcess>
-      <option name="beforeLabel">Date of first higher load:</option>
-      <option name="linkView">search</option>
-    </single>
-    <single>
-      <searchPostProcess>stats avg(conso) As avg | eval avg=round(avg,2)</searchPostProcess>
-      <option name="beforeLabel">Average load:</option>
-      <option name="afterLabel">CPUs</option>
-      <option name="linkView">search</option>
-    </single>
-    <single>
-      <searchPostProcess>stats min(conso) As min | eval min=round(min,2)</searchPostProcess>
-      <option name="beforeLabel">Minimal load:</option>
-      <option name="afterLabel">CPUs</option>
-      <option name="linkView">search</option>
-    </single>
+    <panel>
+      <input type="radio" token="gauge.type">
+        <label>Gauge Type:</label>
+        <choice value="fillerGauge">fillerGauge</choice>
+        <choice value="markerGauge">markerGauge</choice>
+        <choice value="radialGauge">radialGauge</choice>
+        <default>radialGauge</default>
+      </input>
+      <input type="radio" token="gauge.style">
+        <label>Gauge Style:</label>
+        <choice value="minimal">minimal</choice>
+        <choice value="shiny">shiny</choice>
+        <default>minimal</default>
+      </input>
+    </panel>
+  </row>  
+  <row>
+    <panel>
+      <chart>
+        <title>Higher CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$gauge.type$</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">$gauge.style$</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="height">200px</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Average CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$gauge.type$</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">$gauge.style$</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="height">200px</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Min CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | $indicator$ | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$gauge.type$</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">$gauge.style$</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="height">200px</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <searchPostProcess>stats max(conso) As max by _time | sort - max | eval time=strftime(_time, "%m/%d/%Y %H:%M") | fields time</searchPostProcess>
+        <option name="beforeLabel">Date of first higher load:</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <searchPostProcess>stats avg(conso) As avg | eval avg=round(avg,2)</searchPostProcess>
+        <option name="beforeLabel">Average load:</option>
+        <option name="afterLabel">CPUs</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <searchPostProcess>stats min(conso) As min | eval min=round(min,2)</searchPostProcess>
+        <option name="beforeLabel">Minimal load:</option>
+        <option name="afterLabel">CPUs</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
   </row>
 </form>

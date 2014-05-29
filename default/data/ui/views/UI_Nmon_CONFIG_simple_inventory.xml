@@ -3,6 +3,7 @@
   <description/>
   <fieldset autoRun="true" submitButton="false">
     <input type="time" searchWhenChanged="true">
+      <label>TimeRange:</label>
       <default>
         <earliestTime>-24h@h</earliestTime>
         <latestTime>now</latestTime>
@@ -12,6 +13,9 @@
   <searchTemplate>`nmon_config_inventory`</searchTemplate>
   <row>
     <html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/icons/grey_theme/inventory.png" alt="Inventory"/>
+      </div>
       <div class="custom">
         <h1>Inventory Summary</h1>
       </div>
@@ -22,23 +26,41 @@
       <searchPostProcess>stats count</searchPostProcess>
       <option name="afterLabel">Hosts known within this period</option>
       <option name="beforeLabel">Found</option>
+      <option name="underLabel">ANY OS</option>
+      <option name="linkView">search</option>
+      <option name="drilldown">all</option>
+      <option name="linkFields">result</option>
+      <option name="linkSearch">`nmon_config_inventory` earliest="-24h@h" latest="now" | stats count</option>
     </single>
   </row>
   <row>
     <single>
       <searchPostProcess>where OStype="AIX" | stats count As AIX_Hosts</searchPostProcess>
       <option name="afterLabel">Hosts</option>
-      <option name="beforeLabel">AIX OS:</option>
+      <option name="beforeLabel">Found</option>
+      <option name="underLabel">AIX</option>
+      <option name="linkView">search</option>
+      <option name="drilldown">all</option>
+      <option name="linkFields">result</option>
+      <option name="linkSearch">`nmon_config_inventory` earliest="-24h@h" latest="now" | where OStype="AIX" | stats count As AIX_Hosts</option>
     </single>
     <single>
       <searchPostProcess>where OStype="Linux" | stats count As Linux_Hosts</searchPostProcess>
       <option name="afterLabel">Hosts</option>
-      <option name="beforeLabel">LINUX OS:</option>
+      <option name="beforeLabel">Found</option>
+      <option name="underLabel">LINUX</option>
+      <option name="drilldown">all</option>
+      <option name="linkFields">result</option>
+      <option name="linkSearch">`nmon_config_inventory` earliest="-24h@h" latest="now" | where OStype="Linux" | stats count As Linux_Hosts</option>
     </single>
     <single>
       <searchPostProcess>where OStype="Solaris" | stats count As Solaris_Hosts</searchPostProcess>
       <option name="afterLabel">Hosts</option>
-      <option name="beforeLabel">SOLARIS OS:</option>
+      <option name="beforeLabel">Found</option>
+      <option name="underLabel">SOLARIS</option>
+      <option name="drilldown">all</option>
+      <option name="linkFields">result</option>
+      <option name="linkSearch">`nmon_config_inventory` earliest="-24h@h" latest="now" | where OStype="Solaris" | stats count As Solaris_Hosts</option>
     </single>
   </row>
   <row>
@@ -57,7 +79,7 @@
       <option name="charting.chart.stackMode">default</option>
       <option name="charting.chart.style">minimal</option>
       <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>      
+      <option name="height">300px</option>
       <option name="charting.layout.splitSeries">0</option>
       <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
       <option name="charting.legend.placement">right</option>
@@ -77,27 +99,35 @@
       <option name="charting.chart.stackMode">default</option>
       <option name="charting.chart.style">minimal</option>
       <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>      
+      <option name="height">300px</option>
       <option name="charting.layout.splitSeries">0</option>
       <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
       <option name="charting.legend.placement">right</option>
     </chart>
   </row>
-  <row grouping ="1,1,1">
+  <row grouping="1,1,1">
     <html>
-      <div class="custom">
-        <h1>AIX Systems</h1>
-      </div>
+      <br/>
+      <div style="text-align: center;">
+          <img src="../../static/app/nmon/logos/OS/colors/AIX_72px.png" alt="AIX"/>
+        <br/>
+        <br/>
+      </div>        
     </html>
     <html>
-      <div class="custom">
-        <h1>Linux Systems</h1>
-      </div>
+      <div style="text-align: center;">
+          <img src="../../static/app/nmon/logos/OS/blackandwhite/linux_alt_128px.png" alt="Linux"/>
+        <br/>
+        <br/>
+      </div>        
     </html>
     <html>
-      <div class="custom">
-        <h1>Solaris Systems</h1>
-      </div>
+      <br/>
+      <div style="text-align: center;">
+          <img src="../../static/app/nmon/logos/OS/colors/solaris_128px.png" alt="Solaris"/>
+        <br/>
+        <br/>
+      </div>        
     </html>
   </row>
   <row grouping="1,1,1">
@@ -116,7 +146,7 @@
       <option name="charting.chart.stackMode">default</option>
       <option name="charting.chart.style">minimal</option>
       <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>      
+      <option name="height">300px</option>
       <option name="charting.layout.splitSeries">0</option>
       <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
       <option name="charting.legend.placement">right</option>
@@ -136,13 +166,13 @@
       <option name="charting.chart.stackMode">default</option>
       <option name="charting.chart.style">minimal</option>
       <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>      
+      <option name="height">300px</option>
       <option name="charting.layout.splitSeries">0</option>
       <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
       <option name="charting.legend.placement">right</option>
     </chart>
     <chart>
-      <title>Nmon versions:</title>
+      <title>Nmon versions</title>
       <searchPostProcess>where OStype="Solaris" | stats count by nmon_version</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
