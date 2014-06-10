@@ -2,12 +2,23 @@
   <label>NMON - NETPACKET, Number of read/write packets per Network Interface</label>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" searchWhenChanged="true">
-      <label>TimeRange:</label>
+      <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
+      <input type="dropdown" token="timefilter" searchWhenChanged="true">
+        <label>Time Filtering:</label>
+        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+        <choice value="Night_AllDays_19h-8h">Night All Days (19h-20h)</choice>
+        <default>No_Filter</default>
+      </input>    
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | stats count by hostname | fields hostname ]</default>
@@ -34,13 +45,16 @@
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-    <input type="radio" token="statsmode" searchWhenChanged="true">
-      <label>Select a stats mode:</label>
-      <default>Max</default>
-      <choice value="max">Max</choice>
-      <choice value="avg">Avg</choice>
-      <choice value="min">Min</choice>
-    </input>
+      <input type="dropdown" token="statsmode" searchWhenChanged="true">
+        <label>Select a stats mode:</label>
+        <default>max</default>
+        <choice value="max">Max</choice>
+        <choice value="avg">Avg</choice>
+        <choice value="min">Min</choice>
+        <choice value="median">Median</choice>
+        <choice value="mode">Mode</choice>
+        <choice value="range">Range</choice>
+      </input>
   </fieldset>
   <row>
     <panel>
@@ -77,7 +91,7 @@
       </input>
       <chart>
         <title>NETPACKET - Number of read/write packets</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ $device$ | timechart limit=0 `inline_customspan` $statsmode$(value) As value by device</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ $device$ | where device!="" | `$timefilter$` | timechart limit=0 `inline_customspan` $statsmode$(value) As value by device</searchString>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -102,7 +116,7 @@
     <panel>
       <table>
         <title>NETPACKET - Number of read/write packets Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname,device | eval avg_value=round(avg_value,2) | sort device</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ $device$ | where device!="" | `$timefilter$` | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname,device | eval avg_value=round(avg_value,2) | sort device</searchString>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>

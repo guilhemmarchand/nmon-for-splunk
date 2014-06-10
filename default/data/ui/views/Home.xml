@@ -1,8 +1,10 @@
-<form stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css">
+<dashboard stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css">
   <label>NMON Performance Monitor</label>
-  <description>Version 1.2.9</description>
+  <description>Version 1.3.1</description>
+  <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>
   <row>
-    <html>
+    <panel>
+      <html>
 
 		<br/>
 
@@ -56,11 +58,11 @@
 		<br/>
 		 
     </html>
+    </panel>
   </row>
-  <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>
   <row>
     <panel>
-     <html>
+      <html>
       <div class="custom">
         <h1>INDEXING INFORMATIONS</h1>
       </div>
@@ -72,7 +74,7 @@
         <option name="drilldown">none</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-		<option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>        
+        <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
       </single>
       <single>
         <searchPostProcess>fields First*</searchPostProcess>
@@ -82,7 +84,7 @@
         <option name="refresh.auto.interval">30</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-		<option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>        
+        <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
       </single>
       <single>
         <searchString>| `indexes_datestats` | where (sourcetype == "nmon_data") | fields Last*</searchString>
@@ -92,7 +94,7 @@
         <option name="refresh.auto.interval">30</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-		<option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>        
+        <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
       </single>
       <single>
         <searchName>Hosts with data within last 7 days</searchName>
@@ -100,23 +102,38 @@
         <option name="linkView">search</option>
         <option name="afterLabel">Host(s) with activity</option>
         <option name="underLabel">IN THE LAST 7 DAYS</option>
-        <option name="refresh.auto.interval">30</option>
+        <option name="refresh.auto.interval">300</option>
         <option name="field">count</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-		<option name="linkSearch">index=nmon sourcetype=nmon_data earliest="-7d@d" latest="now" | stats dc(hostname) As count</option>        
+        <option name="linkSearch">index=nmon sourcetype=nmon_data earliest="-7d@d" latest="now" | stats dc(hostname) As count</option>
+      </single>
+      <single>
+        <searchName>Volume of Data indexed Today</searchName>
+        <option name="beforeLabel">There have been</option>
+        <option name="linkView">search</option>
+        <option name="afterLabel">MB of data indexed</option>
+        <option name="underLabel">TODAY</option>
+        <option name="refresh.auto.interval">130</option>
+        <option name="field">total_MB</option>
+        <option name="drilldown">all</option>
+        <option name="linkFields">result</option>
+        <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon"  series=nmon | eval MB = round(kb/1024,2) | timechart span=1d sum(MB) As total_MB</option>
       </single>
     </panel>
   </row>
   <row>
-    <html>
+    <panel>
+      <html>
       <div class="custom">
         <h1>INTERFACES PER CATEGORY</h1>
       </div>
     </html>
+    </panel>
   </row>
-  <row grouping="1">
-    <html>
+  <row>
+    <panel>
+      <html>
 
       <div class="imgheader">
         	<img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
@@ -151,7 +168,9 @@
       </div>
       
     </html>
-    <html>
+    </panel>
+    <panel>
+      <html>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="Process"/>
@@ -210,7 +229,9 @@
 		</div>
 
     </html>
-    <html>
+    </panel>
+    <panel>
+      <html>
 
 		<div class="imgheader">
 
@@ -249,7 +270,9 @@
           
           
     </html>
-    <html>
+    </panel>
+    <panel>
+      <html>
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="Drive"/>
 		<h2>Disks and Filesystems Statistics</h2>		
@@ -300,9 +323,11 @@
 		</div>
 
     </html>
+    </panel>
   </row>
-  <row grouping="1">
-    <html>
+  <row>
+    <panel>
+      <html>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/network.png" alt="Network"/>
@@ -336,7 +361,9 @@
 		</div>      
 
     </html>
-    <html>
+    </panel>
+    <panel>
+      <html>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/predict.png" alt="Prediction"/>
@@ -366,7 +393,7 @@
          <br/>
 
       	<li>
-              <a href="../../../dj/en-us/nmon/UI_Compare_dj" target="_blank">CPU Usage Compare Interface</a>
+              <a href="UI_Nmon_compare" target="_blank">Nmon Comparison Interface</a>
 		</li>          
           
          <br/>
@@ -375,7 +402,9 @@
       </div>	  
 	  
     </html>
-    <html>
+    </panel>
+    <panel>
+      <html>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/dashboard.png" alt="Dashboard"/>
@@ -433,7 +462,9 @@
 		</div>	
 	
     </html>
-    <html>
+    </panel>
+    <panel>
+      <html>
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/calendar.png" alt="Calendar"/>
@@ -480,5 +511,6 @@
 
       
     </html>
+    </panel>
   </row>
-</form>
+</dashboard>

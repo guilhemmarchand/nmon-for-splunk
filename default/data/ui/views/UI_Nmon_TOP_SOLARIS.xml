@@ -3,12 +3,23 @@
   <description/>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" searchWhenChanged="true">
-      <label>TimeRange:</label>
+      <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
+      <input type="dropdown" token="timefilter" searchWhenChanged="true">
+        <label>Time Filtering:</label>
+        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+        <choice value="Night_AllDays_19h-8h">Night All Days (19h-20h)</choice>
+        <default>No_Filter</default>
+      </input>    
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]</default>
@@ -22,13 +33,16 @@
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-    <input type="radio" token="statsmode" searchWhenChanged="true">
-      <label>Select a stats mode:</label>
-      <default>max</default>
-      <choice value="max">Max</choice>
-      <choice value="avg">Avg</choice>
-      <choice value="min">Min</choice>
-    </input>
+      <input type="dropdown" token="statsmode" searchWhenChanged="true">
+        <label>Select a stats mode:</label>
+        <default>max</default>
+        <choice value="max">Max</choice>
+        <choice value="avg">Avg</choice>
+        <choice value="min">Min</choice>
+        <choice value="median">Median</choice>
+        <choice value="mode">Mode</choice>
+        <choice value="range">Range</choice>
+      </input>
     <input type="text" token="Command" searchWhenChanged="true">
       <label>Optional: Filter by Command</label>
       <default>*</default>
@@ -77,7 +91,7 @@
       <chart id="link10">
         <title>CPU Usage per logical core</title>
         <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit      
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval conso_per_core=(pct_CPU/100)
@@ -104,7 +118,7 @@ $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
       </chart>
       <chart id="link11">
         <title>Physical Memory (RSS) Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
 | stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
@@ -130,7 +144,7 @@ $statsmode$(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
       </chart>
       <chart id="link12">
         <title>Virtual Memory (SIZE) Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,PID,Command,Size,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,PID,Command,Size,hostname | bucket _time span=1s
 | stats count(Command) As count, max(Size) As Size by _time,hostname,Command
 | eval Virt_Mem_MB=round(((Size)/1024),2)
 | stats sum(Virt_Mem_MB) As Virt_Mem_MB by _time,Command
@@ -156,7 +170,7 @@ $statsmode$(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
       </chart>
       <chart id="link13">
         <title>Paging, Sum of page faults</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
 | stats sum(Paging) As Paging by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Paging) as "Paging" by Command</searchString>
@@ -180,7 +194,7 @@ $statsmode$(Paging) as "Paging" by Command</searchString>
       </chart>
       <chart id="link14">
         <title>Threads per Command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
 | stats sum(Threads) As Threads By _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Threads) as Threads by Command</searchString>
@@ -204,7 +218,7 @@ $statsmode$(Threads) as Threads by Command</searchString>
       </chart>
       <chart id="link15">
         <title>CharIO (Read/Write system calls) per Command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
 | stats sum(CharIO) As CharIO By _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(CharIO) as CharIO by Command</searchString>
@@ -232,7 +246,7 @@ $statsmode$(CharIO) as CharIO by Command</searchString>
     <panel>
       <table>
         <title>Table stats: CPU Usage per logical core</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
@@ -258,7 +272,7 @@ $statsmode$(CharIO) as CharIO by Command</searchString>
     <panel>
       <table>
         <title>Table stats: Physical Memory Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
 | stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command

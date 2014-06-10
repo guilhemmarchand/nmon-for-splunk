@@ -104,13 +104,14 @@
 					
     					{% timerange id="timerange-period1" 
 						managerid="search1" 
-        				preset="Last 30 days"
+        				preset="Yesterday"
         				earliest_time="$earlyval1$"|token_safe
         				latest_time="$lateval1$"|token_safe %}         
 
 						<br />
 
 					</td>
+
 
 					<td>						
 
@@ -126,11 +127,27 @@
 									
     					{% timerange id="timerange-period2" 
 						managerid="search1" 
-        				preset="Last 30 days"
+        				preset="Today"
         				earliest_time="$earlyval2$"|token_safe
         				latest_time="$lateval2$"|token_safe %}                
 
 						<br />
+
+					</td>
+
+					<td>
+					
+					<br />
+					<b>Time Filtering:</b>
+
+					<p></p>
+
+					<p>
+					Optional, Filter by hours:					
+					</p>				
+
+					{% dropdown id="filtertime-dropdown" width="200" default="No_Filter" value="$valuesfiltertime$"|token_safe %}
+
 
 					</td>
 
@@ -219,6 +236,22 @@
 {% endblock table1 %}
 
 
+{% block chart-combined %}
+
+		{% searchcontrols 
+			id="searchcontrol-combined" 
+			managerid="search-combined" %}
+
+		{% chart 
+            id="chart-combined" 
+            managerid="search-combined"
+            type="line"
+            height="350px"
+            resizable="true" %}
+			
+{% endblock chart-combined %}
+
+
 {% block chart-period1 %}
 
 		{% searchcontrols 
@@ -298,7 +331,7 @@
 	<!-- Main Searches -->
 
 	{% searchmanager
-		id="search1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | stats $valuesstats$(usage) As usage_period1, $valuesstats$(pct_usage) As pct_usage_period1, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | join hostname [ search index=nmon sourcetype=nmon_data earliest_time="$earlyval2$" latest_time="$lateval2$" hostname=$valueshostname$ type=$valuesmonitor$ | stats $valuesstats$(usage) As usage_period2, $valuesstats$(pct_usage) As pct_usage_period2 by hostname] | `eval_compare`'|token_safe
+		id="search1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | stats $valuesstats$(usage) As usage_period1, $valuesstats$(pct_usage) As pct_usage_period1, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | join hostname [ search index=nmon sourcetype=nmon_data earliest_time="$earlyval2$" latest_time="$lateval2$" hostname=$valueshostname$ type=$valuesmonitor$ | stats $valuesstats$(usage) As usage_period2, $valuesstats$(pct_usage) As pct_usage_period2 by hostname] | `eval_compare`'|token_safe
 		earliest_time="$earlyval1$"|token_safe
 		latest_time="$lateval1$"|token_safe
 		autostart=True		
@@ -306,7 +339,16 @@
 		preview=True %}
 
 	{% searchmanager
-		id="search-period1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period1 by hostname'|token_safe
+		id="search-combined" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period1, $valuesstats$(fake) As fake_period1 by hostname | fields _time,usage_period1* | appendcols [ search index=nmon sourcetype=nmon_data earliest="$earlyval2$" latest="$lateval2$" hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period2, $valuesstats$(fake) As fake_period2 by hostname | fields usage_period2* ]'|token_safe
+		earliest_time="$earlyval1$"|token_safe
+		latest_time="$lateval1$"|token_safe
+		autostart=True		
+		cache=False
+		preview=True %}
+
+
+	{% searchmanager
+		id="search-period1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period1, $valuesstats$(fake) As fake_period1 by hostname  | fields _time,usage_period1*'|token_safe
 		earliest_time="$earlyval1$"|token_safe
 		latest_time="$lateval1$"|token_safe
 		autostart=True
@@ -314,7 +356,7 @@
 		preview=True %}
 	
 	{% searchmanager
-		id="search-period2" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period2 by hostname'|token_safe
+		id="search-period2" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$valuesspan$ $valuesstats$(usage) As usage_period2, $valuesstats$(fake) As fake_period2 by hostname  | fields _time,usage_period2*'|token_safe
 		earliest_time="$earlyval2$"|token_safe
 		latest_time="$lateval2$"|token_safe
 		autostart=True		
@@ -344,12 +386,20 @@
             DropdownView
         		){		
 
+		splunkjs.mvc.Components.getInstance("chart-combined").settings.set({
+    	"charting.axisY.minimumNumber": "0",
+		"charting.legend.placement": "bottom",
+		"charting.axisTitleX.text": "Time",
+		"charting.axisTitleY.text": "CPU",
+		"charting.chart.nullValueMode": "gap",
+		});
+
 		splunkjs.mvc.Components.getInstance("chart-period1").settings.set({
     	"charting.axisY.minimumNumber": "0",
 		"charting.legend.placement": "bottom",
 		"charting.axisTitleX.text": "Time",
 		"charting.axisTitleY.text": "CPU",
-		"charting.chart.nullValueMode": "connect",
+		"charting.chart.nullValueMode": "gap",
 		});
 				
 		splunkjs.mvc.Components.getInstance("chart-period2").settings.set({
@@ -357,7 +407,7 @@
 		"charting.legend.placement": "bottom",
 		"charting.axisTitleX.text": "Time",
 		"charting.axisTitleY.text": "CPU",
-		"charting.chart.nullValueMode": "connect",
+		"charting.chart.nullValueMode": "gap",
 		});
 
 		var choices = [
@@ -393,6 +443,20 @@
  
 		// Assign them to the button group
 		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);
+
+		var choices = [
+        {label: " No Filter", value: "No_Filter"},
+        {label: " Day BusinessDays 8h-19h", value: "Day_BusinessDays_8h-19h"},
+        {label: " Day WeekEnd 8h-19h", value: "Day_WeekEnd_8h-19h"},
+        {label: " Day AllDays 8h-19h", value: "Day_AllDays_8h-19h"},        
+        {label: " Night BusinessDays 19h-8h", value: "Night_BusinessDays_19h-8h"},
+        {label: " Night WeekEnd 19h-8h", value: "Night_WeekEnd_19h-8h"},
+        {label: " Night AllDays 19h-8h", value: "Night_AllDays_19h-8h"}
+        ] 
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("filtertime-dropdown").settings.set("choices", choices);
+
 		
     });
 </script>

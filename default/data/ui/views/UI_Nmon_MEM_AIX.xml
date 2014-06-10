@@ -3,12 +3,23 @@
   <description/>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" searchWhenChanged="true">
-      <label>TimeRange:</label>
+      <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
+      <input type="dropdown" token="timefilter" searchWhenChanged="true">
+        <label>Time Filtering:</label>
+        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+        <choice value="Night_AllDays_19h-8h">Night All Days (19h-20h)</choice>
+        <default>No_Filter</default>
+      </input>    
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]</default>
@@ -22,13 +33,16 @@
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-    <input type="radio" token="statsmode" searchWhenChanged="true">
-      <label>Select a stats mode:</label>
-      <default>max</default>
-      <choice value="max">Max (recommended)</choice>
-      <choice value="avg">Avg</choice>
-      <choice value="min">Min</choice>
-    </input>
+      <input type="dropdown" token="statsmode" searchWhenChanged="true">
+        <label>Select a stats mode:</label>
+        <default>max</default>
+        <choice value="max">Max</choice>
+        <choice value="avg">Avg</choice>
+        <choice value="min">Min</choice>
+        <choice value="median">Median</choice>
+        <choice value="mode">Mode</choice>
+        <choice value="range">Range</choice>
+      </input>
     <input type="radio" token="memmode" searchWhenChanged="true">
       <label>Show Mem load by:</label>
       <default>fields _time,*MB*</default>
@@ -37,7 +51,7 @@
       <choice value="fields _time,*Real_Free_PCT*,*Virtual_free_PCT*">Free in percentage (%)</choice>
     </input>
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
 | eval Virtual_total_MB=round((Virtual_total_MB),0)
 | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
@@ -134,7 +148,7 @@ $statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Vi
     <panel>
       <table>
         <title>MEM - Real Memory Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
 | stats
 $statsmode$(Real_free_MB) As Real_free_MB, $statsmode$(Real_used_MB) As Real_used_MB, $statsmode$(Real_total_MB) As Real_total_MB
@@ -152,7 +166,7 @@ by hostname
     <panel>
       <table>
         <title>MEM - Paging Space Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
 | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
 | stats
 $statsmode$(Virtual_free_MB) As Virtual_free_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB, $statsmode$(Virtual_total_MB) As Virtual_total_MB

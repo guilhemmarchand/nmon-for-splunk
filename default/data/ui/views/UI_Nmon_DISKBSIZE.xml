@@ -3,11 +3,22 @@
   <description/>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" searchWhenChanged="true">
-      <label>TimeRange:</label>
+      <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
+    </input>
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-20h)</choice>
+      <default>No_Filter</default>
     </input>
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
@@ -18,14 +29,12 @@
       <choice value="| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
       <choice value="">Inactive</choice>
     </input>
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=DISKBSIZE | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
-      </populatingSearch>
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Host(s) Selection:</label>
+      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=DISKBSIZE | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
     </input>
     <input type="multiselect" token="device" searchWhenChanged="true">
       <label>Select Disks:</label>
@@ -35,12 +44,21 @@
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-    <input type="radio" token="statsmode" searchWhenChanged="true">
-      <label>Select a stats mode:</label>
-      <default>Max</default>
-      <choice value="max">Max</choice>
-      <choice value="avg">Avg</choice>
-      <choice value="min">Min</choice>
+      <input type="dropdown" token="statsmode" searchWhenChanged="true">
+        <label>Select a stats mode:</label>
+        <default>max</default>
+        <choice value="max">Max</choice>
+        <choice value="avg">Avg</choice>
+        <choice value="min">Min</choice>
+        <choice value="median">Median</choice>
+        <choice value="mode">Mode</choice>
+        <choice value="range">Range</choice>
+      </input>
+    <input type="radio" token="Aggregate" searchWhenChanged="true">
+      <label>Aggregate Series:</label>
+      <choice value="fields *">Single Series</choice>
+      <choice value="bucket _time span=1s | stats sum(value) As value by _time | setfields device=Aggregated_Devices">Aggregate Devices</choice>
+      <default>fields *</default>
     </input>
   </fieldset>
   <row>
@@ -78,7 +96,9 @@
       </input>
       <chart>
         <title>DISKBSIZE - Average data size per block device transfer</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ $device$ | timechart limit=0 useother=f `inline_customspan` $statsmode$(value) As value by device</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ $device$ | $Aggregate$ | `$timefilter$` | timechart limit=0 useother=f `inline_customspan` $statsmode$(value) As value by device</searchString>
+        <earliestTime>$earliest$</earliestTime>
+        <latestTime>$latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -96,6 +116,11 @@
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">KBytes per transfer</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
       </chart>
     </panel>
   </row>
@@ -103,7 +128,7 @@
     <panel>
       <table>
         <title>DISKBSIZE - Table Stats, Average data size per block device transfer</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ $device$ | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname, device | eval avg_value=round(avg_value,2) | sort hostname, device</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ $device$ | $Aggregate$ | `$timefilter$` | stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by device | eval avg_value=round(avg_value,2) | sort device</searchString>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="wrap">true</option>
