@@ -7,8 +7,9 @@
 # Modified by Barak Griffis 05/06/2014
 # Modified by Guilhem Marchand 05/20/2014: missing timestamp in cksum output resulting in bad Splunk interpretation
 # Modified by Guilhem Marchand 05/21/2014: clear content of cksum reference file for each iteration after check step
+# Modified by Guilhem Marchand 07/07/2014: TOP Section header corrected, change "timestamp" to "ZZZZ" and replace month names with numbers
 
-$nmon2csv_ver="1.0.7 May 2014";
+$nmon2csv_ver="1.0.8 May 2014";
 
 use Time::Local;
 
@@ -371,9 +372,8 @@ while( defined( my $l = <FIC> ) ) {
 	# Manage some fields we statically set
 	$x =~ s/TOP,//g;
 	$x =~ s/Time,//g;
-	
 
-	my $write = type.",".serialnum.",".hostname.",".timestamp.",".logical_cpus.",".virtual_cpus.",".$x;
+	my $write = type.",".serialnum.",".hostname.",".ZZZZ.",".logical_cpus.",".virtual_cpus.",".$x;
 
 	print ( INSERT "$write\n");
 
@@ -386,6 +386,21 @@ while( defined( my $l = <FIC> ) ) {
  
 	(my @line) = split(",",$l);
 	my $section = "TOP";
+
+	# Convert month pattern to month numbers (eg. %b to %m)
+	$timestamp =~ s/JAN/01/g;
+	$timestamp =~ s/FEB/02/g;
+	$timestamp =~ s/MAR/03/g;
+	$timestamp =~ s/APR/04/g;
+	$timestamp =~ s/MAY/05/g;
+	$timestamp =~ s/JUN/06/g;
+	$timestamp =~ s/JUL/07/g;
+	$timestamp =~ s/AUG/08/g;
+	$timestamp =~ s/SEP/09/g;
+	$timestamp =~ s/OCT/10/g;
+	$timestamp =~ s/NOV/11/g;
+	$timestamp =~ s/DEC/12/g;
+
 	my $write = $section.",".$SN.",".$HOSTNAME.",".$timestamp.",".$logical_cpus.",".$virtual_cpus.",".$line[1];
 	my $i = 3;###########################################################################
 
