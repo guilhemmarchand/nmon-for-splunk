@@ -1,7 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - VM, Linux Virtual Memory Statistics</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -27,7 +27,7 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=VM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=VM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -88,6 +88,69 @@ $statsmode$(pageoutrun) As pageoutrun,
 $statsmode$(allocstall) As allocstall,
 $statsmode$(pgrotated) As pgrotated,
 $statsmode$(nr_bounce) As nr_bounce by hostname</searchTemplate>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <table>
+        <title>Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
+| stats
+$statsmode$(nr_dirty) As nr_dirty,
+$statsmode$(nr_writeback) As nr_writeback,
+$statsmode$(nr_unstable) As nr_unstable,
+$statsmode$(nr_page_table_pages) As nr_page_table_pages,
+$statsmode$(nr_mapped) As nr_mapped,
+$statsmode$(nr_slab) As nr_slab,
+$statsmode$(pgpgin) As pgpgin,
+$statsmode$(pgpgout) As pgpgout,
+$statsmode$(pswpin) As pswpin,
+$statsmode$(pswpout) As pswpout,
+$statsmode$(pgalloc_high) As pgalloc_high,
+$statsmode$(pgalloc_normal) As pgalloc_normal,
+$statsmode$(pgalloc_dma32) As pgalloc_dma32,
+$statsmode$(pgalloc_dma) As pgalloc_dma,
+$statsmode$(pgfree) As pgfree,
+$statsmode$(pgactivate) As pgactivate,
+$statsmode$(pgdeactivate) As pgdeactivate,
+$statsmode$(pgfault) As pgfault,
+$statsmode$(pgmajfault) As pgmajfault,
+$statsmode$(pgrefill_high) As pgrefill_high,
+$statsmode$(pgrefill_normal) As pgrefill_normal,
+$statsmode$(pgrefill_dma32) As pgrefill_dma32,
+$statsmode$(pgrefill_dma) As pgrefill_dma,
+$statsmode$(pgsteal_high) As pgsteal_high, 
+$statsmode$(pgsteal_normal) As pgsteal_normal,
+$statsmode$(pgsteal_dma32) As pgsteal_dma32,
+$statsmode$(pgsteal_dma) As pgsteal_dma,
+$statsmode$(pgscan_kswapd_high) As pgscan_kswapd_high,
+$statsmode$(pgscan_kswapd_normal) As pgscan_kswapd_normal,
+$statsmode$(pgscan_kswapd_dma32) As pgscan_kswapd_dma32,
+$statsmode$(pgscan_kswapd_dma) As pgscan_kswapd_dma,
+$statsmode$(pgscan_direct_high) As pgscan_direct_high,
+$statsmode$(pgscan_direct_normal) As pgscan_direct_normal,
+$statsmode$(pgscan_direct_dma32) As pgscan_direct_dma32,
+$statsmode$(pgscan_direct_dma) As pgscan_direct_dma,
+$statsmode$(pginodesteal) As pginodesteal,
+$statsmode$(slabs_scanned) As slabs_scanned,
+$statsmode$(kswapd_steal) As kswapd_steal,
+$statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
+$statsmode$(pageoutrun) As pageoutrun,
+$statsmode$(allocstall) As allocstall,
+$statsmode$(pgrotated) As pgrotated,
+$statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+        <earliestTime>$earliest$</earliestTime>
+        <latestTime>$latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -378,65 +441,6 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchTemplate>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Number of Pages</option>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>Global Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
-| stats
-$statsmode$(nr_dirty) As nr_dirty,
-$statsmode$(nr_writeback) As nr_writeback,
-$statsmode$(nr_unstable) As nr_unstable,
-$statsmode$(nr_page_table_pages) As nr_page_table_pages,
-$statsmode$(nr_mapped) As nr_mapped,
-$statsmode$(nr_slab) As nr_slab,
-$statsmode$(pgpgin) As pgpgin,
-$statsmode$(pgpgout) As pgpgout,
-$statsmode$(pswpin) As pswpin,
-$statsmode$(pswpout) As pswpout,
-$statsmode$(pgalloc_high) As pgalloc_high,
-$statsmode$(pgalloc_normal) As pgalloc_normal,
-$statsmode$(pgalloc_dma32) As pgalloc_dma32,
-$statsmode$(pgalloc_dma) As pgalloc_dma,
-$statsmode$(pgfree) As pgfree,
-$statsmode$(pgactivate) As pgactivate,
-$statsmode$(pgdeactivate) As pgdeactivate,
-$statsmode$(pgfault) As pgfault,
-$statsmode$(pgmajfault) As pgmajfault,
-$statsmode$(pgrefill_high) As pgrefill_high,
-$statsmode$(pgrefill_normal) As pgrefill_normal,
-$statsmode$(pgrefill_dma32) As pgrefill_dma32,
-$statsmode$(pgrefill_dma) As pgrefill_dma,
-$statsmode$(pgsteal_high) As pgsteal_high, 
-$statsmode$(pgsteal_normal) As pgsteal_normal,
-$statsmode$(pgsteal_dma32) As pgsteal_dma32,
-$statsmode$(pgsteal_dma) As pgsteal_dma,
-$statsmode$(pgscan_kswapd_high) As pgscan_kswapd_high,
-$statsmode$(pgscan_kswapd_normal) As pgscan_kswapd_normal,
-$statsmode$(pgscan_kswapd_dma32) As pgscan_kswapd_dma32,
-$statsmode$(pgscan_kswapd_dma) As pgscan_kswapd_dma,
-$statsmode$(pgscan_direct_high) As pgscan_direct_high,
-$statsmode$(pgscan_direct_normal) As pgscan_direct_normal,
-$statsmode$(pgscan_direct_dma32) As pgscan_direct_dma32,
-$statsmode$(pgscan_direct_dma) As pgscan_direct_dma,
-$statsmode$(pginodesteal) As pginodesteal,
-$statsmode$(slabs_scanned) As slabs_scanned,
-$statsmode$(kswapd_steal) As kswapd_steal,
-$statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
-$statsmode$(pageoutrun) As pageoutrun,
-$statsmode$(allocstall) As allocstall,
-$statsmode$(pgrotated) As pgrotated,
-$statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
     </panel>
   </row>
 </form>

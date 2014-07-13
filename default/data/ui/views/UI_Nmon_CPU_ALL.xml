@@ -1,24 +1,24 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
-  <label>NMON - CPU Percents load Analysis</label>
+  <label>NMON - CPU Percentage load Analysis</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
+    </input>
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | stats count by hostname | fields hostname ]</default>
@@ -30,21 +30,28 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=CPU_ALL | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=CPU_ALL | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+    <input type="radio" token="aggregate" searchWhenChanged="true">
+      <label>Aggregate:</label>
+      <choice value="fields *">Single Series</choice>
+      <choice value="stats avg(Sys_PCT) As Sys_PCT, avg(User_PCT) As User_PCT, avg(Wait_PCT) As Wait_PCT by _time | setfields hostname=AGGREGATE">Average by Time interval</choice>
+      <choice value="stats max(Sys_PCT) As Sys_PCT, max(User_PCT) As User_PCT, max(Wait_PCT) As Wait_PCT by _time | setfields hostname=AGGREGATE">Max by Time interval</choice>
+      <default>fields *</default>
+    </input>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
     <input type="radio" token="cpumode" searchWhenChanged="true">
       <label>Show CPU load by:</label>
       <default>fields _time,*cpu_PCT*</default>
@@ -52,7 +59,30 @@
       <choice value="fields _time,*Sys_PCT*,*User_PCT*,*Wait_PCT*,*Idle_PCT*">MultiSeries: Sys,User,Wait,Idle</choice>
     </input>
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` $statsmode$(cpu_PCT) As cpu_PCT</searchTemplate>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | $aggregate$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` $statsmode$(cpu_PCT) As cpu_PCT</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
+   <row>
+    <panel>
+      <table>
+        <title>Table Stats - Percentage CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | $aggregate$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | stats min(cpu_PCT) As min_usage, avg(cpu_PCT) As avg_usage, max(cpu_PCT) As max_usage, sparkline(max(cpu_PCT)) As sparkline by hostname | eval avg_usage=round(avg_usage,2)</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+  </row>  
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -87,8 +117,10 @@
         <choice value="none">none</choice>
       </input>
       <chart>
-        <title>CPU Percent load by Host</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` limit=0 useother=f $statsmode$(cpu_PCT) As cpu_PCT, $statsmode$(Sys_PCT) As Sys_PCT, $statsmode$(User_PCT) As User_PCT, $statsmode$(Wait_PCT) As Wait_PCT, $statsmode$(Idle_PCT) As Idle_PCT by hostname | $cpumode$</searchString>
+        <title>Chart - Percentage CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | $aggregate$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` limit=0 useother=f $statsmode$(cpu_PCT) As cpu_PCT, $statsmode$(Sys_PCT) As Sys_PCT, $statsmode$(User_PCT) As User_PCT, $statsmode$(Wait_PCT) As Wait_PCT, $statsmode$(Idle_PCT) As Idle_PCT by hostname | $cpumode$</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -107,6 +139,11 @@
         <option name="charting.axisTitleY.text">% CPUs</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisY.maximumNumber">100</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
       </chart>
     </panel>
   </row>

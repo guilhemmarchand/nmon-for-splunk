@@ -108,7 +108,7 @@
             <tr>
                 <td>
 					<p></p>
-					<b>Select a Stats Mode:</b>.
+					<b>Select a Stats Mode:</b>
                 </td>
                 <td>
 
@@ -120,11 +120,28 @@
 					{% dropdown id="stats-dropdown" default="max" value="$valuesstats$"|token_safe %}	
 				</td>
             </tr>
+
+            <tr>
+                <td>
+					<p></p>
+					<b>Increase factor CPU load by SMT mode:</b>
+                </td>
+                <td>
+
+					<p></p>
+					<p>INFO: IBM recommends to increase the CPU load stats by 1.2 for SMT2 (Pseries 6x) and 1.4 for SMT4 (Pseries 7x)</p>                
+					<p></p>                
+                
+					<p></p>
+					{% dropdown id="increase-dropdown" default='eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(smt_threads>="2", pct_CPU*1.2, smt_threads>="4", pct_CPU*1.4)' value="$valuesincrease$"|token_safe %}	
+				</td>
+            </tr>
+
             
             <tr>
                 <td>
 					 <p></p>
-                <b>Timechart Auto Interval definition:</b>.
+                <b>Timechart Auto Interval definition:</b>
                 </td>
                 <td>
                 <p></p>
@@ -272,7 +289,7 @@
     
 	{% searchmanager 
 	id="search-cpu" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | stats $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,pct_CPU,PID,Command,hostname | eval limit=(logical_cpus*100) | where pct_CPU<=limit | $valuesincrease$ | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | stats $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	preview=True %}
@@ -289,7 +306,7 @@
 
 	{% searchmanager 
 	id="timesearch-cpu" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | timechart span=$valuesspan$ useother=f limit=20 $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,pct_CPU,PID,Command,hostname | eval limit=(logical_cpus*100) | where pct_CPU<=limit | $valuesincrease$ | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | timechart span=$valuesspan$ useother=f limit=20 $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	preview=True %}
@@ -298,7 +315,7 @@
 
 	{% searchmanager 
 	id="search-memory" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=((ResData+ResText)/1024) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | stats $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command | eval Used_Memory_MB=round(Used_Memory_MB,2)'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,PID,Command,ResText,ResData,hostname | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=((ResData+ResText)/1024) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | stats $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command | eval Used_Memory_MB=round(Used_Memory_MB,2)'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	preview=True %}
@@ -315,7 +332,7 @@
 
 	{% searchmanager 
 	id="timesearch-memory" 
-	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=((ResData+ResText)/1024) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | timechart span=$valuesspan$ useother=f limit=20 $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ | dedup _time,PID,Command,ResText,ResData,hostname | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=((ResData+ResText)/1024) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | timechart span=$valuesspan$ useother=f limit=20 $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	preview=True %}
@@ -375,6 +392,14 @@
  
 		// Assign them to the button group
 		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);				
+
+		var choices = [
+        {label: " x 1.2 for SMT2, x 1.4 for SMT4", value: 'eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(smt_threads>="2", pct_CPU*1.2, smt_threads>="4", pct_CPU*1.4)'},
+        {label: " none", value: "eval smt_threads=(logical_cpus/virtual_cpus)"}
+        ] 
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("increase-dropdown").settings.set("choices", choices);
 		
 		
     });

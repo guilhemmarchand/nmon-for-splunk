@@ -1,7 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
   <label>NMON - MEMUSE, AIX vmtune Statistics</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -27,7 +27,7 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMUSE | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMUSE | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -43,6 +43,47 @@
         <choice value="range">Range</choice>
       </input>
   </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>MEMUSE - Vmtune Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$ | `$timefilter$`
+| stats 
+$statsmode$(PCTnumperm) As PCTnumperm,
+$statsmode$(PCTminperm) As PCTminperm,
+$statsmode$(PCTmaxperm) As PCTmaxperm
+sparkline($statsmode$(PCTnumperm)) As spk_PCTnumperm,
+sparkline($statsmode$(PCTminperm)) As spk_PCTminperm,
+sparkline($statsmode$(PCTmaxperm)) As spk_PCTmaxperm by hostname</searchString>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+        <format type="sparkline" field="spk_PCTnumperm">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_PCTminperm">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_PCTmaxperm">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+  </row>
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -83,6 +124,8 @@
 $statsmode$(PCTnumperm) As PCTnumperm,
 $statsmode$(PCTminperm) As PCTminperm,
 $statsmode$(PCTmaxperm) As PCTmaxperm by hostname</searchString>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -102,45 +145,6 @@ $statsmode$(PCTmaxperm) As PCTmaxperm by hostname</searchString>
         <option name="charting.axisY.maximumNumber">100</option>
         <option name="charting.axisTitleY.text">Percentage (%)</option>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>MEMUSE - Vmtune Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$ | `$timefilter$`
-| stats 
-$statsmode$(PCTnumperm) As PCTnumperm,
-$statsmode$(PCTminperm) As PCTminperm,
-$statsmode$(PCTmaxperm) As PCTmaxperm
-sparkline($statsmode$(PCTnumperm)) As spk_PCTnumperm,
-sparkline($statsmode$(PCTminperm)) As spk_PCTminperm,
-sparkline($statsmode$(PCTmaxperm)) As spk_PCTmaxperm by hostname</searchString>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-        <format type="sparkline" field="spk_PCTnumperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_PCTminperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_PCTmaxperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-      </table>
     </panel>
   </row>
 </form>

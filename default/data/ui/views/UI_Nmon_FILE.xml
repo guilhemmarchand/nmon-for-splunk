@@ -2,7 +2,7 @@
   <label>NMON - FILE, Kernel file statistics</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -30,7 +30,7 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=FILE | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=FILE | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -49,6 +49,68 @@
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
 | `$timefilter$` | timechart `inline_customspan` limit=0 useother=f $statsmode$(readch) As readch, $statsmode$(writech) As writech,
 $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As dirblk by hostname</searchTemplate>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <table>
+        <title>FILE - Kernel Statistics Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$ | `$timefilter$` | stats $statsmode$(readch) As readch, $statsmode$(writech) As writech, sparkline(max(readch)) As spk_readch, sparkline(max(writech)) As spk_writech by hostname</searchString>
+  		  <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+        <format type="sparkline" field="spk_readch">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_writech">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>FILE - Kernel Statistics Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$ | `$timefilter$` | stats $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As dirblk, sparkline(max(iget)) As spk_iget, sparkline(max(namei)) As spk_namei, sparkline(max(dirblk)) As spk_dirblk by hostname</searchString>
+  		  <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+        <format type="sparkline" field="spk_iget">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_namei">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_dirblk">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>    
+  </row>
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -129,50 +191,6 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Rate/Sec</option>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>FILE - Kernel Statistics Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$ | `$timefilter$` | stats $statsmode$(readch) As readch, sparkline(max(readch)) As spk_readch, $statsmode$(writech) As writech, sparkline(max(writech)) As spk_writech, $statsmode$(iget) As iget, sparkline(max(iget)) As spk_iget, $statsmode$(namei) As namei, sparkline(max(namei)) As spk_namei, $statsmode$(dirblk) As dirblk, sparkline(max(dirblk)) As spk_dirblk by hostname</searchString>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-        <format type="sparkline" field="spk_readch">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_writech">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_iget">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_namei">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_dirblk">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-      </table>
     </panel>
   </row>
 </form>

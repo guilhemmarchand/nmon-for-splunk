@@ -2,7 +2,7 @@
   <label>NMON - PAGE, Paging Statistics (AIX)</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -22,7 +22,7 @@
       </input>    
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PAGE | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PAGE | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -38,6 +38,34 @@
         <choice value="range">Range</choice>
       </input>
   </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>Global Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` | stats  $statsmode$(faults) As faults, $statsmode$(pgin) As pgin, $statsmode$(pgout) As pgout,  $statsmode$(pgsin) As pgsin, $statsmode$(pgsout) As pgsout,  $statsmode$(reclaims) As reclaims, $statsmode$(scans) As scans, $statsmode$(cycles) As cyles, $statsmode$(pgsout) As pgsout by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Fs In/Out and Scan Free Ratio Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` | eval fsin=(pgin+pgsin) | eval fsout=(pgout+pgsout) | eval scanfree=round((scans/reclaims),2) | stats $statsmode$(fsin) As "fsin", $statsmode$(fsout) As "fsout", $statsmode$(scanfree) As scanfree_ratio by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -79,6 +107,8 @@
       <chart id="link10">
         <title>Pages In / Pages Out (pgsin / pgsout)</title>
         <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` |  timechart `inline_customspan` limit=0 useother=f $statsmode$(pgsin) As "pgsin", $statsmode$(pgsout) As "pgsout" by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -103,6 +133,8 @@
 | eval fsin=(pgin+pgsin)
 | eval fsout=(pgout+pgsout)
 | timechart `inline_customspan` limit=0 useother=f Max(fsin) As "fsin", Max(fsout) As "fsout" by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -127,6 +159,8 @@
 | eval scanfree=round((scans/reclaims),2)
 | timechart `inline_customspan` limit=0 useother=f max(scanfree) As scanfree_ratio by hostname
 | fillnull value="0"</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -145,34 +179,6 @@
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages</option>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>Global Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` | stats  $statsmode$(faults) As faults, $statsmode$(pgin) As pgin, $statsmode$(pgout) As pgout,  $statsmode$(pgsin) As pgsin, $statsmode$(pgsout) As pgsout,  $statsmode$(reclaims) As reclaims, $statsmode$(scans) As scans, $statsmode$(cycles) As cyles, $statsmode$(pgsout) As pgsout by hostname</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
-    </panel>
-    <panel>
-      <table>
-        <title>Fs In/Out and Scan Free Ratio Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` | eval fsin=(pgin+pgsin) | eval fsout=(pgout+pgsout) | eval scanfree=round((scans/reclaims),2) | stats $statsmode$(fsin) As "fsin", $statsmode$(fsout) As "fsout", $statsmode$(scanfree) As scanfree_ratio by hostname</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
     </panel>
   </row>
 </form>

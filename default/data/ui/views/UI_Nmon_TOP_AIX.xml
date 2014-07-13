@@ -2,24 +2,24 @@
   <label>NMON - TOP, AIX Processes System Resources statistics</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>    
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
+    </input>
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]</default>
@@ -28,21 +28,27 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Select a Host:</label>
-      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=TOP | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=TOP | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+    <input type="radio" token="majorsmt" searchWhenChanged="true">
+      <label>Increase factor CPU load by SMT mode:</label>
+      <choice value="eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(smt_threads&gt;=&quot;2&quot;, pct_CPU*1.2, smt_threads&gt;=&quot;4&quot;, pct_CPU*1.4)">x 1.2 for SMT2, x 1.4 for SMT4</choice>
+      <choice value="eval smt_threads=(logical_cpus/virtual_cpus)">none</choice>
+      <default>eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(smt_threads&gt;="2", pct_CPU*1.2, smt_threads&gt;="4", pct_CPU*1.4)</default>
+    </input>
     <input type="text" token="Command" searchWhenChanged="true">
       <label>Optional: Filter by Command</label>
       <prefix>Command="</prefix>
@@ -91,13 +97,16 @@
       <chart id="link10">
         <title>CPU Usage per logical core</title>
         <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
-| eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit      
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
+| eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
+| $majorsmt$     
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval conso_per_core=(pct_CPU/100)
 | stats sum(conso_per_core) As conso_per_core by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -118,12 +127,14 @@ $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
       </chart>
       <chart id="link11">
         <title>Memory Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,PID,Command,ResText,ResData,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,PID,Command,ResText,ResData,hostname 
 | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -144,10 +155,12 @@ $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</searchString>
       </chart>
       <chart id="link13">
         <title>Read / Write System Calls</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,CharIO,PID,Command,hostname 
 | stats sum(CharIO) As CharIO by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(CharIO) as "I/O" by Command</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -168,10 +181,12 @@ $statsmode$(CharIO) as "I/O" by Command</searchString>
       </chart>
       <chart id="link14">
         <title>Paging, Sum of page faults</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Paging,PID,Command,hostname 
 | stats sum(Paging) As Paging by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Paging) as "Paging" by Command</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -192,10 +207,12 @@ $statsmode$(Paging) as "Paging" by Command</searchString>
       </chart>
       <chart id="link15">
         <title>Threads per Command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Threads,PID,Command,hostname 
 | stats sum(Threads) As Threads By _time,Command
 | timechart `inline_customspan` useother=f limit=0
 $statsmode$(Threads) as Threads by Command</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -220,8 +237,9 @@ $statsmode$(Threads) as Threads by Command</searchString>
     <panel>
       <table>
         <title>Table stats: CPU Usage per logical core</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
+| $majorsmt$
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As usage_per_core by _time,Command
@@ -229,6 +247,8 @@ $statsmode$(Threads) as Threads by Command</searchString>
 | eval usage_per_core=round(usage_per_core,2)
 | rename usage_per_core As "CPU Usage per Logical Cores"
 | sort - "CPU Usage per Logical Cores"</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -246,13 +266,15 @@ $statsmode$(Threads) as Threads by Command</searchString>
     <panel>
       <table>
         <title>Table stats: Memory Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,ResText,ResData,PID,Command,hostname | bucket _time span=1s
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,ResText,ResData,PID,Command,hostname 
 | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats $statsmode$(Used_Mem_MB) as Used_Mem_MB, sparkline($statsmode$(Used_Mem_MB)) as spk_memusage_per_cmd by Command
 | eval Used_Mem_MB=round(Used_Mem_MB,2)
 | rename Used_Mem_MB As "Used Memory per Command (MB)"
 | sort - "Used Memory per Command (MB)",hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>

@@ -1,7 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - VM, Solaris Virtual Memory Statistics (Solaris)</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -27,7 +27,7 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=VM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=VM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -56,6 +56,37 @@ $statsmode$(pgpgout) As pgpgout,
 $statsmode$(pswpin) As pswpin,
 $statsmode$(pswpout) As pswpout,
 $statsmode$(pgfree) As pgfree by hostname</searchTemplate>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <table>
+        <title>Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
+| stats
+$statsmode$(minfaults) As minfaults,
+$statsmode$(majfaults) As majfaults,
+$statsmode$(pgin) As pgin,
+$statsmode$(pgout) As pgout,
+$statsmode$(scans) As scans,
+$statsmode$(reclaims) As reclaims,
+$statsmode$(pgpgin) As pgpgin,
+$statsmode$(pgpgout) As pgpgout,
+$statsmode$(pswpin) As pswpin,
+$statsmode$(pswpout) As pswpout,
+$statsmode$(pgfree) As pgfre by hostname</searchString>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+        <earliestTime>$earliest$</earliestTime>
+        <latestTime>$latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -220,33 +251,6 @@ $statsmode$(pgfree) As pgfree by hostname</searchTemplate>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">KB/Sec</option>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>Global Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
-| stats
-$statsmode$(minfaults) As minfaults,
-$statsmode$(majfaults) As majfaults,
-$statsmode$(pgin) As pgin,
-$statsmode$(pgout) As pgout,
-$statsmode$(scans) As scans,
-$statsmode$(reclaims) As reclaims,
-$statsmode$(pgpgin) As pgpgin,
-$statsmode$(pgpgout) As pgpgout,
-$statsmode$(pswpin) As pswpin,
-$statsmode$(pswpout) As pswpout,
-$statsmode$(pgfree) As pgfre by hostname</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
     </panel>
   </row>
 </form>

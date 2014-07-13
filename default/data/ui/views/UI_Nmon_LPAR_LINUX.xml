@@ -1,24 +1,24 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
   <label>NMON - LPAR, Virtual CPU Usage (Linux)</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>    
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
+    </input>
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ search `nmon_config` | search OS=Linux | stats count by hostname | fields hostname ]</default>
@@ -28,41 +28,71 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+    <input type="radio" token="aggregate" searchWhenChanged="true">
+      <label>Aggregate:</label>
+      <choice value="fields *">Single Series</choice>
+      <choice value="stats avg(usage) As usage, avg(entitled) As entitled, avg(virtualCPUs) As virtualCPUs by _time | setfields hostname=AGGREGATE">Average by Time interval</choice>
+      <choice value="stats sum(usage) As usage, sum(entitled) As entitled, sum(virtualCPUs) As virtualCPUs by _time | setfields hostname=AGGREGATE">Sum by Time interval</choice>
+      <default>fields *</default>
+    </input>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
     <input type="radio" token="indicator" searchWhenChanged="true">
       <label>Show CPU load by:</label>
-      <default>eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval limit=virtualCPUs</default>
-      <choice value="eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval limit=virtualCPUs">CPU Usage vs VirtualCPUs</choice>
-      <choice value="eval usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2) | eval limit=100">CPU Usage vs VirtualCPUs Percent Utilization</choice>
-      <choice value="eval usage=round(((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled/100),2) | eval limit=virtualCPUs">CPU Usage vs Entitled</choice>
-      <choice value="eval usage=round((((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled)/virtualCPUs),2) | eval limit=100">CPU Usage vs Entitled Percent Utilization</choice>
-    </input>
-    <input type="radio" token="addindicator" searchWhenChanged="true">
-      <label>Lpar additionnal Series:</label>
-      <default>none</default>
-      <choice value="">none</choice>
-      <choice value="max(entitled) As entitled">Entitled</choice>
-      <choice value="max(virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
-      <choice value="max(entitled) As entitled, max(virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
+      <default>eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)</default>
+      <choice value="eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)">CPU Usage vs VirtualCPUs</choice>
+      <choice value="eval usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2) | eval virtualCPUs=100">CPU Usage vs VirtualCPUs Percent Utilization</choice>
+      <choice value="eval usage=round(((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled/100),2)">CPU Usage vs Entitled</choice>
+      <choice value="eval usage=round((((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled)/virtualCPUs),2) | eval virtualCPUs=100">CPU Usage vs Entitled Percent Utilization</choice>
     </input>
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0</searchTemplate>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
   <row>
     <panel>
+      <table>
+        <title>Table Stats - Virtual CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs, sparkline(max(usage)) As sparkline by hostname | eval avg_usage=round(avg_usage,2)</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+  </row>  
+  <row>
+    <panel>
+      <input type="radio" token="addindicator" searchWhenChanged="true">
+        <label>Lpar additionnal Series:</label>
+        <default>none</default>
+        <choice value="">none</choice>
+        <choice value="max(entitled) As entitled">Entitled</choice>
+        <choice value="max(virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
+        <choice value="max(entitled) As entitled, max(virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
+      </input>
       <input type="radio" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
@@ -95,10 +125,10 @@
         <choice value="none">none</choice>
       </input>
       <chart>
-        <title>LPAR Virtual CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(usage) As conso, $addindicator$ by hostname</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+        <title>Chart - Virtual CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(usage) As usage, $addindicator$ by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -140,12 +170,14 @@
         <default>minimal</default>
       </input>
     </panel>
-  </row>  
+  </row>
   <row>
     <panel>
       <chart>
         <title>Higher CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0 | stats max(usage) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -166,7 +198,9 @@
     <panel>
       <chart>
         <title>Average CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | head 1 | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0 | stats avg(usage) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -187,7 +221,9 @@
     <panel>
       <chart>
         <title>Min CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | timechart `inline_customspan` $statsmode$(usage) As conso | search conso&gt;0 | stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | $indicator$ | stats max(limit) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0 | stats min(usage) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -209,14 +245,14 @@
   <row>
     <panel>
       <single>
-        <searchPostProcess>stats max(conso) As max by _time | sort - max | eval time=strftime(_time, "%m/%d/%Y %H:%M") | fields time</searchPostProcess>
+        <searchPostProcess>stats max(usage) As max by _time | sort - max | eval time=strftime(_time, "%m/%d/%Y %H:%M") | fields time</searchPostProcess>
         <option name="beforeLabel">Date of first higher load:</option>
         <option name="linkView">search</option>
       </single>
     </panel>
     <panel>
       <single>
-        <searchPostProcess>stats avg(conso) As avg | eval avg=round(avg,2)</searchPostProcess>
+        <searchPostProcess>stats avg(usage) As avg | eval avg=round(avg,2)</searchPostProcess>
         <option name="beforeLabel">Average load:</option>
         <option name="afterLabel">CPUs</option>
         <option name="linkView">search</option>
@@ -224,7 +260,7 @@
     </panel>
     <panel>
       <single>
-        <searchPostProcess>stats min(conso) As min | eval min=round(min,2)</searchPostProcess>
+        <searchPostProcess>stats min(usage) As min | eval min=round(min,2)</searchPostProcess>
         <option name="beforeLabel">Minimal load:</option>
         <option name="afterLabel">CPUs</option>
         <option name="linkView">search</option>

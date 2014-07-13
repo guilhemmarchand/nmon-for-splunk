@@ -2,7 +2,7 @@
   <label>NMON - MEM, AIX Free Memory and Paging space activity</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -28,7 +28,7 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -62,6 +62,50 @@ $statsmode$(Real_total_MB) As Real_total_MB, $statsmode$(Real_used_MB) As Real_u
 $statsmode$(Virtual_total_MB) As Virtual_total_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB
 $statsmode$(Real_Free_PCT) As Real_Free_PCT, $statsmode$(Virtual_free_PCT) As Virtual_free_PCT
 $statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Virtual_used_PCT by hostname</searchTemplate>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <table>
+        <title>MEM - Real Memory Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
+| eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
+| stats
+$statsmode$(Real_free_MB) As Real_free_MB, $statsmode$(Real_used_MB) As Real_used_MB, $statsmode$(Real_total_MB) As Real_total_MB
+by hostname
+| eval Real_free_MB=round(Real_free_MB,0)
+| eval Real_used_MB=round(Real_used_MB,0)
+| eval Real_total_MB=round(Real_total_MB,0)</searchString>
+		  <earliestTime>$timerange.earliest$</earliestTime>
+		  <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>MEM - Paging Space Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
+| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
+| stats
+$statsmode$(Virtual_free_MB) As Virtual_free_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB, $statsmode$(Virtual_total_MB) As Virtual_total_MB
+by hostname
+| eval Virtual_free_MB=round(Virtual_free_MB,0)
+| eval Virtual_used_MB=round(Virtual_used_MB,0)
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</searchString>
+		  <earliestTime>$timerange.earliest$</earliestTime>
+		  <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -142,44 +186,6 @@ $statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Vi
         <option name="charting.axisTitleY.text">Paging Space (MB)</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <table>
-        <title>MEM - Real Memory Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
-| stats
-$statsmode$(Real_free_MB) As Real_free_MB, $statsmode$(Real_used_MB) As Real_used_MB, $statsmode$(Real_total_MB) As Real_total_MB
-by hostname
-| eval Real_free_MB=round(Real_free_MB,0)
-| eval Real_used_MB=round(Real_used_MB,0)
-| eval Real_total_MB=round(Real_total_MB,0)</searchString>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
-    </panel>
-    <panel>
-      <table>
-        <title>MEM - Paging Space Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
-| stats
-$statsmode$(Virtual_free_MB) As Virtual_free_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB, $statsmode$(Virtual_total_MB) As Virtual_total_MB
-by hostname
-| eval Virtual_free_MB=round(Virtual_free_MB,0)
-| eval Virtual_used_MB=round(Virtual_used_MB,0)
-| eval Virtual_total_MB=round(Virtual_total_MB,0)</searchString>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
     </panel>
   </row>
 </form>

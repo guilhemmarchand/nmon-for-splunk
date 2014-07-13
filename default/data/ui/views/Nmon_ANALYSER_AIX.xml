@@ -78,7 +78,7 @@
     </chart>
     <chart>
       <title>I/O Per second</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$
 | stats sum(value) As iosec by _time,hostname
 | timechart `inline_customspan` max(iosec) As "IO Per sec"</searchString>
       <earliestTime>$earliest$</earliestTime>
@@ -788,17 +788,17 @@ max(PCTmaxperm) As PCTmaxperm</searchString>
   </row>
   
 
-  <row grouping="6">
+  <row grouping="7">
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link50,link51,link52,link53,link54">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link50,link51,link52,link53,link54,link55">Select a view:<!--Links go here-->
       </div>
     </html>
 
     <chart id="link50">
       <title>DISKBSIZE, Average data transfer size</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE" $hostname$ | stats sum(value) As avg_transfer_size by _time | timechart `inline_customspan` max(avg_transfer_size) As avg_transfer_size</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE*" $hostname$ | stats sum(value) As avg_transfer_size by _time | timechart `inline_customspan` max(avg_transfer_size) As avg_transfer_size</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -820,7 +820,7 @@ max(PCTmaxperm) As PCTmaxperm</searchString>
 
     <chart id="link51">
       <title>DISKBUSY, Disk Busy Activity</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBUSY" $hostname$ | stats sum(value) As busy_time by _time | timechart `inline_customspan` max(busy_time) As busy_time</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBUSY*" $hostname$ | stats sum(value) As busy_time by _time | timechart `inline_customspan` max(busy_time) As busy_time</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -842,7 +842,7 @@ max(PCTmaxperm) As PCTmaxperm</searchString>
 
     <chart id="link52">
       <title>DISKREAD, Disk Read Data Rate</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD" $hostname$ | stats sum(value) As read_data_rate by _time | timechart `inline_customspan` max(read_data_rate) As read_data_rate</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD*" $hostname$ | stats sum(value) As read_data_rate by _time | timechart `inline_customspan` max(read_data_rate) As read_data_rate</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -864,7 +864,7 @@ max(PCTmaxperm) As PCTmaxperm</searchString>
 
     <chart id="link53">
       <title>DISKWRITE, Disk Write Data Rate</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE" $hostname$ | stats sum(value) As write_data_rate by _time | timechart `inline_customspan` max(write_data_rate) As write_data_rate</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE*" $hostname$ | stats sum(value) As write_data_rate by _time | timechart `inline_customspan` max(write_data_rate) As write_data_rate</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -886,7 +886,7 @@ max(PCTmaxperm) As PCTmaxperm</searchString>
 
     <chart id="link54">
       <title>DISKXFER, Disk I/O Operations per second (IOPS)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER" $hostname$ | stats sum(value) As IOPS by _time | timechart `inline_customspan` max(IOPS) As IOPS</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ | stats sum(value) As IOPS by _time | timechart `inline_customspan` max(IOPS) As IOPS</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -906,17 +906,42 @@ max(PCTmaxperm) As PCTmaxperm</searchString>
       <option name="charting.axisTitleY.text">I/O per Sec</option>
     </chart>
 
+    <chart id="link55">
+      <title>DISKRIO/WIO, Disk Read/Write I/O Operations per second (IOPS)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKRIO*" $hostname$ | stats sum(value) As read_iops by _time,hostname | timechart `inline_customspan` max(read_iops) As "Read I/O Per sec"
+| join _time,hostname
+[ search index="nmon" sourcetype="nmon_data" type="DISKWIO*" $hostname$ | stats sum(value) As write_iops by _time,hostname | timechart `inline_customspan` max(write_iops) As "Write I/O Per sec" ]</searchString>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+	  <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisTitleY.text">I/O per Sec</option>
+    </chart>
+
+
 	</row>
 
 	<row grouping="3">	
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link55,link56">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link56,link57">Select a view:<!--Links go here-->
       </div>
     </html>
 
-    <chart id="link55">
+    <chart id="link56">
       <title>JFSFILE, Percentage Usage of File-systems</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="JFSFILE" $hostname$ | timechart limit=0 useother=f `inline_customspan` avg(value) As pct_fs_used by device</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -939,7 +964,7 @@ max(PCTmaxperm) As PCTmaxperm</searchString>
       <option name="charting.axisY.maximumNumber">100</option>	  
     </chart>
 
-    <chart id="link56">
+    <chart id="link57">
       <title>JFSINODE, Inode Percentage Usage of File-systems</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="JFSINODE" $hostname$ | timechart limit=0 useother=f `inline_customspan` avg(value) As pct_inode_used by device</searchString>
       <option name="charting.axisTitleX.visibility">visible</option>

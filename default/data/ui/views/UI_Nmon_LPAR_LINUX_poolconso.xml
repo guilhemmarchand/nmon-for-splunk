@@ -1,7 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
-  <label>NMON - LPAR, Pool Virtual CPU Utilization (Linux)</label>
+  <label>NMON - LPAR, Pool Virtual CPU Usage (Linux)</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -28,21 +28,28 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR | search PoolIdle&gt;0 | stats count by hostname | dedup hostname | sort hostname | search [ search `nmon_config` | stats count by hostname | fields hostname ]</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR | search PoolIdle&gt;0 | stats count by hostname | dedup hostname | sort hostname | search [ search `nmon_config` | stats count by hostname | fields hostname ]</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+    <input type="radio" token="aggregate" searchWhenChanged="true">
+      <label>Aggregate:</label>
+      <choice value="fields *">Single Series</choice>
+      <choice value="stats avg(pool_conso) As pool_conso, avg(poolCPUs) As poolCPUs by _time | setfields hostname=AGGREGATE">Average by Time interval</choice>
+      <choice value="stats max(pool_conso) As pool_conso, max(poolCPUs) As poolCPUs by _time | setfields hostname=AGGREGATE">Max by Time interval</choice>
+      <default>fields *</default>
+    </input>    
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+    	<label>Select a stats mode:</label>
+    	<default>max</default>
+    	<choice value="max">Max</choice>
+    	<choice value="avg">Avg</choice>
+    	<choice value="min">Min</choice>
+    	<choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
     <input type="radio" token="addindicator" searchWhenChanged="true">
       <label>Pool additionnal Series:</label>
       <default>max(poolCPUs) As poolCPUs</default>
@@ -50,7 +57,30 @@
       <choice value="max(poolCPUs) As poolCPUs">poolCPUs</choice>
     </input>
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | timechart `inline_customspan` $statsmode$(pool_conso) As conso</searchTemplate>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | $aggregate$ | timechart `inline_customspan` $statsmode$(pool_conso) As conso</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <table>
+        <title>Table Stats - Pool Virtual CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | $aggregate$ | stats min(pool_conso) As min_usage, avg(pool_conso) As avg_usage, max(pool_conso) As max_usage, max(poolCPUs) As poolCPUs, sparkline(max(pool_conso)) As sparkline by hostname | eval avg_usage=round(avg_usage,2)</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+  </row>  
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -85,10 +115,10 @@
         <choice value="none">none</choice>
       </input>
       <chart>
-        <title>LPAR Virtual CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | timechart `inline_customspan`  limit=0 useother=f $statsmode$(pool_conso) As conso, $addindicator$ by hostname</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+        <title>Chart - Pool Virtual CPU Load</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | $aggregate$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(pool_conso) As conso, $addindicator$ by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -135,7 +165,9 @@
     <panel>
       <chart>
         <title>Higher CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | timechart `inline_customspan` $statsmode$(pool_conso) As conso | stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | stats max(poolCPUs) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | $aggregate$ | timechart `inline_customspan` $statsmode$(pool_conso) As conso | stats max(conso) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $aggregate$ | stats max(poolCPUs) as max | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -156,7 +188,9 @@
     <panel>
       <chart>
         <title>Average CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | timechart `inline_customspan` $statsmode$(pool_conso) As conso | stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | stats max(poolCPUs) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | $aggregate$ | timechart `inline_customspan` $statsmode$(pool_conso) As conso | stats avg(conso) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $aggregate$ | stats max(poolCPUs) as max | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -177,7 +211,9 @@
     <panel>
       <chart>
         <title>Min CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | timechart `inline_customspan` $statsmode$(pool_conso) As conso | stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | head 1 | stats max(poolCPUs) as max | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | `lpar_define_conso` | where pool_conso&gt;0 AND pool_conso&lt;poolCPUs | $aggregate$ | timechart `inline_customspan` $statsmode$(pool_conso) As conso | stats min(conso) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $aggregate$ | stats max(poolCPUs) as max | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>

@@ -8,8 +8,11 @@
 # Modified by Guilhem Marchand 05/20/2014: missing timestamp in cksum output resulting in bad Splunk interpretation
 # Modified by Guilhem Marchand 05/21/2014: clear content of cksum reference file for each iteration after check step
 # Modified by Guilhem Marchand 07/07/2014: TOP Section header corrected, change "timestamp" to "ZZZZ" and replace month names with numbers
+# Modified by Guilhem Marchand 07/08/2014: Changed date format for improved processing output
+# Modified by Guilhem Marchand 07/12/2014: Changed TOP section position of where to retrieve Logical number of CPUs (second position of AAA,cpus by default) to improve TOP Analysis
+# Modified by Guilhem Marchand 07/12/2014: Modified variable sections with devices to allow systems with huge number of disks to be fully taken in charge (150 devices per section x 5)
 
-$nmon2csv_ver="1.0.8 May 2014";
+$nmon2csv_ver="1.0.9 July 2014";
 
 use Time::Local;
 
@@ -92,7 +95,7 @@ open FILE, $file or die "$curr_date Error can't open file!";
 
 # Compute cksum
 
-$curr_date=`date`; 
+$curr_date=`date "+%Y-%m-%d %T"`; 
 
 my $cksum_hash = `cat $file | cksum | awk '{print \$1}'`;
 
@@ -329,8 +332,16 @@ while( defined( my $l = <FIC> ) ) {
  
   # Get Logical CPUs value"
   if ((rindex $l,"AAA,cpus,") > -1) { 
-	  (my $t1, my $t2, $logical_cpus) = split(",",$l);
+	  (my $t1, my $t2, my $t3, $logical_cpus) = split(",",$l);
+	  
+		#if undefined, let’s get it from first position
+		    if ($logical_cpus eq "") {
+		    		if ((rindex $l,"AAA,cpus,") > -1) {		    		
+						(my $t1, my $t2, $logical_cpus) = split(",",$l);
+					}	
+			 }
   }
+  
   
   # Get Virtual CPUs value
   if ((rindex $l,"Online Virtual CPUs") > -1) { 
@@ -429,10 +440,123 @@ while( defined( my $l = <FIC> ) ) {
 
   ###################################################	
 
-  # Dynamic variables (variable number of fields)
-  # DISK* Sections
+  # DISKBSIZE Sections
 
-  @dynamic_vars=("DISKBSIZE","DISKBUSY","DISKREAD","DISKWRITE","DISKXFER");
+  @dynamic_vars=("DISKBSIZE","DISKBSIZE1","DISKBSIZE2","DISKBSIZE3","DISKBSIZE4");
+
+  foreach $key (@dynamic_vars) {
+
+     @cols= split(/\//,$FILENAME);
+     $BASEFILENAME= $cols[@cols-1];
+
+     unless (open(INSERT, ">$OUTPUT_DIR/$BASEFILENAME.$key.csv")) { 
+	  die("Can not open /$OUTPUT_DIR/$BASEFILENAME.$key.csv\n"); 
+     }
+
+    &variable_sections_insert($key);;
+    $now=time();
+    $now=$now-$start;
+    print ("\t$now: Finished $key\n");
+  }
+
+  # DISKBUSY Sections
+
+  @dynamic_vars=("DISKBUSY","DISKBUSY1","DISKBUSY2","DISKBUSY3","DISKBUSY4");
+
+  foreach $key (@dynamic_vars) {
+
+     @cols= split(/\//,$FILENAME);
+     $BASEFILENAME= $cols[@cols-1];
+
+     unless (open(INSERT, ">$OUTPUT_DIR/$BASEFILENAME.$key.csv")) { 
+	  die("Can not open /$OUTPUT_DIR/$BASEFILENAME.$key.csv\n"); 
+     }
+
+    &variable_sections_insert($key);;
+    $now=time();
+    $now=$now-$start;
+    print ("\t$now: Finished $key\n");
+  }
+
+  # DISKREAD Sections
+
+  @dynamic_vars=("DISKREAD","DISKREAD1","DISKREAD2","DISKREAD3","DISKREAD4");
+
+  foreach $key (@dynamic_vars) {
+
+     @cols= split(/\//,$FILENAME);
+     $BASEFILENAME= $cols[@cols-1];
+
+     unless (open(INSERT, ">$OUTPUT_DIR/$BASEFILENAME.$key.csv")) { 
+	  die("Can not open /$OUTPUT_DIR/$BASEFILENAME.$key.csv\n"); 
+     }
+
+    &variable_sections_insert($key);;
+    $now=time();
+    $now=$now-$start;
+    print ("\t$now: Finished $key\n");
+  }
+
+  # DISKWRITE Sections
+
+  @dynamic_vars=("DISKWRITE","DISKWRITE1","DISKWRITE2","DISKWRITE3","DISKWRITE4");
+
+  foreach $key (@dynamic_vars) {
+
+     @cols= split(/\//,$FILENAME);
+     $BASEFILENAME= $cols[@cols-1];
+
+     unless (open(INSERT, ">$OUTPUT_DIR/$BASEFILENAME.$key.csv")) { 
+	  die("Can not open /$OUTPUT_DIR/$BASEFILENAME.$key.csv\n"); 
+     }
+
+    &variable_sections_insert($key);;
+    $now=time();
+    $now=$now-$start;
+    print ("\t$now: Finished $key\n");
+  }
+
+  # DISKXFER Sections
+
+  @dynamic_vars=("DISKXFER","DISKXFER1","DISKXFER2","DISKXFER3","DISKXFER4");
+
+  foreach $key (@dynamic_vars) {
+
+     @cols= split(/\//,$FILENAME);
+     $BASEFILENAME= $cols[@cols-1];
+
+     unless (open(INSERT, ">$OUTPUT_DIR/$BASEFILENAME.$key.csv")) { 
+	  die("Can not open /$OUTPUT_DIR/$BASEFILENAME.$key.csv\n"); 
+     }
+
+    &variable_sections_insert($key);;
+    $now=time();
+    $now=$now-$start;
+    print ("\t$now: Finished $key\n");
+  }
+
+  # DISKRIO Sections
+
+  @dynamic_vars=("DISKRIO","DISKRIO1","DISKRIO2","DISKRIO3","DISKRIO4");
+
+  foreach $key (@dynamic_vars) {
+
+     @cols= split(/\//,$FILENAME);
+     $BASEFILENAME= $cols[@cols-1];
+
+     unless (open(INSERT, ">$OUTPUT_DIR/$BASEFILENAME.$key.csv")) { 
+	  die("Can not open /$OUTPUT_DIR/$BASEFILENAME.$key.csv\n"); 
+     }
+
+    &variable_sections_insert($key);;
+    $now=time();
+    $now=$now-$start;
+    print ("\t$now: Finished $key\n");
+  }
+
+  # DISKWIO Sections
+
+  @dynamic_vars=("DISKWIO","DISKWIO1","DISKWIO2","DISKWIO3","DISKWIO4");
 
   foreach $key (@dynamic_vars) {
 

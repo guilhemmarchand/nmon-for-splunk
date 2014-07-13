@@ -2,7 +2,7 @@
   <label>NMON - MEMNEW, Memory Allocation Analysis</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -28,7 +28,7 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMNEW | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMNEW | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -51,6 +51,8 @@
     </input>
   </fieldset>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan` $statsmode$(memused_PCT) As memused_PCT</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>  
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -87,8 +89,8 @@
       <chart>
         <title>Memory Allocation Analysis by Host</title>
         <searchString>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan` limit=0 useother=f $statsmode$(memused_PCT) As memused_PCT, $statsmode$(FScache_PCT) As FScache_PCT, $statsmode$(Process_PCT) As Process_PCT, $statsmode$(System_PCT) As System_PCT, $statsmode$(Free_PCT) As Free_PCT by hostname | $memmode$</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
