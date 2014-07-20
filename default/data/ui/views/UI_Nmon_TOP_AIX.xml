@@ -45,9 +45,9 @@
     </input>
     <input type="radio" token="majorsmt" searchWhenChanged="true">
       <label>Increase factor CPU load by SMT mode:</label>
-      <choice value="eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(smt_threads&gt;=&quot;2&quot;, pct_CPU*1.2, smt_threads&gt;=&quot;4&quot;, pct_CPU*1.4)">x 1.2 for SMT2, x 1.4 for SMT4</choice>
+      <choice value="eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;=&quot;2&quot;, pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;=&quot;4&quot;, pct_CPU*1.4, isnull(smt_threads), pct_CPU)">x 1.2 for SMT2, x 1.4 for SMT4</choice>
       <choice value="eval smt_threads=(logical_cpus/virtual_cpus)">none</choice>
-      <default>eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(smt_threads&gt;="2", pct_CPU*1.2, smt_threads&gt;="4", pct_CPU*1.4)</default>
+      <default>eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)</default>
     </input>
     <input type="text" token="Command" searchWhenChanged="true">
       <label>Optional: Filter by Command</label>

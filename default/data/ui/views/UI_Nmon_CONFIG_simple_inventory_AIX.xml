@@ -2,14 +2,23 @@
   <label>NMON CONFIG, AIX Simple Inventory</label>
   <description/>
   <fieldset autoRun="true" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" searchWhenChanged="true" token="timerange">
+      <label>Time Range:</label>
       <default>
         <earliestTime>-24h@h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
+    <input type="radio" token="datasource" searchWhenChanged="true">
+      <label>Data Source:</label>
+      <choice value="inputlookup nmon_inventory | search OStype=AIX">Based on Nmon Inventory Lookup</choice>
+      <choice value="search `nmon_config` | search OStype=&quot;AIX&quot; | stats latest(AIX_Machine_SerialNumber) As Machine_SerialNumber, latest(AIX_virtualcpus) As virtualcpus, latest(AIX_logicalcores) As logicalcores,  latest(AIX_entitled) As entitled, latest(AIX_LEVEL) As AIX_LEVEL, latest(Processor) As Processor, latest(AIX_processor_mode) As AIX_processor_mode, latest(AIX_processor_clockspeed) As AIX_processor_clockspeed, latest(AIX_cpu_type) As AIX_cpu_type, latest(AIX_kernel_type) As AIX_kernel_type, latest(AIX_plateform_firmware_level) As AIX_plateform_firmware_level, latest(nmon_version) As nmon_version, latest(AIX_PoolID) As AIX_PoolID, latest(AIX_system_installed_CPUs) As AIX_system_installed_CPUs, latest(AIX_system_active_CPUs) As AIX_system_active_CPUs, latest(AIX_PoolCPUs) As AIX_PoolCPUs by hostname | fillnull value=Undeterminated">Based on Nmon Raw Data</choice>
+      <default>inputlookup nmon_inventory | search OStype=AIX</default>
+    </input>
   </fieldset>
-  <searchTemplate>`nmon_config_inventory` | where OStype="AIX"</searchTemplate>
+  <searchTemplate>| $datasource$</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
   <row>
     <html>
       <div style="text-align: center;">
@@ -22,7 +31,7 @@
   </row>
   <row>
     <single>
-      <searchPostProcess>stats count</searchPostProcess>
+      <searchPostProcess>stats dc(hostname) As count</searchPostProcess>
       <option name="afterLabel">Hosts known within this period</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">AIX</option>
@@ -32,10 +41,8 @@
   </row>
   <row grouping="1,1">
     <chart>
-      <title>Hosts by AIX Version</title>
+      <title>AIX Version</title>
       <searchPostProcess>stats count by AIX_LEVEL</searchPostProcess>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -54,14 +61,132 @@
     <table>
       <title>Table Stats</title>
       <searchPostProcess>| top limit=0 AIX_LEVEL | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
-      <title>Hosts by Nmon version</title>
-      <searchPostProcess>stats count by nmon_version</searchPostProcess>
+      <title>Processor Type</title>
+      <searchPostProcess>stats count by Processor</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Processor Mode</title>
+      <searchPostProcess>stats count by AIX_processor_mode</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 AIX_processor_mode | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Processor Clock Speed</title>
+      <searchPostProcess>stats count by AIX_processor_clockspeed</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 AIX_processor_clockspeed | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>CPU Type</title>
+      <searchPostProcess>stats count by AIX_cpu_type</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 AIX_cpu_type | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Kernel Type</title>
+      <searchPostProcess>stats count by AIX_kernel_type</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 AIX_kernel_type | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Plateform Firmware Level</title>
+      <searchPostProcess>stats count by AIX_plateform_firmware_level</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -81,9 +206,37 @@
     </chart>
     <table>
       <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 AIX_plateform_firmware_level | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Nmon version</title>
+      <searchPostProcess>stats count by nmon_version</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
       <searchPostProcess>| top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
+    </table>
+  </row>
+  <row>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>fields hostname,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,AIX_LEVEL,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</searchPostProcess>
     </table>
   </row>
 </form>

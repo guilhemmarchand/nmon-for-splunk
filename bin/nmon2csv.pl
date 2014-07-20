@@ -11,8 +11,10 @@
 # Modified by Guilhem Marchand 07/08/2014: Changed date format for improved processing output
 # Modified by Guilhem Marchand 07/12/2014: Changed TOP section position of where to retrieve Logical number of CPUs (second position of AAA,cpus by default) to improve TOP Analysis
 # Modified by Guilhem Marchand 07/12/2014: Modified variable sections with devices to allow systems with huge number of disks to be fully taken in charge (150 devices per section x 5)
+# Modified by Guilhem Marchand 07/18/2014: Added nmon data structure verification, if the file contains a ZZZZ section which is not a begin of line,
+# then the data is wrong formated (buggy nmon) and the script will exit without generating bad data
 
-$nmon2csv_ver="1.0.9 July 2014";
+$nmon2csv_ver="1.1.0 July 2014";
 
 use Time::Local;
 
@@ -85,17 +87,80 @@ while (<STDIN>) {
 }
 close $fh;
 
+
+
 ###################################################################################################################################
 # CKSUM
 
 # Compute CKSUM of file to avoid Splunk duplicating data by relaunching multiple times this script
 
 # Open temp nmon
-open FILE, $file or die "$curr_date Error can't open file!";
+open FILE, '+<', "$file" or die "$curr_date Error:$!\n";
+
+
+# Current time
+$curr_date=`date "+%Y-%m-%d %T"`; 
+
+####################################################################################################
+#############		NMON data structure verification				############
+####################################################################################################
+
+
+while( defined( my $l = <FILE> ) ) {
+  chomp $l;
+
+	# Set HOSTNAME
+	if ((rindex $l,"AAA,host,") > -1) { 
+		(my $t1, my $t2, $HOSTNAME) = split(",",$l);
+	}		
+
+	# Set VERSION
+	if ((rindex $l,"AAA,version,") > -1) { 
+		(my $t1, my $t2, $VERSION) = split(",",$l);
+	}		
+
+	 # Search for old nmon versions time format, eg. dd/mm/yy
+	 # If found, let's convert it into the nmon format used with later versions: dd/MMM/YYYY
+	 
+    if ($l =~ m/AAA,date,[0-9]+\/[0-9]+\/[0-9]+/)
+    {
+		
+   	print "$curr_date Error : $HOSTNAME is running an obsolete version of nmon\n";
+   	print " Nmon Version: $VERSION \n";
+   	print " Obsolete versions will generate various troubles, please consider upgrading this host.\n";
+   	print " Ignoring nmon data for host $HOSTNAME\n";
+   
+   	# Delete temp nmon file
+		unlink $file;
+		exit;
+
+    }
+		
+	 # Verify we do not have any line that contain ZZZZ without beginning the line by ZZZZ
+	 # In such case, the nmon data is bad and buggy, converting it would generate 
+
+	 # Search for ZZZZ truncated lines (eg. line containing ZZZZ pattern BUT not beginning the line)
+    if ($l =~ m/.+ZZZZ,/)
+    {
+
+   	print "$curr_date Error : $HOSTNAME has bad structured nmon data, detected ZZZZ lines truncated\n";
+   	print " Nmon Version: $VERSION \n";   	
+   	print " ZZZZ lines contains the event timestamp and should always begin the line.\n";
+   	print " Please check how this nmon file is being generated, and upgrade nmon to a working version if required.\n";
+		print " Ignoring nmon data for host $HOSTNAME\n";
+   
+   	# Delete temp nmon file
+		unlink $file;
+		exit;
+
+    }
+
+}
+
+###################################################################################################################################
+
 
 # Compute cksum
-
-$curr_date=`date "+%Y-%m-%d %T"`; 
 
 my $cksum_hash = `cat $file | cksum | awk '{print \$1}'`;
 
@@ -129,8 +194,6 @@ if (grep{/$cksum_hash/} <CKSUM>){
 }
 
 close CKSUM;
-
-###################################################################################################################################
 
 
 

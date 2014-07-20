@@ -9,8 +9,9 @@
 # Date - June 2014
 # Modified for AIX by Barak Griffis 03052014
 # Unified for Solaris/Linux/AIX by Barak Griffis 03072014
+# Modified for Solaris by Guilhem Marchand 20072014
 
-# Version 1.1.7
+# Version 1.1.8
 
 # For AIX / Linux / Solaris
 
@@ -161,7 +162,7 @@ case ${PIDs} in
     	# Start NMON
 		mv *.nmon ${NMON_REPOSITORY}/ >/dev/null 2>&1
 		echo "starting nmon : ${nmon_command} in ${WORKDIR}"
-		${nmon_command}
+		${nmon_command} >/dev/null 2>&1
 	;;
 	
 	* )
@@ -171,7 +172,7 @@ case ${PIDs} in
 		mv *.nmon ${NMON_REPOSITORY}/ >/dev/null 2>&1
 		# Start Nmon
 		echo "starting nmon : ${nmon_command} in ${WORKDIR}"
-		${nmon_command}
+		${nmon_command} >/dev/null 2>&1
 	;;
 	
 esac

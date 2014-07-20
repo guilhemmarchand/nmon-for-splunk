@@ -2,14 +2,23 @@
   <label>NMON CONFIG, Linux Simple Inventory</label>
   <description/>
   <fieldset autoRun="true" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
+      <label>Time Range:</label>
       <default>
         <earliestTime>-24h@h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
+    <input type="radio" token="datasource" searchWhenChanged="true">
+      <label>Data Source:</label>
+      <choice value="inputlookup nmon_inventory | search OStype=Linux">Based on Nmon Inventory Lookup</choice>
+      <choice value="search `nmon_config` | search OStype=&quot;Linux&quot; | stats latest(cpu_cores) As cpu_cores, latest(Processor) As Processor, latest(Linux_memory_MB) As Linux_memory_MB, latest(Linux_swap_MB) As Linux_swap_MB, latest(Linux_distribution) As Linux_distribution, latest(Linux_kernelversion) As Linux_kernelversion, latest(nmon_version) As nmon_version by hostname | fillnull value=Undeterminated">Based on Nmon Raw Data</choice>
+      <default>inputlookup nmon_inventory | search OStype=Linux</default>
+    </input>
   </fieldset>
-  <searchTemplate>`nmon_config_inventory` | where OStype="Linux"</searchTemplate>
+  <searchTemplate>| $datasource$</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
   <row>
     <html>
       <div style="text-align: center;">
@@ -32,10 +41,104 @@
   </row>
   <row grouping="1,1">
     <chart>
-      <title>Hosts by Nmon version</title>
+      <title>Linux Distribution</title>
+      <searchPostProcess>stats count by Linux_distribution</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 Linux_distribution | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Processor</title>
+      <searchPostProcess>stats count by Processor</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>CPUs cores Capacity</title>
+      <searchPostProcess>stats count by cpu_cores</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Linux Kernel</title>
+      <searchPostProcess>stats count by Linux_kernelversion</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 Linux_kernelversion | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Nmon version</title>
       <searchPostProcess>stats count by nmon_version</searchPostProcess>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -54,8 +157,14 @@
     <table>
       <title>Table Stats</title>
       <searchPostProcess>| top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
+    </table>
+  </row>
+  <row>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>fields hostname,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</searchPostProcess>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
     </table>
   </row>
 </form>
