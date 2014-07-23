@@ -21,13 +21,13 @@
       </input>    
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default>| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]">AIX</choice>
+      <default>| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
       <choice value="">Inactive</choice>
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR | search PoolIdle&gt;0 | stats count by hostname | dedup hostname | sort hostname | search [ search `nmon_config` | stats count by hostname | fields hostname ]</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR | search PoolIdle&gt;0 | stats count by hostname | dedup hostname | sort hostname | search [ `nmon_inventory` | stats count by hostname | fields hostname ]</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>

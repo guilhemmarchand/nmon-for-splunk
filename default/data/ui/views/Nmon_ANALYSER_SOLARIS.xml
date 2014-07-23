@@ -1,7 +1,7 @@
 <form stylesheet="standard.css,singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON Analyser SOLARIS</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
         <earliestTime>-24h</earliestTime>
@@ -11,8 +11,8 @@
 
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default>| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ search `nmon_config` | search OS=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+      <default>| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
       <choice value="">Inactive</choice>
     </input>
     
@@ -21,8 +21,8 @@
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
       <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForValue="hostname" fieldForLabel="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_data type=CPU_ALL | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
       </populatingSearch>
     </input>
 
@@ -55,8 +55,8 @@
 | stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname
 | eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso)
 | timechart `inline_customspan` max(conso) As "CPU Usage"</searchString>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -80,8 +80,8 @@
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$
 | stats sum(value) As iosec by _time,hostname
 | timechart `inline_customspan` max(iosec) As "IO Per sec"</searchString>
-      <earliestTime>$earliest$</earliestTime>
-      <latestTime>$latest$</latestTime>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -125,6 +125,8 @@
     <chart id="link1">
       <title>CPU_ALL, % by category</title>
 	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` avg(Sys_PCT) As Sys_PCT, avg(User_PCT) As User_PCT, avg(Wait_PCT) As Wait_PCT, avg(Idle_PCT) As Idle_PCT</searchString> 
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -148,6 +150,8 @@
     <chart id="link2">
       <title>CPU_ALL, % global usage</title>
 	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` max(cpu_PCT) As "%CPU Max Usage", avg(cpu_PCT) As "%CPU Avg Usage"</searchString> 
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -198,6 +202,8 @@
 | stats sum(conso_per_core) As conso_per_core by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 max(conso_per_core) as "CPU Usage per core" by Command</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -225,6 +231,8 @@ max(conso_per_core) as "CPU Usage per core" by Command</searchString>
 | stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 max(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -252,6 +260,8 @@ max(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
 | stats sum(Virt_Mem_MB) As Virt_Mem_MB by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 max(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -277,6 +287,8 @@ max(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
 | stats sum(Paging) As Paging by _time,Command
 | timechart `inline_customspan` useother=f limit=0
 max(Paging) as "Paging" by Command</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -303,6 +315,8 @@ max(Paging) as "Paging" by Command</searchString>
 | timechart `inline_customspan` useother=f limit=0
 max(Threads) as Threads by Command
 </searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -329,6 +343,8 @@ max(Threads) as Threads by Command
 | timechart `inline_customspan` useother=f limit=0
 max(CharIO) as CharIO by Command
 </searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -363,6 +379,8 @@ max(CharIO) as CharIO by Command
       <title>FILE, Read/Write system calls</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
 | timechart `inline_customspan` max(readch) As readch, max(writech) As writech</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -386,6 +404,8 @@ max(CharIO) as CharIO by Command
       <title>FILE, Various statistics</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
 | timechart `inline_customspan` max(iget) As iget, max(namei) As namei, max(dirblk) As dirblk</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -417,6 +437,8 @@ max(CharIO) as CharIO by Command
     <chart id="link30">
       <title>PROC, Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(Runnable) As "RunQueue", max(Swap_in) As "Swap_in"</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -439,6 +461,8 @@ max(CharIO) as CharIO by Command
     <chart id="link31">
       <title>PROC, Context switches and system calls (pswitch, syscall) </title>
       <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(pswitch) As "pswitch/sec", max(syscall) As "syscall/sec"</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -461,6 +485,8 @@ max(CharIO) as CharIO by Command
     <chart id="link32">
       <title>PROC, Fork and Exec system calls (fork, exec)</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(fork) As "pswitch/sec", max(exec) As "exec/sec"</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -498,6 +524,8 @@ max(TRP) As "TRP (%time Processing system traps)",
 max(TFL) As "TFL (%time Processing text page faults)",
 max(DFL) As "DFL (%time Processing data page faults)",
 max(LAT) As "LAT (%time Waiting for CPU)"</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -535,6 +563,8 @@ max(LAT) As "LAT (%time Waiting for CPU)"</searchString>
 | timechart `inline_customspan`
 max(minfaults) As minfaults,
 max(majfaults) As majfaults</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -560,6 +590,8 @@ max(majfaults) As majfaults</searchString>
 | timechart `inline_customspan`
 max(pgin) As pgin,
 max(pgout) As pgout</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -585,6 +617,8 @@ max(pgout) As pgout</searchString>
 | timechart `inline_customspan`
 max(scans) As scans,
 max(reclaims) As reclaims</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -610,6 +644,8 @@ max(reclaims) As reclaims</searchString>
 | timechart `inline_customspan`
 max(pgpgin) As pgpgin,
 max(pgpgout) As pgpgout</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -635,6 +671,8 @@ max(pgpgout) As pgpgout</searchString>
 | timechart `inline_customspan`
 max(pswpin) As pswpin,
 max(pswpout) As pswpout</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -659,6 +697,8 @@ max(pswpout) As pswpout</searchString>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
 | timechart `inline_customspan`
 max(pgfree) As pgfree</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -704,6 +744,8 @@ max(pgfree) As pgfree</searchString>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
 | eval memused=round((memtotal-memfree),0)
 | timechart `inline_customspan` Max(memtotal) As memtotal, Max(memused) As memused</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -728,6 +770,8 @@ max(pgfree) As pgfree</searchString>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ 
 | eval swapused=round((swaptotal-swapfree),0)
 | timechart `inline_customspan` Max(swaptotal) As swaptotal, Max(swapused) As swapused</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -753,6 +797,8 @@ max(pgfree) As pgfree</searchString>
 | timechart `inline_customspan`
 max(PCTrcache) As PCT_rcache,
 max(PCTwcache) As PCT_wcache</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -779,6 +825,8 @@ max(PCTwcache) As PCT_wcache</searchString>
 | timechart `inline_customspan`
 max(lread) As lread,
 max(lwrite) As lwrite</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -804,6 +852,8 @@ max(lwrite) As lwrite</searchString>
 | timechart `inline_customspan`
 max(pread) As pread,
 max(pwrite) As pwrite</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -829,6 +879,8 @@ max(pwrite) As pwrite</searchString>
 | timechart `inline_customspan`
 max(bread) As bread,
 max(bwrite) As bwrite</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -872,6 +924,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link46">
       <title>DISKBSIZE, Average data transfer size</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE*" $hostname$ | stats sum(value) As avg_transfer_size by _time | timechart `inline_customspan` max(avg_transfer_size) As avg_transfer_size</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -894,6 +948,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link47">
       <title>DISKBUSY, Disk Busy Activity</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKBUSY*" $hostname$ | stats sum(value) As busy_time by _time | timechart `inline_customspan` max(busy_time) As busy_time</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -916,6 +972,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link48">
       <title>DISKREAD, Disk Read Data Rate</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD*" $hostname$ | stats sum(value) As read_data_rate by _time | timechart `inline_customspan` max(read_data_rate) As read_data_rate</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -938,6 +996,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link49">
       <title>DISKWRITE, Disk Write Data Rate</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE*" $hostname$ | stats sum(value) As write_data_rate by _time | timechart `inline_customspan` max(write_data_rate) As write_data_rate</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -960,6 +1020,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link50">
       <title>DISKXFER, Disk I/O Operations per second (IOPS)</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ | stats sum(value) As IOPS by _time | timechart `inline_customspan` max(IOPS) As IOPS</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -992,6 +1054,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link51">
       <title>JFSFILE, Percentage Usage of File-systems</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="JFSFILE" $hostname$ | timechart limit=0 useother=f `inline_customspan` avg(value) As pct_fs_used by device</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -1036,6 +1100,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link52">
       <title>NET - Network Interfaces Activity by Host</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ | eval rate=round((value/1000),2) | timechart limit=0 `inline_customspan` max(rate) As rate by device</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -1058,6 +1124,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link53">
       <title>NETPACKET - Number of read/write packets</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ | timechart limit=0 `inline_customspan` max(value) As value by device</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -1080,6 +1148,8 @@ max(bwrite) As bwrite</searchString>
     <chart id="link54">
       <title>NETPACKET - Number of read/write packets</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ | timechart limit=0 `inline_customspan` max(value) As value by device</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>

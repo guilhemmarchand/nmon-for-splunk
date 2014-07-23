@@ -12,7 +12,7 @@
     <input type="radio" token="datasource" searchWhenChanged="true">
       <label>Data Source:</label>
       <choice value="inputlookup nmon_inventory | search OStype=Solaris">Based on Nmon Inventory Lookup</choice>
-      <choice value="search `nmon_config` | search OStype=&quot;Solaris&quot; | stats latest(cpu_cores) As cpu_cores, latest(Solaris_version) As Solaris_version,  latest(Processor) As Processor, latest(Solaris_processor_clockspeed) As Solaris_processor_clockspeed, latest(nmon_version) As nmon_version by hostname | fillnull value=Undeterminated">Based on Nmon Raw Data</choice>
+      <choice value="search `nmon_config` | search OStype=&quot;Solaris&quot; | stats values(cpu_cores) As cpu_cores, values(Solaris_version) As Solaris_version, values(Solaris_sunOS_version) As Solaris_sunOS_version, values(OStype) As OStype, values(Processor) As Processor, values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed, values(nmon_version) As nmon_version by hostname | fillnull value=Undeterminated">Based on Nmon Raw Data</choice>
       <default>inputlookup nmon_inventory | search OStype=Solaris</default>
     </input>
   </fieldset>
@@ -58,6 +58,32 @@
     <table>
       <title>Table Stats</title>
       <searchPostProcess>| top limit=0 Solaris_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <earliestTime>$earliest$</earliestTime>
+      <latestTime>$latest$</latestTime>
+    </table>
+  </row>
+  <row grouping="1,1">
+    <chart>
+      <title>Solaris (sunOS) version</title>
+      <searchPostProcess>stats count by Solaris_sunOS_version</searchPostProcess>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">default</option>
+      <option name="charting.chart.style">minimal</option>
+      <option name="charting.drilldown">all</option>
+      <option name="height">300px</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">right</option>
+    </chart>
+    <table>
+      <title>Table Stats</title>
+      <searchPostProcess>| top limit=0 Solaris_sunOS_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
     </table>
@@ -167,7 +193,7 @@
   <row>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>fields hostname,cpu_cores,*,nmon_version</searchPostProcess>
+      <searchPostProcess>fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</searchPostProcess>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
     </table>

@@ -1,6 +1,5 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
-  <label>NMON - MEMNEW, Memory Allocation Analysis</label>
-  <description/>
+  <label>NMON - MEMNEW, AIX Memory Allocation Analysis</label>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
@@ -9,40 +8,34 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
-      <label>Filter OS Type:</label>
-      <default>| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="">Inactive</choice>
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMNEW | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMNEW | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
     <input type="radio" token="memmode" searchWhenChanged="true">
       <label>Show Mem Allocation by:</label>
       <default>fields _time,*memused_PCT*</default>
@@ -52,7 +45,7 @@
   </fieldset>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan` $statsmode$(memused_PCT) As memused_PCT</searchTemplate>
   <earliestTime>$timerange.earliest$</earliestTime>
-  <latestTime>$timerange.latest$</latestTime>  
+  <latestTime>$timerange.latest$</latestTime>
   <row>
     <panel>
       <input type="radio" token="chart" searchWhenChanged="true">
@@ -90,7 +83,7 @@
         <title>Memory Allocation Analysis by Host</title>
         <searchString>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan` limit=0 useother=f $statsmode$(memused_PCT) As memused_PCT, $statsmode$(FScache_PCT) As FScache_PCT, $statsmode$(Process_PCT) As Process_PCT, $statsmode$(System_PCT) As System_PCT, $statsmode$(Free_PCT) As Free_PCT by hostname | $memmode$</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>        
+        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -133,7 +126,7 @@
         <default>minimal</default>
       </input>
     </panel>
-  </row> 
+  </row>
   <row>
     <panel>
       <chart>

@@ -45,7 +45,6 @@
 
       <p>Change your parameters if required:</p>
 		<p> </p>
-
 		
         <table class="table table-striped table-bordered">
 
@@ -79,7 +78,7 @@
                 <p></p>                
                 <b>Filter OS Type:</b>
                 <p></p>                
-                {% radiogroup id="osfilter-radiogroup" default="| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
+                {% radiogroup id="osfilter-radiogroup" default="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
 
                 <p></p>                
                 <b>Hosts:</b>                             
@@ -137,7 +136,6 @@
 				</td>
             </tr>
 
-            
             <tr>
                 <td>
 					 <p></p>
@@ -151,7 +149,7 @@
             </tr>            
 
         </table>
-		
+        
     {% endblock usage%}
 
 <!-- ##################################################################################### Single Core CPU Usage per Command Invocation ##################################################################################### -->
@@ -386,7 +384,7 @@
 		splunkjs.mvc.Components.getInstance("stats-dropdown").settings.set("choices", choices);
 		
 		var choices = [
-        {label: " AIX", value: "| search [ search `nmon_config` | search AIX_LEVEL=* | stats count by hostname | fields hostname ]"},
+        {label: " AIX", value: "| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]"},
         {label: " Inactive", value: ""}                
         ] 
  
@@ -394,7 +392,7 @@
 		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);				
 
 		var choices = [
-        {label: " x 1.2 for SMT2, x 1.4 for SMT4", value: 'eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(smt_threads>="2", pct_CPU*1.2, smt_threads>="4", pct_CPU*1.4)'},
+        {label: " x 1.2 for SMT2, x 1.4 for SMT4", value: 'eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)'},
         {label: " none", value: "eval smt_threads=(logical_cpus/virtual_cpus)"}
         ] 
  

@@ -14,7 +14,7 @@
 # Modified by Guilhem Marchand 07/18/2014: Added nmon data structure verification, if the file contains a ZZZZ section which is not a begin of line,
 # then the data is wrong formated (buggy nmon) and the script will exit without generating bad data
 
-$nmon2csv_ver="1.1.0 July 2014";
+$nmon2csv_ver="1.1.1 July 2014";
 
 use Time::Local;
 
@@ -119,6 +119,16 @@ while( defined( my $l = <FILE> ) ) {
 		(my $t1, my $t2, $VERSION) = split(",",$l);
 	}		
 
+	# Set DATE
+	if ((rindex $l,"AAA,date,") > -1) { 
+		(my $t1, my $t2, $DATE) = split(",",$l);
+	}
+
+	# Set TIME
+	if ((rindex $l,"AAA,time,") > -1) { 
+		(my $t1, my $t2, $TIME) = split(",",$l);
+	}	
+
 	 # Search for old nmon versions time format, eg. dd/mm/yy
 	 # If found, let's convert it into the nmon format used with later versions: dd/MMM/YYYY
 	 
@@ -164,7 +174,7 @@ while( defined( my $l = <FILE> ) ) {
 
 my $cksum_hash = `cat $file | cksum | awk '{print \$1}'`;
 
-print "$curr_date NMON file cksum: $cksum_hash";
+print "$curr_date host: $HOSTNAME, Nmon data in date of $DATE, starting time $TIME, NMON file cksum: $cksum_hash";
 
 # Open CKSUM_REF file
 open(CKSUM,$CKSUM_REF);
@@ -173,20 +183,20 @@ open(CKSUM,$CKSUM_REF);
 
 if (grep{/$cksum_hash/} <CKSUM>){
 
-   print "$curr_date Process done.\n";
+   print "$curr_date host: $HOSTNAME, Nmon data in date of $DATE, starting time $TIME, Process done.\n";
    
    # Delete temp nmon file
 	unlink $file;
 	exit;
 
 }else{
-   print "$curr_date cksum unknown, let's convert data.\n";
+   print "$curr_date host: $HOSTNAME, Nmon data in date of $DATE, starting time $TIME, cksum unknown, let's convert data.\n";
 
 	# Savecksum
 
 	# Open for writing
 		unless (open(CKSUM, ">$CKSUM_REF")) { 
-		die("$curr_date Error Can not open $$CKSUM_REF\n"); 
+		die("$curr_date host: $HOSTNAME, Nmon data in date of $DATE, starting time $TIME, Error Can not open $$CKSUM_REF\n"); 
 		}
 	
 		print (CKSUM $cksum_hash."\n");
