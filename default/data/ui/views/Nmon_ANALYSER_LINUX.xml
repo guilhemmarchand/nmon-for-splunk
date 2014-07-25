@@ -17,13 +17,19 @@
       <choice value="">Inactive</choice>
     </input>
     
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>
+        
     <input type="dropdown" token="hostname" searchWhenChanged="true">
       <label>Select a Host:</label>
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
-      <default>none</default>
       <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=CPU_ALL | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
+        <![CDATA[index=nmon sourcetype=nmon_data type=CPU_ALL $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
       </populatingSearch>
     </input>
 
@@ -40,12 +46,24 @@
   </row>
   
   <row>
-    <html>
-      <div style="text-align: center;">
-        <h1>System Summary</h1>
-      </div>
-    </html>
-  </row>  
+	<panel>
+		<html>
+			<div style="text-align: center;">
+				<h1>System Summary</h1>
+			</div>
+		</html>
+		<single>
+		<searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$
+| stats count by type | sort - type | head 1
+| eval datasource=case(match(type, "LPAR"), "LPAR (Virtual Processor usage)", match(type, "CPU_ALL"), "CPU_ALL (Percentage usage)") | stats values(datasource) As datasource</searchString>
+		<earliestTime>$timerange.earliest$</earliestTime>
+		<latestTime>$timerange.latest$</latestTime>
+		<option name="drilldown">none</option>
+		<option name="underLabel">CPU datasource</option>
+		<option name="linkView">search</option>
+		</single>
+	</panel> 
+  </row>
   
   <row>
     <chart>

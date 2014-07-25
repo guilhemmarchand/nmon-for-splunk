@@ -10,8 +10,9 @@
 # Modified for AIX by Barak Griffis 03052014
 # Unified for Solaris/Linux/AIX by Barak Griffis 03072014
 # Modified for Solaris by Guilhem Marchand 20072014
+# Modified for Mac OS x by Guilhem Marchand 24072014: Prevent Mac OS X users to launch the nmon_helper.sh, this is useless (no nmon for BSD*) and causes splunkd to crash
 
-# Version 1.1.8
+# Version 1.1.9
 
 # For AIX / Linux / Solaris
 
@@ -92,6 +93,13 @@ if [ ! -x "$NMON" ];then
 	esac
 
 fi
+
+;;
+
+* )
+
+	echo "`date`, ERROR, Unsupported system ! Nmon is available only for AIX / Linux / Solaris systems, please check and deactivate nmon data collect"
+	exit 2
 
 ;;
 

@@ -13,8 +13,10 @@
 # Modified by Guilhem Marchand 07/12/2014: Modified variable sections with devices to allow systems with huge number of disks to be fully taken in charge (150 devices per section x 5)
 # Modified by Guilhem Marchand 07/18/2014: Added nmon data structure verification, if the file contains a ZZZZ section which is not a begin of line,
 # then the data is wrong formated (buggy nmon) and the script will exit without generating bad data
+# Modified by Guilhem MArchand 07/24/2014: Corrected a blank line issue present in some nmon files and preventing the script from generating data as expected
+# The blank line filtering operation is operated while reading STDIN
 
-$nmon2csv_ver="1.1.1 July 2014";
+$nmon2csv_ver="1.1.2 July 2014";
 
 use Time::Local;
 
@@ -82,11 +84,11 @@ my $file = "$SPOOL_DIR/nmon2csv.$$.nmon";
 open my $fh, '>', $file or die $!;
 
 while (<STDIN>) {
+	 next if /^$/;
     last if /^$/;
     print $fh $_;
 }
 close $fh;
-
 
 
 ###################################################################################################################################
