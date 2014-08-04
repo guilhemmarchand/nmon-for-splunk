@@ -36,13 +36,136 @@
 	
 {% endblock usage%}
 
+
+{% block nmon_processing%}
+		
+	<div style="text-align: center;">
+		{% single 
+            id="single1-avgnbrlines" 
+            managerid="nmon_processing"
+            field="avg_nbr_lines"
+            afterLabel="lines"
+				underLabel="Avg nbr of lines per nmon file" %}
+
+		{% single 
+            id="single1-sumnbrlines" 
+            managerid="nmon_processing"
+            field="sum_nbr_lines_in_millions"
+            afterLabel="Millions"
+				underLabel="Number of lines proceeded" %}
+
+		{% single 
+            id="single1-sumsizeGB" 
+            managerid="nmon_processing"
+            field="sum_size_GB"
+            afterLabel="GB"
+				underLabel="Total nmon raw data converted" %}
+
+		{% single 
+            id="single1-processing-errors" 
+            managerid="nmon_processing_errors"
+				underLabel="Errors found in Data Processing" %}
+
+		{% single 
+            id="single1-collect-errors" 
+            managerid="nmon_collect_errors"
+				underLabel="Errors found in Data Collect" %}
+	</div>
+
+{% endblock nmon_processing%}
+
+{% block nmon_processing_size_timechart%}
+
+	<div style="text-align: center;">
+
+	<h2>Nmon Raw Data conversion: Volumes proceeded over time (MB)</h2>	
+	
+	</div>		
+
+	<div style="text-align: center;">
+		{% single 
+            id="single1-avgsizeMB" 
+            managerid="nmon_processing"
+            field="avg_size_MB"
+            afterLabel="MB"
+				underLabel="Avg size of Nmon files" %}
+
+		{% single 
+            id="single1-maxsizeMB" 
+            managerid="nmon_processing"
+            field="max_size_MB"
+            afterLabel="MB"
+				underLabel="Max size of Nmon files" %}
+	</div>
+		
+		{% chart 
+            id="nmon_processing_size_chart" 
+            managerid="nmon_processing_size_bytime"
+            resizable="true"
+            drilldown="all"
+            type="column"
+            height="350px" %}
+	
+{% endblock nmon_processing_size_timechart%}
+		
+{% block nmon_processing_elapsed_timechart%}
+
+	<div style="text-align: center;">
+
+	<h2>Nmon Raw Data conversion: Average elapsed time per Nmon file (seconds)</h2>	
+	
+	</div>		
+
+	<div style="text-align: center;">
+		{% single 
+            id="single1-avgelapsed" 
+            managerid="nmon_processing"
+            field="avg_elapsed_in_seconds"
+            afterLabel="seconds"
+				underLabel="Avg Time required to convert an Nmon File" %}
+
+		{% single 
+            id="single1-sumelapsed" 
+            managerid="nmon_processing"
+            field="sum_elapsed_in_hours"
+            afterLabel="Hours"
+				underLabel="Total Time Spent in converting Nmon Data" %}
+	</div>
+		
+		{% chart 
+            id="nmon_processing_elapsed_chart" 
+            managerid="nmon_processing_elapsed_bytime"
+            resizable="true"
+            drilldown="all"
+            type="column"
+            height="350px" %}
+	
+{% endblock nmon_processing_elapsed_timechart%}
+
+
 {% block eventcount%}
 
 	<div style="text-align: center;">
 
-	<h2>Eventcount Statistics : Number of Events and Index Sizes</h2>	
+	<h2>Eventcount Statistics: Number of Events and Index Sizes</h2>	
 	
 	</div>		
+
+	<div style="text-align: center;">
+		{% single 
+            id="single1-eventcount_size" 
+            managerid="eventcount_singlessearch"
+            field="Size (MB)"
+            afterLabel="MB"
+				underLabel="Nmon index size" %}
+
+		{% single 
+           id="single1-eventcount_events" 
+            managerid="eventcount_singlessearch"
+            field="Millions of Events"
+            afterLabel="Millions"
+				underLabel="Nmon events count" %}
+	</div>
 		
 		{% table 
             id="eventcount-table" 
@@ -53,24 +176,79 @@
 	
 {% endblock eventcount%}
 
+{% block metadata%}
+
+	<div style="text-align: center;">
+
+	<h2>Metadata Statistics: Indexes first and last event dates</h2>	
+	
+	</div>		
+
+	<div style="text-align: center;">
+		{% single 
+            id="single1-metadata_first" 
+            managerid="metadata_singlessearch_earliest"
+            field="First Event"
+				underLabel="Data First Event" %}
+
+		{% single 
+            id="single1-metadata_last" 
+            managerid="metadata_singlessearch_latest"
+            field="Last Event"
+				underLabel="Data Last Event" %}
+	</div>
+		
+		{% table 
+            id="metadata-table" 
+            managerid="metadata-search"
+            resizable="true"
+            drilldown="cell"
+            pageSize="20" %}
+	
+{% endblock metadata%}
+
 
 {% block metric%}
 
 	<div style="text-align: center;">
 
-	<h2>Metric Statistics : Indexing volumes (MB)</h2>	
+	<h2>Metric Statistics: Indexing volumes (MB) and rates (kbps)</h2>	
 	
 	</div>		
-		
-		{% table 
-            id="metric-table" 
-            managerid="metric-search"
-            resizable="true"
-            drilldown="cell"
-            pageSize="20" %}
-	
-{% endblock metric%}
 
+	<div style="text-align: center;">
+
+		{% single 
+            id="single1-metric_single_perhour" 
+            managerid="metric-search-perhour"
+            field="average_per_hour"
+				afterLabel="MB"
+				underLabel="Avg volume of Data indexed per hour" %}
+
+		{% single 
+            id="single1-metric_single_perday" 
+            managerid="metric-search-perday"
+            field="average_per_day"
+				afterLabel="MB"
+				underLabel="Avg volume of Data indexed per day" %}
+
+		{% single 
+            id="single1-metric_single_total" 
+            managerid="metric_singlessearch_total"
+            field="total_MB"
+				afterLabel="MB"
+				underLabel="Total Volume of Data Indexed in Period" %}
+
+		{% single 
+            id="single1-metric_rate_avg" 
+            managerid="metric-rate-search"
+            field="avg_rate_kbps"
+				afterLabel="kbps"
+				underLabel="Avg Indexing Rate" %}
+
+	</div>
+
+{% endblock metric%}
 
 {% block metric-timechart%}
 
@@ -87,34 +265,40 @@
             drilldown="all"
             type="column"
             height="350px" %}
-	
-{% endblock metric-timechart%}
-
-{% block metadata%}
 
 	<div style="text-align: center;">
-
-	<h2>Metadata Statistics : Indexes first and last event dates</h2>	
+	
+	<h2>Indexing Speed Rate over time (kbps)</h2>	
 	
 	</div>		
 		
-		{% table 
-            id="metadata-table" 
-            managerid="metadata-search"
+		{% chart 
+            id="metric-rate-chart" 
+            managerid="metric-rate-timechartsearch"
             resizable="true"
-            drilldown="cell"
-            pageSize="20" %}
+            drilldown="all"
+            type="column"
+            height="350px" %}
 	
-{% endblock metadata%}
-
+{% endblock metric-timechart%}
 
 {% block hitsperpage%}
 
 	<div style="text-align: center;">
 
-	<h2>Application Activity : Number of hits per page</h2>	
+	<h2>Application Activity: Number of hits per page</h2>	
 	
 	</div>		
+
+	<div style="text-align: center;">
+
+		{% single 
+            id="single1-top1-hit" 
+            managerid="hitsperpage-top1"
+            field="file"
+				underLabel="Top Page by Hits" %}
+
+	</div>
 		
 		{% chart 
             id="hitsperpage-chart" 
@@ -127,7 +311,7 @@
 	<div style="text-align: center;">
 
 	<p></p>
-	<h2>Application Activity : Popular views</h2>	
+	<h2>Application Activity: Popular views</h2>	
 	
 	</div>		
 		
@@ -146,7 +330,7 @@
 
 	<div style="text-align: center;">
 
-	<h2>Scheduler Activity : Number of jobs over time</h2>	
+	<h2>Scheduler Activity: Number of jobs over time</h2>	
 	
 	</div>		
 		
@@ -164,7 +348,49 @@
 {% block managers %}
 
 <!-- #########################################################################	MAIN SEARCHES	######################################################################### -->	
-	
+
+<!-- Nmon Processing statistics -->	
+
+	{% searchmanager
+		id="nmon_processing"
+		search='`nmon_processing_stats`'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=False %}
+
+	{% searchmanager
+		id="nmon_processing_size_bytime"
+		search='`nmon_processing_stats_by_time` | timechart sum(sum_size_MB) As sum_size_MB'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=False %}
+
+	{% searchmanager
+		id="nmon_processing_elapsed_bytime"
+		search='`nmon_processing_stats_by_time` | timechart avg(avg_elapsed_in_seconds) As avg_elapsed_in_seconds'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=False %}
+
+	{% searchmanager
+		id="nmon_processing_errors"
+		search='`nmon_processing` error | stats count As nbr_errors'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=False %}
+
+	{% searchmanager
+		id="nmon_collect_errors"
+		search='index="nmon" sourcetype="nmon_collect" error | stats count As nbr_errors'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=False %}
+
 <!-- Event Count -->	
 		
 	{% searchmanager
@@ -172,6 +398,11 @@
 		search='| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"'|token_safe
 		preview=True
 		cache=False %}
+
+	{% postprocessmanager
+		id="eventcount_singlessearch"
+		managerid="eventcount-search"
+		search='| sort - "Size (MB)" | head 1' %}
 
 <!-- Metadata -->
 
@@ -181,19 +412,68 @@
 		preview=True
 		cache=False %}
 
+	{% postprocessmanager
+		id="metadata_singlessearch_earliest"
+		managerid="metadata-search"
+		search='| search sourcetype="nmon_data" | sort - "First Event" |  head 1' %}
+
+	{% postprocessmanager
+		id="metadata_singlessearch_latest"
+		managerid="metadata-search"
+		search='| search sourcetype="nmon_data" | sort - "Last Event" |  head 1' %}
+
 <!-- Metric -->
 
 	{% searchmanager
-		id="metric-search"
-		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | bucket _time `internal_table_stats_span` | rename series As index | stats avg(MB) as avg, max(MB) As "Max (MB)", sum(MB) As "Total (MB)" by _time,index | sort - _time | eval avg=round(avg,2) | rename avg As "Average (MB)"'|token_safe
+		id="metric-search-per-hour"
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1h sum(MB) As "Total_per_hour_MB" | where isnotnull(Total_per_hour_MB) | sort - _time'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
 		cache=True %}
-	
+
+	{% searchmanager
+		id="metric-search-per-day"
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1d sum(MB) As "Total_per_day_MB" | where isnotnull(Total_per_day_MB) | sort - _time'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=True %}
+
+	{% postprocessmanager
+		id="metric_singlessearch_total"
+		managerid="metric-search-per-day"
+		search='| stats sum(Total_per_day_MB) As total_MB' %}
+
+	{% postprocessmanager
+		id="metric-search-perday"
+		managerid="metric-search-per-day"
+		search=' | stats avg(Total_per_day_MB) As average_per_day | eval average_per_day=round(average_per_day,2)' %}
+
+	{% postprocessmanager
+		id="metric-search-perhour"
+		managerid="metric-search-per-hour"
+		search=' | stats avg(Total_per_hour_MB) As average_per_hour | eval average_per_hour=round(average_per_hour,2)' %}
+
+	{% searchmanager
+		id="metric-rate-search"
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | stats avg(kbps) As avg_kbps, max(kbps) As max_kbps | eval avg_kbps=round(avg_kbps,2) | eval max_kbps=round(max_kbps,2)'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=True %}
+		
 	{% searchmanager
 		id="metric-timechartsearch"
 		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart limit=0 useother=f sum(MB) by series | fillnull value=0'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		cache=True %}
+
+	{% searchmanager
+		id="metric-rate-timechartsearch"
+		search='index=_internal source=*metrics.log group=per_index_thruput series="nmon" | timechart limit=0 useother=f avg(kbps) As Avg_kbps | fillnull value=0'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
@@ -205,11 +485,16 @@
 
 	{% searchmanager
 		id="hitsperpage-search"
-		search='index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home*'|token_safe
+		search='index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home* AND file!=report'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
 		cache=True %}
+
+	{% postprocessmanager
+		id="hitsperpage-top1"
+		managerid="hitsperpage-search"
+		search=' | top 1 file' %}
 
 	{% postprocessmanager
 		id="hitsperpage-chart-search"
@@ -253,12 +538,38 @@
             DropdownView
         		){
 				
+				splunkjs.mvc.Components.getInstance("nmon_processing_size_chart").settings.set({
+				"charting.axisY.minimumNumber": "0",
+				"charting.legend.placement": "bottom",
+				"charting.axisTitleX.text": "Time",
+				"charting.axisTitleY.text": "Volume (MB)",
+				"charting.chart.nullValueMode": "gaps",
+				"charting.chart.stackMode": "stacked",
+				});									
+
+				splunkjs.mvc.Components.getInstance("nmon_processing_elapsed_chart").settings.set({
+				"charting.axisY.minimumNumber": "0",
+				"charting.legend.placement": "bottom",
+				"charting.axisTitleX.text": "Time",
+				"charting.axisTitleY.text": "Seconds",
+				"charting.chart.nullValueMode": "gaps",
+				"charting.chart.stackMode": "stacked",
+				});									
 			
 				splunkjs.mvc.Components.getInstance("metric-chart").settings.set({
 				"charting.axisY.minimumNumber": "0",
 				"charting.legend.placement": "bottom",
 				"charting.axisTitleX.text": "Time",
 				"charting.axisTitleY.text": "Volume (MB)",
+				"charting.chart.nullValueMode": "gaps",
+				"charting.chart.stackMode": "stacked",
+				});									
+
+				splunkjs.mvc.Components.getInstance("metric-rate-chart").settings.set({
+				"charting.axisY.minimumNumber": "0",
+				"charting.legend.placement": "bottom",
+				"charting.axisTitleX.text": "Time",
+				"charting.axisTitleY.text": "Indexing Rate (kbps)",
 				"charting.chart.nullValueMode": "gaps",
 				"charting.chart.stackMode": "stacked",
 				});									

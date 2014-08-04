@@ -43,7 +43,7 @@
    limitations under the License.<br />
 	<br />
 	
-<b>nmon release 1.3.6</b>
+<b>nmon release 1.4.0</b>
 
 <br />
 
@@ -726,7 +726,7 @@ edit /opt/splunk/etc/deployment-apps/TA-nmon/local/outputs.conf
 
 <h4>Example of simple configuration:</h4>
 
-<xmp>
+<pre>
 	[tcpout]
 	defaultGroup = default-autolb-group
 
@@ -734,7 +734,7 @@ edit /opt/splunk/etc/deployment-apps/TA-nmon/local/outputs.conf
 	server = mysplunk-server:9997
 
 	[tcpout-server://mysplunk-server:9997]
-</xmp>
+</pre>
 
 
 
@@ -767,7 +767,7 @@ Configure your serverclass.conf file, the following simple example will filter y
 Edit the file "$SPLUNK_HOME/etc/system/local/serverclass.conf" with section:
 <br />
 
-<xmp>
+<pre>
 		[serverClass:linux_hosts]
 		whitelist.0 = *linux*
 
@@ -783,7 +783,7 @@ Edit the file "$SPLUNK_HOME/etc/system/local/serverclass.conf" with section:
 		restartSplunkWeb = 0
 		restartSplunkd = 1
 		stateOnClient = enabled
-</xmp>
+</pre>
 
 <br />
 
@@ -1212,7 +1212,7 @@ edit /opt/splunk/etc/deployment-apps/TA-nmon/local/outputs.conf
 
 <h4>Example: A load-balancing configuration with indexer acknowledgment</h4>
 
-<xmp>
+<pre>
 		[tcpout]
 		defaultGroup=my_LB_peers
 		
@@ -1220,7 +1220,7 @@ edit /opt/splunk/etc/deployment-apps/TA-nmon/local/outputs.conf
 		autoLBFrequency=40
 		server=splunk-peer1:9997,splunk-peer2:9997,splunk-peer3:9997
 		useACK=true
-</xmp>
+</pre>
 
 
 
@@ -1257,7 +1257,7 @@ Configure your serverclass.conf file, the following simple example will filter h
 
 <b>Edit the file "$SPLUNK_HOME/etc/system/local/serverclass.conf" with section:</b>
 
-<xmp>
+<pre>
 
 		[serverClass:cluster-nodes]
 		whitelist.0 = splunk-*
@@ -1274,7 +1274,7 @@ Configure your serverclass.conf file, the following simple example will filter h
 		restartSplunkWeb = 0
 		restartSplunkd = 1
 		stateOnClient = enabled
-</xmp>
+</pre>
 
 <br />
 
@@ -1421,9 +1421,9 @@ replace managing splunk in rc levels by the splunkforwarder.
 
 Instead of this and depending on your preference, you can edit:
 
-<xmp>
+<pre>
 		/etc/init.d/splunk
-</xmp>
+</pre>
 
 And Simply add the splunkforwarder instance.
 
@@ -1450,7 +1450,7 @@ You may also prefer copying the existing init script, adapting it to the Splunk 
 
 <b>Because we already have the main Splunk instance running, when prompted, please change the Forwarder splunkd port by an increased number:</b>
 
-<xmp>
+<pre>
 
 /opt/splunkforwarder/bin/splunk start
 
@@ -1481,7 +1481,7 @@ Starting splunk server daemon (splunkd)...
 Declared role=universal_forwarder.
 Done
 
-</xmp>
+</pre>
 
 
 
@@ -1562,7 +1562,7 @@ On Forwarders:
 </p>
 
 
-<h1>Scenario 3: Manage NMON Data collected into centralized shares</h1>
+<h1>Scenario 3: Manage NMON Data collected into centralized shares (Applicable for Indexers / Heavy Forwarders / Light Forwarders)</h1>
 
 <h2>
 In a scenario where there is no Splunk forwarders installed in servers but there is another process in place which periodically collect Nmon data, all you need is a central share (such as an NFS share)
@@ -1638,9 +1638,9 @@ So you have a central file server share where Nmon files are being centralized, 
 
 <b>Based on this point, let's say for the example that your nmon files are being collected as follows:</b>
 
-<xmp>
+<pre>
 		/mnt/NFS-SHARE/nmon-repository/YYYY-MM-DD
-</xmp>
+</pre>
 
 
 
@@ -1651,25 +1651,25 @@ So you have a central file server share where Nmon files are being centralized, 
 
 <b>"local/inputs.conf" </b>
 
-<xmp>
+<pre>
 		[monitor:///mnt/NFS-SHARE/nmon-repository/*/*nmon]
 		
 		disabled = false
 		index = nmon
 		sourcetype = nmon_processing
 		crcSalt = &lt;SOURCE&gt;
-</xmp>
+</pre>
 
 <b>"local/props.conf" </b>
 
-<xmp>
+<pre>
 		[source::/mnt/NFS-SHARE/nmon-repository/*/*nmon]
 		
 		invalid_cause = archive
 		unarchive_cmd = $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl
 		sourcetype = nmon_processing
 		NO_BINARY_CHECK = true
-</xmp>
+</pre>
 
 <br />
 <br />	
@@ -1759,17 +1759,17 @@ You may want to tune this in a different configuration to be more compliant with
 
 <b>Create our own local/inputs.conf (for standard nmon App, TA-nmon and PA-nmon if required) with a customized polling time:</b>
 
-<xmp>
+<pre>
 		[script://./bin/nmon_helper.sh]
 		disabled = false
 		interval = 300
-</xmp>
+</pre>
 
 <br />
 
 <b>Modify nmon_helper.sh to have</b>
 
-<xmp>
+<pre>
 		# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
 		# Default to 10 seconds
 		interval="60"
@@ -1777,7 +1777,7 @@ You may want to tune this in a different configuration to be more compliant with
 		# Number of Data refresh occurences, Nmon will refresh data X times
 		# Default to 6 occurences to provide 1 minute data measure
 		occurence="5"
-</xmp>
+</pre>
 
 <br />
 
@@ -1794,6 +1794,8 @@ You may want to tune this in a different configuration to be more compliant with
 
 <h2>2. IBM PSeries Environments: Mapping Partitions with PSeries names</h2>
 
+<br />
+
 <p>
 If you are planning to manage many partitions in IBM Pseries environment, you will take advantages of mapping lpars (also called micro-partitions) with your PSeries identification hostname.
 <br />
@@ -1808,30 +1810,31 @@ In IBM Pseries environments, this serial number is in fact the PSeries serial nu
 <br />
 </p>
 
-<xmp>
+<pre>
 		PSERIES_NAME,serialnum<br />
 		PSERIESfoo,xxxxxxxxxxx
 		PSERIESbar,xxxxxxxxxxx
-</xmp>
+</pre>
+
+<br />
 
 Create a stanza in "$SPLUNK_HOME/etc/apps/nmon/local/transforms.conf" such as:
 
 <br />
-<br />
 
-<xmp>
+<pre>
 		[mylookup]
 		filename = mylookupfile.csv
-</xmp>
+</pre>
 
 <br />
 <br />
 Then, copy "props.conf" from default directory to local directory, within the [nmon_data] stanza, add your csv lookup mapping such as: 
 
-<xmp>
+<pre>
 		# mylookup Mapping
 		lookup_mylookup = mylookup serialnum OUTPUTNEW PSERIES
-</xmp>
+</pre>
 
 <br />
 Restart Splunk (or refresh the configuration using debug URL), once this is done every lpar host will be associated with its PSeries.
@@ -2128,23 +2131,23 @@ $ splunk show cluster-bundle-status
 <lu>
 
 <li>
-<b>nmon2csv.pl:</b> 
+<b>nmon2csv.py:</b> 
 </li>
 
 <br />
-third party script located in "SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl"
+Formerly nmon2csv, this is the Python converter which will translate Nmon structured data into data Splunk will index and be able to manage.
 
 <br />
-Invoked by the Splunk Archive Processor whenever required, this script will translate NMON data into data Splunk can successfully exploit
+It is automatically Invoked by the Splunk Archive Processor whenever required, and reads data from standard input (stdin).
 
 <br />
-This is a standard perl script with no uncommon perl requirement 
+This is a Python 2x compatible script which has no external requirement and should run with no issues in any modern enough Operating System. 
 
 <br />
 <br />
 
 <li>
-<b>nmon_helper.sh:</b> third party script to collect NMON data for AIX / Linux / Solaris indexer or forwarder
+<b>nmon_helper.sh:</b> third party Shell script to collect NMON data for AIX / Linux / Solaris indexer or forwarder
 </li>
 
 </lu>
