@@ -43,7 +43,7 @@
    limitations under the License.<br />
 	<br />
 	
-<b>nmon release 1.4.0</b>
+<b>nmon release 1.4.1</b>
 
 <br />
 
@@ -154,11 +154,11 @@ Default installation has a file monitor that watches for any new nmon file locat
 </li>
 
 <li>
-When a new file is found by Splunk Archive Processor (such as any monitored file or directory), Splunk will call a third party perl script
+When a new file is found by Splunk Archive Processor (such as any monitored file or directory), Splunk will call a third party Python script
 </li>
 
 <li>
-The perl script "nmon2csv" will translate nmon data into several csv files in "/opt/splunk/etc/apps/nmon/var/csv_repository"
+The Python script "nmon2csv.py" will translate nmon data into several csv files in "/opt/splunk/etc/apps/nmon/var/csv_repository"
 </li>
 
 <li>
@@ -177,7 +177,7 @@ Once indexed, NMON Data will be ready to be analysed within any available views
 
 <p>
 
-<h2>You can verify NMON workflow indexing by requesting on index with nmon processing sourcetype:</h2>
+<h2>You can verify NMON workflow collecting and indexing by requesting on index with nmon collect/processing sourcetype:</h2>
 
 <code>
     	index="nmon" sourcetype="nmon_collect"
@@ -191,15 +191,52 @@ Once indexed, NMON Data will be ready to be analysed within any available views
 
 <br />
 <br />
+<b>
 The "nmon_collect" sourcetype contains iteration of nmon command launched by Splunk, if you collect NMON performance data in your host.
+</b>
 <br />
 
 <br />
+<b>
+The "nmon_processing" sourcetype contains outputs of the nmon2csv.py Python script which converts NMON files to csv files eaten by Splunk.
+This contains various information about nmon conversion steps (automatically extracted by Splunk when searching for the sourcetype) such as:
+</b>
+
 <br />
-The "nmon_collect" sourcetype contains outputs of the nmon2csv.pl perl script which converts NMON files to csv files eaten by Splunk.
-This will output the NMON file processing timestamp that has been threaten by Splunk. (identified by standard "source" field)
 <br />
-The real data itself will be identified by it's "type" field and indexed in "nmon" Splunk index, currently here are NMON sections (type field) threaten by the third party script:
+
+<lu>
+
+<li>nmon2csv_version: Version of the Python converter</li>
+<li>hostname: hostname of the Nmon host being extracted</li>
+<li>nbr_lines: Number of lines in the Nmon file</li>
+<li>size_in_bytes: Size of the Nmon file</li>
+<li>elapsed_in_seconds: Data processing time in seconds</li>
+<li>Nmon_version: Version of Nmon binary</li>
+<li>Time_of_Nmon_Data: Time of Nmon Data (extracted from the Nmon file)</li>
+<li>Date_of_Nmon_Data: Date of Nmon Data (extracted from the Nmon file)</li>
+<li>INTERVAL: Interval between 2 Nmon measures</li>
+<li>SNAPSHOTS: Total number of Nmon measures</li>
+<li>logical_cpus: Logical number of CPUs (extracted from the Nmon file)</li>
+<li>virtual_cpus: Virtual number of CPUs (extracted from the Nmon file)</li>
+<li>Nmon_ID: ID of the Nmon file composed by DATE:TIME:hostname:SN</li>
+
+</lu>
+
+
+<h2>Accessing Performance Metrics Raw data will be achieved as follows:</h2>
+
+<code>
+		index="nmon" sourcetype="nmon_data"
+</code>
+
+<br />
+<br />
+
+<b>
+Performance Data is identified by it's "type" field and indexed in "nmon" Splunk index, currently here are NMON sections (type field) threaten by the third party script:
+</b>
+
 
 <br />
 <br />
@@ -207,13 +244,13 @@ The real data itself will be identified by it's "type" field and indexed in "nmo
 <lu>
 
 <li>CPU_ALL</li>
-<li>DISKBSIZE</li>
-<li>DISKBUSY</li>
-<li>DISKREAD</li>
-<li>DISKWRITE</li>
-<li>DISKXFER</li>
-<li>DISKRIO</li>
-<li>DISKWRIO</li>
+<li>DISKBSIZE (Up to 10 sections, 10 x 150 devices)</li>
+<li>DISKBUSY (Up to 10 sections, 10 x 150 devices)</li>
+<li>DISKREAD (Up to 10 sections, 10 x 150 devices)</li>
+<li>DISKWRITE (Up to 10 sections, 10 x 150 devices)</li>
+<li>DISKXFER (Up to 10 sections, 10 x 150 devices)</li>
+<li>DISKRIO (Up to 10 sections, 10 x 150 devices)</li>
+<li>DISKWRIO (Up to 10 sections, 10 x 150 devices)</li>
 <li>FILE</li>
 <li>IOADAPT</li>
 <li>LPAR</li>
@@ -235,14 +272,6 @@ The real data itself will be identified by it's "type" field and indexed in "nmo
 <br />
 <br />
 
-
-<h2>Accessing Performance Metrics Raw data will be achieved as follows:</h2>
-
-<code>
-		index="nmon" sourcetype="nmon_data"
-</code>
-
-<br />
 
 <h2>Technical informations about these system metrics and how they are collected are well described in NMON Analyser Documentation:</h2>
 
@@ -353,24 +382,23 @@ Depending on your nmon command settings, a huge amount of data may be generated 
 
 <br />
 
-<h3>- PERL environment: The third party script required a standard and functional perl environment, thus no additional library are required so it should work as it is on any system having perl installed</h3>
+<h3>- Python 2.x environment: The third party script required a standard and functional Python 2.x environment</h3>
 
 <br />
 
-<h3>- NMON installation: See section below, optional but recommended for Linux, optional for Solaris and required for AIX</h3>
+<h3>- NMON installation: Optional but recommended for Linux, optional for Solaris and required for AIX (See section below)</h3>
 
 <br />
 
 <h3>- SPLUNK 6.x: I recommend running at least Splunk 6.x for Forwarders (non working situations have been reported with Splunk 5.x) and Splunk 6.1.x for Indexers and Head Searh nodes</h3>
-
-NOTE: If you are running a version of Splunk prior to 6.1.x, you can use the release 1.2.0x (available from Splunk Base) which will contain major corrections and views
-compatibles with Splunk 6.x or less
 
 <br />
 
 <br />
 Nothing else is required, this App can be used with a free Splunk licence without any limitation, but as said above remember a very large amount of data may have to be indexed.
 <br />
+
+<br />  	
   	
 </p>
 
@@ -1666,7 +1694,7 @@ So you have a central file server share where Nmon files are being centralized, 
 		[source::/mnt/NFS-SHARE/nmon-repository/*/*nmon]
 		
 		invalid_cause = archive
-		unarchive_cmd = $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl
+		unarchive_cmd = $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.py
 		sourcetype = nmon_processing
 		NO_BINARY_CHECK = true
 </pre>

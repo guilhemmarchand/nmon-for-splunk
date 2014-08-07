@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-nmon release 1.4.0
+nmon release 1.4.1
 
 
 
@@ -79,7 +79,7 @@ Once indexed, NMON Data will be ready to be analysed within any available views
 The "nmon_collect" sourcetype contains iteration of nmon command launched by Splunk, if you collect NMON performance data in your host. 
 
 
-The "nmon_collect" sourcetype contains outputs of the nmon2csv.pl perl script which converts NMON files to csv files eaten by Splunk. This will output the NMON file processing timestamp that has been threaten by Splunk. (identified by standard "source" field) 
+The "nmon_collect" sourcetype contains outputs of the nmon2csv.py perl script which converts NMON files to csv files eaten by Splunk. This will output the NMON file processing timestamp that has been threaten by Splunk. (identified by standard "source" field) 
 The real data itself will be identified by it's "type" field and indexed in "nmon" Splunk index, currently here are NMON sections (type field) threaten by the third party script: 
 
 - CPU_ALL
@@ -844,14 +844,13 @@ You can restart the Splunk Deployment server to force it analysing immediately t
 
 ##8. REFERENCE MATERIAL##
 
-- nmon2csv.pl:
+- nmon2csv.py:
 
-third party script located in "SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl" 
+third party script located in "SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.py" 
 Invoked by the Splunk Archive Processor whenever required, this script will translate NMON data into data Splunk can successfully exploit 
-This is a standard perl script with no uncommon perl requirement 
 
 - nmon_helper.sh: third party script to collect NMON data for AIX / Linux / Solaris indexer or forwarder
-- purge_nmon_repository.sh: third party script to purge NMON repository (activated by default)
+- purge_nmon_repository.sh: third party script to purge NMON repository (deactivated by default)
 
 
 
