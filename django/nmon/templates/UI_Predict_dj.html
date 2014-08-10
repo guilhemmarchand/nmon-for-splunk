@@ -353,6 +353,7 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe	
 		cache=True
+		auto_cancel=60
 		preview=True %}
 
 	<!-- Main chart and prediction search -->
@@ -362,6 +363,7 @@
 		search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict lower30=low upper30=high future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | eval Predict=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),Predict+$manualcpus_period1$,Predict) | eval Predict=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),Predict+$manualcpus_period2$,Predict) | eval Predict=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),Predict+$manualcpus_period3$,Predict) | eval Predict=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),Predict+$manualcpus_period4$,Predict) | eval low=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),low+$manualcpus_period1$,low) | eval low=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),low+$manualcpus_period2$,low) | eval low=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),low+$manualcpus_period3$,low) | eval low=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),low+$manualcpus_period4$,low) | eval high=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),high+$manualcpus_period1$,high) | eval high=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),high+$manualcpus_period2$,high) | eval high=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),high+$manualcpus_period3$,high) | eval high=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),high+$manualcpus_period4$,high)'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
+		auto_cancel=60
 		preview=True %}
 
 	<!-- Show hostname in single at top of chart -->
@@ -370,7 +372,8 @@
 		id="single-info"
 		search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | fields hostname'|token_safe 
 		earliest_time="$earlyval$"|token_safe
-		latest_time="$lateval$"|token_safe %}
+		latest_time="$lateval$"|token_safe 
+		auto_cancel=60 %}
 
 	
 	<!-- PostProcess Stats of Average Conso of LPAR during period -->
@@ -378,14 +381,16 @@
 	{% postprocessmanager 
 		id="single-consoavg" 
 		managerid="main-search" 
-		search='| stats avg(usage) As avg_usage | eval avg_usage=round(avg_usage,2)'|token_safe %}
+		search='| stats avg(usage) As avg_usage | eval avg_usage=round(avg_usage,2)'|token_safe 
+		auto_cancel=60 %}
 
 	<!-- PostProcess Stats of Average Predict Conso of LPAR during futurespan pediod - IMPORTANT: We only include future prediction -->
 	
 	{% postprocessmanager 
 		id="single-projectionavg" 
 		managerid="main-search" 
-		search='| where isnull(usage) | stats avg(Predict) As avg_predict | eval avg_predict=round(avg_predict,2)'|token_safe %}
+		search='| where isnull(usage) | stats avg(Predict) As avg_predict | eval avg_predict=round(avg_predict,2)'|token_safe 
+		auto_cancel=60 %}
 
 	<!-- Stats of variation rate between conso and prediction - Using a Subsearch is required to include only future prediction -->
 
@@ -393,7 +398,8 @@
 		id="single-rateavg" 
 		search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | eval Predict=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),Predict+$manualcpus_period1$,Predict) | eval Predict=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),Predict+$manualcpus_period2$,Predict) | eval Predict=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),Predict+$manualcpus_period3$,Predict) | eval Predict=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),Predict+$manualcpus_period4$,Predict) | eval low=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),low+$manualcpus_period1$,low) | eval low=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),low+$manualcpus_period2$,low) | eval low=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),low+$manualcpus_period3$,low) | eval low=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),low+$manualcpus_period4$,low) | eval high=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),high+$manualcpus_period1$,high) | eval high=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),high+$manualcpus_period2$,high) | eval high=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),high+$manualcpus_period3$,high) | eval high=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),high+$manualcpus_period4$,high) | stats avg(usage) As usage | join [ search index=nmon hostname=$valueshostname$ earliest="$earlyval$" latest="$lateval$" type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | eval Predict=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),Predict+$manualcpus_period1$,Predict) | eval Predict=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),Predict+$manualcpus_period2$,Predict) | eval Predict=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),Predict+$manualcpus_period3$,Predict) | eval Predict=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),Predict+$manualcpus_period4$,Predict) | eval low=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),low+$manualcpus_period1$,low) | eval low=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),low+$manualcpus_period2$,low) | eval low=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),low+$manualcpus_period3$,low) | eval low=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),low+$manualcpus_period4$,low) | eval high=if(_time>if("$manualtime_period1$" == "now", now(),strptime("$manualtime_period1$", "%m/%d/%Y")),high+$manualcpus_period1$,high) | eval high=if(_time>if("$manualtime_period2$" == "now", now(),strptime("$manualtime_period2$", "%m/%d/%Y")),high+$manualcpus_period2$,high) | eval high=if(_time>if("$manualtime_period3$" == "now", now(),strptime("$manualtime_period3$", "%m/%d/%Y")),high+$manualcpus_period3$,high) | eval high=if(_time>if("$manualtime_period4$" == "now", now(),strptime("$manualtime_period4$", "%m/%d/%Y")),high+$manualcpus_period4$,high) | where isnull(usage) | stats avg(Predict) As avg_projection ] | eval rate=((avg_projection-usage)/usage)*100 | eval rate=round(rate,2)'|token_safe 
 		earliest_time="$earlyval$"|token_safe
-		latest_time="$lateval$"|token_safe %}
+		latest_time="$lateval$"|token_safe 
+		auto_cancel=60 %}
 
 
 {% endblock managers %}

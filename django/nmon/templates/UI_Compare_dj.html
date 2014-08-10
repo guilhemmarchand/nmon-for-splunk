@@ -299,7 +299,8 @@
 		id="hostname-populate" search='index=nmon sourcetype=nmon_data $valuesmonitor$ | stats count by hostname $valuesosfilter$'|token_safe
 		earliest_time="$earlyval1$"|token_safe
 		latest_time="$lateval1$"|token_safe
-		cache=True
+		cache=False
+		auto_cancel=60
 		preview=True %}
 
 	<!-- Interval Definition (span) -->
@@ -310,6 +311,7 @@
 		latest_time="$lateval1$"|token_safe
 		autostart=True	
 		cache=False
+		auto_cancel=60
 		preview=True %}
 	
 	<!-- Date show for both periods -->
@@ -318,14 +320,16 @@
 		id="showtime-period1" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | addinfo | eval earliest_period1=info_min_time | eval latest_period1=if(info_max_time == "+Infinity", info_search_time,info_max_time) | eval start_period1=strftime(earliest_period1,"%m/%d/%Y %H:%M") | eval end_period1=strftime(latest_period1,"%m/%d/%Y %H:%M")'|token_safe
 		earliest_time="$earlyval1$"|token_safe
 		latest_time="$lateval1$"|token_safe
-		autostart=True	
+		autostart=True
+		auto_cancel=60
 		cache=False %}
 	
 	{% searchmanager
 		id="showtime-period2" search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | addinfo | eval earliest_period2=info_min_time | eval latest_period2=if(info_max_time == "+Infinity", info_search_time,info_max_time) | eval start_period2=strftime(earliest_period2,"%m/%d/%Y %H:%M") | eval end_period2=strftime(latest_period2,"%m/%d/%Y %H:%M")'|token_safe
 		earliest_time="$earlyval2$"|token_safe
 		latest_time="$lateval2$"|token_safe
-		autostart=True	
+		autostart=True
+		auto_cancel=60	
 		cache=False %}
 	
 	<!-- Main Searches -->
@@ -335,7 +339,8 @@
 		earliest_time="$earlyval1$"|token_safe
 		latest_time="$lateval1$"|token_safe
 		autostart=True		
-		cache=True
+		cache=False
+		auto_cancel=60
 		preview=True %}
 
 	{% searchmanager
@@ -344,6 +349,7 @@
 		latest_time="$lateval1$"|token_safe
 		autostart=True		
 		cache=False
+		auto_cancel=60
 		preview=True %}
 
 
@@ -353,6 +359,7 @@
 		latest_time="$lateval1$"|token_safe
 		autostart=True
 		cache=False
+		auto_cancel=60
 		preview=True %}
 	
 	{% searchmanager
@@ -361,6 +368,7 @@
 		latest_time="$lateval2$"|token_safe
 		autostart=True		
 		cache=False
+		auto_cancel=60
 		preview=True %}
 
 

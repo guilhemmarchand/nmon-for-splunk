@@ -43,7 +43,7 @@
    limitations under the License.<br />
 	<br />
 	
-<b>nmon release 1.4.1</b>
+<b>nmon release 1.4.2</b>
 
 <br />
 
@@ -517,6 +517,7 @@ You can do the installation Online (the manager will directly download the packa
 
 <img src="../../static/app/nmon/various/install_app2.png" alt="Install2"/>
 
+<br />
 <br />
 
 <b>Once the Application is installed, Please restart Splunk</b>
@@ -1654,55 +1655,84 @@ Change "disabled = true" to "false", and restart Splunk.
 <br />
 <br />
 
-<h2>STEP 2: Add an addional monitor that watches for files and directories, and finally convert/index nmon files </h2>
+<h2>STEP 2: Add an additional monitor that watches for files and directories, and finally convert/index nmon files </h2>
 
 <p>
 
 <br />
-So you have a central file server share where Nmon files are being centralized, the better option is probrably having it mounted using NFS.
+So you have a central file server share where Nmon files are being centralized, the better option is probably having it mounted using NFS.
 
 <br />
 <br />
 
-<b>Based on this point, let's say for the example that your nmon files are being collected as follows:</b>
+<b>For the example, we will admit nmon files are being stored in a time stamped directory for each day:</b>
 
 <pre>
-		/mnt/NFS-SHARE/nmon-repository/YYYY-MM-DD
+		/mnt/NFS-SHARE/nmon-repository/YYYY-MM-DD/*.nmon
 </pre>
 
+<br />
 
-
-<b>All you need is creating your "inputs.conf" and "props.conf" in the local directory, with stanza based on default configuration, example:</b>
+<b>All you need is creating a custom monitor for your repository, this can be set using Splunk Web or Manually:</b>
 
 <br />
 <br />
 
-<b>"local/inputs.conf" </b>
+<h3>
+Using Splunk Web (except for light forwarder):
+</h3>
+
+<img src="../../static/app/nmon/various/custom_repo_splunkweb1.png" alt="custom_repo_splunkweb1"/>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/custom_repo_splunkweb2.png" alt="custom_repo_splunkweb2"/>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/custom_repo_splunkweb3.png" alt="custom_repo_splunkweb3"/>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/custom_repo_splunkweb4.png" alt="custom_repo_splunkweb4"/>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/custom_repo_splunkweb5.png" alt="custom_repo_splunkweb5"/>
+
+
+
+<br />
+<br />
+
+<h3>
+Manually:
+</h3>
+
+<br />
+
+<b>Create "$SPLUNK_HOME/etc/apps/nmon/local/inputs.conf" with the following configuration:</b>
+
+<br />
+<br />
 
 <pre>
-		[monitor:///mnt/NFS-SHARE/nmon-repository/*/*nmon]
+[monitor:///mnt/NFS-SHARE/nmon-repository/*/*nmon]
 		
-		disabled = false
-		index = nmon
-		sourcetype = nmon_processing
-		crcSalt = &lt;SOURCE&gt;
-</pre>
-
-<b>"local/props.conf" </b>
-
-<pre>
-		[source::/mnt/NFS-SHARE/nmon-repository/*/*nmon]
-		
-		invalid_cause = archive
-		unarchive_cmd = $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.py
-		sourcetype = nmon_processing
-		NO_BINARY_CHECK = true
+disabled = false
+index = nmon
+sourcetype = nmon_processing
+crcSalt = &lt;SOURCE&gt;
 </pre>
 
 <br />
 <br />	
 
-<b>Then restart Splunk.</b>
+<b>Then restart Splunk. (or refresh the configuration using the debug URL: http://myserver:8000/debug/refresh)</b>
 
 <br />
 <br />	
@@ -1732,12 +1762,12 @@ NOTE: Keep in mind that if many files are present, an heavy and long process of 
 
 <br />
 
-<h2>1. Customize NMON Accuracy, Time between performance measures and Number of measures per execution, Volume of data generated per host</h2>
+<h2>5.1 Customize NMON Accuracy, Time between performance measures and Number of measures per execution, Volume of data generated per host</h2>
 
 <br />
 
 
-<b>It is totally up to you to customize the Application to more adapted to your needs requirements.</b>
+<b>Customize the minimal interval between 2 Nmon measures (formerly interval)</b>
 
 <br />
 <br />
@@ -1820,12 +1850,16 @@ You may want to tune this in a different configuration to be more compliant with
 
 <br />
 
-<h2>2. IBM PSeries Environments: Mapping Partitions with PSeries names</h2>
+<h2>5.2 IBM PSeries Environments: Mapping Partitions with PSeries names</h2>
 
 <br />
 
 <p>
+
+<b>
 If you are planning to manage many partitions in IBM Pseries environment, you will take advantages of mapping lpars (also called micro-partitions) with your PSeries identification hostname.
+</b>
+
 <br />
 <br />
 This will add a supplementary filter (interfaces, reports...) using the PSeries name, very useful in big environment.
@@ -1877,13 +1911,15 @@ You can off course add many other technical of functional informations depending
 <br />
 <br />
 
-<h2>3. Time Interval definition: Custom macros used by App to dynamically define the more accurate span value</h2>
+<h2>5.3 Time Interval definition: Custom macros used by App to dynamically define the more accurate span value</h2>
 
 <br />
 
 <p>
 
+<b>
 NMON Splunk App uses an advanced search (eg. macro) to dynamically define the more accurate interval time definition possible within charts.
+</b>
 
 <br />
 <br />
@@ -1927,116 +1963,114 @@ Simply copy macros.conf to your local/ directory and issue your modifications, p
 
 <h1>6. USAGE</h1>
 
+
 <br />
 
-<h2>NMON files conversion:</h2>
+<h2>6.1 NMON Data Collect (using the App to generate nmon files):</h2>
 
-As soon as NMON files are present in default monitor location or your own, NMON files conversion and Splunk indexing will start.
+You can use the Application to generate nmon files that will be converted and indexed within Splunk, this is what is being called as the Data Collect operation.
+
 <br />
 <br />
-NMON conversion treatment can be checked with request over "nmon" index and "nmon_processing" sourcetype, such as:
+
+<b>
+The Data Collect is being operated by the input script "nmon_helper.sh" (for nmon / TA-nmon / PA-nmon), its output processing is indexed within Splunk:
+</b>
+
+<br />
 <br />
 
 <code>
-		index="nmon" sourcetype="nmon_processing" | stats count by _time,source,*sum
+		index="nmon" sourcetype="nmon_collect"
 </code>		
 
 <br />
-<br />		
-source is equivalent to the full path and name of NMON files proceeded.
-
-<h2>Splunk NMON data indexing:</h2>
-
-Once converted, NMON data are generated into multiple csv files. (one file per kind of metric)
 <br />
 
-In default configuration these files are located in $SPLUNK_HOME/etc/apps/nmon/var/csv_repository.
-<br />
-<br />
-Splunk will immediately index any csv file located within this directory in batch mode, meaning file deletion after being indexed.
+<b>
+You can also access to these information through pre-configured reports:
+</b>
 
 <br />
-Please note that in a massive NMON data integration operation, this directory size may temporary greatly increase.
 
-<h2>Duplicate Events Management and re-indexing Data</h2>
+<img src="../../static/app/nmon/various/reports_collect.png" alt="reports_collect"/>
 
-Because the Splunk archive processor manages itself NMON files (watch for them as it would any other file instead of running a standalone script input),
-<br />
-a side effect of this was in first App versions resulting in the third party script being called multiple times by Splunk,
-and the data to be indexed being generated multiple times.
 
-To deal with this, a built-in cksum feature had been included in the third party script.
+
+
+
 <br />
 <br />
-For each copy of an NMON file, an cksum key is added to the file $SPLUNK_HOME/etc/apps/nmon/var/cksum_reference.txt.
 
-Before generating data, the third party script will check if an cksum key exists, if it does, the script won't generate any new data.
+<h2>6.2 NMON Data Processing (conversion of Nmon raw data):</h2>
+
+Whenever you are using the Application to collect the nmon data (generating nmon files) or only using the App to manage existing nmon files or generated by a third party workflow, Splunk watches for
+directories (the default repository or custom repositories) and when it finds a files that has not been yet handled, Splunk will proceed to its conversion.
+
 <br />
-The cksum key / NMON file association can be checked within the nmon index / processing sourcetype. (see above)
 <br />
 
-<h3>If you need to re-index NMON data, you can proceed as follows:</h3>
+<b>
+This is being done by the nmon2csv converter Python script (nmon2csv.py), its output contains many important information about the conversion step and can be retrieved by:
+</b>
 
-<lu>
-
-<li>
-Stop Splunk
-</li>
-
-<li>
-Delete $SPLUNK_HOME/etc/apps/nmon/var/cksum_reference.txt
-</li>
-
-<li>
-Delete nmon index (ensure you have backups if required !)
-</li>
-
-<li>
-Verify Splunk has still access to previously proceeded NMON files
-</li>
-
-<li>
-Start index and check indexing process
-</li>
-
-</lu>
-
-
-<h2>Accessing NMON Metrics Raw Data:</h2>
-
-Every NMON Metrics are available through the "nmon" index and "nmon_data" sourcetype:
-
+<br />
 <br />
 
 <code>
-		index=nmon sourcetype=nmon_data any other filters
+		index="nmon" sourcetype="nmon_processing"
 </code>		
 
+<br />
+<br />
+
+<b>
+You can also access to these information through pre-configured reports:
+</b>
 
 <br />
-<br />		
-For example, Percentage of CPU Usage (known as CPU_ALL in NMON context) Raw data are available in inline search by:
+<br />
+
+<img src="../../static/app/nmon/various/reports_processing.png" alt="reports_processing"/>
 
 <br />
+<br />
+
+<b>
+The "Application Internal Statistics" interface available from Home page provides a graphical analysis of these data:
+</b>
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/application_internal_stats_processing.png" alt="application_internal_stats_processing"/>
+
+<br />
+<br />
+
+<h2>6.3 NMON Performance Monitor Data:</h2>
+
+Once indexed, the Nmon Performance Data can be easily retrieved:
+
+<br />
+<br />
+
 <code>
-		index=nmon sourcetype=nmon_data type=CPU_ALL
-</code>
-
-<p>
-
+		index="nmon" sourcetype="nmon_data"
+</code>		
 
 <br />
-For information, fields identification within Splunk is automatically achieved using the csv file header generated by the third party script.
-<br />
-<br />
-Beyond this, many views will work with computed fields or aggregation of fields and other filters such as time.
-
-<br />
-The App Home Page will you give direct access to every content and views available.
-
 <br />
 
-</p>
+This is how all provided interfaces will access to the Performance Data, the type of Performance Monitor (CPU % usage, % of time busy disk...) can be filtered using the "type" field.
+
+<br />
+<br />
+
+Many other fields are automatically available within splunk can be used to filter the data to your needs.
+
+<br />
+<br />
 
 	</html>
   </row>
@@ -2047,7 +2081,7 @@ The App Home Page will you give direct access to every content and views availab
 
 <br />
 
-<h2>Upgrade "nmon" standard Application for Indexers and Head search nodes</h2>
+<h2>7.1 Upgrade "nmon" standard Application for Indexers and Head search nodes</h2>
 
 <p>
 
@@ -2064,7 +2098,7 @@ Therefore, as with any upgrade or update operation, i strongly recommend to have
 
 <br />
 
-<h2>Upgrade of TA-nmon for Universal Forwarders</h2>
+<h2>7.2 Upgrade of TA-nmon for Universal Forwarders</h2>
 
 <p>
 
@@ -2104,7 +2138,7 @@ $ tar -xvzf /tmp/TA-nmon*.tar.gz
 </p>
 
 
-<h2>Upgrade of PA-nmon for Splunk Clusters (bundle configuration to deploy to master node, and then pushed to peer nodes)</h2>
+<h2>7.3 Upgrade of PA-nmon for Splunk Clusters (bundle configuration to deploy to master node, and then pushed to peer nodes)</h2>
 
 <p>
 
@@ -2193,52 +2227,7 @@ This is a Python 2x compatible script which has no external requirement and shou
 
 <p>
 
-<lu>
-
-<li>
-<h2>Splunk Path installation is not standard, How to make the App to work ?</h2> 
-</li>
-
-</lu>
-
-<br />
-
-Unless the fact that i would not recommend to change Splunk path installation (/opt/splunk for the standard Splunk, /opt/splunkforwarder), you can modify some files to make the application
-to work under these conditions.
-
-<br />
-<br />
-
-<b>If you have a non standard path installation for you Splunk instance or Forwarder, you have to manually copy to local/ directory and update:</b>
-
-<br />
-
-<br />
-
-- default/inputs.conf
-
-<br />
-
-<br />
-
-- default/props.conf
-
-<br />
-<br />
-
-And carefully change every full paths to paths adapted to your installation.
-
-<br />
-<br />
-
-
-Note that third party scripts (located in bin/) do not need to be modified for the App to work as expected
-
-<br />
-<br />
-
-
-Finally, take care of future update and associated release notes, stanza in local will overwrite default configuration (that could have been updated), and so prevent the update to work as expected
+<h2>Nothing yet :)</h2> 
 
 </p>
 

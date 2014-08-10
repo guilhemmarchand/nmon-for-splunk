@@ -3,7 +3,7 @@
 {% load splunkmvc %}
 {% load nmon %}
 
-5: {% block title %}Calendar Heatmap - Web Framework Toolkit{% endblock title %}
+5: {% block title %}Calendar Heatmap - NMON Performance{% endblock title %}
 
 {% block css %}
 {{block.super}}
@@ -14,7 +14,7 @@
 	<div class="customimgheader">
 	
 	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.png" alt="Nmon"/>	
-	<h1>NMON Processing Collect Analysis, Number of NMON files processed per day</h1>
+	<h1>NMON Processing Analysis, Raw Data Processing</h1>
 
 	</div>
 
@@ -22,75 +22,99 @@
     
     
     
-    {% block example %}
+    {% block cal1 %}
 
 		{% searchcontrols
 			id="searchcontrol1" 
-			managerid="search1" %}
+			managerid="nmon_perday" %}
 	
 		{% calendarheatmap 
-                id="myheat"
-                managerid="search1"
+                id="calendar1"
+                managerid="nmon_perday"
                 domain="month"
                 subDomain="x_day" %}
 		
-    {% endblock example %}
+    {% endblock cal1 %}
 	
-    {% block usage%}
-        <p>Select your parameters:</p>
-		<p> </p>
+	
+    {% block cal2 %}
 
+		{% searchcontrols
+			id="searchcontrol2" 
+			managerid="nmon_errorperday" %}
+	
+		{% calendarheatmap 
+                id="calendar2"
+                managerid="nmon_errorperday"
+                domain="month"
+                subDomain="x_day" %}
 		
-        <table class="table table-striped table-bordered">
+    {% endblock cal2 %}
+
+    {% block cal3 %}
+
+		{% searchcontrols
+			id="searchcontrol3" 
+			managerid="total_elapsed" %}
+	
+		{% calendarheatmap 
+                id="calendar3"
+                managerid="total_elapsed"
+                domain="month"
+                subDomain="x_day" %}
+		
+    {% endblock cal3 %}
 
 
-            <tr>
-                <td>
-					 <p></p>
-                <b>TimeRange:</b>.
-                </td>
-                <td>
-                	<p></p>
-    					{% timerange id="example-timerange" 
-						managerid="example-search" 
-        				preset="Last 30 days"
-        				earliest_time="$earlyval$"|token_safe
-        				latest_time="$lateval$"|token_safe %}                
-						<p></p>                
-                </td>
-            </tr>
+    {% block usage%}
 
-            <tr>
-                <td>
-					 <p></p>
-                <b>High Unity:
-                </b>.</td>
-                <td>
-					 <p></p>
-                {% dropdown id="domain-dropdown" default="month" %}
-                </td>
-            </tr>
-            <tr>
-                <td>
-					 <p></p>
-                <b>Low Unity:
-                </b>.</td>
-                <td>
-					 <p></p>
-                {% dropdown id="subDomain-dropdown" default="x_day" %}
-                </td>
-            </tr>
-        </table>
+		<div>
+
+			<br />
+			
+			<b>TimeRange:</b>
+
+			<br />		
+		
+    		{% timerange id="example-timerange" 
+			managerid="example-search" 
+        	preset="Last 30 days"
+        	earliest_time="$earlyval$"|token_safe
+        	latest_time="$lateval$"|token_safe %}
+
+			<br />
+		
+		</div>
 
 		
     {% endblock usage%}
 	
 {% block managers %}
     
-	{% searchmanager id="search1"
-      	search='index=nmon sourcetype=nmon_processing earliest="$earlyval$" latest="$lateval$" | dedup source | timechart span=1d count(source) As "Number of NMON files processed per day"'|token_safe
+	{% searchmanager id="nmon_perday"
+      	search='`nmon_processing` | eval size_MB=round((size_in_bytes/1000/1000),2) | timechart span=1d sum(size_MB) As "NMON Raw Data Volume proceeded per day (MB)"'|token_safe
+			earliest_time="$earlyval$"|token_safe
+			latest_time="$lateval$"|token_safe
+			auto_cancel=60
 			cache=True
 			preview=True %}
+
+	{% searchmanager id="nmon_errorperday"
+      	search='`nmon_processing` error | timechart span=1d count(source) As "Number of Errors encountered per day"'|token_safe
+			earliest_time="$earlyval$"|token_safe
+			latest_time="$lateval$"|token_safe
+			auto_cancel=60
+			cache=True
+			preview=True %}
+
+	{% searchmanager id="total_elapsed"
+      	search='`nmon_processing` | timechart span=1d sum(elapsed_in_seconds) As "Total Time Spent in NMON Data Processing"'|token_safe
+			earliest_time="$earlyval$"|token_safe
+			latest_time="$lateval$"|token_safe
+			auto_cancel=60
+			cache=True
+			preview=True %}
+
 
 {% endblock managers %}
 
@@ -98,71 +122,6 @@
 
 {% block js %}
 {{ block.super }}
-<script>
-    require(["splunkjs/ready!",
-            "jquery",
-            "splunkjs/mvc/dropdownview",
-            "nmon/components/calendarheatmap/calendarheatmap"
-            ], 
-            function(
-                mvc,
-                $,
-                Dropdown,
-                CalHeat) {
-        var heat = mvc.Components.getInstance("myheat");
-        var domaindd = mvc.Components.getInstance("domain-dropdown");
-        var subDomaindd = mvc.Components.getInstance("subDomain-dropdown");
-        heat.settings.set("options", {
-            // Define options here. Options defined in this
-            // 'options' dictionary are passed to the wrapped
-            // cal heat control. For more usage info see
-            // http://kamisama.github.io/cal-heatmap/
-            range: 5,
-			cellSize : 30,
-			subDomainTextFormat: "%d",
-			legendCellPadding: 5,
-			legendCellSize: 15,
-			domainLabelFormat: function(date) {
-			moment.lang("en");
-			return moment(date).format("MMMM").toUpperCase();
-			},
-        });
 
- 		
-        domainChoices = [
-                        {label: "hour", value: "hour"},
-                        {label: "day", value: "day"},
-                        {label: "week", value: "week"},
-                        {label: "month", value: "month"},
-                        {label: "year", value: "year"},
-                        ];
-        domaindd.settings.set("choices", domainChoices);
-        domaindd.on("change", function(){
-            heat.settings.set("domain", domaindd.val());
-        });
-		
-		
-        subDomainChoices = [
-                        {label: "min", value: "min"},
-                        {label: "hour", value: "hour"},
-                        {label: "day", value: "day"},
-                        {label: "week", value: "week"},
-                        {label: "month", value: "month"},
-                        {label: "x_min", value: "x_min"},
-                        {label: "x_hour", value: "x_hour"},
-                        {label: "x_day", value: "x_day"},
-                        {label: "x_week", value: "x_week"},
-                        {label: "x_month", value: "x_month"}
-                        
-                        ];
-        subDomaindd.settings.set("choices", subDomainChoices);
-        subDomaindd.on("change", function(){
-            heat.settings.set("subDomain", subDomaindd.val());
-        });
-		
-        heat.on("click", function(e){console.log("Event:");console.log(e);})	
-		
-    });
-</script>
 
 {% endblock js %}

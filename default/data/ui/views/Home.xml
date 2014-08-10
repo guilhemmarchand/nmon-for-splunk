@@ -1,6 +1,6 @@
 <dashboard stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css">
   <label>NMON Performance Monitor</label>
-  <description>Version 1.4.1</description>
+  <description>Version 1.4.2</description>
   <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>
   <row>
     <panel>
@@ -108,8 +108,8 @@
       </single>
       <single>
         <searchName>Hosts with data within last 7 days</searchName>
-        <option name="beforeLabel">There have been</option>
         <option name="linkView">search</option>
+        <option name="beforeLabel">There have been</option>
         <option name="afterLabel">Host(s) with activity</option>
         <option name="underLabel">IN THE LAST 7 DAYS</option>
         <option name="refresh.auto.interval">300</option>
@@ -120,15 +120,26 @@
       </single>
       <single>
         <searchName>Volume of Data indexed Today</searchName>
-        <option name="beforeLabel">There have been</option>
         <option name="linkView">search</option>
-        <option name="afterLabel">MB of data indexed</option>
+        <option name="beforeLabel">There have been</option>
+        <option name="afterLabel">MB Indexed</option>
         <option name="underLabel">TODAY</option>
         <option name="refresh.auto.interval">130</option>
         <option name="field">total_MB</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon"  series=nmon | eval MB = round(kb/1024,2) | timechart span=1d sum(MB) As total_MB</option>
+      </single>
+      <single>
+        <searchName>Number of Errors in Data Processing since last 24 Hours</searchName>
+        <option name="linkView">search</option>
+        <option name="afterLabel">Errors Reported</option>
+        <option name="underLabel">IN THE LAST 24 HOURS</option>
+        <option name="refresh.auto.interval">130</option>
+        <option name="field">Nbr_errors</option>
+        <option name="drilldown">all</option>
+        <option name="linkFields">result</option>
+        <option name="linkSearch">index=nmon sourcetype=nmon_processing error earliest="-24h" latest="now" | stats count As Nbr_errors</option>
       </single>
     </panel>
   </row>
@@ -484,7 +495,7 @@
 
 		<div class="imgheader">
         <img src="../../static/app/nmon/icons/grey_theme/calendar.png" alt="Calendar"/>
-		<h2>Collect Analysis</h2>		
+		<h2>Data Processing / Collect Analysis</h2>		
 		</div>
 
 		<div class="ui_list">
@@ -493,13 +504,13 @@
          <br/>
           
       	<li>
-              <a href="../../../dj/en-us/nmon/UI_Datacollect_processing_dj" target="_blank">NMON Processing: Collect Analysis (Calendar heatmap)</a>
+              <a href="../../../dj/en-us/nmon/UI_Datacollect_processing_dj" target="_blank">NMON Processing: Data Processing Analysis (Cal. heatmap)</a>
 		</li>      
 
          <br/>
 		
       	<li>
-              <a href="../../../dj/en-us/nmon/UI_Datacollect_data_dj" target="_blank">NMON Data: Collect Analysis (Calendar heatmap)</a>
+              <a href="../../../dj/en-us/nmon/UI_Datacollect_data_dj" target="_blank">NMON Data: Performance Data Analysis (Cal. heatmap)</a>
 		</li>      
 
          <br/>		

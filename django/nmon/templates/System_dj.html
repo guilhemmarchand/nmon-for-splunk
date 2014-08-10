@@ -357,6 +357,7 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
+		auto_cancel=60
 		cache=False %}
 
 	{% searchmanager
@@ -365,6 +366,7 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
+		auto_cancel=60
 		cache=False %}
 
 	{% searchmanager
@@ -373,6 +375,7 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
+		auto_cancel=60
 		cache=False %}
 
 	{% searchmanager
@@ -381,6 +384,7 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
+		auto_cancel=60
 		cache=False %}
 
 	{% searchmanager
@@ -389,6 +393,7 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
+		auto_cancel=60
 		cache=False %}
 
 <!-- Event Count -->	
@@ -397,11 +402,13 @@
 		id="eventcount-search"
 		search='| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"'|token_safe
 		preview=True
+		auto_cancel=60
 		cache=False %}
 
 	{% postprocessmanager
 		id="eventcount_singlessearch"
 		managerid="eventcount-search"
+		auto_cancel=60
 		search='| sort - "Size (MB)" | head 1' %}
 
 <!-- Metadata -->
@@ -410,16 +417,19 @@
 		id="metadata-search"
 		search='| `indexes_datestats`'
 		preview=True
+		auto_cancel=60
 		cache=False %}
 
 	{% postprocessmanager
 		id="metadata_singlessearch_earliest"
 		managerid="metadata-search"
+		auto_cancel=60
 		search='| search sourcetype="nmon_data" | sort - "First Event" |  head 1' %}
 
 	{% postprocessmanager
 		id="metadata_singlessearch_latest"
 		managerid="metadata-search"
+		auto_cancel=60
 		search='| search sourcetype="nmon_data" | sort - "Last Event" |  head 1' %}
 
 <!-- Metric -->
@@ -430,7 +440,8 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
-		cache=True %}
+		auto_cancel=60
+		cache=False %}
 
 	{% searchmanager
 		id="metric-search-per-day"
@@ -438,21 +449,25 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
-		cache=True %}
+		auto_cancel=60
+		cache=False %}
 
 	{% postprocessmanager
 		id="metric_singlessearch_total"
 		managerid="metric-search-per-day"
+		auto_cancel=60
 		search='| stats sum(Total_per_day_MB) As total_MB' %}
 
 	{% postprocessmanager
 		id="metric-search-perday"
 		managerid="metric-search-per-day"
+		auto_cancel=60
 		search=' | stats avg(Total_per_day_MB) As average_per_day | eval average_per_day=round(average_per_day,2)' %}
 
 	{% postprocessmanager
 		id="metric-search-perhour"
 		managerid="metric-search-per-hour"
+		auto_cancel=60
 		search=' | stats avg(Total_per_hour_MB) As average_per_hour | eval average_per_hour=round(average_per_hour,2)' %}
 
 	{% searchmanager
@@ -461,7 +476,8 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
-		cache=True %}
+		auto_cancel=60
+		cache=False %}
 		
 	{% searchmanager
 		id="metric-timechartsearch"
@@ -469,7 +485,8 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
-		cache=True %}
+		auto_cancel=60
+		cache=False %}
 
 	{% searchmanager
 		id="metric-rate-timechartsearch"
@@ -477,7 +494,8 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
-		cache=True %}
+		auto_cancel=60
+		cache=False %}
 	
 <!-- Application Activity -->
 
@@ -489,11 +507,13 @@
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
-		cache=True %}
+		auto_cancel=60
+		cache=False %}
 
 	{% postprocessmanager
 		id="hitsperpage-top1"
 		managerid="hitsperpage-search"
+		auto_cancel=60
 		search=' | top 1 file' %}
 
 	{% postprocessmanager
@@ -504,6 +524,7 @@
 	{% postprocessmanager
 		id="hitsperpage-table-search"
 		managerid="hitsperpage-search"
+		auto_cancel=60
 		search='| top 1000 file | eval percent=round(percent,2)' %}
 
 <!-- Scheduler Activity for the Application -->
@@ -513,8 +534,9 @@
 		search='index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
+		auto_cancel=60
 		preview=True
-		cache=True %}
+		cache=False %}
 
 {% endblock managers %}
 
