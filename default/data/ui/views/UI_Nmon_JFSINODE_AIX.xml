@@ -111,7 +111,7 @@
         <title>JFSFILE - Inode Usage Percentage of Filesystems</title>
         <searchString>index="nmon" sourcetype="nmon_data" type="JFSINODE" $hostname$ $device$ | search $fsfilter$
 | $aggregate$
-| bucket _time `inline_customspan`
+| bucket _time `inline_customspan(type=JFSINODE,$hostname$)`
 | stats $statsmode$(value) As value by _time,hostname,device
 | eval s1="value"
 | makemv s1 
@@ -119,7 +119,7 @@
 | eval yval=case(s1=="value",value)
 | eval series=hostname+":"+device+":"+s1
 | xyseries _time,series,yval
-| makecontinuous _time `inline_customspan`</searchString>
+| makecontinuous _time `inline_customspan(type=JFSINODE,$hostname$)`</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>        
         <option name="charting.axisTitleX.visibility">visible</option>

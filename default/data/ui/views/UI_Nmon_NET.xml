@@ -137,7 +137,7 @@
         <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ $device$ | where device!="" | `$timefilter$`
 | $dataconvert$
 | $aggregate$
-| bucket _time `inline_customspan`
+| bucket _time `inline_customspan(type=NET,$hostname$)`
 | stats $statsmode$(rate) As rate by _time,hostname,device
 | eval s1="rate"
 | makemv s1 
@@ -145,7 +145,7 @@
 | eval yval=case(s1=="rate",rate)
 | eval series=hostname+":"+device+":"+s1
 | xyseries _time,series,yval
-| makecontinuous _time `inline_customspan`</searchString>
+| makecontinuous _time `inline_customspan(type=NET,$hostname$)`</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>

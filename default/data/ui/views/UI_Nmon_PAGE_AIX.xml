@@ -106,7 +106,7 @@
     </html>
       <chart id="link10">
         <title>Pages In / Pages Out (pgsin / pgsout)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` |  timechart `inline_customspan` limit=0 useother=f $statsmode$(pgsin) As "pgsin", $statsmode$(pgsout) As "pgsout" by hostname</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` |  timechart `inline_customspan(type=PAGE,$hostname$)` limit=0 useother=f $statsmode$(pgsin) As "pgsin", $statsmode$(pgsout) As "pgsout" by hostname</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -132,7 +132,7 @@
         <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$`
 | eval fsin=(pgin+pgsin)
 | eval fsout=(pgout+pgsout)
-| timechart `inline_customspan` limit=0 useother=f Max(fsin) As "fsin", Max(fsout) As "fsout" by hostname</searchString>
+| timechart `inline_customspan(type=PAGE,$hostname$)` limit=0 useother=f Max(fsin) As "fsin", Max(fsout) As "fsout" by hostname</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -157,7 +157,7 @@
         <title>Scan Free Ratio (Pages scans by reclaims per interval)</title>
         <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$`
 | eval scanfree=round((scans/reclaims),2)
-| timechart `inline_customspan` limit=0 useother=f max(scanfree) As scanfree_ratio by hostname
+| timechart `inline_customspan(type=PAGE,$hostname$)` limit=0 useother=f max(scanfree) As scanfree_ratio by hostname
 | fillnull value="0"</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>

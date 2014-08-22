@@ -1,28 +1,33 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
   <label>NMON - CONFIG, Show Host Configuration</label>
   <fieldset autoRun="false" submitButton="false">
-    <input type="time" searchWhenChanged="true">
+    <input type="time" token="timerange" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
         <earliestTime>-24h</earliestTime>
         <latestTime>now</latestTime>
       </default>
     </input>
-    <input type="radio" token="datasource" searchWhenChanged="true">
+    <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Type of OS filter:</label>
-      <default>`nmon_config` | stats count by hostname | dedup hostname | sort hostname</default>
-      <choice value="`nmon_config` | stats count by hostname | dedup hostname | sort hostname">Any OS</choice>
-      <choice value="`nmon_config` | search OStype=AIX | stats count by hostname | dedup hostname | sort hostname">AIX</choice>
-      <choice value="`nmon_config` | search OStype=Linux | stats count by hostname | dedup hostname | sort hostname">Linux</choice>
-      <choice value="`nmon_config` | search OStype=Solaris | stats count by hostname | dedup hostname | sort hostname">Solaris</choice>
+      <default></default>
+      <choice value="">Any OS</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
     </input>
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts</label>
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
-      <default>none</default>
-      <populatingSearch fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[$datasource$]]>
+      <default>*</default>
+    </input>    
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Host Selection:</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">
+        <![CDATA[index=nmon sourcetype=nmon_config $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
       </populatingSearch>
     </input>
   </fieldset>
@@ -36,9 +41,9 @@
       </input>
       <event>
         <title>Host Configuration Elements (AAA and BBB sections extracted from NMON) - Last event of selected Period</title>
-        <searchString>index=nmon sourcetype=nmon_config | rex "(?i),host,(?P&lt;hostname&gt;.+)" | search $hostname$ | head 1 | search $customsearch$</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+        <searchString>index=nmon sourcetype=nmon_config $hostname$ | head 1 | search $customsearch$</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="count">10</option>
         <option name="list.drilldown">full</option>
         <option name="list.wrap">1</option>

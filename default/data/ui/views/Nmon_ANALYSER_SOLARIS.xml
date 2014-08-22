@@ -60,7 +60,7 @@
 | eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT)
 | stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname
 | eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso)
-| timechart `inline_customspan` max(conso) As "CPU Usage"</searchString>
+| timechart `inline_customspan(type=CPU_ALL OR type=LPAR,$hostname$)` max(conso) As "CPU Usage"</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -85,7 +85,7 @@
       <title>I/O Per second</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$
 | stats sum(value) As iosec by _time,hostname
-| timechart `inline_customspan` max(iosec) As "IO Per sec"</searchString>
+| timechart `inline_customspan(type=DISKXFER,$hostname$)` max(iosec) As "IO Per sec"</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -130,7 +130,7 @@
 
     <chart id="link1">
       <title>CPU_ALL, % by category</title>
-	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` avg(Sys_PCT) As Sys_PCT, avg(User_PCT) As User_PCT, avg(Wait_PCT) As Wait_PCT, avg(Idle_PCT) As Idle_PCT</searchString> 
+	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan(type=CPU_ALL,$hostname$)` avg(Sys_PCT) As Sys_PCT, avg(User_PCT) As User_PCT, avg(Wait_PCT) As Wait_PCT, avg(Idle_PCT) As Idle_PCT</searchString> 
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -155,7 +155,7 @@
 
     <chart id="link2">
       <title>CPU_ALL, % global usage</title>
-	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` max(cpu_PCT) As "%CPU Max Usage", avg(cpu_PCT) As "%CPU Avg Usage"</searchString> 
+	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan(type=CPU_ALL,$hostname$)` max(cpu_PCT) As "%CPU Max Usage", avg(cpu_PCT) As "%CPU Avg Usage"</searchString> 
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -206,7 +206,7 @@
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval conso_per_core=(pct_CPU/100)
 | stats sum(conso_per_core) As conso_per_core by _time,Command
-| timechart `inline_customspan` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
 max(conso_per_core) as "CPU Usage per core" by Command</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
@@ -235,7 +235,7 @@ max(conso_per_core) as "CPU Usage per core" by Command</searchString>
 | stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
-| timechart `inline_customspan` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
 max(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
@@ -264,7 +264,7 @@ max(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
 | stats count(Command) As count, max(Size) As Size by _time,hostname,Command
 | eval Virt_Mem_MB=round(((Size)/1024),2)
 | stats sum(Virt_Mem_MB) As Virt_Mem_MB by _time,Command
-| timechart `inline_customspan` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
 max(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
@@ -291,7 +291,7 @@ max(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
       <title>TOP, Paging, Sum of page faults</title>
       <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
 | stats sum(Paging) As Paging by _time,Command
-| timechart `inline_customspan` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
 max(Paging) as "Paging" by Command</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
@@ -318,7 +318,7 @@ max(Paging) as "Paging" by Command</searchString>
       <title>TOP, Threads per Command invocation</title>
       <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
 | stats sum(Threads) As Threads By _time,Command
-| timechart `inline_customspan` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
 max(Threads) as Threads by Command
 </searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -346,7 +346,7 @@ max(Threads) as Threads by Command
       <title>TOP, CharIO (Read/Write system calls) per Command invocation</title>
       <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
 | stats sum(CharIO) As CharIO By _time,Command
-| timechart `inline_customspan` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
 max(CharIO) as CharIO by Command
 </searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -384,7 +384,7 @@ max(CharIO) as CharIO by Command
     <chart id="link20">
       <title>FILE, Read/Write system calls</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
-| timechart `inline_customspan` max(readch) As readch, max(writech) As writech</searchString>
+| timechart `inline_customspan(type=FILE,$hostname$)` max(readch) As readch, max(writech) As writech</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -409,7 +409,7 @@ max(CharIO) as CharIO by Command
     <chart id="link21">
       <title>FILE, Various statistics</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
-| timechart `inline_customspan` max(iget) As iget, max(namei) As namei, max(dirblk) As dirblk</searchString>
+| timechart `inline_customspan(type=FILE,$hostname$)` max(iget) As iget, max(namei) As namei, max(dirblk) As dirblk</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -442,7 +442,7 @@ max(CharIO) as CharIO by Command
     
     <chart id="link30">
       <title>PROC, Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(Runnable) As "RunQueue", max(Swap_in) As "Swap_in"</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan(type=PROC,$hostname$)` max(Runnable) As "RunQueue", max(Swap_in) As "Swap_in"</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -466,7 +466,7 @@ max(CharIO) as CharIO by Command
 
     <chart id="link31">
       <title>PROC, Context switches and system calls (pswitch, syscall) </title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(pswitch) As "pswitch/sec", max(syscall) As "syscall/sec"</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan(type=PROC,$hostname$)` max(pswitch) As "pswitch/sec", max(syscall) As "syscall/sec"</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -490,7 +490,7 @@ max(CharIO) as CharIO by Command
 
     <chart id="link32">
       <title>PROC, Fork and Exec system calls (fork, exec)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan` max(fork) As "pswitch/sec", max(exec) As "exec/sec"</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan(type=PROC,$hostname$)` max(fork) As "pswitch/sec", max(exec) As "exec/sec"</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -523,7 +523,7 @@ max(CharIO) as CharIO by Command
     
     <chart id="link33">
       <title>PROCSOL, Percentage of Time All processes have spent in: (estimation since terminated processes are not accounted)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROCSOL" $hostname$ | timechart `inline_customspan`
+      <searchString>index="nmon" sourcetype="nmon_data" type="PROCSOL" $hostname$ | timechart `inline_customspan(type=PROCSOL,$hostname$)`
 max(USR) As "USR (%time in User Mode)",
 max(SYS) As "SYS (%time in System Mode)",
 max(TRP) As "TRP (%time Processing system traps)",
@@ -566,7 +566,7 @@ max(LAT) As "LAT (%time Waiting for CPU)"</searchString>
     <chart id="link34">
       <title>VM, (pages/s) Minor faults and major faults</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=VM,$hostname$)`
 max(minfaults) As minfaults,
 max(majfaults) As majfaults</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -593,7 +593,7 @@ max(majfaults) As majfaults</searchString>
     <chart id="link35">
       <title>VM, (pages/s) Pages IN and OUT</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=VM,$hostname$)`
 max(pgin) As pgin,
 max(pgout) As pgout</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -620,7 +620,7 @@ max(pgout) As pgout</searchString>
     <chart id="link36">
       <title>VM, (pages/s) Pages examined and freed by pageout daemon</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=VM,$hostname$)`
 max(scans) As scans,
 max(reclaims) As reclaims</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -647,7 +647,7 @@ max(reclaims) As reclaims</searchString>
     <chart id="link37">
       <title>VM, (KB/s) Pages paged IN and OUT</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=VM,$hostname$)`
 max(pgpgin) As pgpgin,
 max(pgpgout) As pgpgout</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -674,7 +674,7 @@ max(pgpgout) As pgpgout</searchString>
     <chart id="link38">
       <title>VM, (KB/s) Pages swapped IN and OUT</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=VM,$hostname$)`
 max(pswpin) As pswpin,
 max(pswpout) As pswpout</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -701,7 +701,7 @@ max(pswpout) As pswpout</searchString>
     <chart id="link39">
       <title>VM, (KB/s) Pages freed by daemon or auto</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=VM,$hostname$)`
 max(pgfree) As pgfree</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
@@ -749,7 +749,7 @@ max(pgfree) As pgfree</searchString>
       <title>MEM, Memory usage</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
 | eval memused=round((memtotal-memfree),0)
-| timechart `inline_customspan` Max(memtotal) As memtotal, Max(memused) As memused</searchString>
+| timechart `inline_customspan(type=MEM,$hostname$)` Max(memtotal) As memtotal, Max(memused) As memused</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -775,7 +775,7 @@ max(pgfree) As pgfree</searchString>
       <title>MEM, Swap usage</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ 
 | eval swapused=round((swaptotal-swapfree),0)
-| timechart `inline_customspan` Max(swaptotal) As swaptotal, Max(swapused) As swapused</searchString>
+| timechart `inline_customspan(type=MEM,$hostname$)` Max(swaptotal) As swaptotal, Max(swapused) As swapused</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -800,7 +800,7 @@ max(pgfree) As pgfree</searchString>
     <chart id="link42">
       <title>MEMUSE, Cache Hit Ratio (%)</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=MEMUSE,$hostname$)`
 max(PCTrcache) As PCT_rcache,
 max(PCTwcache) As PCT_wcache</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -828,7 +828,7 @@ max(PCTwcache) As PCT_wcache</searchString>
     <chart id="link43">
       <title>MEMUSE, System Buffer Accesses</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=MEMUSE,$hostname$)`
 max(lread) As lread,
 max(lwrite) As lwrite</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -855,7 +855,7 @@ max(lwrite) As lwrite</searchString>
     <chart id="link44">
       <title>MEMUSE, Transfers using raw (physical) device mechanism</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=MEMUSE,$hostname$)`
 max(pread) As pread,
 max(pwrite) As pwrite</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -882,7 +882,7 @@ max(pwrite) As pwrite</searchString>
     <chart id="link45">
       <title>MEMUSE, Transfer of data between system buffers and disk or other block device</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$
-| timechart `inline_customspan`
+| timechart `inline_customspan(type=MEMUSE,$hostname$)`
 max(bread) As bread,
 max(bwrite) As bwrite</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
@@ -929,7 +929,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link46">
       <title>DISKBSIZE, Average data transfer size</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE*" $hostname$ | stats sum(value) As avg_transfer_size by _time | timechart `inline_customspan` max(avg_transfer_size) As avg_transfer_size</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBSIZE*" $hostname$ | stats sum(value) As avg_transfer_size by _time | timechart `inline_customspan(type=DISKBSIZE,$hostname$)` max(avg_transfer_size) As avg_transfer_size</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -953,7 +953,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link47">
       <title>DISKBUSY, Disk Busy Activity</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBUSY*" $hostname$ | stats sum(value) As busy_time by _time | timechart `inline_customspan` max(busy_time) As busy_time</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKBUSY*" $hostname$ | stats sum(value) As busy_time by _time | timechart `inline_customspan(type=DISKBUSY,$hostname$)` max(busy_time) As busy_time</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -977,7 +977,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link48">
       <title>DISKREAD, Disk Read Data Rate</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD*" $hostname$ | stats sum(value) As read_data_rate by _time | timechart `inline_customspan` max(read_data_rate) As read_data_rate</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKREAD*" $hostname$ | stats sum(value) As read_data_rate by _time | timechart `inline_customspan(type=DISKREAD,$hostname$)` max(read_data_rate) As read_data_rate</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -1001,7 +1001,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link49">
       <title>DISKWRITE, Disk Write Data Rate</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE*" $hostname$ | stats sum(value) As write_data_rate by _time | timechart `inline_customspan` max(write_data_rate) As write_data_rate</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKWRITE*" $hostname$ | stats sum(value) As write_data_rate by _time | timechart `inline_customspan(type=DISKWRITE,$hostname$)` max(write_data_rate) As write_data_rate</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -1025,7 +1025,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link50">
       <title>DISKXFER, Disk I/O Operations per second (IOPS)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ | stats sum(value) As IOPS by _time | timechart `inline_customspan` max(IOPS) As IOPS</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ | stats sum(value) As IOPS by _time | timechart `inline_customspan(type=DISKXFER,$hostname$)` max(IOPS) As IOPS</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -1059,7 +1059,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link51">
       <title>JFSFILE, Percentage Usage of File-systems</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="JFSFILE" $hostname$ | timechart limit=0 useother=f `inline_customspan` avg(value) As pct_fs_used by device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="JFSFILE" $hostname$ | timechart limit=0 useother=f `inline_customspan(type=JFSFILE,$hostname$)` avg(value) As pct_fs_used by device</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -1105,7 +1105,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link52">
       <title>NET - Network Interfaces Activity by Host</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ | eval rate=round((value/1000),2) | timechart limit=0 `inline_customspan` max(rate) As rate by device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="NET" $hostname$ | eval rate=round((value/1000),2) | timechart limit=0 `inline_customspan(type=NET,$hostname$)` max(rate) As rate by device</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -1129,7 +1129,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link53">
       <title>NETPACKET - Number of read/write packets</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ | timechart limit=0 `inline_customspan` max(value) As value by device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ | timechart limit=0 `inline_customspan(type=NETPACKET,$hostname$)` max(value) As value by device</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -1153,7 +1153,7 @@ max(bwrite) As bwrite</searchString>
 
     <chart id="link54">
       <title>NETERROR - Number of errors packets</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="NETERROR" $hostname$ | timechart limit=0 `inline_customspan` max(value) As value by device</searchString>
+      <searchString>index="nmon" sourcetype="nmon_data" type="NETERROR" $hostname$ | timechart limit=0 `inline_customspan(type=NETERROR,$hostname$)` max(value) As value by device</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>

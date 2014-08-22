@@ -41,7 +41,7 @@
     </input>
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
-      <default>max</default>
+      <default>avg</default>
       <choice value="max">Max</choice>
       <choice value="avg">Avg</choice>
       <choice value="min">Min</choice>
@@ -56,7 +56,7 @@
       <choice value="fields _time,*Sys_PCT*,*User_PCT*,*Wait_PCT*,*Idle_PCT*">MultiSeries: Sys,User,Wait,Idle</choice>
     </input>
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | $aggregate$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` $statsmode$(cpu_PCT) As cpu_PCT</searchTemplate>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | $aggregate$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan(type=CPU_ALL,$hostname$)` $statsmode$(cpu_PCT) As cpu_PCT</searchTemplate>
   <earliestTime>$timerange.earliest$</earliestTime>
   <latestTime>$timerange.latest$</latestTime>
    <row>
@@ -115,7 +115,7 @@
       </input>
       <chart>
         <title>Chart - Percentage CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | $aggregate$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan` limit=0 useother=f $statsmode$(cpu_PCT) As cpu_PCT, $statsmode$(Sys_PCT) As Sys_PCT, $statsmode$(User_PCT) As User_PCT, $statsmode$(Wait_PCT) As Wait_PCT, $statsmode$(Idle_PCT) As Idle_PCT by hostname | $cpumode$</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | `$timefilter$` | $aggregate$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan(type=CPU_ALL,$hostname$)` limit=0 useother=f $statsmode$(cpu_PCT) As cpu_PCT, $statsmode$(Sys_PCT) As Sys_PCT, $statsmode$(User_PCT) As User_PCT, $statsmode$(Wait_PCT) As Wait_PCT, $statsmode$(Idle_PCT) As Idle_PCT by hostname | $cpumode$</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>

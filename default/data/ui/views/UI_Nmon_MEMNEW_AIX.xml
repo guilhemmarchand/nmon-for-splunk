@@ -43,7 +43,7 @@
       <choice value="fields _time,*FScache_PCT*,*Process_PCT*,*System_PCT*,*Free_PCT*">FScache,Process,System,Free</choice>
     </input>
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan` $statsmode$(memused_PCT) As memused_PCT</searchTemplate>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan(type=MEMNEW,$hostname$)` $statsmode$(memused_PCT) As memused_PCT</searchTemplate>
   <earliestTime>$timerange.earliest$</earliestTime>
   <latestTime>$timerange.latest$</latestTime>
   <row>
@@ -81,7 +81,7 @@
       </input>
       <chart>
         <title>Memory Allocation Analysis by Host</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan` limit=0 useother=f $statsmode$(memused_PCT) As memused_PCT, $statsmode$(FScache_PCT) As FScache_PCT, $statsmode$(Process_PCT) As Process_PCT, $statsmode$(System_PCT) As System_PCT, $statsmode$(Free_PCT) As Free_PCT by hostname | $memmode$</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEMNEW" $hostname$ | `$timefilter$` | eval memused_PCT=(FScache_PCT+Process_PCT+System_PCT) | timechart `inline_customspan(type=MEMNEW,$hostname$)` limit=0 useother=f $statsmode$(memused_PCT) As memused_PCT, $statsmode$(FScache_PCT) As FScache_PCT, $statsmode$(Process_PCT) As Process_PCT, $statsmode$(System_PCT) As System_PCT, $statsmode$(Free_PCT) As Free_PCT by hostname | $memmode$</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>

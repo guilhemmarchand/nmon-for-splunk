@@ -29,7 +29,7 @@
     </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=NETPACKET | stats count by hostname | dedup hostname | sort hostname | search [ `nmon_inventory` | stats count by hostname | fields hostname ]</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=NETPACKET | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -127,7 +127,7 @@
         <title>Chart - NETPACKET, Number of read/write packets</title>
         <searchString>index="nmon" sourcetype="nmon_data" type="NETPACKET" $hostname$ $device$ | where device!="" | $aggregate$ 
 | `$timefilter$`
-| bucket _time `inline_customspan`
+| bucket _time `inline_customspan(type=NETPACKET,$hostname$)`
 | stats $statsmode$(value) As value by _time,hostname,device
 | eval s1="value"
 | makemv s1 
@@ -135,7 +135,7 @@
 | eval yval=case(s1=="value",value)
 | eval series=hostname+":"+device+":"+s1
 | xyseries _time,series,yval
-| makecontinuous _time `inline_customspan`</searchString>
+| makecontinuous _time `inline_customspan(type=NETPACKET,$hostname$)`</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>        
         <option name="charting.axisTitleX.visibility">visible</option>

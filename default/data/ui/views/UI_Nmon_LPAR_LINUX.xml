@@ -59,7 +59,7 @@
       <choice value="eval usage=round((((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled)/virtualCPUs),2) | eval virtualCPUs=100">CPU Usage vs Entitled Percent Utilization</choice>
     </input>
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0</searchTemplate>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0</searchTemplate>
   <earliestTime>$timerange.earliest$</earliestTime>
   <latestTime>$timerange.latest$</latestTime>
   <row>
@@ -126,7 +126,7 @@
       </input>
       <chart>
         <title>Chart - Virtual CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` limit=0 useother=f $statsmode$(usage) As usage, $addindicator$ by hostname</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage, $addindicator$ by hostname</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -175,7 +175,7 @@
     <panel>
       <chart>
         <title>Higher CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0 | stats max(usage) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0 | stats max(usage) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -198,7 +198,7 @@
     <panel>
       <chart>
         <title>Average CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0 | stats avg(usage) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0 | stats avg(usage) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -221,7 +221,7 @@
     <panel>
       <chart>
         <title>Min CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan` $statsmode$(usage) As usage | search usage&gt;0 | stats min(usage) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0 | stats min(usage) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>

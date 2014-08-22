@@ -11,8 +11,9 @@
 # Unified for Solaris/Linux/AIX by Barak Griffis 03072014
 # Modified for Solaris by Guilhem Marchand 20072014
 # Modified for Mac OS x by Guilhem Marchand 24072014: Prevent Mac OS X users to launch the nmon_helper.sh, this is useless (no nmon for BSD*) and causes splunkd to crash
+# Modified by Guilhem Marchand 20082014: Linux: Increased the number of disks to 1500 devices - AIX: Updated nmon command options
 
-# Version 1.1.9
+# Version 1.1.10
 
 # For AIX / Linux / Solaris
 
@@ -135,16 +136,40 @@ occurence="6"
 rm $NMON_REPOSITORY/*.nmon >/dev/null 2>&1
 
 # Set Nmon command line
+# NOTE: 
+
+# Collecting NFS Statistics:
+# - Linux: Add the "-N" option if you want to extract NFS Statistics (NFS V2/V3/V4)
+# - AIX: Add the "-N" option for NFS V2/V3, "-NN" for NFS V4
+
+# For AIX, the default command options line "-f -T -A -d -K -L -M -P -^" includes: (see http://www-01.ibm.com/support/knowledgecenter/ssw_aix_61/com.ibm.aix.cmds4/nmon.htm)
+
+# -A	Includes the Asynchronous I/O section in the view.
+# -d	Includes the Disk Service Time section in the view.
+# -K	Includes the RAW Kernel section and the LPAR section in the recording file. The -K flag dumps the raw numbers
+# of the corresponding data structure. The memory dump is readable and can be used when the command is recording the data.
+# -L	Includes the large page analysis section.
+# -M	Includes the MEMPAGES section in the recording file. The MEMPAGES section displays detailed memory statistics per page size.
+# -P	Includes the Paging Space section in the recording file.
+# -T	Includes the top processes in the output and saves the command-line arguments into the UARG section. You cannot specify the -t, -T, or -Y flags with each other.
+# -^	Includes the Fibre Channel (FC) sections.
+
+# For Linux, the default command options line "-f -T -d 1500" includes:
+
+# -t	include top processes in the output
+# -T	as -t plus saves command line arguments in UARG section
+# -d <disks>    to increase the number of disks [default 256]
+
 case `uname` in
 
 AIX )
-	nmon_command="${NMON} -ft -s ${interval} -c ${occurence}" ;;
+	nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${occurence}" ;;
 
 SunOS )
 	nmon_command="${NMON} ${interval} ${occurence}" ;;
 
 Linux )
-	nmon_command="${NMON} -ft -s ${interval} -c ${occurence}" ;;
+	nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${occurence}" ;;
 
 esac
 
