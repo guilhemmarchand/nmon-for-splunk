@@ -55,6 +55,18 @@
       <suffix>"</suffix>
       <default>*</default>
     </input>
+    <input type="text" token="PID" searchWhenChanged="true">
+      <label>Optional: Filter by PIDs</label>
+      <default>*</default>
+      <prefix>PID="</prefix>
+      <suffix>"</suffix>
+    </input>
+     <input type="text" token="limit" searchWhenChanged="true">
+      <label>Limit to TOP processes:</label>
+      <default>20</default>
+      <prefix>limit="</prefix>
+      <suffix>"</suffix>
+    </input>       
   </fieldset>
 
   <row>
@@ -111,13 +123,13 @@
       <chart id="link10">
         <title>CPU Usage per logical core</title>
         <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
 | $majorsmt$     
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval conso_per_core=(pct_CPU/100)
 | stats sum(conso_per_core) As conso_per_core by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -141,11 +153,11 @@ $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
       </chart>
       <chart id="link11">
         <title>Memory Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,PID,Command,ResText,ResData,hostname 
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,PID,Command,ResText,ResData,hostname 
 | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -169,9 +181,9 @@ $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</searchString>
       </chart>
       <chart id="link13">
         <title>Read / Write System Calls</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,CharIO,PID,Command,hostname 
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,CharIO,PID,Command,hostname 
 | stats sum(CharIO) As CharIO by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(CharIO) as "I/O" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -195,9 +207,9 @@ $statsmode$(CharIO) as "I/O" by Command</searchString>
       </chart>
       <chart id="link14">
         <title>Paging, Sum of page faults</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Paging,PID,Command,hostname 
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,Paging,PID,Command,hostname 
 | stats sum(Paging) As Paging by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(Paging) as "Paging" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -221,9 +233,9 @@ $statsmode$(Paging) as "Paging" by Command</searchString>
       </chart>
       <chart id="link15">
         <title>Threads per Command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,Threads,PID,Command,hostname 
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,Threads,PID,Command,hostname 
 | stats sum(Threads) As Threads By _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(Threads) as Threads by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -251,7 +263,7 @@ $statsmode$(Threads) as Threads by Command</searchString>
     <panel>
       <table>
         <title>Table stats: CPU Usage per logical core</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
 | eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
 | $majorsmt$
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
@@ -280,7 +292,7 @@ $statsmode$(Threads) as Threads by Command</searchString>
     <panel>
       <table>
         <title>Table stats: Memory Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ | `$timefilter$` | dedup _time,ResText,ResData,PID,Command,hostname 
+        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,ResText,ResData,PID,Command,hostname 
 | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats $statsmode$(Used_Mem_MB) as Used_Mem_MB, sparkline($statsmode$(Used_Mem_MB)) as spk_memusage_per_cmd by Command

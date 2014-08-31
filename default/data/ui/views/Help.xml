@@ -43,7 +43,7 @@
    limitations under the License.<br />
 	<br />
 	
-<b>nmon release 1.4.5</b>
+<b>nmon release 1.4.6</b>
 
 <br />
 <br />
@@ -154,6 +154,10 @@
 
 			<br />
 
+			<li><a href="#DEPLOYMENT_SCENARIOS_CENTRAL_CLUSTER">USING CENTRAL SHARES IN CLUSTER ENVIRONMENT WITH FORWARDERS</a></li>
+
+			<br />
+
 		</ol>
 
 		</li>
@@ -217,6 +221,10 @@
 			<br />
 				
 			<li><a href="#FAQ_NFS">NFS STATISTICS</a></li>
+
+			<br />
+				
+			<li><a href="#FAQ_nmon2csv_debug">Debugging the nmon2csv Python converter</a></li>
 		
 		</ol>		
 		
@@ -1336,7 +1344,7 @@ Download the NMON Splunk App, extract its content and upload the "PA-nmon" App a
 <br />
 <br />
 
-Then, extract the PA-nmon App to to the master-apps directory in the master mode, example:
+Then, extract the PA-nmon App to the master-apps directory in the master mode, example:
 
 <br />
 <br />
@@ -1993,9 +2001,240 @@ NOTE: Keep in mind that if many files are present, an heavy and long process of 
 <br />	
 
 
-	
-</p>	
-	
+</p>
+
+<div id="DEPLOYMENT_SCENARIOS_CENTRAL_CLUSTER">
+
+<h1>Scenario 4: Manage NMON Data collected into centralized shares in a Splunk Cluster environment, using Forwarders to convert and stream Nmon Data</h1>
+
+</div>
+
+<h2>
+This deployment scenario intends to manage Nmon in central shares in a Splunk cluster environment, a Splunk Forwarder instance (either light or heavy) will be used to convert and stream the nmon data to the Splunk cluster.
+</h2>
+
+<br />
+
+<h2>CAUTION: The App won't manage nmon files being currently updated by the nmon binary running, if you give Splunk an access to nmon files on running this will generate duplicated events each time files are updated !
+</h2>
+<h2>This scenario intends to manage cold nmon files only.</h2>
+
+<br />
+
+<h2>STEP 1: Deploy the PA-nmon (bundle configuration) to the master node</h2>
+
+<br />
+
+<p>
+
+Download the NMON Splunk App, extract its content and upload the "PA-nmon" App archive available within "resources" directory. (to /tmp directory for example)
+
+<br />
+<br />
+
+Then, extract the PA-nmon App to the master-apps directory in the master mode, example:
+
+<br />
+<br />
+
+
+<code>cd /opt/splunk/etc/master-apps</code>
+
+<br />
+<br />
+
+<code>tar -xvzf /tmp/PA-nmon_V*.tar.gz</code>
+
+<br />
+<br />
+
+<b>INFORMATION: By default, the PA-nmon will generate local nmon data for peer nodes, if you don't want to get performance data using the App, you can deactivate this feature as follows:</b>
+
+<br />
+<br />
+
+Create a local inputs.conf which will disable the nmon_helper.sh input script:
+
+<br />
+<br />
+
+<b>$SPLUNK_HOME/etc/master-apps/PA-nmon/local/inputs.conf</b>
+
+<pre>
+[script://./bin/nmon_helper.sh]
+disabled = true
+</pre>
+
+</p>
+
+<br />
+
+<h2>STEP 2: Deploy bundle configuration from to the master node to your peer nodes</h2>
+
+<p>
+
+<br />
+
+In master node, Push the configuration to your peers:
+
+<br />
+<br />
+
+<code>splunk apply cluster-bundle</code>
+
+<br />
+<br />
+
+<code>splunk show cluster-bundle-status</code>
+
+<br />
+<br />
+
+After all peers have restarted, you should see a new index replicated within the master dashboard (be patient and wait a few minutes before your can see your new replicated index) :
+
+<br />
+<br />
+
+<img src="../../static/app/nmon/various/cluster1.png" alt="Cluster1"/>
+
+<br />
+
+</p>
+
+
+<br />
+
+<h2>STEP 3: Enable Receiving input on each peers node</h2>
+
+<p>
+
+<br />
+Configure each peer node to receive data, either in the manager:
+
+<br />
+<br />
+
+<code>
+Manager -&gt; sending and receiving -&gt; configure receiving -&gt; new 
+</code>
+
+<br />
+<br />
+or via the CLI:
+<br />
+<br />
+
+<code>
+		/opt/splunk/bin/splunk enable listen 9997 
+</code>
+
+<br />
+<br />
+Where 9997 (default) is the receiving port for Splunk Forwarder connections
+<br />
+
+
+</p>
+
+<br />
+
+<h2>STEP 4: Install the TA-nmon in your Forwarder and configure the custom input</h2>
+
+<br />
+
+<p>
+
+For the example, we will assume a manual installation of the TA-nmon App, and we will assume the Forwarder is already connected to the cluster (outputs.conf)
+
+<br />
+
+If you intend to deploy the TA-nmon App using the deployment manager, or have to configure the connection with the cluster, please refer to scenarios 1 and 2.
+
+<br />
+<br />
+
+Upload the "TA-nmon" App archive available within "resources" directory to your Splunk Forwarder (light or heavy). (to /tmp directory for example)
+
+<br />
+<br />
+
+Then, extract the TA-nmon App in the Splunk application directory, example with a light forwarder:
+
+<br />
+<br />
+
+
+<code>cd /opt/splunkforwarder/etc/apps</code>
+
+<br />
+<br />
+
+<code>tar -xvzf /tmp/TA-nmon_V*.tar.gz</code>
+
+<br />
+<br />
+
+<b>INFORMATION: By default, the TA-nmon will generate local nmon data for the host running the App, if you don't want to get performance data, you can deactivate this feature as follows:</b>
+
+<br />
+<br />
+
+Create a local inputs.conf which will disable the nmon_helper.sh input script:
+
+<br />
+<br />
+
+<b>$SPLUNK_HOME/etc/master-apps/TA-nmon/local/inputs.conf</b>
+
+<pre>
+[script://./bin/nmon_helper.sh]
+disabled = true
+</pre>
+
+
+
+<br />
+
+Adding a custom Nmon input for your central share is very easy, here is an example:
+
+<br />
+<br />
+
+<b>Create "$SPLUNK_HOME/etc/apps/nmon/local/inputs.conf" with the following configuration:</b>
+
+<br />
+<br />
+
+<pre>
+[monitor:///mnt/NFS-SHARE/nmon-repository/*/*nmon]
+		
+disabled = false
+index = nmon
+sourcetype = nmon_processing
+crcSalt = &lt;SOURCE&gt;
+</pre>
+
+<br />
+<br />	
+
+Finally, restart the Splunk Forwarder.
+
+<br />
+<br />
+
+Immediately after restart, the App will begin to proceed to any Nmon file located in the central share, and will start to stream the data to the Splunk Cluster
+
+<br />
+<br />
+
+</p>
+
+<br />
+
+
+
+
+
 	
 	</html>
   </row>
@@ -2615,7 +2854,90 @@ If you are using the TA-nmon, deploy the new TA-nmon configuration (you reload t
 <br />
 
 <li>
-NFS Statistics will automatically collected and indexed within Splunk
+NFS Statistics will automatically be collected and indexed within Splunk
+</li>
+
+</lu>
+
+<br />
+<br />
+
+<div id="FAQ_nmon2csv_debug">
+
+<h2>- Debugging the nmon2csv Python converter:</h2> 
+
+</div>
+
+In case of trouble, you may be interested in debugging nmon2csv Python converter operations.
+
+<br />
+<br />
+
+This can easily be achieved, either on nmon / TA-nmon / PA-nmon Application:
+
+<br />
+<br />
+
+<lu>
+
+<li>
+Create a temporary location for csv files, such like the normal directory structure of the App, example: 
+</li>
+
+<br />
+
+<code>
+$ mkdir -p /tmp/nmon2csv_debug/etc/apps/nmon
+</code>
+
+<br />
+<br />
+
+<li>
+Have an nmon file ready to test, if you don't have some to get the current copy in $SPLUNK_HOME/etc/apps/nmon/var/nmon_resposity when the Application is running
+</li>
+
+<br />
+
+<li>
+Initiate conversion steps:
+</li>
+
+<br />
+Adapt paths if you want to debug the nmon / TA-nmon / PA-nmon App and the type of Splunk instance (standard, light forwarder, heavy forwarder, peer node...), the following example will reproduce the conversion step for the standard Application:
+
+<br />
+<br />
+
+<code>
+$ cd /tmp/nmon2csv_debug
+</code>
+
+<br />
+<br />
+
+<code>
+$ export SPLUNK_HOME="/tmp/nmon2csv_debug"
+</code>
+
+<br />
+<br />
+
+<code>
+$ cat my_file.nmon | /opt/splunk/etc/apps/nmon/bin/nmon2csv.py
+</code>
+
+<br />
+<br />
+
+<li>
+The Python converter will output its processing steps and generate various csv files in csv_repository and config_repository
+</li>
+
+<br />
+
+<li>
+Note that you can achieve the same operation in the proper normal Splunk directory, but if you do so, you need to stop Splunk before as it would immediately index and delete csv files
 </li>
 
 </lu>

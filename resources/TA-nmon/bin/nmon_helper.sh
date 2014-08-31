@@ -12,8 +12,10 @@
 # Modified for Solaris by Guilhem Marchand 20072014
 # Modified for Mac OS x by Guilhem Marchand 24072014: Prevent Mac OS X users to launch the nmon_helper.sh, this is useless (no nmon for BSD*) and causes splunkd to crash
 # Modified by Guilhem Marchand 20082014: Linux: Increased the number of disks to 1500 devices - AIX: Updated nmon command options
+# Modified by Guilhem Marchand 25082014: Avoid deleting existing nmon files in nmon_repository, this is now taken in charge by Splunk itself using batch mode instead monitor mode
+#													  This prevents from having local nmon data missing when indexing large volume of nmon files from central shares
 
-# Version 1.1.10
+# Version 1.1.11
 
 # For AIX / Linux / Solaris
 
@@ -131,9 +133,6 @@ occurence="6"
 ####################################################################
 #############		Main Program 			############
 ####################################################################
-
-# Clean nmon_repository
-rm $NMON_REPOSITORY/*.nmon >/dev/null 2>&1
 
 # Set Nmon command line
 # NOTE: 

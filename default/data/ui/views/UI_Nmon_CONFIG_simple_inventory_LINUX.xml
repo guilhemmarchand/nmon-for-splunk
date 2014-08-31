@@ -29,9 +29,56 @@
       </div>
     </html>
   </row>
+  
+  <row>
+    <panel>
+      <input type="text" token="hostname" searchWhenChanged="true">
+        <label>Hostnames:</label>
+        <prefix>hostname="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="Linux_distribution" searchWhenChanged="true">
+        <label>Linux Distributions:</label>
+        <prefix>Linux_distribution="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="Processor" searchWhenChanged="true">
+        <label>Processor Type:</label>
+        <prefix>Processor="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="cpu_cores" searchWhenChanged="true">
+        <label>CPU cores capacity:</label>
+        <prefix>cpu_cores="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="Linux_kernelversion" searchWhenChanged="true">
+        <label>Kernel versions:</label>
+        <prefix>Linux_kernelversion="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="nmon_version" searchWhenChanged="true">
+        <label>Nmon Versions:</label>
+        <prefix>nmon_version="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <html>
+      <div style="text-align: left;">
+        <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
+      </div>
+    </html>
+    </panel>
+  </row>
+  
   <row>
     <single>
-      <searchPostProcess>stats count</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count</searchPostProcess>
       <option name="afterLabel">Hosts known within this period</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">Linux</option>
@@ -42,7 +89,7 @@
   <row grouping="1,1">
     <chart>
       <title>Linux Distribution</title>
-      <searchPostProcess>stats count by Linux_distribution</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by Linux_distribution</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -60,13 +107,13 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 Linux_distribution | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 Linux_distribution | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Processor</title>
-      <searchPostProcess>stats count by Processor</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by Processor</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -84,13 +131,13 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>CPUs cores Capacity</title>
-      <searchPostProcess>stats count by cpu_cores</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by cpu_cores</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -108,13 +155,13 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Linux Kernel</title>
-      <searchPostProcess>stats count by Linux_kernelversion</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by Linux_kernelversion</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -132,13 +179,13 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 Linux_kernelversion | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 Linux_kernelversion | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Nmon version</title>
-      <searchPostProcess>stats count by nmon_version</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by nmon_version</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -156,13 +203,13 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
     </table>
   </row>
   <row>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>fields hostname,cpu_cores,OStype,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | fields hostname,cpu_cores,OStype,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</searchPostProcess>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
     </table>

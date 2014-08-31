@@ -55,6 +55,12 @@
       <prefix>PID="</prefix>
       <suffix>"</suffix>
     </input>
+     <input type="text" token="limit" searchWhenChanged="true">
+      <label>Limit to TOP processes:</label>
+      <default>20</default>
+      <prefix>limit="</prefix>
+      <suffix>"</suffix>
+    </input>   
   </fieldset>
 
   <row>
@@ -116,7 +122,7 @@
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval conso_per_core=(pct_CPU/100)
 | stats sum(conso_per_core) As conso_per_core by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -144,7 +150,7 @@ $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
 | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -171,7 +177,7 @@ $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</searchString>
         <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,Size,PID,Command,hostname 
 | stats sum(Size) As Size by _time,Command
 | eval Virtual_Mem_MB=round((Size/1024),2)
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -197,7 +203,7 @@ $statsmode$(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command</searchString>
         <title>MinorFault per Command invocation</title>
         <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,MinorFault,PID,Command,hostname 
 | stats sum(MinorFault) As MinorFault by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(MinorFault) as "MinorFault" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -223,7 +229,7 @@ $statsmode$(MinorFault) as "MinorFault" by Command</searchString>
         <title>MajorFault per Command invocation</title>
         <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,MajorFault,PID,Command,hostname 
 | stats sum(MajorFault) As MajorFault by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(MajorFault) as "MajorFault" by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
@@ -249,7 +255,7 @@ $statsmode$(MajorFault) as "MajorFault" by Command</searchString>
         <title>Shared library pages per Command invocation</title>
         <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,ShdLib,PID,Command,hostname 
 | stats sum(ShdLib) As ShdLib By _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
 $statsmode$(ShdLib) as ShdLib by Command</searchString>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
