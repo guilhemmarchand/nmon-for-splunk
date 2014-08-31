@@ -43,7 +43,7 @@
    limitations under the License.<br />
 	<br />
 	
-<b>nmon release 1.4.6</b>
+<b>nmon release 1.4.7</b>
 
 <br />
 <br />
@@ -225,6 +225,10 @@
 			<br />
 				
 			<li><a href="#FAQ_nmon2csv_debug">Debugging the nmon2csv Python converter</a></li>
+
+			<br />
+				
+			<li><a href="#FAQ_customize">Nmon_SplunkApp_Customize.py: Customize the Application</a></li>
 		
 		</ol>		
 		
@@ -2792,6 +2796,20 @@ Third party Shell script to collect NMON data for AIX / Linux / Solaris indexer 
 <br />
 Written in sh, it does not have any specific requirements and should work with any Operating System.
 
+<br />
+<br />
+
+<li>
+<b>resources/Nmon_SplunkApp_Customize.py</b>
+</li>
+
+<br />
+
+A Python command line tool to automatically customize the Application to fit your need and criteria: Customizing the index name, App root directory, TA and PA root directory...
+
+<br />
+It can be used over future release to allow easy update, even when adapting the App to your needs is required.
+
 </lu>
 
 </p>
@@ -2808,8 +2826,6 @@ Written in sh, it does not have any specific requirements and should work with a
 </div>
 
 <br />
-
-<p>
 
 <div id="FAQ_NFS">
 
@@ -2943,10 +2959,123 @@ Note that you can achieve the same operation in the proper normal Splunk directo
 </lu>
 
 <br />
+
+<div id="FAQ_customize">
+
 <br />
 
+<h2>- Nmon_SplunkApp_Customize.py: Customize the Application</h2> 
 
-</p>
+</div>
+
+<b>If for some reason you need to customize the Nmon Splunk Application, A Python command line tool is provided in the resources directory which will help you easily achieving your customizations.</b>
+
+<br />
+<br />
+
+The Python tool allows to:
+
+<br />
+<br />
+
+<lu>
+
+<li>Customize the Appication Index Name (default: nmon)</li>
+<li>Customize the Application Root Directory (default: nmon)</li>
+<li>Customize the TA NMON Root Directory (default: TA-nmon)</li>
+<li>Customize the PA NMON Root Directory (default: PA-nmon)</li>
+<li>Customize the local CSV Repository (default:csv_repository)</li>
+<li>Customize the local Config Repository (default:config_repository)</li>
+
+</lu>
+
+<br />
+
+Using this tool over releases, you can easily manage your customizations and update the Application as usual.
+
+
+<br />
+<br />
+
+<pre>
+
+./Nmon_SplunkApp_Customize.py
+
+If for some reason you need to customize the Nmon Splunk Application, please follow these instructions:
+
+- Download the current release of Nmon App in Splunk Base: https://apps.splunk.com/app/1753
+- Uncompress the Nmon_SplunkApp_Customize.py.gz
+- Place the downloaded tgz Archive and this Python tool in the directory of your choice
+- Run the tool: ./customize_indexname.py and check for available options
+
+After the execution, the Application (including TA-nmon and PA-nmon in resources) will have been customized are ready to be used
+
+</pre>
+
+<br />
+
+<pre>
+
+./Nmon_SplunkApp_Customize.py -h
+
+usage: Nmon_SplunkApp_Customize.py [-h] [-f INFILE] [-i INDEX_NAME]
+                                   [-r ROOT_DIR] [-a TA_NMON] [-p PA_NMON]
+                                   [--csvrepo CSV_REPOSITORY]
+                                   [--configrepo CONFIG_REPOSITORY]
+                                   [--version]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f INFILE             Name of the Nmon Splunk APP tgz Archive file
+  -i INDEX_NAME         Customize the Appication Index Name (default: nmon)
+  -r ROOT_DIR           Customize the Application Root Directory (default:
+                        nmon)
+  -a TA_NMON            Customize the TA NMON Root Directory (default: TA-
+                        nmon)
+  -p PA_NMON            Customize the PA NMON Root Directory (default: PA-
+                        nmon)
+  --csvrepo CSV_REPOSITORY
+                        Customize the local CSV Repository (default:
+                        csv_repository)
+  --configrepo CONFIG_REPOSITORY
+                        Customize the local Config Repository (default:
+                        config_repository)
+  --version             show program's version number and exit
+
+
+
+</pre>
+
+<br />
+
+<b>Example of utilization:</b>
+
+<br />
+<br />
+
+<pre>
+
+./Nmon_SplunkApp_Customize.py -f nmon-performance-monitor-for-unix-and-linux-systems_146.tgz -i my_custom_index -r my_custom_app -a my_custom_ta -p my_custom_pa --csvrepo my_custom_csvrepo --configrepo my_custom_configrepo
+Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_146.tgz
+INFO: Changing the App Root Directory frm default "nmon" to custom "my_custom_app"
+Achieving files transformation:
+INFO: Customizing any reference to default root directory in files
+Achieving files conversion
+INFO: Customizing any reference to index name in files
+INFO: Customizing indexes.conf
+INFO: Customizing csv_repository to my_custom_csvrepo
+INFO: Customizing config_repository to my_custom_configrepo
+INFO: Removing tgz resources Archives
+INFO: Customizing the TA-nmon Root directory from the default TA-nmon to my_custom_ta
+INFO: Tar creation done of: my_custom_ta_custom.tar.gz
+INFO: Customizing the PA-nmon Root directory from the default PA-nmon to my_custom_pa
+INFO: Tar creation done of: my_custom_pa_custom.tar.gz
+INFO: Creating the custom nmon_performance_monitor_custom.spl archive in current root directory
+INFO: Tar creation done of: nmon_performance_monitor_custom.spl
+Operation terminated.
+
+</pre>
+
 
 	</html>
   </row>
