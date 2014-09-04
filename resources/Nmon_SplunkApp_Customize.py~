@@ -1,0 +1,448 @@
+#!/usr/bin/python
+
+# Program name: customize_IndexName.py
+# Compatibility: Python 2x
+# Purpose - Customize the index name for the Splunk Nmon App, see https://apps.splunk.com/app/1753
+# Author - Guilhem Marchand
+# Disclaimer: Distributed on an "AS IS" basis  
+# Date of first publication - August 2014
+
+# Licence:
+	
+# Copyright 2014 Guilhem Marchand	
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+# http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# Releases Notes:
+	
+import sys
+import re
+import os
+import tarfile
+import glob
+import string
+import fileinput
+import fnmatch
+import argparse
+
+version = '1.0.0'
+
+####################################################################
+#############		Arguments Parser							  ############
+####################################################################
+
+# Define Arguments
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-f', action='store', dest='INFILE',
+                    help='Name of the Nmon Splunk APP tgz Archive file')
+
+parser.add_argument('-i', action='store', dest='INDEX_NAME',
+                    help='Customize the Application Index Name (default: nmon)')
+
+parser.add_argument('-r', action='store', dest='ROOT_DIR',
+                    help='Customize the Application Root Directory (default: nmon)')
+
+parser.add_argument('-a', action='store', dest='TA_NMON',
+                    help='Customize the TA NMON Root Directory (default: TA-nmon)')
+
+parser.add_argument('-p', action='store', dest='PA_NMON',
+                    help='Customize the PA NMON Root Directory (default: PA-nmon)')
+
+parser.add_argument('--csvrepo', action='store', dest='CSV_REPOSITORY',
+                    help='Customize the local CSV Repository (default: csv_repository)')
+
+parser.add_argument('--configrepo', action='store', dest='CONFIG_REPOSITORY',
+                    help='Customize the local Config Repository (default: config_repository)')
+
+parser.add_argument('--version', action='version', version='%(prog)s ' + version)
+
+
+args = parser.parse_args()
+
+
+####################################################################
+#############		Functions	 								  ############
+####################################################################
+
+# String replacement function
+# Can be called by:
+# findReplace(path, string_to_search, replace_by, file_extension)
+
+def findReplace(directory, find, replace, filePattern):
+    for path, dirs, files in os.walk(os.path.abspath(directory)):
+        for filename in fnmatch.filter(files, filePattern):
+            filepath = os.path.join(path, filename)
+            with open(filepath) as f:
+                s = f.read()
+            s = s.replace(find, replace)
+            with open(filepath, "w") as f:
+                f.write(s)
+
+
+####################################################################
+#############		Main Program 								  ############
+####################################################################
+
+# Check Arguments
+if len(sys.argv) < 2:
+	print "\n%s" % os.path.basename(sys.argv[0])
+	print "\nIf for some reason you need to customize the Nmon Splunk Application, please follow these instructions:\n"
+	print "- Download the current release of Nmon App in Splunk Base: https://apps.splunk.com/app/1753"
+	print "- Uncompress the Nmon_SplunkApp_Customize.py.gz"
+	print "- Place the downloaded tgz Archive and this Python tool in the directory of your choice"
+	print "- Run the tool: ./customize_indexname.py and check for available options\n"
+	print "After the execution, the Application (including TA-nmon and PA-nmon in resources) will have been customized and are ready to be used\n"
+	sys.exit(0)
+
+# Will expect in first Argument the name of the tgz Archive of the Application to be downloaded in Splunk Base
+infile = args.INFILE
+
+# Will expect the customize name of the Splunk index, the default name of the index is "nmon"
+index_name = args.INDEX_NAME
+
+# If the root directory is not defined, apply default "nmon" value
+root_dir = args.ROOT_DIR
+if str(root_dir) == "None":
+	root_dir = "nmon"
+
+# If the root directory of the TA-nmon is not defined, apply default 'TA-nmon' value
+ta_root_dir = args.TA_NMON
+if str(ta_root_dir) == "None":
+	ta_root_dir = "TA-nmon"
+
+# If the root directory of the PA-nmon is not defined, apply default 'PA-nmon' value
+pa_root_dir = args.PA_NMON
+if str(pa_root_dir) == "None":
+	pa_root_dir = "PA-nmon"
+
+# If the csv_repository is not defined, apply default 'csv_repository' value
+csv_repository = args.CSV_REPOSITORY
+if str(csv_repository) == "None":
+	csv_repository = "csv_repository"
+
+# If the config_repository is not defined, apply default 'config_repository' value
+config_repository = args.CONFIG_REPOSITORY
+if str(config_repository) == "None":
+	config_repository = "config_repository"
+
+# Verify tgz Archive file exists
+if not os.path.exists(infile):
+	print ( 'ERROR: invalid file, could not find: ' + infile )
+	sys.exit(1)
+
+# Extract Archive
+tar = tarfile.open(infile)
+msg = 'Extracting tgz Archive: ' + infile
+print (msg)
+tar.extractall()
+tar.close()
+
+# Operate
+
+# If the root_dir does not equal to default root dir of Nmon Splunk App (nmon), let's customize
+
+if root_dir != "nmon":
+	
+	msg = 'INFO: Changing the App Root Directory from default "nmon" to custom "' + root_dir + '"'
+	print(msg)
+
+	# Dir rename
+	os.rename("nmon", root_dir)
+
+	# Get current directory
+	curdir = os.getcwd()
+
+	# cd to django
+	path = root_dir + '/django'
+	os.chdir(path)
+	
+	# Dir rename
+	os.rename("nmon", root_dir)
+
+	# cd to django static
+	path = root_dir + '/static'
+	os.chdir(path)
+
+	# Dir rename
+	os.rename("nmon", root_dir)
+
+	os.chdir(curdir)
+
+	path = root_dir +'/django/' + root_dir + '/templatetags/'
+	os.chdir(path)
+
+	rename = root_dir + '.py'
+	os.rename("nmon.py", rename)
+	os.remove("nmon.pyo")
+	
+	# Return to origin
+	os.chdir(curdir)
+
+
+	################# STRING REPLACEMENTS #################
+
+	# Replace string in files
+
+	path = root_dir
+	extension = "*"
+
+	# Achieve string replacements
+
+	print ('Achieving files transformation:')
+
+	# Replace basic index calls
+	print ('INFO: Customizing any reference to default root directory in files')
+
+	search = 'static/app/nmon'
+	replace = 'static/app/' + root_dir
+	findReplace(path, search, replace, extension)
+
+	search = 'etc/apps/nmon'
+	replace = 'etc/apps/' + root_dir
+	findReplace(path, search, replace, extension)
+
+	search = 'etc\\\\apps\\\\nmon'
+	replace = 'etc\\\\apps\\\\' + root_dir
+	findReplace(path, search, replace, extension)
+
+	# Web Framework views
+
+	search = '{{STATIC_URL}}/nmon'
+	replace = '{{STATIC_URL}}/' + root_dir
+	findReplace(path, search, replace, extension)
+
+	search = '{{STATIC_URL}}nmon'
+	replace = '{{STATIC_URL}}' + root_dir
+	findReplace(path, search, replace, extension)
+
+	search = 'nmon/contrib'
+	replace = root_dir + '/contrib'
+	findReplace(path, search, replace, extension)
+
+	search = 'dj/en-us/nmon'
+	replace = 'dj/en-us/' + root_dir
+	findReplace(path, search, replace, extension)
+
+	search = 'load nmon'
+	replace = 'load ' + root_dir
+	findReplace(path, search, replace, extension)
+
+	search = 'uri=*/app/nmon/*'
+	replace = 'uri=*/app/' + root_dir + '/*'
+	findReplace(path, search, replace, extension)
+
+	search = 'uri=*/dj/*/nmon/*'
+	replace = 'uri=*/dj/*/' + root_dir + '/*'
+	findReplace(path, search, replace, extension)
+
+	search = 'app="nmon"'
+	replace = 'app="' + root_dir + '"'
+	findReplace(path, search, replace, extension)
+
+
+
+
+
+
+
+# If the root_dir has been found (else specified the default value, else used an archive file containing the good root_dir)
+
+if os.path.exists(root_dir):
+
+	# Change index name only if differs from default index name (nmon)
+	if index_name != "nmon":
+
+		################# STRING REPLACEMENTS #################
+
+		# Replace string in files
+
+		path = root_dir
+		extension = "*"
+
+		# Achieve string replacements
+
+		print ('Achieving files transformation:')
+
+		# Replace basic index calls
+		print ('INFO: Customizing any reference to index name in files')
+
+		replace = 'index=' + index_name
+		findReplace(path, "index=nmon", replace, extension)
+
+		replace = 'index="' + index_name + '"'
+		findReplace(path, "index=\"nmon\"", replace, extension)
+
+		search = 'index = nmon'
+		replace = 'index = '+ index_name
+		findReplace(path, search, replace, "*")
+		
+		search = 'series=nmon'
+		replace = 'series='+ index_name
+		findReplace(path, search, replace, "*")
+		
+		search = 'series="nmon"'
+		replace = 'series="'+ index_name + '"'
+		findReplace(path, search, replace, "*")
+		
+		# Replace index configuration in indexes.conf
+		print ('INFO: Customizing indexes.conf')
+		findReplace(path, "nmon", index_name, "indexes.conf")
+
+		#######################################################
+
+	# CSV and CONFIG repository
+	
+	if csv_repository != "csv_repository":
+
+		################# STRING REPLACEMENTS #################
+
+		# Replace string in files
+
+		path = root_dir
+		extension = "*"
+
+		# Achieve string replacements
+
+		# Replace basic index calls
+		msg = 'INFO: Customizing csv_repository to ' + csv_repository
+		print (msg)
+
+		search = 'csv_repository'
+		replace = csv_repository
+		findReplace(path, search, replace, extension)
+
+		#######################################################
+
+	if config_repository != "config_repository":
+
+		################# STRING REPLACEMENTS #################
+
+		# Replace string in files
+
+		path = root_dir
+		extension = "*"
+
+		# Achieve string replacements
+
+		# Replace basic index calls
+		msg = 'INFO: Customizing config_repository to ' + config_repository
+		print (msg)
+
+		search = 'config_repository'
+		replace = config_repository
+		findReplace(path, search, replace, extension)
+
+		#######################################################
+
+
+	# Remove TA-nmon and PA-nmon tgz Archives
+
+	path = root_dir + '/resources'
+
+	print ('INFO: Removing tgz resources Archives')
+	tgz_files = path + '/*.tar.gz'
+	for tgz in glob.glob(tgz_files):
+		#Do what you want with the file
+		os.remove(tgz)
+
+	# Get current directory
+	curdir = os.getcwd()
+
+	# cd to resources
+	os.chdir(path)
+
+
+	# Customize TA-nmon only if default differs from the one provided in argument
+	if ta_root_dir != "TA-nmon":
+
+		msg = 'INFO: Customizing the TA-nmon Root directory from the default TA-nmon to ' + ta_root_dir
+		print (msg)
+
+		os.rename('TA-nmon', ta_root_dir)
+		findReplace(".", 'TA-nmon', ta_root_dir, "*")
+
+		tar_file = ta_root_dir + '_custom.tar.gz'
+		with tarfile.open(tar_file, "w:gz") as tar:
+			for name in [ta_root_dir]:
+				tar.add(name)
+				msg = 'INFO: Tar creation done of: ' + tar_file
+				print (msg)
+
+	else:
+
+		print ('INFO: Creating the custom TA-nmon_custom.tar.gz archive in resources directory')
+		tar_file = ta_root_dir + '_custom.tar.gz'			
+		with tarfile.open("TA-nmon_custom.tar.gz", "w:gz") as tar:
+			for name in ["TA-nmon"]:
+				tar.add(name)
+				msg = 'INFO: Tar creation done of: ' + tar_file
+				print (msg)
+
+	# Customize PA-nmon only if default differs from the one provided in argument
+	if pa_root_dir != "PA-nmon":
+
+		msg = 'INFO: Customizing the PA-nmon Root directory from the default PA-nmon to ' + pa_root_dir
+		print (msg)
+
+		os.rename('PA-nmon', pa_root_dir)
+		findReplace(".", 'PA-nmon', pa_root_dir, "*")
+
+		tar_file = pa_root_dir + '_custom.tar.gz'
+		with tarfile.open(tar_file, "w:gz") as tar:
+			for name in [pa_root_dir]:
+				tar.add(name)
+				msg = 'INFO: Tar creation done of: ' + tar_file
+				print (msg)
+
+
+	else:
+
+		print ('INFO: Creating the custom PA-nmon_custom.tar.gz archive in resources directory')
+		tar_file = pa_root_dir + '_custom.tar.gz'
+		with tarfile.open("PA-nmon_custom.tar.gz", "w:gz") as tar:
+			for name in ["PA-nmon"]:
+				tar.add(name)
+				msg = 'INFO: Tar creation done of: ' + tar_file
+				print (msg)
+
+
+
+	# Return to origin dir
+	os.chdir(curdir)
+
+	print ('INFO: Creating the custom nmon_performance_monitor_custom.spl archive in current root directory')
+	tar_file = "nmon_performance_monitor_custom.spl"
+	with tarfile.open(tar_file, "w:gz") as tar:
+		for name in [root_dir]:
+			tar.add(name)
+			msg = 'INFO: Tar creation done of: ' + tar_file
+			print (msg)
+
+
+	# END
+	print ('Operation terminated.')
+	sys.exit(0)
+
+else:
+	
+	msg = 'ERROR: The Application Root Directory ' + root_dir + ' could not be found the tgz Archive file, please verify your settings.'
+	print (msg)
+	sys.exit(1)
+
+
+
+
+
