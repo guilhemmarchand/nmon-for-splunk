@@ -36,10 +36,64 @@
       <option name="beforeLabel">Found</option>
     </single>
   </row>
+  <row>
+    <panel>
+      <input type="text" token="hostname" searchWhenChanged="true">
+        <label>Hostnames:</label>
+        <prefix>hostname="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="Solaris_version" searchWhenChanged="true">
+        <label>Solaris Versions:</label>
+        <prefix>Solaris_version="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="Solaris_sunOS_version" searchWhenChanged="true">
+        <label>SunOS Versions:</label>
+        <prefix>Solaris_sunOS_version="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="cpu_cores" searchWhenChanged="true">
+        <label>CPU cores capacity:</label>
+        <prefix>cpu_cores="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="Processor" searchWhenChanged="true">
+        <label>Processor Type:</label>
+        <prefix>Processor="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="Solaris_processor_clockspeed" searchWhenChanged="true">
+        <label>Processor Clockspeed:</label>
+        <prefix>Solaris_processor_clockspeed="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>
+      <input type="text" token="nmon_version" searchWhenChanged="true">
+        <label>Nmon Versions:</label>
+        <prefix>nmon_version="</prefix>
+        <suffix>"</suffix>
+        <default>*</default>
+      </input>      
+      <html>
+      <div style="text-align: left;">
+        <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
+      </div>
+    </html>
+    </panel>
+  </row>
+  
+search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$  
+  
   <row grouping="1,1">
     <chart>
       <title>Solaris version</title>
-      <searchPostProcess>stats count by Solaris_version</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | stats count by Solaris_version</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -57,7 +111,7 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 Solaris_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | top limit=0 Solaris_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
     </table>
@@ -65,7 +119,7 @@
   <row grouping="1,1">
     <chart>
       <title>Solaris (sunOS) version</title>
-      <searchPostProcess>stats count by Solaris_sunOS_version</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | stats count by Solaris_sunOS_version</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -83,7 +137,7 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 Solaris_sunOS_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | top limit=0 Solaris_sunOS_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
     </table>
@@ -109,13 +163,13 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Processor</title>
-      <searchPostProcess>stats count by Processor</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | stats count by Processor</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -133,7 +187,7 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
     </table>
@@ -141,7 +195,7 @@
   <row grouping="1,1">
     <chart>
       <title>Processor ClockSpeed</title>
-      <searchPostProcess>stats count by Solaris_processor_clockspeed</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | stats count by Solaris_processor_clockspeed</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -159,7 +213,7 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 Solaris_processor_clockspeed | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | top limit=0 Solaris_processor_clockspeed | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
     </table>
@@ -167,7 +221,7 @@
   <row grouping="1,1">
     <chart>
       <title>Nmon version</title>
-      <searchPostProcess>stats count by nmon_version</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | stats count by nmon_version</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -185,7 +239,7 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>| top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       <earliestTime>$earliest$</earliestTime>
       <latestTime>$latest$</latestTime>
     </table>
@@ -193,7 +247,7 @@
   <row>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</searchPostProcess>
+      <searchPostProcess>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</searchPostProcess>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
     </table>

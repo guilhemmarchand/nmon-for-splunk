@@ -43,7 +43,7 @@
    limitations under the License.<br />
 	<br />
 	
-<b>nmon release 1.4.7</b>
+<b>nmon release 1.4.81</b>
 
 <br />
 <br />
@@ -229,6 +229,10 @@
 			<br />
 				
 			<li><a href="#FAQ_customize">Nmon_SplunkApp_Customize.py: Customize the Application</a></li>
+
+			<br />
+				
+			<li><a href="#FAQ_customize_extraction">Performance Monitors extraction: Customize Monitors to extract (reduce Data volume and licence costs)</a></li>
 		
 		</ol>		
 		
@@ -3075,6 +3079,91 @@ INFO: Tar creation done of: nmon_performance_monitor_custom.spl
 Operation terminated.
 
 </pre>
+
+<br />
+<br />
+
+<div id="FAQ_customize_extraction">
+
+<br />
+
+<h2>- Customize Performance Monitors to be extracted from Nmon data: Focus on Performance Monitors and reduce the Data volume / Licence cost</h2> 
+
+</div>
+
+There may be cases where you don't want or don't need every Performance monitor to be extracted from Nmon Data.
+
+<br />
+
+For example, you want to focus only on particular Monitors such as CPU usage, or you goal is to drastically reduce the global amount of Data volume, and so reduce the licence cost or storage cost.
+
+<br />
+<br />
+
+<b>Starting with version 1.4.8</b> you can easily customize the nmon2csv Python converter to choose exact Nmon sections you want to extract.
+
+<br />
+<br />
+
+<b>To do so, customize the nmon2csv.py Python converter in the Parameters section:</b>
+
+<br />
+<br />
+
+<pre>
+
+#################################################
+##      Parameters
+#################################################
+
+# Customizations goes here:
+
+# Sections of Performance Monitors with standard dynamic header but no "device" notion that would require the data to be transposed
+# You can add or remove any section depending on your needs
+static_section = ["LPAR", "CPU_ALL", "FILE", "MEM", "PAGE", "MEMNEW", "MEMUSE", "PROC", "PROCSOL", "VM", "NFSSVRV2",
+                  "NFSSVRV3", "NFSSVRV4", "NFSCLIV2", "NFSCLIV3", "NFSCLIV4"]
+
+# This is the TOP section which contains Performance data of top processes
+# It has a specific structure and requires specific treatment
+top_section = ["TOP"]
+
+# This is the UARG section which contains full command line arguments with some other information such as PID, user, group and so on
+# It has a specific structure and requires specific treatment
+uarg_section = ["UARG"]
+
+# Sections of Performance Monitors with "device" notion, data needs to be transposed by time to be fully exploitable
+# This particular section will check for up to 10 subsection per Performance Monitor
+# By default, Nmon create a new subsection (add an increment from 1 to x) per step of 150 devices
+# 1500 devices (disks) will be taken in charge in default configuration
+dynamic_section1 = ["DISKBUSY", "DISKBSIZE", "DISKREAD", "DISKWRITE", "DISKXFER", "DISKRIO", "DISKWIO"]
+
+# Sections of Performance Monitors with "device" notion, data needs to be transposed by time to be fully exploitable
+dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE"]
+
+</pre>
+
+<br />
+<br />
+
+<b>And simply adapt sections to your needs, please note:</b>
+
+<br />
+<br />
+
+<lu>
+
+<li>
+To remove every monitor of a subsection, empty every monitor of it
+</li>
+
+<li>
+The customization of the Python nmon2csv converter is not upgrade resilient, remember to reapply your change at every update of the Application
+</li>
+
+</lu>
+
+<br />
+<br />
 
 
 	</html>
