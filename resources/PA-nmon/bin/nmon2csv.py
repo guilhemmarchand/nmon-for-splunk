@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Program name: nmon2csv.py
 # Compatibility: Python 2x
@@ -42,6 +42,7 @@
 # - 09/04/2014, V1.0.7: Guilhem Marchand:
 #								- Re-indent according to PEP-8 compliance, various PEP-8 compliance corrections
 #                               - Added the Parameters section to facilitate customization of what is being extracted
+# - 09/17/2014, V1.0.8: Guilhem Marchand: Improved compliance with Splunk Python events logging, portable shebang correction
 
 # Load libs
 
@@ -58,7 +59,7 @@ import cStringIO
 import platform
 
 # Converter version
-nmon2csv_version = '1.0.7'
+nmon2csv_version = '1.0.8'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -98,7 +99,12 @@ dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSIN
 #################################################
 
 # Set logging format
-logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', datefmt='%c', level=logging.DEBUG)
+logging.root
+logging.root.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(levelname)s %(message)s')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logging.root.addHandler(handler)
 
 # Current date
 now = time.strftime("%c")
