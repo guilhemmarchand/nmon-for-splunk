@@ -43,6 +43,7 @@
 #								- Re-indent according to PEP-8 compliance, various PEP-8 compliance corrections
 #                               - Added the Parameters section to facilitate customization of what is being extracted
 # - 09/17/2014, V1.0.8: Guilhem Marchand: Improved compliance with Splunk Python events logging, portable shebang correction
+# - 09/27/2014, V1.0.9: Guilhem Marchand: Added the file size in bytes to the Nmon ID and csv filenames to prevent log detected as truncated
 
 # Load libs
 
@@ -59,7 +60,7 @@ import cStringIO
 import platform
 
 # Converter version
-nmon2csv_version = '1.0.8'
+nmon2csv_version = '1.0.9'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -108,6 +109,9 @@ logging.root.addHandler(handler)
 
 # Current date
 now = time.strftime("%c")
+
+# timestamp used to name csv files
+csv_timestamp = time.strftime("%Y%m%d%H%M%S")
 
 # Starting time of process
 start_time = time.time()
@@ -498,7 +502,7 @@ for line in data:
 # Last execution result will be extracted from it to stdout
 
 # NMON file id (concatenation of ids)
-idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN
+idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total)
 
 print("NMON ID:", idnmon)
 
@@ -540,7 +544,7 @@ ref.write(idnmon + '\n')
 section = "CONFIG"
 
 # Set output file
-config_output = CONFIG_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '.nmon.config.csv'
+config_output = CONFIG_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.config.csv'
 
 # Open config output for writing
 with open(config_output, "wb") as config:
@@ -595,7 +599,7 @@ for section in static_section:
     if count > 2:
 
         # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -756,7 +760,7 @@ for section in top_section:
     if count > 2:
 
         # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -884,7 +888,7 @@ for section in uarg_section:
     if count > 2:
 
         # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -1069,7 +1073,7 @@ for subsection in dynamic_section1:
         if count > 2:
 
             # Set output file (will be opened for writing after data transposition)
-            currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '.nmon.csv'
+            currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
             # Open StringIO for temp in memory
             membuffer = cStringIO.StringIO()
@@ -1263,7 +1267,7 @@ for section in dynamic_section2:
     if count > 2:
 
         # Set output file (will be opened for writing after data transposition)
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open StringIO for temp in memory
         membuffer = cStringIO.StringIO()

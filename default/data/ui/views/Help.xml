@@ -43,7 +43,7 @@
    limitations under the License.<br />
 	<br />
 	
-<b>nmon release 1.4.82</b>
+<b>nmon release 1.4.84</b>
 
 <br />
 <br />
@@ -233,6 +233,10 @@
 			<br />
 				
 			<li><a href="#FAQ_customize_extraction">Performance Monitors extraction: Customize Monitors to extract (reduce Data volume and licence costs)</a></li>
+
+			<br />
+				
+			<li><a href="#FAQ_converter">Python vs Perl converter: Change default converter to Perl alternative</a></li>
 		
 		</ol>		
 		
@@ -322,11 +326,11 @@ Default installation has a file monitor that watches for any new nmon file locat
 </li>
 
 <li>
-When a new file is found by Splunk Archive Processor (such as any monitored file or directory), Splunk will call a third party Python script
+When a new file is found by Splunk Archive Processor (such as any monitored file or directory), Splunk will call a third party Python (or alternative Perl) script
 </li>
 
 <li>
-The Python script "nmon2csv.py" will translate nmon data into several csv files in "/opt/splunk/etc/apps/nmon/var/csv_repository"
+Converter scripts "nmon2csv.py / nmon2csv.pl" will translate nmon data into several csv files in "/opt/splunk/etc/apps/nmon/var/csv_repository"
 </li>
 
 <li>
@@ -366,7 +370,7 @@ The "nmon_collect" sourcetype contains iteration of nmon command launched by Spl
 
 <br />
 <b>
-The "nmon_processing" sourcetype contains outputs of the nmon2csv.py Python script which converts NMON files to csv files eaten by Splunk.
+The "nmon_processing" sourcetype contains outputs of the converter script.
 This contains various information about nmon conversion steps (automatically extracted by Splunk when searching for the sourcetype) such as:
 </b>
 
@@ -556,11 +560,11 @@ Depending on your nmon command settings, a huge amount of data may be generated 
 
 <br />
 
-<h3>- For TA-nmon (Forwarder App): Python 2.x environment: The third party script requires a standard and functional Python 2.x environment</h3>
+<h3>- For TA-nmon (Forwarder App): Python 2.x or Perl standard environment: Depending on your needs, you can choose between the Python converter (default) or the alternative Perl converter</h3>
 
 <br />
 
-<h3>- For Windows OS: Python 2.x environment: The third party script requires a standard and functional Python 2.x environment (see Windows specific instructions)</h3>
+<h3>- For Windows OS: Python 2.x environment: The third party script requires a standard and functional Python 2.x environment (see Windows specific instructions, Perl alternative is not supported)</h3>
 
 <br />
 
@@ -751,11 +755,11 @@ If the Nmon local collect is activated (generating Nmon data with the input scri
 </li>
 
 <li>
-The directory "/opt/splunk/etc/apps/nmon/spool" will be used as temporary directory by the nmon2csv third party script
+The directory "/opt/splunk/etc/apps/nmon/spool" will be used as temporary directory by the nmon2csv converter
 </li>
 
 <li>
-The nmon2scv generates csv files within the directory "/opt/splunk/etc/apps/nmon/csv_repository" that will be immediately indexed, and deleted
+The nmon2scv converter generates csv files within the directory "/opt/splunk/etc/apps/nmon/csv_repository" that will be immediately indexed, and deleted
 </li>
 
 </lu>
@@ -2531,7 +2535,7 @@ directories (the default repository or custom repositories) and when it finds a 
 <br />
 
 <b>
-This is achieved by the nmon2csv converter Python script (nmon2csv.py), its output contains many useful information about the conversion step, it can be retrieved by:
+This is achieved by the nmon2csv converter Python script (nmon2csv.py) or its Perl alternative (nmon2csv.pl), its output contains many useful information about the conversion step, it can be retrieved by:
 </b>
 
 <br />
@@ -2785,6 +2789,30 @@ It is automatically Invoked by the Splunk Archive Processor whenever required, a
 <br />
 
 This is a Python 2x compatible script which has no external requirement and should run with no issues in any modern enough Operating System. 
+
+<br />
+<br />
+
+<li>
+<b>nmon_helper.sh:</b>
+</li>
+
+<br />
+
+<li>
+<b>nmon2csv.pl:</b> 
+</li>
+
+<br />
+This is the Perl alternative converter that can be used in replacement of the Python converter, notably when Python is unavailable, if you have troubles with the Python converter, or for other considerations.
+
+<br />
+It is automatically Invoked by the Splunk Archive Processor whenever required, and reads data from standard input (stdin).
+
+<br />
+<br />
+
+This is a Perl standard script which has no external requirement and should run with no issues in any modern enough Operating System. 
 
 <br />
 <br />
@@ -3165,6 +3193,64 @@ The customization of the Python nmon2csv converter is not upgrade resilient, rem
 <br />
 <br />
 
+<br />
+
+<div id="FAQ_converter">
+
+<h2>- Nmon converter flavour: How to use the alternative Perl converter</h2> 
+
+</div>
+
+<br />
+
+Activating the Perl Nmon converter (nmon2csv.pl) in replacement of the default Python converter is very simple, to be upgrade resilient i recommend to set your configuration in local instead of modifying the default configuration files.
+
+<br />
+<br />
+
+<b>Edit the "props.conf" and set:</b>
+
+<br />
+<br />
+
+<pre>
+
+##################################
+#			nmon2csv stanza			#
+##################################
+
+# Source stanza for nmon2csv converter script
+# PYTHON converter: The default configuration uses a Python converter "nmon2csv.py"
+# PERL alternative: An other converter written in Perl "nmon2csv.pl" can be used in replacement when Python is unavailable, of if you have trouble with it
+# Both converters almost share the level of functionalities like inconsistency prevention, statistical information, and operation logging
+# You can use either the Python or the Perl converter, change the unarchive_cmd line depending on your needs 
+
+# To use the Python converter, set:
+# $SPLUNK_HOME/bin/splunk cmd python $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.py
+
+# To use the Perl converter, set:
+# $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl
+
+# This source stanza will be called by the archive processor to convert NMON raw data into csv files
+# SPlunk can manage. See inputs.conf for the associated monitor
+# The standard nmon App and PA-nmon App will use the embedded splunk interpreter
+
+[source::.../*.nmon]
+
+invalid_cause = archive
+unarchive_cmd = $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl
+sourcetype = nmon_processing
+NO_BINARY_CHECK = true
+
+</pre>
+
+<br />
+<br />
+
+Then restart the Splunk instance, or re-deploy the PA / TA-nmon App to activate the change and you're done.
+
+<br />
+<br />
 
 	</html>
   </row>
