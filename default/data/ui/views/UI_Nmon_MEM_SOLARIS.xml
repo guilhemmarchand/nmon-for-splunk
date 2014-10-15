@@ -26,9 +26,15 @@
       <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
       <choice value="">Inactive</choice>
     </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -45,10 +51,10 @@
       </input>
     <input type="radio" token="memmode" searchWhenChanged="true">
       <label>Show Mem load by:</label>
-      <default>fields _time,*memused*,*memtotal*,*swapused*,*swaptotal*</default>
-      <choice value="fields _time,*memused*,*memtotal*,*swapused*,*swaptotal*">Activity in Data Volume (MB)</choice>
-      <choice value="fields _time,*memused_PCT*,*swapused_PCT*">Usage in percentage (%)</choice>
-      <choice value="fields _time,*memfree_PCT*,*swapfree_PCT*">Free in percentage (%)</choice>
+      <default>fields - *_PCT*</default>
+      <choice value="fields - *_PCT*">Activity in Data Volume (MB)</choice>
+      <choice value="fields _time,memused_PCT*,swapused_PCT*">Usage in percentage (%)</choice>
+      <choice value="fields _time,memfree_PCT*,swapfree_PCT*">Free in percentage (%)</choice>
     </input>
   </fieldset>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
@@ -149,7 +155,7 @@ by hostname
     </html>
       <chart id="link10">
         <title>Memory Usage</title>
-        <searchPostProcess>$memmode$ | fields _time, *mem*</searchPostProcess>
+        <searchPostProcess>$memmode$ | fields _time, mem*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -165,12 +171,12 @@ by hostname
         <option name="charting.legend.placement">$charting.legend.placement$</option>
         <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+        <option name="charting.axisTitleY.text">Memory Usage</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
       <chart id="link11">
         <title>Swap Usage</title>
-        <searchPostProcess>$memmode$ | fields _time,*swap*</searchPostProcess>
+        <searchPostProcess>$memmode$ | fields _time,swap*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -186,7 +192,7 @@ by hostname
         <option name="charting.legend.placement">$charting.legend.placement$</option>
         <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+        <option name="charting.axisTitleY.text">Swap Usage</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
     </panel>

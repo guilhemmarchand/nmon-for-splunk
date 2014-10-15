@@ -25,9 +25,15 @@
       <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
       <choice value="">Inactive</choice>
     </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=NETPACKET | stats count by hostname | dedup hostname | sort hostname | search [ `nmon_inventory` | stats count by hostname | fields hostname ]</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=NETPACKET $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname | search [ `nmon_inventory` | stats count by hostname | fields hostname ]</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>

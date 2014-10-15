@@ -26,9 +26,15 @@
       <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
       <choice value="">Inactive</choice>
     </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -162,7 +168,7 @@ by hostname
         <option name="charting.legend.placement">$charting.legend.placement$</option>
         <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Real Memory (MB)</option>
+        <option name="charting.axisTitleY.text">Real Memory</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
       <chart id="link11">
@@ -183,7 +189,7 @@ by hostname
         <option name="charting.legend.placement">$charting.legend.placement$</option>
         <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Paging Space (MB)</option>
+        <option name="charting.axisTitleY.text">Paging Space</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
     </panel>

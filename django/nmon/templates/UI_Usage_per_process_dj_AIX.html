@@ -80,6 +80,13 @@
                 <p></p>                
                 {% radiogroup id="osfilter-radiogroup" default="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
 
+					<h2>Hosts Filtering:</h2>					
+
+					<p></p>
+					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
+					
+					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
+
                 <p></p>                
                 <h2>Hosts:</h2>                             
                 <p></p>
@@ -115,7 +122,7 @@
 
 					 <div class="imgheader">
         				<img src="{{STATIC_URL}}/nmon/icons/grey_theme/info.png" alt="Info"/>
-        				<h4>If UARG is activated in Nmon, search for PIDs, Commands and Full Arguments of processes: <a href="../../../../app/nmon/UI_Nmon_UARG_AIX" target="_blank">Open UARG Search Interface in new window</a></h4> 
+        				<h4>If UARG is activated in Nmon, search for PIDs, Commands and Full Arguments of processes: <br /> <a href="../../../../app/nmon/UI_Nmon_UARG_AIX" target="_blank">Open UARG Search Interface in new window</a></h4> 
 						<br />
 						<br />
 
@@ -292,7 +299,7 @@
 	<!-- Populate dropdown (main search) -->
 	
 	{% searchmanager
-		id="hostname-populate" search='index=nmon sourcetype=nmon_data type=TOP | stats count by hostname $valuesosfilter$'|token_safe
+		id="hostname-populate" search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshosts$ | stats count by hostname $valuesosfilter$'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		cache=True

@@ -26,9 +26,15 @@
       <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
       <choice value="">Inactive</choice>
     </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Select a Host:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
@@ -44,16 +50,16 @@
         <choice value="range">Range</choice>
       </input>
     <input type="radio" token="memmode" searchWhenChanged="true">
-      <label>Show Mem load by:</label>
-      <default>fields _time,*memused*,*memtotal*,*swapused*,*swaptotal*,*buffers*,*cached*,*inactive*</default>
-      <choice value="fields _time,*memused*,*memtotal*,*swapused*,*swaptotal*,*buffers*,*cached*,*inactive*">Activity in Data Volume (MB)</choice>
-      <choice value="fields _time,*memused_PCT*,*swapused_PCT*">Usage in percentage (%)</choice>
-      <choice value="fields _time,*memfree_PCT*,*swapfree_PCT*">Free in percentage (%)</choice>
+      <label>Chart - Show Mem load by:</label>
+      <default>fields - *_PCT*</default>
+      <choice value="fields - *_PCT*">Activity in Data Volume (MB)</choice>
+      <choice value="fields _time,memused_PCT*,swapused_PCT*">Usage in percentage (%)</choice>
+      <choice value="fields _time,memfree_PCT*,swapfree_PCT*">Free in percentage (%)</choice>
     </input>
     <input type="radio" token="addseries" searchWhenChanged="true">
       <label>Show buffers/cached/inactive</label>
-      <default>fields - *buffers*,*cached*,*inactive*</default>
-      <choice value="fields - *buffers*,*cached*,*inactive*">deactivated</choice>
+      <default>fields - buffers*,cached*,inactive*</default>
+      <choice value="fields - buffers*,cached*,inactive*">deactivated</choice>
       <choice value="fields *">activated</choice>
     </input>
   </fieldset>
@@ -156,7 +162,7 @@ by hostname
     </html>
       <chart id="link10">
         <title>Memory Usage</title>
-        <searchPostProcess>$memmode$ | $addseries$ | fields _time, mem*,buffers,cached,inactive</searchPostProcess>
+        <searchPostProcess>$memmode$ | $addseries$ | fields _time, mem*,buffers*,cached*,inactive*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -172,7 +178,7 @@ by hostname
         <option name="charting.legend.placement">$charting.legend.placement$</option>
         <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+        <option name="charting.axisTitleY.text">Memory Usage</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
       <chart id="link11">
@@ -193,7 +199,7 @@ by hostname
         <option name="charting.legend.placement">$charting.legend.placement$</option>
         <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+        <option name="charting.axisTitleY.text">Swap Usage</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
     </panel>

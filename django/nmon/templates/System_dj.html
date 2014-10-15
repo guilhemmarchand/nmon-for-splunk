@@ -62,6 +62,12 @@
 				underLabel="Total nmon raw data converted" %}
 
 		{% single 
+            id="single1-countnmon" 
+            managerid="nmon_processing_countnmon"
+            field="count"
+				underLabel="Number of nmon files proceeded" %}
+
+		{% single 
             id="single1-processing-errors" 
             managerid="nmon_processing_errors"
 				underLabel="Errors found in Data Processing" %}
@@ -354,6 +360,15 @@
 	{% searchmanager
 		id="nmon_processing"
 		search='`nmon_processing_stats`'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		preview=True
+		auto_cancel=60
+		cache=False %}
+
+	{% searchmanager
+		id="nmon_processing_countnmon"
+		search='index=nmon sourcetype=nmon_processing | stats count by hostname,source | stats count'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True

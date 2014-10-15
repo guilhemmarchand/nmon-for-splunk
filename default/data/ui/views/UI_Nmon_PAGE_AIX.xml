@@ -9,34 +9,40 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>    
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
+    </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>          
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PAGE | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PAGE $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
   </fieldset>
   <row>
     <panel>

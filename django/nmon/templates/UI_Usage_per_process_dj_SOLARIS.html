@@ -88,6 +88,13 @@
                 <p></p>                
                 {% radiogroup id="osfilter-radiogroup" default="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
 
+					<h2>Hosts Filtering:</h2>					
+
+					<p></p>
+					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
+					
+					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
+
                 <p></p>                
                 <h2>Hosts:</h2>                             
                 <p></p>
@@ -260,7 +267,7 @@
 	<!-- Populate dropdown (main search) -->
 	
 	{% searchmanager
-		id="hostname-populate" search='index=nmon sourcetype=nmon_data type=TOP | stats count by hostname $valuesosfilter$'|token_safe
+		id="hostname-populate" search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshosts$ | stats count by hostname $valuesosfilter$'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		cache=False

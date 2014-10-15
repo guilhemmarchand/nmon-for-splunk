@@ -18,7 +18,7 @@
     </input>
     
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts</label>
+      <label>Optional: Filter hosts populating</label>
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
       <default>*</default>
@@ -66,6 +66,8 @@
   </row>
   
   <row>
+   <panel>  
+  
     <chart>
       <title>CPU Usage</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$
@@ -94,6 +96,10 @@
       <option name="charting.axisTitleY.text">CPU Usage</option>
       <option name="charting.axisY.minimumNumber">0</option>
     </chart>
+
+   </panel>    
+   <panel>    
+        
     <chart>
       <title>I/O Per second</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$
@@ -119,6 +125,8 @@
       <option name="charting.axisTitleY.text">I/O per Sec</option>
       <option name="charting.axisY.minimumNumber">0</option>
     </chart>    
+
+   </panel>
   </row>
 
   
@@ -131,7 +139,8 @@
     </html>
   </row>
     
-  <row grouping="3">
+  <row>
+   <panel>
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -190,6 +199,7 @@
       <option name="charting.axisY.maximumNumber">100</option>
     </chart>
 
+   </panel>
   </row>  
 
 
@@ -202,7 +212,8 @@
     </html>
   </row>  
 
-  <row grouping="6">
+  <row>
+   <panel>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -351,9 +362,12 @@ max(ShdLib) as ShdLib by Command
       <option name="charting.axisTitleY.text">Pages/sec</option>
     </chart>
 
+   </panel>
   </row>
 
-  <row grouping="4">
+  <row>
+    <panel>  
+  
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link30,link31,link32">Select a view:<!--Links go here-->
@@ -432,9 +446,11 @@ max(ShdLib) as ShdLib by Command
       <option name="charting.axisTitleY.text">Rates per Second</option>
     </chart>
 
+   </panel>
   </row>
   
-  <row grouping="3">
+  <row>
+   <panel>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -496,6 +512,7 @@ max(pswpout) As pswpout</searchString>
       <option name="charting.axisTitleY.text">Number of Pages</option>
     </chart>
 
+   </panel>
   </row>
 
 
@@ -509,7 +526,8 @@ max(pswpout) As pswpout</searchString>
     </html>
   </row>
 
-  <row grouping="3">
+  <row>
+   <panel>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -569,6 +587,7 @@ max(pswpout) As pswpout</searchString>
       <option name="charting.axisY.minimumNumber">0</option>
     </chart>
 
+   </panel>
   </row>
 
 
@@ -582,7 +601,8 @@ max(pswpout) As pswpout</searchString>
   </row>
   
 
-  <row grouping="6">
+  <row>
+   <panel>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -710,9 +730,11 @@ max(pswpout) As pswpout</searchString>
       <option name="charting.axisTitleY.text">I/O per Sec</option>
     </chart>
 
-	</row>
+   </panel>
+  </row>
 
-	<row grouping="2">	
+  <row>
+   <panel>	
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -745,7 +767,8 @@ max(pswpout) As pswpout</searchString>
       <option name="charting.axisY.maximumNumber">100</option>	  
     </chart>
 	
-	</row>
+	</panel>
+  </row>
 	
 
   <row>
@@ -758,7 +781,8 @@ max(pswpout) As pswpout</searchString>
   </row>
 
 
-  <row grouping="3">
+  <row>
+   <panel>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -814,7 +838,193 @@ max(pswpout) As pswpout</searchString>
       <option name="charting.axisTitleY.text">Number of Network Packets</option>
     </chart>
 
+    </panel>    
 	</row>
 
+   <row>
+    <panel>
 
+      <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link70,link71,link72">Select a view:<!--Links go here-->
+      </div>
+	   </html>
+
+      <chart id="link70">
+        <title>NFS Server V4</title>
+        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV4 $hostname$
+| fields _time,hostname,op0-unused,op1-unused,op2-future,access,close,commit,create,delegpurge,delegreturn,getattr,getfh,link,lock,lockt,locku,lookup,lookup_root,nverify,open,openattr,open_conf,open_dgrd,putfh,putpubfh,putrootfh,read,readdir,readlink,remove,rename,renew,restorefh,savefh,secinfo,setattr,setcltid,setcltidconf,verify,write,rellockowner
+| stats sum(*) As * by _time
+| timechart `inline_customspan(type=NFSSVRV4,$hostname$)` max(*) as *</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">unstacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Nbr of Operations</option>
+      </chart>
+
+      <chart id="link71">
+        <title>NFS Server V3</title>
+        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV3 $hostname$
+| fields _time,hostname,null,getattr,setattr,lookup,access,readlink,read,write,create,mkdir,symlink,mknod,remove,rmdir,rename,link,readdir,readdirplus,fsstat,fsinfo,pathconf,commit
+| stats sum(*) As * by _time
+| timechart `inline_customspan(type=NFSSVRV3,$hostname$)` max(*) as *</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">unstacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Nbr of Operations</option>
+      </chart>
+
+      <chart id="link72">
+        <title>NFS Server V2</title>
+        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV2 $hostname$
+| fields _time,hostname,null,getattr,setattr,root,lookup,readlink,read,wrcache,write,create,remove,rename,link,symlink,mkdir,rmdir,readdir,fsstat
+| stats sum(*) As * by _time
+| timechart `inline_customspan(type=NFSSVRV2,$hostname$)` max(*) as *</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">unstacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Nbr of Operations</option>
+      </chart>
+
+    </panel>
+   </row>
+
+   <row>  
+    <panel>
+
+      <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link75,link76,link77">Select a view:<!--Links go here-->
+      </div>
+	   </html>
+
+      <chart id="link75">
+        <title>NFS Client V4</title>
+        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV4 $hostname$
+| fields _time,hostname,null,read,write,commit,open,open_conf,open_noat,open_dgrd,close,setattr,fsinfo,renew,setclntid,confirm,lock,lockt,locku,access,getattr,lookup,lookup_root,remove,rename,link,symlink,create,pathconf,statfs,readlink,readdir,server_caps,delegreturn,getacl,setacl,fs_locations
+| stats sum(*) As * by _time
+| timechart `inline_customspan(type=NFSCLIV4,$hostname$)` max(*) as *</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">unstacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Nbr of Operations</option>
+      </chart>
+
+      <chart id="link76">
+        <title>NFS Client V3</title>
+        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV3 $hostname$
+| fields _time,hostname,null,getattr,setattr,lookup,access,readlink,read,write,create,mkdir,symlink,mknod,remove,rmdir,rename,link,readdir,readdirplus,fsstat,fsinfo,pathconf,commit
+| stats sum(*) As * by _time
+| timechart `inline_customspan(type=NFSCLIV3,$hostname$)` max(*) as *</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">unstacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Nbr of Operations</option>
+      </chart>
+
+      <chart id="link77">
+        <title>NFS Client V2</title>
+        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV2 $hostname$
+| fields _time,hostname,null,getattr,setattr,root,lookup,readlink,read,wrcache,write,create,remove,rename,link,symlink,mkdir,rmdir,readdir,fsstat
+| stats sum(*) As * by _time
+| timechart `inline_customspan(type=NFSCLIV2,$hostname$)` max(*) as *</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">unstacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Nbr of Operations</option>
+      </chart>
+
+    </panel>
+  </row>
+   
 </form>
