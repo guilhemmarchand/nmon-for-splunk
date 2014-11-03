@@ -51,7 +51,12 @@ require([
 
             var cur = parseFloat(data[0][field]), prev = parseFloat(data[1][field]);
             // Calculate the change percentage between the first and second result
-            var changePct = parseInt(((cur - prev) / prev) * 100);
+            
+				// Original code bellow will round to 0 decimals            
+            //var changePct = parseInt(((cur - prev) / prev) * 100).toFixed(2);
+
+				// Round to 2 decimals
+				var changePct = parseFloat(((cur - prev) / prev) * 100).toFixed(2);
 
             if (cur > prev) {
                 trendClass = 'increase';

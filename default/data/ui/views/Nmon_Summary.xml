@@ -1,5 +1,5 @@
 <form stylesheet="standard.css,singlevalue.css,ui_simple.css,hide_timeindicator.css" script="link_switcher.js, autodiscover.js">
-  <label>NMON Light Analysis</label>
+  <label>NMON Summary Light Analysis</label>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
@@ -29,7 +29,7 @@
       <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=CPU_ALL OR type=LPAR $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
     </input>
   </fieldset>
-  <searchTemplate>index=nmon sourcetype=nmon_config $hostname$ | dedup hostname | `nmon_config_rex`</searchTemplate>
+  <searchTemplate>index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</searchTemplate>
   <earliestTime>$timerange.earliest$</earliestTime>
   <latestTime>$timerange.latest$</latestTime>
   <row>
@@ -43,7 +43,7 @@
         <option name="underLabel">Operating System</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | dedup hostname | `nmon_config_rex`</option>
+        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>
       </single>
       <single>
         <searchPostProcess>stats values(OS_Level) As OS_Level</searchPostProcess>
@@ -53,7 +53,7 @@
         <option name="underLabel">Operating System Level</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | dedup hostname | `nmon_config_rex`</option>
+        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>
       </single>
     </panel>
     <panel>
@@ -66,7 +66,7 @@
         <option name="underLabel">Virtual Proc / Logical Cores</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | dedup hostname | `nmon_config_rex`</option>
+        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>
       </single>
       <single>
         <searchPostProcess>stats values(Processor) As Processor</searchPostProcess>
@@ -74,7 +74,7 @@
         <option name="underLabel">Processor Type</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | dedup hostname | `nmon_config_rex`</option>        
+        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>        
       </single>
     </panel>
     <panel>
@@ -82,7 +82,7 @@
         <h3>Memory Configuration</h3>
       </html>
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | head 100 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Real_total_MB</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Real_total_MB</searchString>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="drilldown">none</option>
@@ -90,10 +90,10 @@
         <option name="linkView">search</option>
         <option name="afterLabel">MB</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | head 100 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Real_total_MB</option>
+        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Real_total_MB</option>
       </single>
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | head 100 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Virtual_total_MB=round(Virtual_total_MB,0) | fields Virtual_total_MB</searchString>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Virtual_total_MB=round(Virtual_total_MB,0) | fields Virtual_total_MB</searchString>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="drilldown">none</option>
@@ -101,7 +101,7 @@
         <option name="linkView">search</option>
         <option name="afterLabel">MB</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | head 100 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Virtual_total_MB</option>
+        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Virtual_total_MB</option>
       </single>
     </panel>
   </row>

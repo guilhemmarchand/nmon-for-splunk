@@ -1,6 +1,6 @@
-<dashboard stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css">
+<dashboard script="single_trend.js" stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css,single_trend_transposed.css">
   <label>NMON Performance Monitor</label>
-  <description>Version 1.4.87</description>
+  <description>Version 1.4.90</description>
   <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>
   <row>
     <panel>
@@ -123,12 +123,14 @@
         <option name="linkView">search</option>
         <option name="beforeLabel">There have been</option>
         <option name="afterLabel">MB Indexed</option>
-        <option name="underLabel">TODAY</option>
+        <option name="underLabel">TODAY / EVOLUTION VS YESTERDAY</option>
         <option name="refresh.auto.interval">130</option>
-        <option name="field">total_MB</option>
+        <option name="field">value</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="@d" latest="now" | eval MB = round(kb/1024,2) | timechart span=1d sum(MB) As total_MB</option>
+        <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="@d" latest="now" | eval MB = round(kb/1024,2) | stats sum(MB) As "Volume indexed today (MB)"
+| appendcols
+[ search index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="-1d@d" latest="@d" | eval MB = round(kb/1024,2) | stats sum(MB) As "Volume indexed yesterday" ]</option>
       </single>
       <single>
         <searchName>Number of Errors in Data Processing since last 24 Hours</searchName>
@@ -136,7 +138,7 @@
         <option name="afterLabel">Errors Reported</option>
         <option name="underLabel">IN THE LAST 24 HOURS</option>
         <option name="refresh.auto.interval">130</option>
-        <option name="field">Nbr_errors</option>
+        <option name="field">value</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">index=nmon sourcetype=nmon_processing error earliest="-24h" latest="now"</option>

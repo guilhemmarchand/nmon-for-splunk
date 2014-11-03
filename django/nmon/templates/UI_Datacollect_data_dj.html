@@ -20,21 +20,33 @@
 
 	 {% endblock heading %}
     
-    
-    
-    {% block cal1 %}
+    {% block searchcontrol %}
 
 		{% searchcontrols
 			id="searchcontrol1" 
-			managerid="nmon_perday" %}
-	
+			managerid="mainsearch" %}
+			
+    {% endblock searchcontrol %}
+        
+    {% block cal1 %}
+
 		{% calendarheatmap 
                 id="calendar1"
-                managerid="nmon_perday"
+                managerid="hosts_perday"
                 domain="month"
                 subDomain="x_day" %}
 		
     {% endblock cal1 %}
+
+    {% block cal2 %}
+
+		{% calendarheatmap 
+                id="calendar2"
+                managerid="events_perday"
+                domain="month"
+                subDomain="x_day" %}
+		
+    {% endblock cal2 %}
 	
 	
     {% block usage%}
@@ -60,16 +72,6 @@
 
             <tr>
                 <td>
-                <h2>Stats by:</h2>
-                </td>
-                <td>
-					 <p </p>
-                {% radiogroup id="statmode-radiogroup" default="dc(hostname) As Number_of_Hosts_Collected_per_day" value="$statmode$"|token_safe %}
-                </td>
-            </tr>
-
-            <tr>
-                <td>
                 <h2>Filter by NMON Performance Monitor:</h2>
                 </td>
                 <td>
@@ -78,6 +80,34 @@
                 </td>
             </tr>
 
+            <tr>
+                <td>
+					<p></p>
+					<h2>Optional Filters</h2>
+				</td>
+					<td>
+
+                <p></p>                
+                <h2>Filter OS Type:</h2>
+                <p></p>                
+                {% radiogroup id="osfilter-radiogroup" default="" value="$valuesosfilter$"|token_safe%}
+					
+					<h2>Hosts and SN Filtering:</h2>					
+
+					<p></p>
+					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
+					
+					<p>hostnames:</p>										
+					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
+
+					<p>serialnumbers:</p>					
+					{% textinput id="sn-textinput" value="$valuessn$"|token_safe default="*" %}	
+
+
+				</td>
+            </tr>			
+
+
         </table>
 
 		
@@ -85,13 +115,24 @@
 	
 {% block managers %}
     
-	{% searchmanager id="nmon_perday"
-      	search='index=nmon sourcetype=nmon_data type=$filtermode$ | timechart span=1d $statmode$'|token_safe
+	{% searchmanager id="mainsearch"
+      	search='index=nmon sourcetype=nmon_data type=$filtermode$ hostname=$valueshosts$ serialnum=$valuessn$ $valuesosfilter$ | bucket _time span=1d | stats count by _time,hostname,serialnum'|token_safe
 			earliest_time="$earlyval$"|token_safe
 			latest_time="$lateval$"|token_safe
 			cache=False
 			auto_cancel=60
 			preview=True %}
+			
+	{% postprocessmanager 
+			id="hosts_perday"
+			managerid="mainsearch" 
+			search='| timechart span=1d count As count | where count>0 | rename count As "Count of Hosts collected per day"' %}
+			
+	{% postprocessmanager 
+			id="events_perday"
+			managerid="mainsearch" 
+			search='| timechart span=1d sum(count) As count | where count>0 | rename count As "Count of events per day"' %}
+			
 
 {% endblock managers %}
 
@@ -110,14 +151,6 @@
                 $,
                 Dropdown,
                 CalHeat) {
-
-		var choices = [
-        {label: " Number of Hosts collected per day (See filter above)", value: "dc(hostname) As Number_of_Hosts_Collected_per_day"},
-        {label: " Number of Events per Performance Monitor (See filter above)", value: "count As Number_of_Events_per_Performance_Monitor"}] 
- 
-		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("statmode-radiogroup").settings.set("choices", choices);		
-
 
 		var choices = [
         {label: " All (No filter) ", value: "*"},
@@ -153,6 +186,17 @@
  
 		// Assign them to the button group
 		splunkjs.mvc.Components.getInstance("filter-dropdowngroup").settings.set("choices", choices);
+
+		var choices = [
+        {label: " Any OS", value: ""},
+        {label: " AIX", value: "| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]"},
+        {label: " Solaris", value: "| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]"},
+        {label: " Linux", value: "| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]"}
+        ] 
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);	
+
 		
     });
 </script>

@@ -33,8 +33,8 @@
 # - 08/14/2014, V1.0.5: Guilhem Marchand:
 # - Changed Open file mode for writing from text to binary mode to avoid blank line creation under Windows OS (does not affect other OS)
 # - Added a supplementary data sanity check for static sections to avoid creating csv fields with extra fields if data is inconsistent (more fields in data than header)
-#                       - Added NFS Statistics extraction if any: Sections NFSSVRV2 / NFSSVRV3 / NFSSVRV4 for NFS server, NFSCLIV2 / NFSCLIV3 / NFSCLIV4 for NFS client
-#                       - Added UARG data extraction if any
+# - Added NFS Statistics extraction if any: Sections NFSSVRV2 / NFSSVRV3 / NFSSVRV4 for NFS server, NFSCLIV2 / NFSCLIV3 / NFSCLIV4 for NFS client
+# - Added UARG data extraction if any
 # - 08/26/2014, V1.0.6: Guilhem Marchand:
 #                       - UARG section correction for AIX systems
 #                       - Inconsistency data prevention for static and dynamic sections by comparing headers fields vs data fields
@@ -44,6 +44,13 @@
 #                               - Added the Parameters section to facilitate customization of what is being extracted
 # - 09/17/2014, V1.0.8: Guilhem Marchand: Improved compliance with Splunk Python events logging, portable shebang correction
 # - 09/27/2014, V1.0.9: Guilhem Marchand: Added the file size in bytes to the Nmon ID and csv filenames to prevent log detected as truncated
+# - 10/16/2014, V1.0.10: Guilhem Marchand:
+#                               - Corrected bad header identification than could happen due to unexpected blank space before comma in header data
+#                               - Corrected % string replacement that could lead to unwanted replacement when part of a word at end of header line (ex: LPAR section when no pool)
+# - 10/29/2014, V1.0.11: Guilhem Marchand:
+#                               - Fix compatibility issue with old Nmon Linux release (example with 11f), sometimes the csv header will contain the first timestamp reference (T0001)
+#                               which was leading to header identification failure, applicant only for static standard sections (VM,CPu_ALL...)
+#                               - Code cleaning: Removing redundant escaped characters
 
 # Load libs
 
@@ -60,7 +67,7 @@ import cStringIO
 import platform
 
 # Converter version
-nmon2csv_version = '1.0.9'
+nmon2csv_version = '1.0.11'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -222,8 +229,11 @@ def subpctreplace(line):
     # Replace bank char followed by %
     line = re.sub(r'\s%', '_PCT', line)
 
+    # Replace % if part of a word
+    line = re.sub(r'(?<=[a-zA-Z0-9])%', '_PCT', line)
+
     # Replace % at beginning of a word
-    line = re.sub(r'(?<=[a-zA-Z0-9\,])%(?=[a-zA-Z0-9]+|$)', 'PCT', line)
+    line = re.sub(r'(?<=[a-zA-Z0-9,])%(?=[a-zA-Z0-9]+|$)', 'PCT', line)
 
     # Replace any other %
     line = re.sub(r'%', '_PCT', line)
@@ -254,7 +264,7 @@ def subreplace(line):
     line = re.sub(r'\)', '', line)
 
     # Replace =0 by nothing
-    line = re.sub(r'\=0', '', line)
+    line = re.sub(r'=0', '', line)
 
     return line
 
@@ -341,13 +351,13 @@ virtual_cpus = "-1"
 for line in data:
 
     # Set HOSTNAME
-    host = re.match(r'^(AAA)\,(host)\,(.+)\n', line)
+    host = re.match(r'^(AAA),(host),(.+)\n', line)
     if host:
         HOSTNAME = host.group(3)
         print("HOSTNAME:", HOSTNAME)
 
     # Set VERSION
-    version = re.match(r'^(AAA)\,(version)\,(.+)\n', line)
+    version = re.match(r'^(AAA),(version),(.+)\n', line)
     if version:
         VERSION = version.group(3)
         print("NMON VERSION:", VERSION)
@@ -359,20 +369,20 @@ for line in data:
         print("SerialNumber:", SN)
 
     # Set DATE
-    date = re.match(r'^(AAA)\,(date)\,(.+)\n', line)
+    date = re.match(r'^(AAA),(date),(.+)\n', line)
     if date:
         DATE = date.group(3)
         print("DATE of Nmon data:", DATE)
 
     # Set date details
-    date_details = re.match(r'(AAA,date,)([0-9]+)[\/|\-]([a-zA-Z-0-9]+)[\/|\-]([0-9]+)', line)
+    date_details = re.match(r'(AAA,date,)([0-9]+)[/|\-]([a-zA-Z-0-9]+)[/|\-]([0-9]+)', line)
     if date_details:
         day = date_details.group(2)
         month = date_details.group(3)
         year = date_details.group(4)
 
     # Set TIME
-    time_match = re.match(r'^(AAA)\,(time)\,(.+)\n', line)
+    time_match = re.match(r'^(AAA),(time),(.+)\n', line)
     if time_match:
         TIME = time_match.group(3)
         print("TIME of Nmon Data:", TIME)
@@ -385,31 +395,31 @@ for line in data:
         second = time_details.group(4)
 
     # Set INTERVAL
-    interval = re.match(r'^(AAA)\,(interval)\,(.+)\n', line)
+    interval = re.match(r'^(AAA),(interval),(.+)\n', line)
     if interval:
         INTERVAL = interval.group(3)
         print("INTERVAL:", INTERVAL)
 
     # Set SNAPSHOTS
-    snapshots = re.match(r'^(AAA)\,(snapshots)\,(.+)\n', line)
+    snapshots = re.match(r'^(AAA),(snapshots),(.+)\n', line)
     if snapshots:
         SNAPSHOTS = snapshots.group(3)
         print("SNAPSHOTS:", SNAPSHOTS)
 
     # Set logical_cpus (Note: AIX systems for example will have values behind AAA,cpus - should use the second by default if it exists)
-    LOGICAL_CPUS = re.match(r'^(AAA)\,(cpus)\,(.+)\,(.+)\n', line)
+    LOGICAL_CPUS = re.match(r'^(AAA),(cpus),(.+),(.+)\n', line)
     if LOGICAL_CPUS:
         logical_cpus = LOGICAL_CPUS.group(4)
         print("logical_cpus:", logical_cpus)
     else:
         # If not defined in second position, set it from first
-        LOGICAL_CPUS = re.match(r'^(AAA)\,(cpus)\,(.+)\n', line)
+        LOGICAL_CPUS = re.match(r'^(AAA),(cpus),(.+)\n', line)
         if LOGICAL_CPUS:
             logical_cpus = LOGICAL_CPUS.group(3)
             print("logical_cpus:", logical_cpus)
 
     # Set virtual_cpus
-    VIRTUAL_CPUS = re.match(r'^BBB[a-zA-Z].+Online\sVirtual\sCPUs.+\:\s([0-9]+)\"\n', line)
+    VIRTUAL_CPUS = re.match(r'^BBB[a-zA-Z].+Online\sVirtual\sCPUs.+:\s([0-9]+)\"\n', line)
     if VIRTUAL_CPUS:
         virtual_cpus = VIRTUAL_CPUS.group(1)
         print("virtual_cpus:", virtual_cpus)
@@ -468,7 +478,7 @@ for line in data:
         sys.exit(1)
 
     # Search for old time format (eg. Nmon version V9 and prior)
-    time_oldformat = re.match(r'(AAA,date,)([0-9]+)\/([0-9]+)\/([0-9]+)', line)
+    time_oldformat = re.match(r'(AAA,date,)([0-9]+)/([0-9]+)/([0-9]+)', line)
     if time_oldformat:
         msg = 'INFO: hostname: ' + HOSTNAME + ' Detected old Nmon version using old Date format (dd/mm/yy)'
         print(msg)
@@ -544,7 +554,8 @@ ref.write(idnmon + '\n')
 section = "CONFIG"
 
 # Set output file
-config_output = CONFIG_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.config.csv'
+config_output = CONFIG_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + str(
+    bytes_total) + '_' + csv_timestamp + '.nmon.config.csv'
 
 # Open config output for writing
 with open(config_output, "wb") as config:
@@ -599,7 +610,8 @@ for section in static_section:
     if count > 2:
 
         # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -624,13 +636,17 @@ for section in static_section:
                     myregex = '(' + section + ')\,([^T].+)'
                     fullheader_match = re.search(myregex, line)
 
+                    # Standard header extraction
                     if fullheader_match:
                         fullheader = fullheader_match.group(2)
 
                         # Replace "." by "_" only for header
                         fullheader = re.sub("\.", '_', fullheader)
 
-                        header_match = re.search(r'([a-zA-Z\-\/\_0-9]+,)([a-zA-Z\-\/\_0-9\,]*)', fullheader)
+                        # Replace any blank space before comma only for header
+                        fullheader = re.sub(", ", ',', fullheader)
+
+                        header_match = re.search(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)', fullheader)
 
                         if header_match:
                             header = header_match.group(2)
@@ -647,6 +663,40 @@ for section in static_section:
                             # Write header
                             currsection.write(final_header)
 
+                    # Old Nmon version sometimes incorporates a Txxxx reference in the header, this is unclean but we want to try
+                    # getting the header anyway
+
+                    elif not fullheader_match:
+                        # Assume the header may start with Txxx, then 1 non alpha char
+                        myregex = '(' + section + ')\,(T\d+),([a-zA-Z]+.+)'
+                        fullheader_match = re.search(myregex, line)
+
+                        if fullheader_match:
+                            fullheader = fullheader_match.group(3)
+
+                            # Replace "." by "_" only for header
+                            fullheader = re.sub("\.", '_', fullheader)
+
+                            # Replace any blank space before comma only for header
+                            fullheader = re.sub(", ", ',', fullheader)
+
+                            header_match = re.search(r'([a-zA-Z\-/_0-9,]*)', fullheader)
+
+                            if header_match:
+                                header = header_match.group(1)
+
+                                # increment
+                                count += 1
+
+                                # Write header
+                                final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'
+
+                                # Number of separators in final header
+                                num_cols_header = final_header.count(',')
+
+                                # Write header
+                                currsection.write(final_header)
+
                     # Extract timestamp
 
                     # Nmon V9 and prior do not have date in ZZZZ
@@ -656,7 +706,7 @@ for section in static_section:
 
                     # For Nmon V10 and more
 
-                    timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\,(.+)\n', line)
+                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
                     if timestamp_match:
                         ZZZZ_TIME = timestamp_match.group(2)
                         ZZZZ_DATE = timestamp_match.group(3)
@@ -675,7 +725,7 @@ for section in static_section:
                         # Replace month names with numbers
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
-                        timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\n', line)
+                        timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
                         if timestamp_match:
                             ZZZZ_TIME = timestamp_match.group(2)
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
@@ -703,8 +753,9 @@ for section in static_section:
 
                             if num_cols_perfdata > num_cols_header:
 
-                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
-                                    num_cols_perfdata) + ' fields in data, ' + str(num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                      ' fields in data, ' + str(num_cols_header) \
+                                      + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
                                 print(msg)
                                 ref.write(msg + "\n")
 
@@ -760,7 +811,8 @@ for section in top_section:
     if count > 2:
 
         # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -790,7 +842,10 @@ for section in top_section:
                         # Replace "." by "_" only for header
                         fullheader = re.sub("\.", '_', fullheader)
 
-                        header_match = re.search(r'([a-zA-Z\-\/\_0-9]+,)([a-zA-Z\-\/\_0-9]+,)([a-zA-Z\-\/\_0-9\,]*)',
+                        # Replace any blank space before comma only for header
+                        fullheader = re.sub(", ", ',', fullheader)
+
+                        header_match = re.search(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)',
                                                  fullheader)
 
                         if header_match:
@@ -814,7 +869,7 @@ for section in top_section:
 
                     # For Nmon V10 and more
 
-                    timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\,(.+)\n', line)
+                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
                     if timestamp_match:
                         ZZZZ_TIME = timestamp_match.group(2)
                         ZZZZ_DATE = timestamp_match.group(3)
@@ -828,7 +883,7 @@ for section in top_section:
 
                     if ZZZZ_DATE == '-1':
                         ZZZZ_DATE = DATE
-                        timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\n', line)
+                        timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
 
                         if timestamp_match:
                             ZZZZ_TIME = timestamp_match.group(2)
@@ -839,7 +894,7 @@ for section in top_section:
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                 # Extract Data
-                perfdata_match = re.match('^TOP\,([0-9]+)\,(T\d+)\,(.+)\n', line)
+                perfdata_match = re.match('^TOP,([0-9]+),(T\d+),(.+)\n', line)
                 if perfdata_match:
                     perfdata_part1 = perfdata_match.group(1)
                     perfdata_part2 = perfdata_match.group(3)
@@ -888,7 +943,8 @@ for section in uarg_section:
     if count > 2:
 
         # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -918,7 +974,7 @@ for section in uarg_section:
                         # Replace "." by "_" only for header
                         fullheader = re.sub("\.", '_', fullheader)
 
-                        header_match = re.search(r'([a-zA-Z\-\/\_0-9]+,)([a-zA-Z\-\/\_0-9]+,)([a-zA-Z\-\/\_0-9\,]*)',
+                        header_match = re.search(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)',
                                                  fullheader)
 
                         if header_match:
@@ -950,7 +1006,7 @@ for section in uarg_section:
 
                     # For Nmon V10 and more
 
-                    timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\,(.+)\n', line)
+                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
                     if timestamp_match:
                         ZZZZ_TIME = timestamp_match.group(2)
                         ZZZZ_DATE = timestamp_match.group(3)
@@ -964,7 +1020,7 @@ for section in uarg_section:
 
                     if ZZZZ_DATE == '-1':
                         ZZZZ_DATE = DATE
-                        timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\n', line)
+                        timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
 
                         if timestamp_match:
                             ZZZZ_TIME = timestamp_match.group(2)
@@ -977,7 +1033,7 @@ for section in uarg_section:
                 if os == 'Linux':  # Linux OS specific header
 
                     # Extract Data
-                    perfdata_match = re.match('^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)\n', line)
+                    perfdata_match = re.match('^UARG,T\d+,([0-9]*),([a-zA-Z\-/_:\.0-9]*),(.+)\n', line)
 
                     if perfdata_match:
                         # In this section, we statically expect 3 fields: PID,ProgName,FullCommand
@@ -1000,7 +1056,7 @@ for section in uarg_section:
 
                     # Extract Data
                     perfdata_match = re.match(
-                        '^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*\s*)\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,(.+)\n',
+                        '^UARG,T\d+,\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*\s*),\s*([a-zA-Z-/_:\.0-9]*)\s*,(.+)\n',
                         line)
 
                     if perfdata_match:
@@ -1073,7 +1129,8 @@ for subsection in dynamic_section1:
         if count > 2:
 
             # Set output file (will be opened for writing after data transposition)
-            currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+            currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+                bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
             # Open StringIO for temp in memory
             membuffer = cStringIO.StringIO()
@@ -1104,7 +1161,10 @@ for subsection in dynamic_section1:
                         # Replace "." by "_" only for header
                         fullheader = re.sub("\.", '_', fullheader)
 
-                        header_match = re.match(r'([a-zA-Z\-\/\_0-9]+,)([a-zA-Z\-\/\_0-9\,]*)', fullheader)
+                        # Replace any blank space before comma only for header
+                        fullheader = re.sub(", ", ',', fullheader)
+
+                        header_match = re.match(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)', fullheader)
 
                         if header_match:
                             header = header_match.group(2)
@@ -1129,7 +1189,7 @@ for subsection in dynamic_section1:
 
                     # For Nmon V10 and more
 
-                    timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\,(.+)\n', line)
+                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
                     if timestamp_match:
                         ZZZZ_TIME = timestamp_match.group(2)
                         ZZZZ_DATE = timestamp_match.group(3)
@@ -1143,7 +1203,7 @@ for subsection in dynamic_section1:
 
                     if ZZZZ_DATE == '-1':
                         ZZZZ_DATE = DATE
-                        timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\n', line)
+                        timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
 
                         if timestamp_match:
                             ZZZZ_TIME = timestamp_match.group(2)
@@ -1176,7 +1236,9 @@ for subsection in dynamic_section1:
 
                             if num_cols_perfdata > num_cols_header:
 
-                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) + ' fields in data, ' + str(num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                    num_cols_perfdata) + ' fields in data, ' + str(
+                                    num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
                                 print(msg)
                                 ref.write(msg + "\n")
 
@@ -1267,7 +1329,8 @@ for section in dynamic_section2:
     if count > 2:
 
         # Set output file (will be opened for writing after data transposition)
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open StringIO for temp in memory
         membuffer = cStringIO.StringIO()
@@ -1298,7 +1361,10 @@ for section in dynamic_section2:
                     # Replace "." by "_" only for header
                     fullheader = re.sub("\.", '_', fullheader)
 
-                    header_match = re.match(r'([a-zA-Z\-\/\_0-9]+,)([a-zA-Z\-\/\_0-9\,]*)', fullheader)
+                    # Replace any blank space before comma only for header
+                    fullheader = re.sub(", ", ',', fullheader)
+
+                    header_match = re.match(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)', fullheader)
 
                     if header_match:
                         header = header_match.group(2)
@@ -1323,7 +1389,7 @@ for section in dynamic_section2:
 
                 # For Nmon V10 and more
 
-                timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\,(.+)\n', line)
+                timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
                 if timestamp_match:
                     ZZZZ_TIME = timestamp_match.group(2)
                     ZZZZ_DATE = timestamp_match.group(3)
@@ -1337,7 +1403,7 @@ for section in dynamic_section2:
 
                 if ZZZZ_DATE == '-1':
                     ZZZZ_DATE = DATE
-                    timestamp_match = re.match(r'^ZZZZ\,(.+)\,(.+)\n', line)
+                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
 
                     if timestamp_match:
                         ZZZZ_TIME = timestamp_match.group(2)
@@ -1370,7 +1436,9 @@ for section in dynamic_section2:
 
                         if num_cols_perfdata > num_cols_header:
 
-                            msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) + ' fields in data, ' + str(num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                            msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                num_cols_perfdata) + ' fields in data, ' + str(
+                                num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
                             print(msg)
                             ref.write(msg + "\n")
 

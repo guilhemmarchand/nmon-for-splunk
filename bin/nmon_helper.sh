@@ -14,8 +14,9 @@
 # Modified by Guilhem Marchand 20082014: Linux: Increased the number of disks to 1500 devices - AIX: Updated nmon command options
 # Modified by Guilhem Marchand 25082014: Avoid deleting existing nmon files in nmon_repository, this is now taken in charge by Splunk itself using batch mode instead monitor mode
 #													  This prevents from having local nmon data missing when indexing large volume of nmon files from central shares
+# Modified by Guilhem Marchand 26102014: Improved APP dir definition (are we running nmon / TA-nmon / PA-nmon)
 
-# Version 1.1.11
+# Version 1.1.12
 
 # For AIX / Linux / Solaris
 
@@ -39,20 +40,21 @@ if [ -z "${SPL_HOME}" ]; then
 	exit 1
 fi
 
-echo $SPLUNK_HOME|grep forwarder >/dev/null
-case $? in
+# Defined which APP we are running from (nmon / TA-nmon / PA-nmon)
+if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
+        APP=$SPLUNK_HOME/etc/apps/nmon
 
-0 )
-	APP=$SPLUNK_HOME/etc/apps/TA-nmon ;;
-* )
-	APP=$SPLUNK_HOME/etc/apps/nmon ;;
+elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon" ]; then
+        APP=$SPLUNK_HOME/etc/apps/TA-nmon
 
-esac
-
-if [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
+elif [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
         APP=$SPLUNK_HOME/etc/slave-apps/PA-nmon
-fi
 
+else
+        echo "`date`, ERROR, the APP directory could not be defined, is nmon / TA-nmon / PA-nmon installed ?"
+        exit 1
+
+fi
 
 # Nmon Binary
 
