@@ -531,15 +531,44 @@ max(pswpout) As pswpout</searchString>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link40,link41">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link40,link41,link42,link43">Select a view:<!--Links go here-->
       </div>
     </html>
 
     <chart id="link40">
-      <title>MEM, Memory usage</title>
+      <title>MEM, Memory usage (% usage)</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
-| eval memused=round((memtotal-memfree),0)
-| timechart `inline_customspan(type=MEM,$hostname$)` Max(memtotal) As memtotal, Max(memused) As memused</searchString>
+| eval buffers_PCT=round(((buffers/memtotal)*100),2)
+| eval cached_PCT=round(((cached/memtotal)*100),2)
+| eval active_PCT=round(((active/memtotal)*100),2)
+| eval inactive_PCT=round(((inactive/memtotal)*100),2)
+| eval memfree_PCT=round(((memfree/memtotal)*100),2)
+| timechart `inline_customspan(type=MEM,$hostname$)` max(buffers_PCT) As "buffers %", max(cached_PCT) As "cached %", max(active_PCT) As "active %", max(inactive_PCT) As "inactive %", max(memfree_PCT) As "memfree %"</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Percentage (%)</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+
+    <chart id="link41">
+      <title>MEM, Memory usage (Volume usage in MB)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+| timechart `inline_customspan(type=MEM,$hostname$)` max(buffers) As "buffers (MB)", max(cached) As "cached (MB)", max(active) As "active (MB)", max(inactive) As "inactive (MB)", max(memfree) As "memfree (MB)", max(memtotal) As "memtotal (MB)"</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -561,11 +590,38 @@ max(pswpout) As pswpout</searchString>
       <option name="charting.axisY.minimumNumber">0</option>
     </chart>
 
-    <chart id="link41">    
-      <title>MEM, Swap usage</title>
+    <chart id="link42">    
+      <title>MEM, Swap usage (% usage)</title>
       <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ 
 | eval swapused=round((swaptotal-swapfree),0)
-| timechart `inline_customspan(type=MEM,$hostname$)` Max(swaptotal) As swaptotal, Max(swapused) As swapused</searchString>
+| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
+| timechart `inline_customspan(type=MEM,$hostname$)` max(swapused_PCT) As "swapused %"</searchString>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">unstacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">450px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Percentage (%)</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+    </chart>
+
+    <chart id="link43">    
+      <title>MEM, Swap usage (Volume usage in MB)</title>
+      <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ 
+| eval swapused=round((swaptotal-swapfree),0)
+| timechart `inline_customspan(type=MEM,$hostname$)` max(swaptotal) As "swaptotal (MB)", max(swapused) As "swapused (MB)"</searchString>
       <earliestTime>$timerange.earliest$</earliestTime>
       <latestTime>$timerange.latest$</latestTime>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -586,6 +642,7 @@ max(pswpout) As pswpout</searchString>
       <option name="charting.axisTitleY.text">Megabytes (MB)</option>
       <option name="charting.axisY.minimumNumber">0</option>
     </chart>
+
 
    </panel>
   </row>

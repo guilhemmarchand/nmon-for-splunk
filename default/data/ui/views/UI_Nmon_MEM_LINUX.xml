@@ -1,6 +1,6 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - MEM, Linux Memory and Swap Usage</label>
-  <description/>
+  <description></description>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
@@ -9,17 +9,17 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>    
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
+    </input>
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]</default>
@@ -31,7 +31,7 @@
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
       <default>*</default>
-    </input>    
+    </input>
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Select a Host:</label>
       <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
@@ -39,59 +39,92 @@
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
-    <input type="radio" token="memmode" searchWhenChanged="true">
-      <label>Chart - Show Mem load by:</label>
-      <default>fields - *_PCT*</default>
-      <choice value="fields - *_PCT*">Activity in Data Volume (MB)</choice>
-      <choice value="fields _time,memused_PCT*,swapused_PCT*">Usage in percentage (%)</choice>
-      <choice value="fields _time,memfree_PCT*,swapfree_PCT*">Free in percentage (%)</choice>
-    </input>
-    <input type="radio" token="addseries" searchWhenChanged="true">
-      <label>Show buffers/cached/inactive</label>
-      <default>fields - buffers*,cached*,inactive*</default>
-      <choice value="fields - buffers*,cached*,inactive*">deactivated</choice>
-      <choice value="fields *">activated</choice>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
     </input>
   </fieldset>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| eval memused=round((memtotal-memfree),0)
-| eval swapused=round((swaptotal-swapfree),0)
-| eval memfree_PCT=round(((memfree/memtotal)*100),0)
-| eval memused_PCT=round(((memused/memtotal)*100),0)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),0)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),0)
-| timechart `inline_customspan(type=MEM,$hostname$)`
-$statsmode$(memtotal) As memtotal, $statsmode$(memused) As memused, $statsmode$(memfree) As memfree,
-$statsmode$(swaptotal) As swaptotal, $statsmode$(swapused) As swapused, $statsmode$(swapfree) As swapfree,
+| rename memfree As memfree_MB, memtotal As memtotal_MB,
+buffers As buffers_MB, cached As cached_MB, active As active_MB, inactive As inactive_MB,
+swapfree As swapfree_MB, swaptotal As swaptotal_MB, swapcached As swapcached_MB
+| eval memused_MB=round((memtotal_MB-memfree_MB),2)
+| eval swapused_MB=round((swaptotal_MB-swapfree_MB),2)
+| eval memfree_PCT=round(((memfree_MB/memtotal_MB)*100),2)
+| eval memused_PCT=round(((memused_MB/memtotal_MB)*100),2)
+| eval buffers_PCT=round(((buffers_MB/memtotal_MB)*100),2)
+| eval cached_PCT=round(((cached_MB/memtotal_MB)*100),2)
+| eval active_PCT=round(((active_MB/memtotal_MB)*100),2)
+| eval inactive_PCT=round(((inactive_MB/memtotal_MB)*100),2)
+| eval swapfree_PCT=round(((swapfree_MB/swaptotal_MB)*100),2)
+| eval swapused_PCT=round(((swapused_MB/swaptotal_MB)*100),2)
+| eval swapcached_PCT=round(((swapcached_MB/swaptotal_MB)*100),2)
+| stats
+$statsmode$(memtotal_MB) As memtotal_MB, $statsmode$(memused_MB) As memused_MB, $statsmode$(memfree_MB) As memfree_MB,
+$statsmode$(swaptotal_MB) As swaptotal_MB, $statsmode$(swapused_MB) As swapused_MB, $statsmode$(swapfree_MB) As swapfree_MB, $statsmode$(swapcached_MB) As swapcached_MB,
 $statsmode$(memfree_PCT) As memfree_PCT, $statsmode$(swapfree_PCT) As swapfree_PCT,
-$statsmode$(memused_PCT) As memused_PCT, $statsmode$(swapused_PCT) As swapused_PCT,
-$statsmode$(buffers) As buffers, $statsmode$(cached) As cached, $statsmode$(inactive) As inactive by hostname</searchTemplate>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+$statsmode$(memused_PCT) As memused_PCT, $statsmode$(swapused_PCT) As swapused_PCT, $statsmode$(swapcached_PCT) As swapcached_PCT,
+$statsmode$(buffers_PCT) As buffers_PCT, $statsmode$(cached_PCT) As cached_PCT, $statsmode$(active_PCT) As active_PCT, $statsmode$(inactive_PCT) As inactive_PCT,
+$statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $statsmode$(active_MB) As active_MB, $statsmode$(inactive_MB) As inactive_MB by hostname</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <title>Memory parameters:</title>
+      <input type="radio" token="memmode" searchWhenChanged="true">
+        <label>Memory Usage by:</label>
+        <default>fields _time,hostname,*_PCT*</default>
+        <choice value="fields _time,hostname,*_PCT*">Usage in percentage (%)</choice>
+        <choice value="fields _time,hostname,*_MB*">Activity in Data Volume (MB)</choice>
+      </input>
+      <input type="checkbox" token="memfilter" searchWhenChanged="true">
+        <label>Memory - Filter monitors:</label>
+        <choice value="memused*">memused</choice>
+        <choice value="memfree*">memfree</choice>
+        <choice value="memtotal*">memtotal</choice>        
+        <choice value="buffer*">buffers</choice>
+        <choice value="cached*">cached</choice>
+        <choice value="active*">active</choice>        
+        <choice value="inactive*">inactive</choice>
+        <delimiter>,</delimiter>
+        <default>memused*,memfree*,memtotal*,buffer*,cached*,active*,inactive*</default>
+      </input>
+      <input type="checkbox" token="swapfilter" searchWhenChanged="true">
+        <label>Swap - Filter monitors:</label>
+        <choice value="swapused*">swapused</choice>
+        <choice value="swapfree*">swapfree</choice>
+        <choice value="swaptotal*">swaptotal</choice>
+        <choice value="swapcached*">swapcached</choice>        
+        <delimiter>,</delimiter>
+        <default>swapused*,swapfree*,swaptotal*</default>
+      </input>
+      <html>
+      </html>
+    </panel>
+  </row>
   <row>
     <panel>
       <table>
         <title>MEM - Memory Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| eval memused=round((memtotal-memfree),0)
-| stats
-$statsmode$(memfree) As memfree, $statsmode$(memused) As memused, $statsmode$(memtotal) As memtotal
-by hostname
-| eval memfree=round(memfree,0)
-| eval memused=round(memused,0)
-| eval memtotal=round(memtotal,0)</searchString>
-		  <earliestTime>$timerange.earliest$</earliestTime>
-		  <latestTime>$timerange.latest$</latestTime>
+        <searchPostProcess>eval memfree_MB=round(memfree_MB,0)
+| eval memused_MB=round(memused_MB,0)
+| eval memtotal_MB=round(memtotal_MB,0)
+| eval buffers_MB=round(buffers_MB,0)
+| eval cached_MB=round(cached_MB,0)
+| eval active_MB=round(active_MB,0)
+| eval inactive_MB=round(inactive_MB,0)
+| $memmode$ | fields - _time
+| rename memfree_MB As "memfree (MB)", memused_MB As "memused (MB)", memtotal_MB As "memtotal (MB)", buffers_MB As "buffers (MB)", cached_MB As "cached (MB)", active_MB As "active (MB)", inactive_MB As "inactive (MB)"
+| rename memfree_PCT As "memfree (%)", memused_PCT As "memused (%)", buffers_PCT As "buffers (%)" , cached_PCT As "cached (%)", active_PCT As "active (%)", inactive_PCT As "inactive (%)"
+| fields hostname,$memfilter$</searchPostProcess>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -102,18 +135,16 @@ by hostname
     <panel>
       <table>
         <title>MEM - Swap Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| eval swapused=round((swaptotal-swapfree),0)
-| stats
-max(swaptotal) As swaptotal, max(swapused) As swapused, max(swapfree) As swapfree by _time,hostname
-| stats
-$statsmode$(swapfree) As swapfree, $statsmode$(swapused) As swapused, $statsmode$(swaptotal) As swaptotal
-by hostname
-| eval swapfree=round(swapfree,0)
-| eval swapused=round(swapused,0)
-| eval swaptotal=round(swaptotal,0)</searchString>
-		  <earliestTime>$timerange.earliest$</earliestTime>
-		  <latestTime>$timerange.latest$</latestTime>
+        <searchPostProcess>eval swapfree_MB=round(swapfree_MB,0)
+| eval swapused_MB=round(swapused_MB,0)
+| eval swaptotal_MB=round(swaptotal_MB,0)
+| eval swapcached_MB=round(swapcached_MB,0)
+| $memmode$ | fields - _time
+| rename swaptotal_MB As "swaptotal (MB)", swapused_MB As "swapused (MB)", swapfree_MB As "swapfree (MB)", swapcached_MB As "swapcached (MB)"
+| rename swapused_PCT As "swapused (%)", swapfree_PCT As "swapfree (%)", swapcached_PCT As "swapcached (%)", 
+| fields hostname,$swapfilter$</searchPostProcess>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -124,6 +155,7 @@ by hostname
   </row>
   <row>
     <panel>
+      <title>Charting parameters:</title>
       <input type="radio" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
@@ -162,7 +194,23 @@ by hostname
     </html>
       <chart id="link10">
         <title>Memory Usage</title>
-        <searchPostProcess>$memmode$ | $addseries$ | fields _time, mem*,buffers*,cached*,inactive*</searchPostProcess>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
+| rename memfree As memfree_MB, memtotal As memtotal_MB, buffers As buffers_MB, cached As cached_MB, active As active_MB, inactive As inactive_MB
+| eval memused_MB=round((memtotal_MB-memfree_MB),2)
+| eval memfree_PCT=round(((memfree_MB/memtotal_MB)*100),2)
+| eval memused_PCT=round(((memused_MB/memtotal_MB)*100),2)
+| eval buffers_PCT=round(((buffers_MB/memtotal_MB)*100),2)
+| eval cached_PCT=round(((cached_MB/memtotal_MB)*100),2)
+| eval active_PCT=round(((active_MB/memtotal_MB)*100),2)
+| eval inactive_PCT=round(((inactive_MB/memtotal_MB)*100),2)
+| timechart `inline_customspan(type=MEM,$hostname$)`
+$statsmode$(memtotal_MB) As memtotal_MB, $statsmode$(memused_MB) As memused_MB, $statsmode$(memfree_MB) As memfree_MB,
+$statsmode$(memfree_PCT) As memfree_PCT, $statsmode$(memused_PCT) As memused_PCT
+$statsmode$(buffers_PCT) As buffers_PCT, $statsmode$(cached_PCT) As cached_PCT, $statsmode$(active_PCT) As active_PCT, $statsmode$(inactive_PCT) As inactive_PCT,
+$statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $statsmode$(active_MB) As active_MB, $statsmode$(inactive_MB) As inactive_MB by hostname
+| $memmode$ | fields _time,$memfilter$</searchString>
+  		  <earliestTime>$timerange.earliest$</earliestTime>
+  		  <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -183,7 +231,18 @@ by hostname
       </chart>
       <chart id="link11">
         <title>Swap Usage</title>
-        <searchPostProcess>$memmode$ | fields _time,swap*</searchPostProcess>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
+| rename swapfree As swapfree_MB, swapfree As swapfree_MB, swaptotal As swaptotal_MB, swapcached As swapcached_MB
+| eval swapused_MB=round((swaptotal_MB-swapfree_MB),2)
+| eval swapfree_PCT=round(((swapfree_MB/swaptotal_MB)*100),0)
+| eval swapused_PCT=round(((swapused_MB/swaptotal_MB)*100),0)
+| eval swapcached_PCT=round(((swapcached_MB/swaptotal_MB)*100),0)
+| timechart `inline_customspan(type=MEM,$hostname$)`
+$statsmode$(swaptotal_MB) As swaptotal_MB, $statsmode$(swapused_MB) As swapused_MB, $statsmode$(swapfree_MB) As swapfree_MB, $statsmode$(swapcached_MB) As swapcached_MB,
+$statsmode$(swapfree_PCT) As swapfree_PCT, $statsmode$(swapused_PCT) As swapused_PCT, $statsmode$(swapcached_PCT) As swapcached_PCT by hostname
+| $memmode$ | fields _time,$swapfilter$*</searchString>
+  		  <earliestTime>$timerange.earliest$</earliestTime>
+  		  <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
