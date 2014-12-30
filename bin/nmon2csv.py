@@ -51,6 +51,10 @@
 #                               - Fix compatibility issue with old Nmon Linux release (example with 11f), sometimes the csv header will contain the first timestamp reference (T0001)
 #                               which was leading to header identification failure, applicant only for static standard sections (VM,CPu_ALL...)
 #                               - Code cleaning: Removing redundant escaped characters
+# - 12/26/2014, V1.1.0: Guilhem Marchand: Major release
+#                               - This is a major release of the nmon2csv converter that introduces real time capacity, the converter will now identify if it is
+#											dealing with real time or coldata
+#										  - If real time is detected, only newer events that the last run will be proceeded such that the converter can manage a running nmon file all along its runtime
 
 # Load libs
 
@@ -67,7 +71,7 @@ import cStringIO
 import platform
 
 # Converter version
-nmon2csv_version = '1.0.11'
+nmon2csv_version = '1.1.0'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -114,8 +118,12 @@ handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 logging.root.addHandler(handler)
 
+# Initial states for Analysis
+realtime = False
+colddata = False
+
 # Current date
-now = time.strftime("%c")
+now = time.strftime("%d-%m-%Y %H:%M:%S")
 
 # timestamp used to name csv files
 csv_timestamp = time.strftime("%Y%m%d%H%M%S")
@@ -187,6 +195,8 @@ if not os.path.exists(APP_VAR):
 # ID reference file, will be used to temporarily store the last execution result for a given nmon file, and prevent Splunk from
 # generating duplicates by relaunching the conversion process
 # Splunk when using a custom archive mode, launches twice the custom script
+
+# Supplementary note: Since V1.1.0, the ID_REF is overwritten if running real time mode
 if is_windows:
     ID_REF = APP_VAR + '\\id_reference.txt'
 else:
@@ -223,6 +233,13 @@ sanity_check = "-1"
 #################################################
 ##      Functions
 #################################################
+
+# Return current time stamp in Nmon fashion
+def currenttime():
+    now = time.strftime("%d-%m-%Y %H:%M:%S")
+
+    return now
+
 
 # Replace % for common sections
 def subpctreplace(line):
@@ -308,7 +325,7 @@ nbr_lines = len(data)
 bytes_total = len(''.join(data))
 
 # Show current time and number of lines
-msg = now + " Reading NMON data: " + str(nbr_lines) + " lines" + " " + str(bytes_total) + " bytes"
+msg = currenttime() + " Reading NMON data: " + str(nbr_lines) + " lines" + " " + str(bytes_total) + " bytes"
 print(msg)
 
 # Show Splunk Root Directory
@@ -511,10 +528,98 @@ for line in data:
 # If the Nmon file id is already present in our reference file, then we have already proceeded this Nmon and nothing has to be done
 # Last execution result will be extracted from it to stdout
 
-# NMON file id (concatenation of ids)
-idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total)
+# Set default value for the last known epochtime
+last_known_epochtime = 0
 
+# Set the value in epochtime of the starting nmon
+NMON_DATE = DATE + ' ' + TIME
+
+# For Nmon V10 and more
+timestamp_match = re.match(r'\d*-\w*-\w*\s\d*:\d*:\d*', NMON_DATE)
+if timestamp_match:
+    starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S').strftime('%s')
+    starting_time = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S').strftime('%d-%m-%Y %H:%M:%S')
+else:
+    # For Nmon v9 and prior
+    starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S').strftime('%s')
+    starting_time = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S').strftime('%d-%m-%Y %H:%M:%S')
+
+# Search for last epochtime in data
+for line in data:
+
+    # Extract timestamp
+
+    # Nmon V9 and prior do not have date in ZZZZ
+    # If unavailable, we'll use the global date (AAA,date)
+    ZZZZ_DATE = '-1'
+    ZZZZ_TIME = '-1'
+
+    # For Nmon V10 and more
+
+    timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
+    if timestamp_match:
+        ZZZZ_TIME = timestamp_match.group(2)
+        ZZZZ_DATE = timestamp_match.group(3)
+
+        # Replace month names with numbers
+        ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
+
+        # Compose final timestamp
+        ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+
+        # Convert in epochtime
+        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+    # For Nmon V9 and less
+
+    if ZZZZ_DATE == '-1':
+        ZZZZ_DATE = DATE
+
+        # Replace month names with numbers
+        ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
+
+        timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
+        if timestamp_match:
+            ZZZZ_TIME = timestamp_match.group(2)
+            ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+
+            # Convert in epochtime
+            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+# Set ending epochtime
+if ZZZZ_epochtime:
+    ending_epochtime = ZZZZ_epochtime
+else:
+    ZZZZ_epochtime = starting_epochtime
+
+# Evaluate if we are dealing with real time data or cold data
+if (int(start_time) - (4 * int(INTERVAL))) > int(ending_epochtime):
+    colddata = True
+
+else:
+    realtime = True
+    # Override ID_REF
+    if is_windows:
+        ID_REF = APP_VAR + '\\id_reference_realtime.txt'
+    else:
+        ID_REF = APP_VAR + '/id_reference_realtime.txt'
+
+# NMON file id (concatenation of ids)
+idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + starting_epochtime + ',' + ending_epochtime
+
+# Partial idnmon that won't contain ending_epochtime for compare operation, to used for cold data
+partial_idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + starting_epochtime
+
+# Show Nmon ID
 print("NMON ID:", idnmon)
+
+# Show real time / cold data message
+if realtime:
+    msg = 'ANALYSIS: Assuming Nmon realtime data'
+    print(msg)
+elif colddata:
+    msg = 'ANALYSIS: Assuming Nmon cold data'
+    print(msg)
 
 # Open reference file for reading, if exists already
 if os.path.isfile(ID_REF):
@@ -523,16 +628,42 @@ if os.path.isfile(ID_REF):
 
         for line in ref:
 
-            # Search for this ID
-            idmatch = re.match(idnmon, line)
-            if idmatch:
+            if realtime:
 
-                # If ID matches, then the file has been previously proceeded, let's show last result of execution
-                for k in ref:
-                    k = k.rstrip("\n").split(";")
-                    print(k)
+                # Search for this ID
+                idmatch = re.match(idnmon, line)
+                if idmatch:
 
-                sys.exit(0)
+                    # If ID matches, then the file has been previously proceeded, let's show last result of execution
+                    for k in ref:
+                        k = k.rstrip("\n").split(";")
+                        print(k)
+
+                    sys.exit(0)
+
+                # If id does not match, recover the last known ending epoch time to proceed only new data
+                else:
+
+                    last_known_epochtime_match = re.match(r'.*Ending_epochtime:\s(\d+)', line)
+                    if last_known_epochtime_match:
+                        last_known_epochtime = last_known_epochtime_match.group(1)
+
+            elif colddata:
+
+                # Search for this ID
+                idmatch = re.match(partial_idnmon, line)
+                if idmatch:
+
+                    # If ID matches, then the file has been previously proceeded, let's show last result of execution
+                    for k in ref:
+                        k = k.rstrip("\n").split(";")
+                        print(k)
+
+                    sys.exit(0)
+
+                # If id does not match, recover the last known ending epoch time to proceed only new data
+                else:
+                    last_known_epochtime = starting_epochtime
 
 # If we here, then this file has not been previously proceeded
 
@@ -543,6 +674,24 @@ ref = open(ID_REF, "w")
 # write id
 ref.write(msg + '\n')
 ref.write(idnmon + '\n')
+
+# write starting epoch
+msg = "Starting_epochtime: " + starting_epochtime
+print(msg)
+ref.write(msg + '\n')
+
+# write last epochtime of Nmon data
+msg = "Ending_epochtime: " + ZZZZ_epochtime
+print(msg)
+ref.write(msg + '\n')
+
+
+print('last known epoch time: ' + str(last_known_epochtime))
+
+
+# Set last known epochtime equal to starting epochtime if the nmon has not been yet proceeded
+if last_known_epochtime == 0:
+    last_known_epochtime = starting_epochtime
 
 ####################
 # Write CONFIG csv #
@@ -557,28 +706,80 @@ section = "CONFIG"
 config_output = CONFIG_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + str(
     bytes_total) + '_' + csv_timestamp + '.nmon.config.csv'
 
-# Open config output for writing
-with open(config_output, "wb") as config:
-    # counter
-    count = 0
+if realtime:
 
-    config.write('CONFIG' + ',' + DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + '\n')
+    # Only allow one extraction of the config section per nmon file
+    limit = (int(starting_epochtime) + (4 * int(INTERVAL)))
 
-    for line in data:
+    if int(last_known_epochtime) < int(limit):
 
-        # Extract AAA and BBB sections, and write to config output
-        AAABBB = re.match(r'^[AAA|BBB].+', line)
-        if AAABBB:
-            # Increment
-            count += 1
+        msg = "CONFIG section will be extracted"
+        print(msg)
+        ref.write(msg + "\n")
 
-            # Write
-            config.write(line),
+        # Open config output for writing
+        with open(config_output, "wb") as config:
 
-# Show number of lines extracted
-result = "CONFIG section: Wrote" + " " + str(count) + " lines"
-print(result)
-ref.write(result + '\n')
+            # counter
+            count = 0
+
+            # Write header
+            config.write('CONFIG' + ',' + DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + '\n')
+
+            for line in data:
+
+                # Extract AAA and BBB sections, and write to config output
+                AAABBB = re.match(r'^[AAA|BBB].+', line)
+
+                if AAABBB:
+                    # Increment
+                    count += 1
+
+                    # Write
+                    config.write(line)
+
+            # Show number of lines extracted
+            result = "CONFIG section: Wrote" + " " + str(count) + " lines"
+            print(result)
+            ref.write(result + '\n')
+
+    else:
+
+        msg = "CONFIG section: Assuming we already extracted for this file"
+        print(msg)
+        ref.write(msg + "\n")
+
+elif colddata:
+
+    msg = "CONFIG section will be extracted"
+    print(msg)
+    ref.write(msg + "\n")
+
+    # Open config output for writing
+    with open(config_output, "wb") as config:
+
+        # counter
+        count = 0
+
+        # write header
+        config.write('CONFIG' + ',' + DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + '\n')
+
+        for line in data:
+
+            # Extract AAA and BBB sections, and write to config output
+            AAABBB = re.match(r'^[AAA|BBB].+', line)
+
+            if AAABBB:
+                # Increment
+                count += 1
+
+                # Write
+                config.write(line)
+
+        # Show number of lines extracted
+        result = "CONFIG section: Wrote" + " " + str(count) + " lines"
+        print(result)
+        ref.write(result + '\n')
 
 ##########################
 # Write PERFORMANCE DATA #
@@ -716,6 +917,7 @@ for section in static_section:
 
                         # Compose final timestamp
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -729,6 +931,7 @@ for section in static_section:
                         if timestamp_match:
                             ZZZZ_TIME = timestamp_match.group(2)
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # Extract Data
                     myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -736,39 +939,79 @@ for section in static_section:
                     if perfdata_match:
                         perfdata = perfdata_match.group(2)
 
-                        # increment
-                        count += 1
+                        if realtime:
 
-                        # final_perfdata
-                        final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                            if ZZZZ_epochtime > last_known_epochtime:
 
-                        # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                        # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                        # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
-                        if count == 2:
+                                # increment
+                                count += 1
 
-                            # Number of separators in final header
-                            num_cols_perfdata = final_perfdata.count(',')
+                                # final_perfdata
+                                final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
 
-                            if num_cols_perfdata > num_cols_header:
+                                # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                                # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                                # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                                # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                                if count == 2:
 
-                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) +\
-                                      ' fields in data, ' + str(num_cols_header) \
-                                      + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
-                                print(msg)
-                                ref.write(msg + "\n")
+                                    # Number of separators in final header
+                                    num_cols_perfdata = final_perfdata.count(',')
 
-                                # Affect a sanity check to 1, bad data
-                                sanity_check = 1
+                                    if num_cols_perfdata > num_cols_header:
 
-                            else:
+                                        msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                              ' fields in data, ' + str(num_cols_header) \
+                                              + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                        print(msg)
+                                        ref.write(msg + "\n")
 
-                                # Affect a sanity check to 0, good data
-                                sanity_check = 0
+                                        # Affect a sanity check to 1, bad data
+                                        sanity_check = 1
 
-                        # Write perf data
-                        currsection.write(final_perfdata)
+                                    else:
+
+                                        # Affect a sanity check to 0, good data
+                                        sanity_check = 0
+
+                                # Write perf data
+                                currsection.write(final_perfdata)
+
+                        elif colddata:
+
+                            # increment
+                            count += 1
+
+                            # final_perfdata
+                            final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
+
+                            # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                            # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                            # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                            if count == 2:
+
+                                # Number of separators in final header
+                                num_cols_perfdata = final_perfdata.count(',')
+
+                                if num_cols_perfdata > num_cols_header:
+
+                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                          ' fields in data, ' + str(num_cols_header) \
+                                          + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                    print(msg)
+                                    ref.write(msg + "\n")
+
+                                    # Affect a sanity check to 1, bad data
+                                    sanity_check = 1
+
+                                else:
+
+                                    # Affect a sanity check to 0, good data
+                                    sanity_check = 0
+
+                            # Write perf data
+                            currsection.write(final_perfdata)
 
         # Verify sanity check
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
@@ -878,6 +1121,7 @@ for section in top_section:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -892,6 +1136,7 @@ for section in top_section:
                             ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 # Extract Data
                 perfdata_match = re.match('^TOP,([0-9]+),(T\d+),(.+)\n', line)
@@ -900,12 +1145,25 @@ for section in top_section:
                     perfdata_part2 = perfdata_match.group(3)
                     perfdata = perfdata_part1 + ',' + perfdata_part2
 
-                    # increment
-                    count += 1
+                    if realtime:
 
-                    # Write perf data
-                    currsection.write(
-                        section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                        if ZZZZ_epochtime > last_known_epochtime:
+
+                            # increment
+                            count += 1
+
+                            # Write perf data
+                            currsection.write(
+                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+
+                    elif colddata:
+
+                        # increment
+                        count += 1
+
+                        # Write perf data
+                        currsection.write(
+                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
@@ -1015,6 +1273,7 @@ for section in uarg_section:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -1029,6 +1288,7 @@ for section in uarg_section:
                             ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 if os == 'Linux':  # Linux OS specific header
 
@@ -1074,12 +1334,26 @@ for section in uarg_section:
 
                         perfdata = perfdata_part1 + ',' + perfdata_part2 + ',' + perfdata_part3 + ',' + perfdata_part4 + ',' + perfdata_part5 + ',' + perfdata_part6 + ',"' + perfdata_part7 + '"'
 
-                        # increment
-                        count += 1
+                        if realtime:
 
-                        # Write perf data
-                        currsection.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                            if ZZZZ_epochtime > last_known_epochtime:
+
+                                # increment
+                                count += 1
+
+                                # Write perf data
+                                currsection.write(
+                                    section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+
+                        elif colddata:
+
+                            # increment
+                            count += 1
+
+                            # Write perf data
+                            currsection.write(
+                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
@@ -1198,6 +1472,7 @@ for subsection in dynamic_section1:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -1212,6 +1487,7 @@ for subsection in dynamic_section1:
                             ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # Extract Data
                     myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -1222,36 +1498,73 @@ for subsection in dynamic_section1:
                         # final perfdata
                         final_perfdata = ZZZZ_timestamp + ',' + perfdata + '\n'
 
-                        # increment
-                        count += 1
+                        if realtime:
 
-                        # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                        # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                        # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
-                        if count == 2:
+                            if ZZZZ_epochtime > last_known_epochtime:
 
-                            # Number of separators in final header
-                            num_cols_perfdata = final_perfdata.count(',')
+                                # increment
+                                count += 1
 
-                            if num_cols_perfdata > num_cols_header:
+                                # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                                # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                                # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                                # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                                if count == 2:
 
-                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
-                                    num_cols_perfdata) + ' fields in data, ' + str(
-                                    num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
-                                print(msg)
-                                ref.write(msg + "\n")
+                                    # Number of separators in final header
+                                    num_cols_perfdata = final_perfdata.count(',')
 
-                                # Affect a sanity check to 1, bad data
-                                sanity_check = 1
+                                    if num_cols_perfdata > num_cols_header:
 
-                            else:
+                                        msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                            num_cols_perfdata) + ' fields in data, ' + str(
+                                            num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                        print(msg)
+                                        ref.write(msg + "\n")
 
-                                # Affect a sanity check to 0, good data
-                                sanity_check = 0
+                                        # Affect a sanity check to 1, bad data
+                                        sanity_check = 1
 
-                        # Write perf data
-                        membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
+                                    else:
+
+                                        # Affect a sanity check to 0, good data
+                                        sanity_check = 0
+
+                                # Write perf data
+                                membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
+
+                        elif colddata:
+
+                            # increment
+                            count += 1
+
+                            # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                            # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                            # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                            if count == 2:
+
+                                # Number of separators in final header
+                                num_cols_perfdata = final_perfdata.count(',')
+
+                                if num_cols_perfdata > num_cols_header:
+
+                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                        num_cols_perfdata) + ' fields in data, ' + str(
+                                        num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                    print(msg)
+                                    ref.write(msg + "\n")
+
+                                    # Affect a sanity check to 1, bad data
+                                    sanity_check = 1
+
+                                else:
+
+                                    # Affect a sanity check to 0, good data
+                                    sanity_check = 0
+
+                            # Write perf data
+                            membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
 
             if sanity_check == 0:
 
@@ -1398,6 +1711,7 @@ for section in dynamic_section2:
                     ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                     ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                    ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 # For Nmon V9 and less
 
@@ -1412,6 +1726,7 @@ for section in dynamic_section2:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 # Extract Data
                 myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -1422,36 +1737,73 @@ for section in dynamic_section2:
                     # final perfdata
                     final_perfdata = ZZZZ_timestamp + ',' + perfdata + '\n'
 
-                    # increment
-                    count += 1
+                    if realtime:
 
-                    # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                    # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                    # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                    # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
-                    if count == 2:
+                        if ZZZZ_epochtime > last_known_epochtime:
 
-                        # Number of separators in final header
-                        num_cols_perfdata = final_perfdata.count(',')
+                            # increment
+                            count += 1
 
-                        if num_cols_perfdata > num_cols_header:
+                            # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                            # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                            # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                            if count == 2:
 
-                            msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
-                                num_cols_perfdata) + ' fields in data, ' + str(
-                                num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
-                            print(msg)
-                            ref.write(msg + "\n")
+                                # Number of separators in final header
+                                num_cols_perfdata = final_perfdata.count(',')
 
-                            # Affect a sanity check to 1, bad data
-                            sanity_check = 1
+                                if num_cols_perfdata > num_cols_header:
 
-                        else:
+                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                        num_cols_perfdata) + ' fields in data, ' + str(
+                                        num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                    print(msg)
+                                    ref.write(msg + "\n")
 
-                            # Affect a sanity check to 0, good data
-                            sanity_check = 0
+                                    # Affect a sanity check to 1, bad data
+                                    sanity_check = 1
 
-                    # Write perf data
-                    membuffer.write(final_perfdata),
+                                else:
+
+                                    # Affect a sanity check to 0, good data
+                                    sanity_check = 0
+
+                            # Write perf data
+                            membuffer.write(final_perfdata),
+
+                    elif colddata:
+
+                        # increment
+                        count += 1
+
+                        # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                        # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                        # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                        if count == 2:
+
+                            # Number of separators in final header
+                            num_cols_perfdata = final_perfdata.count(',')
+
+                            if num_cols_perfdata > num_cols_header:
+
+                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                    num_cols_perfdata) + ' fields in data, ' + str(
+                                    num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                print(msg)
+                                ref.write(msg + "\n")
+
+                                # Affect a sanity check to 1, bad data
+                                sanity_check = 1
+
+                            else:
+
+                                # Affect a sanity check to 0, good data
+                                sanity_check = 0
+
+                        # Write perf data
+                        membuffer.write(final_perfdata),
 
         if sanity_check == 0:
 

@@ -15,8 +15,9 @@
 # Modified by Guilhem Marchand 25082014: Avoid deleting existing nmon files in nmon_repository, this is now taken in charge by Splunk itself using batch mode instead monitor mode
 #													  This prevents from having local nmon data missing when indexing large volume of nmon files from central shares
 # Modified by Guilhem Marchand 26102014: Improved APP dir definition (are we running nmon / TA-nmon / PA-nmon)
+# Modified by Guilhem Marchand 22122014: Modification of default values for interval and snapshot, added override features by default and local nmon.conf, removed the soft kill which is useless now
 
-# Version 1.1.12
+# Version 1.2.0
 
 # For AIX / Linux / Solaris
 
@@ -110,11 +111,6 @@ fi
 
 esac
 
-# Nmon working directory, Nmon will produce the nmon csv file here
-# Default to spool directory of Nmon Splunk App
-WORKDIR=${APP}/var/nmon_temp
-[ ! -d $WORKDIR ] && { mkdir -p $WORKDIR; }
-
 # Nmon file final destination
 # Default to nmon_repository of Nmon Splunk App
 NMON_REPOSITORY=${APP}/var/nmon_repository
@@ -124,13 +120,33 @@ NMON_REPOSITORY=${APP}/var/nmon_repository
 [ -d ${APP}/var/csv_repository ] || { mkdir -p ${APP}/var/csv_repository; }
 [ -d ${APP}/var/config_repository ] || { mkdir -p ${APP}/var/config_repository; }
 
-# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
-# Default to 10 seconds
-interval="10"
+############################################
+# Defaults values for interval and snapshot
+############################################
 
-# Number of Data refresh occurences, Nmon will refresh data X times
-# Default to 6 occurences to provide 1 minute data measure
-occurence="6"
+# In first option, search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon|PA-nmon/local
+
+if [ -f $APP/local/nmon.conf ]; then
+	. $APP/local/nmon.conf
+
+# In second option, search for the main nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon|PA-nmon/default
+
+elif [ -f $APP/default/nmon.conf ]; then
+	. $APP/default/nmon.conf
+
+else
+
+	# if none of above options worked for some unexpected reasons, use these values
+
+	# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
+	# Default to 20 seconds
+	interval="20"
+	
+	# Number of Data refresh snapshots, Nmon will refresh data X times
+	# Default to 480 snapshots to provide a full day data measure
+	snapshot="480"
+
+fi
 
 ####################################################################
 #############		Main Program 			############
@@ -164,13 +180,13 @@ occurence="6"
 case `uname` in
 
 AIX )
-	nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${occurence}" ;;
+	nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot}" ;;
 
 SunOS )
-	nmon_command="${NMON} ${interval} ${occurence}" ;;
+	nmon_command="${NMON} ${interval} ${snapshot}" ;;
 
 Linux )
-	nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${occurence}" ;;
+	nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot}" ;;
 
 esac
 
@@ -187,26 +203,40 @@ if [ ! -x ${NMON} ]; then
 fi	
 
 # Search for any running Nmon instance, stop it if exist and start it, start it if does not
-cd ${WORKDIR}
-PIDs=`ps -ef| grep "${nmon_command}" | grep -v grep |grep splunk| awk '{print $2}'`
+cd ${NMON_REPOSITORY}
+PIDs=`ps -ef| grep "${nmon_command}" | grep -v grep | awk '{print $2}'`
 
 case ${PIDs} in
 
 	"" )
     	# Start NMON
-		mv *.nmon ${NMON_REPOSITORY}/ >/dev/null 2>&1
-		echo "starting nmon : ${nmon_command} in ${WORKDIR}"
+		echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 		${nmon_command} >/dev/null 2>&1
 	;;
 	
 	* )
-		# Soft kill
-		kill ${PIDs}
-	
-		mv *.nmon ${NMON_REPOSITORY}/ >/dev/null 2>&1
-		# Start Nmon
-		echo "starting nmon : ${nmon_command} in ${WORKDIR}"
-		${nmon_command} >/dev/null 2>&1
+		# Nmon is running, verify we have at least one nmon file in nmon repository
+		# In case of a TA upgraded by the deployment server, the var directory will have been deleted but nmon binary will still be alive with no where to write to
+		# In such as case, we need to kill nmon then relaunch it
+		# The following count using find is compatible with any *nix OS		
+		nbr_files=`find .  \(  -name . -o -prune \) -name "*.nmon" -type f -exec ls -l {} \; | wc -l`
+		
+		case ${nbr_files} in
+
+		0)
+			# Soft kill
+			kill ${PIDs}
+			echo "Detected orphan nmon instance(s) running (probably TA-nmon upgrade), instance(s) with PID(s) ${PIDs} were killed"
+			echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+			${nmon_command} >/dev/null 2>&1
+			;;
+			
+		*)
+			# Nmon is running, nothing to do
+			echo "Nmon is currently running, nothing to do. (PID ${PIDs})"
+			;;
+		esac
+		
 	;;
 	
 esac

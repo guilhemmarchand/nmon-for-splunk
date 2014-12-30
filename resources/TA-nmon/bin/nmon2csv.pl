@@ -26,20 +26,23 @@
 # Releases Notes:
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------
-# Modified by Barak Griffis 05/06/2014
-# Modified by Guilhem Marchand 05/20/2014: missing timestamp in cksum output resulting in bad Splunk interpretation
-# Modified by Guilhem Marchand 05/21/2014: clear content of cksum reference file for each iteration after check step
-# Modified by Guilhem Marchand 07/07/2014: TOP Section header corrected, change "timestamp" to "ZZZZ" and replace month names with numbers
-# Modified by Guilhem Marchand 07/08/2014: Changed date format for improved processing output
-# Modified by Guilhem Marchand 07/12/2014: Changed TOP section position of where to retrieve Logical number of CPUs (second position of AAA,cpus by default) to improve TOP Analysis
-# Modified by Guilhem Marchand 07/12/2014: Modified variable sections with devices to allow systems with huge number of disks to be fully taken in charge (150 devices per section x 5)
-# Modified by Guilhem Marchand 07/18/2014: Added nmon data structure verification, if the file contains a ZZZZ section which is not a begin of line,
+# Barak Griffis 05/06/2014
+# Guilhem Marchand 05/20/2014: missing timestamp in cksum output resulting in bad Splunk interpretation
+# Guilhem Marchand 05/21/2014: clear content of cksum reference file for each iteration after check step
+# Guilhem Marchand 07/07/2014: TOP Section header corrected, change "timestamp" to "ZZZZ" and replace month names with numbers
+# Guilhem Marchand 07/08/2014: Changed date format for improved processing output
+# Guilhem Marchand 07/12/2014: Changed TOP section position of where to retrieve Logical number of CPUs (second position of AAA,cpus by default) to improve TOP Analysis
+# Guilhem Marchand 07/12/2014: Modified variable sections with devices to allow systems with huge number of disks to be fully taken in charge (150 devices per section x 5)
+# Guilhem Marchand 07/18/2014: Added nmon data structure verification, if the file contains a ZZZZ section which is not a begin of line,
 # then the data is wrong formated (buggy nmon) and the script will exit without generating bad data
-# Modified by Guilhem MArchand 07/24/2014: Corrected a blank line issue present in some nmon files and preventing the script from generating data as expected
+# Guilhem Marchand 07/24/2014: Corrected a blank line issue present in some nmon files and preventing the script from generating data as expected
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------
-# Modified by Guilhem MArchand 09/19/2014, V1.2.0: Major rewrite of the nmon2csv converter, various improvements and corrections, improved structure verifications, processing statistics...
+# Guilhem Marchand 09/19/2014, V1.2.0: Major rewrite of the nmon2csv converter, various improvements and corrections, improved structure verifications, processing statistics...
+# Guilhem Marchand 12/05/2014, V1.2.01: Minor correction of APP definition, moved $SPLUNK_HOME test after definition, Added $APP dir existence verification
+# Guilhem Marchand 12/26/2014, V1.2.2: Major release of the nmon2csv converter: Implements the distinction between real time and cold data, the script can now run over a running nmon file
+# and only create new events that have not yet been proceeded
 
-$version = "1.2.0";
+$version = "1.2.2";
 
 use Time::Local;
 use Time::HiRes;
@@ -89,8 +92,15 @@ use POSIX 'strftime';
 # Processing starting time
 my $t_start = [Time::HiRes::gettimeofday];
 
+# Initial states for Analysis
+my $realtime = "False";
+my $colddata = "False";
+
 # Local time
-my $time = localtime;
+my $time = strftime "%d-%m-%Y %H:%M:%S", localtime;
+
+# Local Time in epoch
+my $time_epoch = time();
 
 # timestamp used to name csv files
 $csv_timestamp = strftime "%Y%m%d%H%M%S", localtime;
@@ -98,18 +108,34 @@ $csv_timestamp = strftime "%Y%m%d%H%M%S", localtime;
 # Default Environment Variable SPLUNK_HOME, this shall be automatically defined if as the script shall be launched by Splunk
 my $SPLUNK_HOME = $ENV{SPLUNK_HOME};
 
+# Verify SPLUNK_HOME definition
+if ( not $SPLUNK_HOME ) {
+    print(
+"\n$time ERROR: The environment variable SPLUNK_HOME could not be verified, if you want to run this script manually you need to export it before processing"
+    );
+    die;
+}
+
 # Empty init APP
 my $APP = "";
 
 # Check if we are running nmon / TA-nmon / PA-nmon
-if ( $SPLUNK_HOME =~ /.*splunkforwarder.*/ ) {
+if ( -d "$SPLUNK_HOME/etc/apps/TA-nmon" ) {
     $APP = "$SPLUNK_HOME/etc/apps/TA-nmon";
 }
-elsif ( -d "/opt/splunk/etc/slave-apps/_cluster" ) {
+elsif ( -d "$SPLUNK_HOME/etc/slave-apps/PA-nmon" ) {
     $APP = "$SPLUNK_HOME/etc/slave-apps/PA-nmon";
 }
 else {
     $APP = "$SPLUNK_HOME/etc/apps/nmon";
+}
+
+# Verify existence of APP
+if ( !-d "$APP" ) {
+    print(
+"\n$time ERROR: The Application root directory could not be found, is nmon / TA-nmon / PA-nmon installed ?\n"
+    );
+    die;
 }
 
 # If may main directories do not exist
@@ -129,19 +155,27 @@ if ( !-d "$OUTPUTCONF_DIR" ) { mkdir "$OUTPUTCONF_DIR"; }
 # ID reference file, will be used to temporarily store the last execution result for a given nmon file, and prevent Splunk from
 # generating duplicates by relaunching the conversion process
 # Splunk when using a custom archive mode, launches twice the custom script
+
+# Supplementary note: Since V1.2.2, the ID_REF is overwritten if running real time mode
+
 my $ID_REF = "$APP/var/id_reference.txt";
+
+#################################################
+## 	Various
+#################################################
+
+# Used for date string to epoch time
+my %month;
+@month{qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/} = 0 .. 11;
+
+%mon2num = qw(
+  jan 1  feb 2  mar 3  apr 4  may 5  jun 6
+  jul 7  aug 8  sep 9  oct 10 nov 11 dec 12
+);
 
 ####################################################################
 #############		Main Program
 ####################################################################
-
-# Verify SPLUNK_HOME definition
-if ( not $SPLUNK_HOME ) {
-    print(
-"\n$time ERROR: The environment variable SPLUNK_HOME could not be verified, if you want to run this script manually you need to export it before processing"
-    );
-    die;
-}
 
 # Verify existence of OUTPUT_DIR
 if ( !-d "$SPOOL_DIR" ) {
@@ -320,8 +354,8 @@ foreach $FILENAME (@nmon_files) {
     close FILE;
 
     # If SN could not be identified
-    if ( $SN == "-1" ) { 
-         $SN = $HOSTNAME;  
+    if ( $SN == "-1" ) {
+        $SN = $HOSTNAME;
     }
 
     # Get nmon file size in bytes
@@ -378,19 +412,19 @@ foreach $FILENAME (@nmon_files) {
 
     if ( $HOSTNAME == "-1" ) {
         print("ERROR: The hostname could not be extracted from Nmon data ! \n");
-        unlink $FILENAME;        
+        unlink $FILENAME;
         exit 1;
     }
 
     if ( $DATE == "-1" ) {
         print("ERROR: date could not be extracted from Nmon data ! \n");
-        unlink $FILENAME;        
+        unlink $FILENAME;
         exit 1;
     }
 
     if ( $TIME == "-1" ) {
         print("ERROR: time could not be extracted from Nmon data ! \n");
-        unlink $FILENAME;        
+        unlink $FILENAME;
         exit 1;
     }
 
@@ -398,7 +432,7 @@ foreach $FILENAME (@nmon_files) {
         print(
 "ERROR: The number of logical cpus (logical_cpus) could not be extracted from Nmon data ! \n"
         );
-        unlink $FILENAME;        
+        unlink $FILENAME;
         exit 1;
     }
 
@@ -407,7 +441,7 @@ foreach $FILENAME (@nmon_files) {
 "ERROR: hostname: $HOSTNAME Detected Bad Nmon structure, found ZZZZ lines truncated! (ZZZZ lines contains the event timestamp and should always begin the line) \n"
         );
         print("ERROR: hostname: $HOSTNAME Ignoring nmon data \n");
-        unlink $FILENAME;        
+        unlink $FILENAME;
         exit 1;
     }
 
@@ -416,7 +450,7 @@ foreach $FILENAME (@nmon_files) {
 "ERROR: hostname: $HOSTNAME Detected obsolete Nmon version, please consider upgrading this hosts! \n"
         );
         print("ERROR: hostname: $HOSTNAME Ignoring nmon data \n");
-        unlink $FILENAME;        
+        unlink $FILENAME;
         exit 1;
     }
 
@@ -424,7 +458,7 @@ foreach $FILENAME (@nmon_files) {
     if ( $virtual_cpus == "-1" ) {
         $virtual_cpus = $logical_cpus;
     }
-    
+
 ###############
     # ID Check #
 ###############
@@ -434,27 +468,173 @@ foreach $FILENAME (@nmon_files) {
 # If the Nmon file id is already present in our reference file, then we have already proceeded this Nmon and nothing has to be done
 # Last execution result will be extracted from it to stdout
 
+    # Change . to : if present in TIME
+    $TIME =~ s/\./\:/g;
+
+    # Date of starting Nmon (format: DD-MM-YYYY hh:mm:ss)
+    my $NMON_DATE = "$DATE $TIME";
+
+    $NMON_DATE =~ s/JAN/01/g;
+    $NMON_DATE =~ s/FEB/02/g;
+    $NMON_DATE =~ s/MAR/03/g;
+    $NMON_DATE =~ s/APR/04/g;
+    $NMON_DATE =~ s/MAY/05/g;
+    $NMON_DATE =~ s/JUN/06/g;
+    $NMON_DATE =~ s/JUL/07/g;
+    $NMON_DATE =~ s/AUG/08/g;
+    $NMON_DATE =~ s/SEP/09/g;
+    $NMON_DATE =~ s/OCT/10/g;
+    $NMON_DATE =~ s/NOV/11/g;
+    $NMON_DATE =~ s/DEC/12/g;
+
+# Convert date string to epoch time (note: we could have made this easier but we want to only use core modules !)
+    my ( $day, $month, $year, $hour, $min, $sec ) = split /\W+/, $NMON_DATE;
+    my $starting_epochtime =
+      timelocal( $sec, $min, $hour, $day, $month - 1, $year );
+
+    # Search for the last timestamp in data
+
+    # Open NMON file for reading
+    if ( !open( FIC, $file ) ) {
+        die( "Error while trying to open NMON Source file '" . $file . "'" );
+    }
+
+    # Initialize variables
+    my $timestamp = "";
+
+    while ( defined( my $l = <FIC> ) ) {
+        chomp $l;
+
+        # Get timestamp"
+        if ( ( rindex $l, "ZZZZ," ) > -1 ) {
+            ( my $t1, my $t2, my $timestamptmp1, my $timestamptmp2 ) =
+              split( ",", $l );
+            $timestamp = $timestamptmp2 . " " . $timestamptmp1;
+
+            $timestamp =~ s/JAN/01/g;
+            $timestamp =~ s/FEB/02/g;
+            $timestamp =~ s/MAR/03/g;
+            $timestamp =~ s/APR/04/g;
+            $timestamp =~ s/MAY/05/g;
+            $timestamp =~ s/JUN/06/g;
+            $timestamp =~ s/JUL/07/g;
+            $timestamp =~ s/AUG/08/g;
+            $timestamp =~ s/SEP/09/g;
+            $timestamp =~ s/OCT/10/g;
+            $timestamp =~ s/NOV/11/g;
+            $timestamp =~ s/DEC/12/g;
+
+     # Convert timestamp string to epoch time (from format: DD-MM-YYYY hh:mm:ss)
+            my ( $day, $month, $year, $hour, $min, $sec ) = split /\W+/,
+              $timestamp;
+            $ZZZZ_epochtime =
+              timelocal( $sec, $min, $hour, $day, $month - 1, $year );
+
+        }
+
+    }
+
+    # Last epochtime in data is
+    $ending_epochtime = $ZZZZ_epochtime;
+
+    # Evaluate if we are dealing with real time data or cold data
+    if ( ( ($time_epoch) - ( 4 * $INTERVAL ) ) > $ending_epochtime ) {
+
+        $colddata = True;
+        print "ANALYSIS: Assuming Nmon cold data \n";
+
+    }
+
+    else {
+
+        $realtime = True;
+        print "ANALYSIS: Assuming Nmon realtime data \n";
+
+        # Override ID_REF
+        $ID_REF = "$APP/var/id_reference_realtime.txt";
+
+    }
+
+    # Set the full idnmon
+    $idnmon = "$idnmon,$starting_epochtime,$ending_epochtime";
+
+    # Set the partial idnmon
+    $partial_idnmon = "$idnmon,$starting_epochtime";
+
     # Open ID_REF file
 
     if ( -e $ID_REF ) {
 
         open( ID_REF, "< $ID_REF" ) or die "ERROR: Can't open $ID_REF : $!";
+        chomp $ID_REF;
 
-        if ( grep { /$idnmon/ } <ID_REF> ) {
+        if ( $realtime eq "True" ) {
 
-            # If the idnmon was found, print file content and exit
-            open( ID_REF, "< $ID_REF" ) or die "ERROR: Can't open $ID_REF : $!";
-            while (<ID_REF>) {
-                print;
+            if ( grep { /$idnmon/ } <ID_REF> ) {
+
+                # If the idnmon was found, print file content and exit
+                open( ID_REF, "< $ID_REF" )
+                  or die "ERROR: Can't open $ID_REF : $!";
+                while (<ID_REF>) {
+                    print;
+                }
+                close ID_REF;
+
+                # remove spool nmon
+                unlink $file;
+
+                exit;
+
             }
-            close ID_REF;
+            else {
 
-            # remove spool nmon
-            unlink $file;
+# If in realtime mode, extract the last known epochtime processed, only events after this timestamp will be extracted
+                open( ID_REF, "< $ID_REF" )
+                  or die "ERROR: Can't open $ID_REF : $!";
+                while ( defined( my $l = <ID_REF> ) ) {
+                    chomp $l;
 
-            exit;
+                    # Get timestamp"
+                    if ( ( rindex $l, "Ending_epochtime" ) > -1 ) {
+                        ( my $t1, my $timestamp ) =
+                          split( ": ", $l );
+                        $last_known_epochtime = $timestamp;
+                        print(
+                            "Last known timestamp is: $last_known_epochtime \n"
+                        );
+                    }
 
+                }
+
+            }
         }
+
+        elsif ( $colddata eq "True" ) {
+
+            if ( grep { /$partial_idnmon/ } <ID_REF> ) {
+
+                # If the idnmon was found, print file content and exit
+                open( ID_REF, "< $ID_REF" )
+                  or die "ERROR: Can't open $ID_REF : $!";
+                while (<ID_REF>) {
+                    print;
+                }
+                close ID_REF;
+
+                # remove spool nmon
+                unlink $file;
+
+                exit;
+
+            }
+        }
+
+    }
+
+# If last_known_epochtime could not be found (eg. we never proceeded this nmon file), set it equal to starting_epochtime
+    if ( $last_known_epochtime eq "" ) {
+
+        $last_known_epochtime = $starting_epochtime;
 
     }
 
@@ -462,13 +642,27 @@ foreach $FILENAME (@nmon_files) {
 
     # Open for writing, and write the idnmon to it
     open( ID_REF, "> $ID_REF" ) or die "ERROR: Can't open $ID_REF : $!";
-    print ID_REF "NMON ID: $idnmon\n";
+    if ( $realtime eq "True" ) {
+        print ID_REF "NMON ID: $idnmon\n";
 
-    # Print idnmon for stdout
-    print "NMON ID: $idnmon\n";
+        # Print idnmon for stdout
+        print "NMON ID: $idnmon\n";
+    }
+    elsif ( $colddata eq "True" ) {
+        print ID_REF "NMON ID: $partial_idnmon\n";
+
+        # Print idnmon for stdout
+        print "NMON ID: $partial_idnmon\n";
+    }
 
     # Open ID_REF for writing in append mode
     open( ID_REF, ">>$ID_REF" );
+
+    # Show and Save timestamps information
+    print "Starting_epochtime: $starting_epochtime \n";
+    print ID_REF "Starting_epochtime: $starting_epochtime \n";
+    print "Ending_epochtime: $ending_epochtime \n";
+    print ID_REF "Ending_epochtime: $ending_epochtime \n";
 
 ####################################################################################################
 #############		NMON config Section						############
@@ -483,85 +677,198 @@ foreach $FILENAME (@nmon_files) {
         $BASEFILENAME =
 "$OUTPUTCONF_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${bytes}_${csv_timestamp}.nmon.config.csv";
 
-        unless ( open( INSERT, ">$BASEFILENAME" ) ) {
-            die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
-        }
+        if ( $realtime eq "True" ) {
 
-        # Initialize variables
-        my $section      = "CONFIG";
-        my $time         = "";
-        my $date         = "";
-        my $hostnameT    = "Unknown";
-        my $SerialNumber = "Unknown";
-        $count = 0;
+            $limit = ( ($starting_epochtime) + ( 4 * $INTERVAL ) );
 
-        # Get nmon/server settings (search string, return column, delimiter)
-        $AIXVER   = &get_setting( "AIX",      2, "," );
-        $HOSTNAME = &get_setting( "host",     2, "," );
-        $DATE     = &get_setting( "AAA,date", 2, "," );
-        $TIME     = &get_setting( "AAA,time", 2, "," );
+            print "last known epoch is $last_known_epochtime \n";
 
-        if ( $AIXVER eq "-1" ) {
-            $SN = $HOSTNAME;    # Probably a Linux host
-        }
-        else {
-            $SN = &get_setting( "systemid", 4, "," );
-            $SN = ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
-        }
+            if ( $last_known_epochtime < $limit ) {
 
-        # write event header
+                print "CONFIG section will be extracted \n";
 
-        my $write =
-          $section . "," . $DATE . ":" . $TIME . "," . $SN . "," . $HOSTNAME;
-        print( INSERT "$write\n" );
-        $count++;
+                unless ( open( INSERT, ">$BASEFILENAME" ) ) {
+                    die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
+                }
 
-        # Open NMON file for reading
-        if ( !open( FIC, $file ) ) {
-            die(    "ERROR: while trying to open NMON Source file '"
-                  . $file
-                  . "'" );
-        }
+                # Initialize variables
+                my $section      = "CONFIG";
+                my $time         = "";
+                my $date         = "";
+                my $hostnameT    = "Unknown";
+                my $SerialNumber = "Unknown";
+                $count = 0;
 
-        while ( defined( my $l = <FIC> ) ) {
-            chomp $l;
+            # Get nmon/server settings (search string, return column, delimiter)
+                $AIXVER   = &get_setting( "AIX",      2, "," );
+                $HOSTNAME = &get_setting( "host",     2, "," );
+                $DATE     = &get_setting( "AAA,date", 2, "," );
+                $TIME     = &get_setting( "AAA,time", 2, "," );
 
-            # CONFIG Section"
+                if ( $AIXVER eq "-1" ) {
+                    $SN = $HOSTNAME;    # Probably a Linux host
+                }
+                else {
+                    $SN = &get_setting( "systemid", 4, "," );
+                    $SN = ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
+                }
 
-            if ( $l =~ /^AAA/ ) {
+                # write event header
 
-                my $x = $l;
-
-                # Manage some fields we statically set
-                $x =~ s/CONFIG,//g;
-                $x =~ s/Time,//g;
-
-                my $write = $x;
-
+                my $write =
+                    $section . ","
+                  . $DATE . ":"
+                  . $TIME . ","
+                  . $SN . ","
+                  . $HOSTNAME;
                 print( INSERT "$write\n" );
                 $count++;
 
+                # Open NMON file for reading
+                if ( !open( FIC, $file ) ) {
+                    die(    "ERROR: while trying to open NMON Source file '"
+                          . $file
+                          . "'" );
+                }
+
+                while ( defined( my $l = <FIC> ) ) {
+                    chomp $l;
+
+                    # CONFIG Section"
+
+                    if ( $l =~ /^AAA/ ) {
+
+                        my $x = $l;
+
+                        # Manage some fields we statically set
+                        $x =~ s/CONFIG,//g;
+                        $x =~ s/Time,//g;
+
+                        my $write = $x;
+
+                        print( INSERT "$write\n" );
+                        $count++;
+
+                    }
+
+                    if ( $l =~ /^BBB/ ) {
+
+                        my $x = $l;
+
+                        # Manage some fields we statically set
+                        $x =~ s/CONFIG,//g;
+                        $x =~ s/Time,//g;
+
+                        my $write = $x;
+
+                        print( INSERT "$write\n" );
+                        $count++;
+
+                    }
+
+                }
+
+                print "$key section: Wrote $count lines\n";
+                print ID_REF "$key section: Wrote $count lines\n";
+
             }
 
-            if ( $l =~ /^BBB/ ) {
+            else {
 
-                my $x = $l;
-
-                # Manage some fields we statically set
-                $x =~ s/CONFIG,//g;
-                $x =~ s/Time,//g;
-
-                my $write = $x;
-
-                print( INSERT "$write\n" );
-                $count++;
+                print
+"CONFIG section: Assuming we already extracted for this file \n";
 
             }
 
         }
 
-        print "$key section: Wrote $count lines\n";
-        print ID_REF "$key section: Wrote $count lines\n";
+        elsif ( $colddata eq "True" ) {
+
+            unless ( open( INSERT, ">$BASEFILENAME" ) ) {
+                die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
+            }
+
+            # Initialize variables
+            my $section      = "CONFIG";
+            my $time         = "";
+            my $date         = "";
+            my $hostnameT    = "Unknown";
+            my $SerialNumber = "Unknown";
+            $count = 0;
+
+            # Get nmon/server settings (search string, return column, delimiter)
+            $AIXVER   = &get_setting( "AIX",      2, "," );
+            $HOSTNAME = &get_setting( "host",     2, "," );
+            $DATE     = &get_setting( "AAA,date", 2, "," );
+            $TIME     = &get_setting( "AAA,time", 2, "," );
+
+            if ( $AIXVER eq "-1" ) {
+                $SN = $HOSTNAME;    # Probably a Linux host
+            }
+            else {
+                $SN = &get_setting( "systemid", 4, "," );
+                $SN = ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
+            }
+
+            # write event header
+
+            my $write =
+                $section . ","
+              . $DATE . ":"
+              . $TIME . ","
+              . $SN . ","
+              . $HOSTNAME;
+            print( INSERT "$write\n" );
+            $count++;
+
+            # Open NMON file for reading
+            if ( !open( FIC, $file ) ) {
+                die(    "ERROR: while trying to open NMON Source file '"
+                      . $file
+                      . "'" );
+            }
+
+            while ( defined( my $l = <FIC> ) ) {
+                chomp $l;
+
+                # CONFIG Section"
+
+                if ( $l =~ /^AAA/ ) {
+
+                    my $x = $l;
+
+                    # Manage some fields we statically set
+                    $x =~ s/CONFIG,//g;
+                    $x =~ s/Time,//g;
+
+                    my $write = $x;
+
+                    print( INSERT "$write\n" );
+                    $count++;
+
+                }
+
+                if ( $l =~ /^BBB/ ) {
+
+                    my $x = $l;
+
+                    # Manage some fields we statically set
+                    $x =~ s/CONFIG,//g;
+                    $x =~ s/Time,//g;
+
+                    my $write = $x;
+
+                    print( INSERT "$write\n" );
+                    $count++;
+
+                }
+
+            }
+
+            print "$key section: Wrote $count lines\n";
+            print ID_REF "$key section: Wrote $count lines\n";
+
+        }
 
     }    # end foreach
 
@@ -730,22 +1037,51 @@ foreach $FILENAME (@nmon_files) {
                         $i     = $i + 1;
                     }
 
-                    print( INSERT $write . "\n" );
-                    $count++
+  # If in realtime mode, only extract events newer than the last known epochtime
+                    if ( $realtime eq "True" ) {
+
+     # Convert timestamp string to epoch time (from format: DD-MM-YYYY hh:mm:ss)
+                        my ( $day, $month, $year, $hour, $min, $sec ) =
+                          split /\W+/, $timestamp;
+                        my $ZZZZ_epochtime =
+                          timelocal( $sec, $min, $hour, $day, $month - 1,
+                            $year );
+
+                        if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                            print( INSERT $write . "\n" );
+                            $count++;
+                        }
+                    }
+                    elsif ( $colddata eq "True" ) {
+                        print( INSERT $write . "\n" );
+                        $count++;
+                    }
 
                 }
 
             }
 
-            if ( $sanity_check == 0 ) {
+            # If we wrote more than the header
+            if ( $count > 1 ) {
 
-                print "$key section: Wrote $count lines\n";
-                print ID_REF "$key section: Wrote $count lines\n";
+                if ( $sanity_check == 0 ) {
+
+                    print "$key section: Wrote $count lines\n";
+                    print ID_REF "$key section: Wrote $count lines\n";
+
+                }
+
+                else {
+                    # Something happened, don't let bad file in place
+                    unlink $BASEFILENAME;
+                }
 
             }
+
+            # Else remove the file without more explanations
             else {
-                # Something happened, don't let bad file in place
-                unlink $BASEFILENAME
+                unlink $BASEFILENAME;
             }
 
         }    # end find the section
@@ -959,8 +1295,26 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
                           . $SNAPSHOTS . ","
                           . $x;
 
-                        print( INSERT $write . "\n" );
-                        $count++;
+  # If in realtime mode, only extract events newer than the last known epochtime
+                        if ( $realtime eq "True" ) {
+
+     # Convert timestamp string to epoch time (from format: DD-MM-YYYY hh:mm:ss)
+                            my ( $day, $month, $year, $hour, $min, $sec ) =
+                              split /\W+/, $timestamp;
+                            my $ZZZZ_epochtime =
+                              timelocal( $sec, $min, $hour, $day, $month - 1,
+                                $year );
+
+                            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                                print( INSERT $write . "\n" );
+                                $count++;
+                            }
+                        }
+                        elsif ( $colddata eq "True" ) {
+                            print( INSERT $write . "\n" );
+                            $count++;
+                        }
 
                     }
 
@@ -995,8 +1349,26 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
                           . $SNAPSHOTS . ","
                           . $x;
 
-                        print( INSERT $write . "\n" );
-                        $count++;
+  # If in realtime mode, only extract events newer than the last known epochtime
+                        if ( $realtime eq "True" ) {
+
+     # Convert timestamp string to epoch time (from format: DD-MM-YYYY hh:mm:ss)
+                            my ( $day, $month, $year, $hour, $min, $sec ) =
+                              split /\W+/, $timestamp;
+                            my $ZZZZ_epochtime =
+                              timelocal( $sec, $min, $hour, $day, $month - 1,
+                                $year );
+
+                            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                                print( INSERT $write . "\n" );
+                                $count++;
+                            }
+                        }
+                        elsif ( $colddata eq "True" ) {
+                            print( INSERT $write . "\n" );
+                            $count++;
+                        }
 
                     }
 
@@ -1004,15 +1376,26 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
 
             }
 
-            if ( $sanity_check == 0 ) {
+            # If we wrote more than the header
+            if ( $count > 1 ) {
 
-                print "$key section: Wrote $count lines\n";
-                print ID_REF "$key section: Wrote $count lines\n";
+                if ( $sanity_check == 0 ) {
+
+                    print "$key section: Wrote $count lines\n";
+                    print ID_REF "$key section: Wrote $count lines\n";
+
+                }
+
+                else {
+                    # Something happened, don't let bad file in place
+                    unlink $BASEFILENAME;
+                }
 
             }
+
+            # Else remove the file without more explanations
             else {
-                # Something happened, don't let bad file in place
-                unlink $BASEFILENAME
+                unlink $BASEFILENAME;
             }
 
         }    # end find the section
@@ -1170,12 +1553,39 @@ qq|type,serialnum,hostname,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\
         # If sanity check is ok, write data
         if ( $sanity_check == 0 ) {
 
-            print INSERT (
-qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
-            );
-            $count++;
+            $timestamp = $DATETIME{ @cols[1] };
 
-            $comma = "\n";
+     # Convert timestamp string to epoch time (from format: YYYY-MM-DD hh:mm:ss)
+            my ( $year, $month, $day, $hour, $min, $sec ) = split /\W+/,
+              $timestamp;
+            my $ZZZZ_epochtime =
+              timelocal( $sec, $min, $hour, $day, $month - 1, $year );
+
+            # Write only new data if in realtime mode
+
+            if ( $realtime eq "True" ) {
+
+                if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                    print INSERT (
+qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
+                    );
+                    $count++;
+
+                    $comma = "\n";
+                }
+            }
+
+            elsif ( $colddata eq "True" ) {
+
+                print INSERT (
+qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
+                );
+                $count++;
+
+                $comma = "\n";
+
+            }
 
         }
 
@@ -1206,8 +1616,8 @@ qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@co
         }
         else {
             # Hey, only a header ! Don't keep empty files please
-            unlink $BASEFILENAME                
-        }        
+            unlink $BASEFILENAME;
+        }
     }
 
 }    # End Insert
@@ -1325,10 +1735,36 @@ qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$d
             # If sanity check has not failed, write data
             if ( $sanity_check != "1" ) {
 
-                print INSERT (
+                $timestamp = $DATETIME{ $cols[1] };
+
+     # Convert timestamp string to epoch time (from format: YYYY-MM-DD hh:mm:ss)
+                my ( $year, $month, $day, $hour, $min, $sec ) = split /\W+/,
+                  $timestamp;
+                my $ZZZZ_epochtime =
+                  timelocal( $sec, $min, $hour, $day, $month - 1, $year );
+
+                # Write only new data if in realtime mode
+
+                if ( $realtime eq "True" ) {
+
+                    if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                        print INSERT (
 qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[$j]",$cols[$j]|
-                );
-                $count++;
+                        );
+                        $count++;
+
+                    }
+                }
+
+                elsif ( $colddata eq "True" ) {
+
+                    print INSERT (
+qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[$j]",$cols[$j]|
+                    );
+                    $count++;
+
+                }
 
             }
 
@@ -1367,7 +1803,7 @@ qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$d
         }
         else {
             # Hey, only a header ! Don't keep empty files please
-            unlink $BASEFILENAME                
+            unlink $BASEFILENAME;
         }
     }
 
@@ -1404,6 +1840,7 @@ sub get_setting {
 #####################
 ##  Clean up       ##
 #####################
+
 sub clean_up_line {
 
     # remove characters not compatible with nmon variable

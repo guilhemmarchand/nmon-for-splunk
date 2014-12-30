@@ -1,6 +1,6 @@
 <dashboard script="single_trend.js" stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css,single_trend_transposed.css">
   <label>NMON Performance Monitor</label>
-  <description>Version 1.4.91</description>
+  <description>Version 1.5.0</description>
   <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>
   <row>
     <panel>
@@ -116,7 +116,8 @@
         <option name="field">count</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_data earliest="-7d@d" latest="now"</option>
+        <option name="linkSearch">| pivot NMON_Config Nmon_Config last(AIX_Machine_SerialNumber) AS "AIX_Machine_SerialNumber" dc(hostname) AS "dcount" SPLITROW hostname AS hostname SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
+| eval serialnum=if(isnull(AIX_Machine_SerialNumber), hostname, AIX_Machine_SerialNumber) | fields hostname,serialnum | stats count</option>
       </single>
       <single>
         <searchName>Volume of Data indexed Today</searchName>

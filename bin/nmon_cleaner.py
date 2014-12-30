@@ -9,6 +9,7 @@
 # Releases Notes:
 
 # - November 2014, V1.0.0: Guilhem Marchand, Initial version
+# - 12/28/2014, V1.1.0: Guilhem Marchand, Rewritten version for Nmon Splunk App V1.5.0
 
 # Load libs
 
@@ -24,49 +25,63 @@ import re
 import argparse
 
 # Converter version
-version = '1.0.0'
+version = '1.1.0'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
 # - Every message of the script will be indexed and accessible within Splunk splunkd logs
 
 #################################################
-##      Functions
+#      Functions
 #################################################
 
 # Disallow negative value in parser
 
 def check_negative(value):
+
     ivalue = int(value)
     if ivalue < 0:
         raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
     return ivalue
 
 #################################################
-##      Arguments Parser
+#      Arguments Parser
 #################################################
 
 # Define Arguments
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--maxseconds', action='store', dest='MAXSECONDS', type=check_negative,
-                    help='Remove files older than x seconds')
+parser.add_argument('--cleancsv', action='store_true', default=False, dest='cleancsv',
+                    help='Activate the purge of csv files from csv repository and config repository '
+                         '(see also options above)')
+
+parser.add_argument('--maxseconds_csv', action='store', dest='MAXSECONDS_CSV', type=check_negative,
+                    help='Set the maximum file retention in seconds for csv data, every files older'
+                         ' than this value will be permanently removed')
+
+parser.add_argument('--maxseconds_nmon', action='store', dest='MAXSECONDS_NMON', type=check_negative,
+                    help='Set the maximum file retention in seconds for nmon files, every files older'
+                         ' than this value will be permanently removed')
 
 parser.add_argument('--approot', action='store', dest='APP',
-                    help='Set the root directory name of Nmon Application')
+                    help='Set a custom value for the Application root directory '
+                         '(default are: nmon / TA-nmon / PA-nmon)')
 
-parser.add_argument('--csvrepo', action='store', dest='CSV_REPOSITORY',
-                    help='Set the directory name for CSV Repository (default: csv_repository)')
+parser.add_argument('--csv_repository', action='store', dest='CSV_REPOSITORY',
+                    help='Set a custom location for directory containing csv data (default: csv_repository)')
 
-parser.add_argument('--configrepo', action='store', dest='CONFIG_REPOSITORY',
-                    help='Set the directory name for Config Repository (default: config_repository)')
+parser.add_argument('--config_repository', action='store', dest='CONFIG_REPOSITORY',
+                    help='Set a custom location for directory containing config data (default: config_repository)')
+
+parser.add_argument('--nmon_repository', action='store', dest='NMON_REPOSITORY',
+                    help='Set a custom location for directory containing nmon raw data (default: nmon_repository)')
 
 parser.add_argument('--version', action='version', version='%(prog)s ' + version)
 
 args = parser.parse_args()
 
 #################################################
-##      Variables
+#      Variables
 #################################################
 
 # Set logging format
@@ -81,7 +96,11 @@ logging.root.addHandler(handler)
 now = time.strftime("%c")
 
 # Set maxseconds
-maxseconds = args.MAXSECONDS
+maxseconds_csv = args.MAXSECONDS_CSV
+maxseconds_nmon = args.MAXSECONDS_NMON
+
+# Set cleancsv
+cleancsv = args.cleancsv
 
 # If the root directory App is no defined, use empty value (will be set later)
 if not args.APP:
@@ -100,6 +119,12 @@ if not args.CONFIG_REPOSITORY:
     config_repository = "config_repository"
 else:
     config_repository = args.CONFIG_REPOSITORY
+
+# If the nmon_repository is not defined, apply default 'nmon_repository' value
+if not args.NMON_REPOSITORY:
+    nmon_repository = "nmon_repository"
+else:
+    nmon_repository = args.NMON_REPOSITORY
 
 # Guest Operation System type
 ostype = platform.system().lower()
@@ -178,11 +203,21 @@ else:
 if not os.path.exists(APP_VAR):
     os.mkdir(APP_VAR)
 
-# Perf data csv repository
-CSV_DIR = APP_VAR + '/' + csv_repository
+# Repositories definition
+if is_windows:
+    CSV_DIR = APP_VAR + '\\' + csv_repository
+    CONFIG_DIR = APP_VAR + '\\' + config_repository
+    NMON_DIR = APP_VAR + '\\' + nmon_repository
+else:
+    CSV_DIR = APP_VAR + '/' + csv_repository
+    CONFIG_DIR = APP_VAR + '/' + config_repository
+    NMON_DIR = APP_VAR + '/' + nmon_repository
 
-# Perf data csv repository
-CONFIG_DIR = APP_VAR + '/' + config_repository
+# Check
+if not os.path.exists(NMON_DIR):
+    msg = 'The Nmon repository location ' + NMON_DIR + ' could not be found, We tried: ' + str(NMON_DIR)
+    logging.error(msg)
+    sys.exit(1)
 
 # List of directories to be proceeded
 WORKING_DIR = {CSV_DIR, CONFIG_DIR}
@@ -190,7 +225,7 @@ WORKING_DIR = {CSV_DIR, CONFIG_DIR}
 # Verify directory exist
 for DIR in WORKING_DIR:
     if not os.path.exists(DIR):
-        msg = 'The Application Data directory ' + DIR + ' could not be found, We tried: ' + str(DIR)
+        msg = 'The CSV Data directory ' + DIR + ' could not be found, We tried: ' + str(DIR)
         logging.error(msg)
         sys.exit(1)
 
@@ -198,23 +233,19 @@ for DIR in WORKING_DIR:
 start_time = time.time()
 
 ####################################################################
-#############           Main Program
+#           Main Program
 ####################################################################
 
-# Check Arguments
-if len(sys.argv) < 1:
-    print ("\n%s" % os.path.basename(sys.argv[0]))
-    print ("\nFiles cleaner:\n")
-    print ("- run the script with the argument --maxseconds x where x will be the file retention in seconds")
-    print ("Any csv file older than x days will be definitively removed")
-    sys.exit(0)
+# Default value for CSV retention
+if maxseconds_csv is None:
+    maxseconds_csv = 900
 
-if maxseconds is None:
-    logging.error('No retention value were provided, please run with --help for more information')
-    sys.exit(1)
+# Default value for NMON retention
+if maxseconds_nmon is None:
+    maxseconds_nmon = 604800
 
 # Show current time
-msg = now + "Starting File cleaning"
+msg = now + " Starting nmon cleaning"
 print (msg)
 
 # Display some basic information about us
@@ -222,60 +253,104 @@ msg = "Splunk Root Directory ($SPLUNK_HOME): " + str(SPLUNK_HOME) + " nmon_clean
       + " Python version: " + str(python_version)
 print (msg)
 
-# Proceed
+# Proceed to CSV cleaning
+if cleancsv:
 
-for DIR in WORKING_DIR:
-
-    # cd to directory
-    os.chdir(DIR)
-
-    # Verify we have data to manage
-    counter = len(glob.glob1(DIR, "*.csv"))
-
-    # print (counter)
-
-    if counter == 0:
-        msg = 'No csv files found in directory: ' + str(DIR) + ', no action required.'
-        print (msg)
-
-    else:
+    for DIR in WORKING_DIR:
 
         # cd to directory
         os.chdir(DIR)
 
-        # counter of files with retention expired
-        counter_expired = 0
+        # Verify we have data to manage
+        counter = len(glob.glob1(DIR, "*.csv"))
 
-        curtime = time.time()
-        limit = maxseconds
+        # print (counter)
 
-        for xfile in glob.glob('*.csv'):
-
-            filemtime = os.path.getmtime(xfile)
-
-            if curtime - filemtime > limit:
-
-                counter_expired += 1
-
-                size_mb = os.path.getsize(xfile)/1000.0/1000.0
-                size_mb = format(size_mb, '.2f')
-
-                mtime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(filemtime))  # Human readable datetime
-
-                msg = 'Max set retention of ' + str(maxseconds) + ' seconds expired for file: ' + xfile + ' size(MB): '\
-                      + str(size_mb) + ' mtime: ' + str(mtime)
-                print (msg)
-
-                os.remove(xfile)  # Permanently remove the file!
-
-        if counter_expired == 0:
-            msg = 'No file(s) found with retention expired in directory: ' + DIR + ', no action required'
+        if counter == 0:
+            msg = 'No files found in directory: ' + str(DIR) + ', no action required.'
             print (msg)
 
         else:
 
+            # cd to directory
+            os.chdir(DIR)
+
+            # counter of files with retention expired
+            counter_expired = 0
+
+            curtime = time.time()
+            limit = maxseconds_csv
+
+            for xfile in glob.glob('*.csv'):
+
+                filemtime = os.path.getmtime(xfile)
+
+                if curtime - filemtime > limit:
+
+                    counter_expired += 1
+
+                    size_mb = os.path.getsize(xfile)/1000.0/1000.0
+                    size_mb = format(size_mb, '.2f')
+
+                    mtime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(filemtime))  # Human readable datetime
+
+                    msg = 'Max set retention of ' + str(maxseconds_csv) + ' seconds expired for file: ' + xfile + ' size(MB): '\
+                          + str(size_mb) + ' mtime: ' + str(mtime)
+                    print (msg)
+
+                    os.remove(xfile)  # Permanently remove the file!
+
             msg = str(counter_expired) + ' files were permanently removed due to retention expired for directory ' + DIR
             print (msg)
+
+# Proceed to NMON cleaning
+
+# cd to directory
+DIR = NMON_DIR
+
+os.chdir(DIR)
+
+# Verify we have data to manage
+counter = len(glob.glob1(DIR, "*.nmon"))
+
+# print (counter)
+
+if counter == 0:
+    msg = 'No files found in directory: ' + str(DIR) + ', no action required.'
+    print (msg)
+
+else:
+
+    # cd to directory
+    os.chdir(DIR)
+
+    # counter of files with retention expired
+    counter_expired = 0
+
+    curtime = time.time()
+    limit = maxseconds_csv
+
+    for xfile in glob.glob('*.nmon'):
+
+        filemtime = os.path.getmtime(xfile)
+
+        if curtime - filemtime > limit:
+
+            counter_expired += 1
+
+            size_mb = os.path.getsize(xfile)/1000.0/1000.0
+            size_mb = format(size_mb, '.2f')
+
+            mtime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(filemtime))  # Human readable datetime
+
+            msg = 'Max set retention of ' + str(maxseconds_nmon) + ' seconds expired for file: ' + xfile + ' size(MB): '\
+                  + str(size_mb) + ' mtime: ' + str(mtime)
+            print (msg)
+
+            os.remove(xfile)  # Permanently remove the file!
+
+        msg = str(counter_expired) + ' files were permanently removed due to retention expired for directory ' + DIR
+        print (msg)
 
 ###################
 # End

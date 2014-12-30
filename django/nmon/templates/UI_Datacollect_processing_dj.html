@@ -90,7 +90,7 @@
 {% block managers %}
     
 	{% searchmanager id="nmon_perday"
-      	search='`nmon_processing` | eval size_MB=round((size_in_bytes/1000/1000),2) | timechart span=1d sum(size_MB) As "NMON Raw Data Volume proceeded per day (MB)"'|token_safe
+      	search='| tstats sum("NMON_Processing.size_in_MB") AS sum_size_MB from datamodel=NMON_Processing_Data_Collect where (nodename = NMON_Processing) groupby _time prestats=true span=1d | eval "_time"=_time | timechart dedup_splitvals=t sum("NMON_Processing.size_in_MB") AS sum_size_MB span=1d | sort limit=0 _time | fields _time, sum_size_MB'|token_safe
 			earliest_time="$earlyval$"|token_safe
 			latest_time="$lateval$"|token_safe
 			auto_cancel=60
@@ -98,7 +98,7 @@
 			preview=True %}
 
 	{% searchmanager id="nmon_errorperday"
-      	search='`nmon_processing` error | timechart span=1d count(source) As "Number of Errors encountered per day"'|token_safe
+      	search='| tstats count AS Count from datamodel=NMON_Processing_Data_Collect where (nodename = NMON_Processing.Errors_in_Processing) groupby _time prestats=true span=1d | eval "_time"=_time | timechart dedup_splitvals=t count AS Count span=1d | sort limit=0 _time | fields _time, Count'|token_safe
 			earliest_time="$earlyval$"|token_safe
 			latest_time="$lateval$"|token_safe
 			auto_cancel=60
@@ -106,7 +106,7 @@
 			preview=True %}
 
 	{% searchmanager id="total_elapsed"
-      	search='`nmon_processing` | timechart span=1d sum(elapsed_in_seconds) As "Total Time Spent in NMON Data Processing"'|token_safe
+      	search='| tstats sum("NMON_Processing.elapsed_in_seconds") AS "Sum of Elapsed in Seconds" from datamodel=NMON_Processing_Data_Collect where (nodename = NMON_Processing) groupby _time prestats=true span=1d | eval "_time"=_time | timechart dedup_splitvals=t sum("NMON_Processing.elapsed_in_seconds") AS "Sum of Elapsed in Seconds" span=1d | sort limit=0 _time | fields _time, "Sum of Elapsed in Seconds"'|token_safe
 			earliest_time="$earlyval$"|token_safe
 			latest_time="$lateval$"|token_safe
 			auto_cancel=60
