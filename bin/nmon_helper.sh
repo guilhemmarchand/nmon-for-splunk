@@ -15,7 +15,7 @@
 # Modified by Guilhem Marchand 25082014: Avoid deleting existing nmon files in nmon_repository, this is now taken in charge by Splunk itself using batch mode instead monitor mode
 #													  This prevents from having local nmon data missing when indexing large volume of nmon files from central shares
 # Modified by Guilhem Marchand 26102014: Improved APP dir definition (are we running nmon / TA-nmon / PA-nmon)
-# Modified by Guilhem Marchand 22122014: Modification of default values for interval and snapshot, added override features by default and local nmon.conf, removed the soft kill which is useless now
+# Modified by Guilhem Marchand 22122014: Modification of default values for interval and snapshot, added override features by default and local nmon.conf, kill evolution for TA upgrade management
 
 # Version 1.2.0
 
@@ -143,8 +143,8 @@ else
 	interval="20"
 	
 	# Number of Data refresh snapshots, Nmon will refresh data X times
-	# Default to 480 snapshots to provide a full day data measure
-	snapshot="480"
+	# Default to 4320 snapshots to provide a full day data measure
+	snapshot="4320"
 
 fi
 
@@ -156,6 +156,9 @@ fi
 # NOTE: 
 
 # Collecting NFS Statistics:
+
+# --> Since Nmon App Version 1.5.0, NFS activation can be controlled by the nmon.conf file in default/local directories
+
 # - Linux: Add the "-N" option if you want to extract NFS Statistics (NFS V2/V3/V4)
 # - AIX: Add the "-N" option for NFS V2/V3, "-NN" for NFS V4
 
@@ -169,7 +172,7 @@ fi
 # -M	Includes the MEMPAGES section in the recording file. The MEMPAGES section displays detailed memory statistics per page size.
 # -P	Includes the Paging Space section in the recording file.
 # -T	Includes the top processes in the output and saves the command-line arguments into the UARG section. You cannot specify the -t, -T, or -Y flags with each other.
-# -^	Includes the Fibre Channel (FC) sections.
+# -^	Includes the Fiber Channel (FC) sections.
 
 # For Linux, the default command options line "-f -T -d 1500" includes:
 
@@ -180,13 +183,28 @@ fi
 case `uname` in
 
 AIX )
-	nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot}" ;;
+
+	if [ ${AIX_NFS23} -eq 1 ]; then
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot}"
+	elif [ ${AIX_NFS23} -eq 1 ]; then
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot}"
+	else
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot}"
+	fi
+	;;
 
 SunOS )
-	nmon_command="${NMON} ${interval} ${snapshot}" ;;
+	nmon_command="${NMON} ${interval} ${snapshot}" 
+	;;
 
 Linux )
-	nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot}" ;;
+
+	if [ ${Linux_NFS} -eq 1 ]; then
+		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot}"
+	else
+		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot}"
+	fi
+	;;
 
 esac
 

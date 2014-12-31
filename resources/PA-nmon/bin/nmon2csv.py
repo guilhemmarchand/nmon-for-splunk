@@ -587,10 +587,19 @@ for line in data:
             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
 # Set ending epochtime
-if ZZZZ_epochtime:
-    ending_epochtime = ZZZZ_epochtime
-else:
-    ZZZZ_epochtime = starting_epochtime
+# noinspection PyBroadException
+try:
+    if ZZZZ_epochtime:
+        ending_epochtime = ZZZZ_epochtime
+    else:
+        ZZZZ_epochtime = starting_epochtime
+except NameError:
+    logging.error("Encountered an Unexpected error while trying to analyse the ending period of this Nmon"
+                  " file, cannot continue.")
+    sys.exit(1)
+except:
+    logging.error("Encountered an Unexpected error while parsing this Nmon file Nmon, cannot continue")
+    sys.exit(1)
 
 # Evaluate if we are dealing with real time data or cold data
 if (int(start_time) - (4 * int(INTERVAL))) > int(ending_epochtime):

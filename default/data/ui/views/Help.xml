@@ -2603,19 +2603,21 @@ $ splunk show cluster-bundle-status
 <lu>
 
 <li>
-<b>nmon2csv.py:</b> 
+<b>nmon2csv.py / nmon2csv.pl:</b> 
 </li>
 
 <br />
-Formerly nmon2csv, this is the Python converter which will translate Nmon structured data into data Splunk will index and be able to manage.
+Formerly nmon2csv, these are Nmon converters which will translate Nmon structured data into data Splunk will index and be able to manage.
 
 <br />
-It is automatically Invoked by the Splunk Archive Processor whenever required, and reads data from standard input (stdin).
+In default configuration, the Python version will be used, the Perl version is provided as an alternative for system lacking a Python core environment, and where installing
+it may be a challenge... (not necessary technically !)
 
 <br />
-<br />
+Both Python and Perl versions only uses core modules, such that they can be executed without having to install anything specifically.
 
-This is a Python 2x compatible script which has no external requirement and should run with no issues in any modern enough Operating System. 
+<br />
+These script are automatically Invoked by the Splunk Archive Processor whenever required, and reads data from standard input (stdin). (see props.conf)
 
 <br />
 <br />
@@ -2626,34 +2628,39 @@ This is a Python 2x compatible script which has no external requirement and shou
 
 <br />
 
-<li>
-<b>nmon2csv.pl:</b> 
-</li>
-
-<br />
-This is the Perl alternative converter that can be used in replacement of the Python converter, notably when Python is unavailable, if you have troubles with the Python converter, or for other considerations.
-
-<br />
-It is automatically Invoked by the Splunk Archive Processor whenever required, and reads data from standard input (stdin).
-
-<br />
-<br />
-
-This is a Perl standard script which has no external requirement and should run with no issues in any modern enough Operating System. 
-
-<br />
-<br />
-
-<li>
-<b>nmon_helper.sh:</b>
-</li>
-
-<br />
-
-Third party Shell script to collect NMON data for AIX / Linux / Solaris indexer or forwarder.
+This is a third party Shell script used to collect the NMON performance data for AIX / Linux / Solaris hosts.
 
 <br />
 Written in sh, it does not have any specific requirements and should work with any Operating System.
+
+<br />
+At starting time, the script will operate a few verifications and will start the Nmon binary if required.
+
+<br />
+Since the version 1.5.0 of the Nmon App, main Nmon options can be controlled by the nmon.conf file (located in default directory), for customization purposes you can create your own version of the nmon.conf file in
+your local directory, changes will be permanent and upgrade resilient.
+
+
+<br />
+<br />
+
+<li>
+<b>nmon_cleaner.py / nmon_cleaner.pl:</b> 
+</li>
+
+<br />
+
+These scripts will be used by the App to manage the retention of raw Nmon data files.
+<br />
+In default configuration, raw Nmon files will be locally kept during 7 days.
+<br />
+Note that these scripts can be used to ensure csv data will always automatically purged on your forwarders, in case of unexpected error (such as batch mode non working), this can prevent from blocking the Universal Forwarder (running ouf of file handle)
+
+<br />
+
+The Python version will be used by default, the Perl version is provided as an alternative and uses exactly same options and mechanisms.
+
+Please see inputs.conf for more information.
 
 <br />
 <br />
