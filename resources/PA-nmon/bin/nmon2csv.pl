@@ -658,11 +658,20 @@ foreach $FILENAME (@nmon_files) {
     # Open ID_REF for writing in append mode
     open( ID_REF, ">>$ID_REF" );
 
+    # Save Analysis
+    if ( $realtime eq "True" ) {
+    	print ID_REF "ANALYSIS: Assuming Nmon realtime data \n";
+    }	
+    elsif ( $colddata eq "True" ) {
+    	print ID_REF "ANALYSIS: Assuming Nmon cold data \n";    
+    }
+
     # Show and Save timestamps information
     print "Starting_epochtime: $starting_epochtime \n";
     print ID_REF "Starting_epochtime: $starting_epochtime \n";
     print "Ending_epochtime: $ending_epochtime \n";
     print ID_REF "Ending_epochtime: $ending_epochtime \n";
+    print ID_REF "Last known timestamp is: $last_known_epochtime \n";
 
 ####################################################################################################
 #############		NMON config Section						############
@@ -1696,12 +1705,6 @@ sub variable_sections_insert {
         $rawdata[$i] =~ s/,$//;
         @cols = split( /,/, $rawdata[$i] );
 
-        print INSERT (
-qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[2]",$cols[2]|
-        );
-
-        $count++;
-
         for ( $j = 3 ; $j < @cols ; $j++ ) {
 
             $finaldata =
@@ -1742,35 +1745,26 @@ qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$d
                   $timestamp;
                 my $ZZZZ_epochtime =
                   timelocal( $sec, $min, $hour, $day, $month - 1, $year );
-
+                  
                 # Write only new data if in realtime mode
-
+                
                 if ( $realtime eq "True" ) {
 
                     if ( $ZZZZ_epochtime > $last_known_epochtime ) {
-
-                        print INSERT (
-qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[$j]",$cols[$j]|
-                        );
+                    
+                        print INSERT (qq|\n"$finaldata"|);
                         $count++;
-
                     }
+                    
                 }
 
                 elsif ( $colddata eq "True" ) {
 
-                    print INSERT (
-qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[$j]",$cols[$j]|
-                    );
+						  print ("Cold data set to True \n");
+
+                    print INSERT (qq|\n"$finaldata"|);
                     $count++;
-
                 }
-
-            }
-
-            else {
-
-                #print "$key has failed \n";
 
             }
 

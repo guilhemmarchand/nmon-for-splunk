@@ -1314,12 +1314,26 @@ for section in uarg_section:
                         perfdata_part3 = perfdata_match.group(3)
                         perfdata = perfdata_part1 + ',' + perfdata_part2 + ',"' + perfdata_part3 + '"'
 
-                        # increment
-                        count += 1
+                        if realtime:
 
-                        # Write perf data
-                        currsection.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                            if ZZZZ_epochtime > last_known_epochtime:
+
+                                # increment
+                                count += 1
+
+                                # Write perf data
+                                currsection.write(
+                                    section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+
+                        elif colddata:
+
+                            # increment
+                            count += 1
+
+                            # Write perf data
+                            currsection.write(
+                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+
 
                 if os == 'AIX':  # AIX OS specific header
 
