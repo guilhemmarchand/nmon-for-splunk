@@ -800,6 +800,10 @@ elif colddata:
 
 for section in static_section:
 
+    # Set output file
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+
     # counter
     count = 0
 
@@ -818,10 +822,6 @@ for section in static_section:
             count += 1
 
     if count > 2:
-
-        # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -1046,6 +1046,10 @@ for section in static_section:
 
 for section in top_section:
 
+    # Set output file
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+
     # counter
     count = 0
 
@@ -1061,10 +1065,6 @@ for section in top_section:
             count += 1
 
     if count > 2:
-
-        # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -1191,10 +1191,20 @@ for section in top_section:
 # UARG section: has a specific structure with uncommon fields, needs to be treated separately
 ###################
 
+# Note: UARG is not continuously collected as progs arguments may not always change (mainly for real time)
+# For this section specifically write from membuffer only
+
 for section in uarg_section:
+
+    # Set output file
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
     # counter
     count = 0
+
+    # set oslevel default
+    oslevel = "Unknown"
 
     # Sequence to search for
     seq = str(section) + ','
@@ -1209,74 +1219,85 @@ for section in uarg_section:
 
     if count > 2:
 
-        # Set output file
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+        # Open StringIO for temp in memory
+        membuffer = cStringIO.StringIO()
 
-        # Open output for writing
-        with open(currsection_output, "wb") as currsection:
+        # counter
+        count = 0
 
-            # counter
-            count = 0
+        for line in data:
 
-            for line in data:
+            # Extract sections, and write to output
+            myregex = r'^' + 'UARG,.Time' + '|ZZZZ.+'
+            find_section = re.match(myregex, line)
+            if find_section:
 
-                # Extract sections, and write to output
-                myregex = r'^' + 'UARG,.Time' + '|ZZZZ.+'
-                find_section = re.match(myregex, line)
-                if find_section:
+                line = subpcttopreplace(line)
+                line = subreplace(line)
 
-                    line = subpcttopreplace(line)
-                    line = subreplace(line)
+                # csv header
 
-                    # csv header
+                # Extract header excluding data that always has Txxxx for timestamp reference
+                myregex = '(' + section + ')\,(.+)'
+                fullheader_match = re.search(myregex, line)
 
-                    # Extract header excluding data that always has Txxxx for timestamp reference
-                    myregex = '(' + section + ')\,(.+)'
-                    fullheader_match = re.search(myregex, line)
+                if fullheader_match:
+                    fullheader = fullheader_match.group(2)
 
-                    if fullheader_match:
-                        fullheader = fullheader_match.group(2)
+                    # Replace "." by "_" only for header
+                    fullheader = re.sub("\.", '_', fullheader)
 
-                        # Replace "." by "_" only for header
-                        fullheader = re.sub("\.", '_', fullheader)
+                    header_match = re.search(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)',
+                                             fullheader)
 
-                        header_match = re.search(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)',
-                                                 fullheader)
+                    if header_match:
+                        header_part1 = header_match.group(2)
+                        header_part2 = header_match.group(3)
+                        header = header_part1 + header_part2
 
-                        if header_match:
-                            header_part1 = header_match.group(2)
-                            header_part2 = header_match.group(3)
-                            header = header_part1 + header_part2
+                        # Specifically for UARG, set OS type based on header fields
+                        os_match = re.search(r'PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand', header)
 
-                            # Specifically for UARG, set OS type based on header fields
-                            os_match = re.search(r'PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand', header)
+                        if os_match:
+                            oslevel = 'AIX'
+                        else:
+                            oslevel = 'Linux'
 
-                            if os_match:
-                                os = 'AIX'
-                            else:
-                                os = 'Linux'
+                        # increment
+                        count += 1
 
-                            # increment
-                            count += 1
+                        # Write header
+                        membuffer.write(
+                            'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'),
 
-                            # Write header
-                            currsection.write(
-                                'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'),
+                # Extract timestamp
 
-                    # Extract timestamp
+                # Nmon V9 and prior do not have date in ZZZZ
+                # If unavailable, we'll use the global date (AAA,date)
+                ZZZZ_DATE = '-1'
+                ZZZZ_TIME = '-1'
 
-                    # Nmon V9 and prior do not have date in ZZZZ
-                    # If unavailable, we'll use the global date (AAA,date)
-                    ZZZZ_DATE = '-1'
-                    ZZZZ_TIME = '-1'
+                # For Nmon V10 and more
 
-                    # For Nmon V10 and more
+                timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
+                if timestamp_match:
+                    ZZZZ_TIME = timestamp_match.group(2)
+                    ZZZZ_DATE = timestamp_match.group(3)
 
-                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
+                    # Replace month names with numbers
+                    ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
+
+                    ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+                    ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                # For Nmon V9 and less
+
+                if ZZZZ_DATE == '-1':
+                    ZZZZ_DATE = DATE
+                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
+
                     if timestamp_match:
                         ZZZZ_TIME = timestamp_match.group(2)
-                        ZZZZ_DATE = timestamp_match.group(3)
 
                         # Replace month names with numbers
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
@@ -1284,110 +1305,104 @@ for section in uarg_section:
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
                         ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
-                    # For Nmon V9 and less
+            if oslevel == 'Linux':  # Linux OS specific header
 
-                    if ZZZZ_DATE == '-1':
-                        ZZZZ_DATE = DATE
-                        timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
+                # Extract Data
+                perfdata_match = re.match('^UARG,T\d+,([0-9]*),([a-zA-Z\-/_:\.0-9]*),(.+)\n', line)
 
-                        if timestamp_match:
-                            ZZZZ_TIME = timestamp_match.group(2)
+                if perfdata_match:
+                    # In this section, we statically expect 3 fields: PID,ProgName,FullCommand
+                    # The FullCommand may be very problematic as it may almost contain any kind of char, comma included
+                    # Let's separate groups and insert " delimiter
 
-                            # Replace month names with numbers
-                            ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
+                    perfdata_part1 = perfdata_match.group(1)
+                    perfdata_part2 = perfdata_match.group(2)
+                    perfdata_part3 = perfdata_match.group(3)
+                    perfdata = perfdata_part1 + ',' + perfdata_part2 + ',"' + perfdata_part3 + '"'
 
-                            ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                    if realtime:
 
-                if os == 'Linux':  # Linux OS specific header
-
-                    # Extract Data
-                    perfdata_match = re.match('^UARG,T\d+,([0-9]*),([a-zA-Z\-/_:\.0-9]*),(.+)\n', line)
-
-                    if perfdata_match:
-                        # In this section, we statically expect 3 fields: PID,ProgName,FullCommand
-                        # The FullCommand may be very problematic as it may almost contain any kind of char, comma included
-                        # Let's separate groups and insert " delimiter
-
-                        perfdata_part1 = perfdata_match.group(1)
-                        perfdata_part2 = perfdata_match.group(2)
-                        perfdata_part3 = perfdata_match.group(3)
-                        perfdata = perfdata_part1 + ',' + perfdata_part2 + ',"' + perfdata_part3 + '"'
-
-                        if realtime:
-
-                            if ZZZZ_epochtime > last_known_epochtime:
-
-                                # increment
-                                count += 1
-
-                                # Write perf data
-                                currsection.write(
-                                    section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
-
-                        elif colddata:
+                        if ZZZZ_epochtime > last_known_epochtime:
 
                             # increment
                             count += 1
 
                             # Write perf data
-                            currsection.write(
+                            membuffer.write(
                                 section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
+                    elif colddata:
 
-                if os == 'AIX':  # AIX OS specific header
+                        # increment
+                        count += 1
 
-                    # Extract Data
-                    perfdata_match = re.match(
-                        '^UARG,T\d+,\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*\s*),\s*([a-zA-Z-/_:\.0-9]*)\s*,(.+)\n',
-                        line)
+                        # Write perf data
+                        membuffer.write(
+                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
-                    if perfdata_match:
-                        # In this section, we statically expect 7 fields: PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand
-                        # The FullCommand may be very problematic as it may almost contain any kind of char, comma included
-                        # This field will have " separator added
+            if oslevel == 'AIX':  # AIX OS specific header
 
-                        perfdata_part1 = perfdata_match.group(1)
-                        perfdata_part2 = perfdata_match.group(2)
-                        perfdata_part3 = perfdata_match.group(3)
-                        perfdata_part4 = perfdata_match.group(4)
-                        perfdata_part5 = perfdata_match.group(5)
-                        perfdata_part6 = perfdata_match.group(6)
-                        perfdata_part7 = perfdata_match.group(7)
+                # Extract Data
+                perfdata_match = re.match(
+                    '^UARG,T\d+,\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*\s*),\s*([a-zA-Z-/_:\.0-9]*)\s*,(.+)\n',
+                    line)
 
-                        perfdata = perfdata_part1 + ',' + perfdata_part2 + ',' + perfdata_part3 + ',' + perfdata_part4 + ',' + perfdata_part5 + ',' + perfdata_part6 + ',"' + perfdata_part7 + '"'
+                if perfdata_match:
+                    # In this section, we statically expect 7 fields: PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand
+                    # The FullCommand may be very problematic as it may almost contain any kind of char, comma included
+                    # This field will have " separator added
 
-                        if realtime:
+                    perfdata_part1 = perfdata_match.group(1)
+                    perfdata_part2 = perfdata_match.group(2)
+                    perfdata_part3 = perfdata_match.group(3)
+                    perfdata_part4 = perfdata_match.group(4)
+                    perfdata_part5 = perfdata_match.group(5)
+                    perfdata_part6 = perfdata_match.group(6)
+                    perfdata_part7 = perfdata_match.group(7)
 
-                            if ZZZZ_epochtime > last_known_epochtime:
+                    perfdata = perfdata_part1 + ',' + perfdata_part2 + ',' + perfdata_part3 + ',' + perfdata_part4 + ',' + perfdata_part5 + ',' + perfdata_part6 + ',"' + perfdata_part7 + '"'
 
-                                # increment
-                                count += 1
+                    if realtime:
 
-                                # Write perf data
-                                currsection.write(
-                                    section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
-
-                        elif colddata:
+                        if ZZZZ_epochtime > last_known_epochtime:
 
                             # increment
                             count += 1
 
                             # Write perf data
-                            currsection.write(
+                            membuffer.write(
                                 section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+
+                    elif colddata:
+
+                        # increment
+                        count += 1
+
+                        # Write perf data
+                        membuffer.write(
+                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
-        if count < 2:
-            if os.path.isfile(currsection_output):
-                os.remove(currsection_output)
-        else:
+        if count > 2:
             # Show number of lines extracted
             result = section + " section: Wrote" + " " + str(count) + " lines"
             print(result)
             ref.write(result + "\n")
+
+            # Open output for writing
+            with open(currsection_output, "wb") as currsection:
+
+                # Rewind temp
+                membuffer.seek(0)
+
+                # write
+                for line in membuffer:
+                    currsection.write(line)
+
+                # close membuffer
+                membuffer.close()
 
 # End for
 
@@ -1405,6 +1420,10 @@ for subsection in dynamic_section1:
                   subsection + "6", subsection + "7", subsection + "8", subsection + "9"]
 
     for section in subsection:
+
+        # Set output file (will be opened for writing after data transposition)
+        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Sequence to search for
         seq = str(section) + ',' + 'T'
@@ -1424,10 +1443,6 @@ for subsection in dynamic_section1:
                 count += 1
 
         if count > 2:
-
-            # Set output file (will be opened for writing after data transposition)
-            currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-                bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
             # Open StringIO for temp in memory
             membuffer = cStringIO.StringIO()
@@ -1645,6 +1660,10 @@ for subsection in dynamic_section1:
 
 for section in dynamic_section2:
 
+    # Set output file (will be opened for writing after data transposition)
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+
     # Sequence to search for
     seq = str(section) + ',' + 'T'
 
@@ -1663,10 +1682,6 @@ for section in dynamic_section2:
             count += 1
 
     if count > 2:
-
-        # Set output file (will be opened for writing after data transposition)
-        currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-            bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
         # Open StringIO for temp in memory
         membuffer = cStringIO.StringIO()
