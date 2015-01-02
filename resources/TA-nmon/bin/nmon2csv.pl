@@ -1752,7 +1752,7 @@ sub variable_sections_insert {
 
                     if ( $ZZZZ_epochtime > $last_known_epochtime ) {
                     
-                        print INSERT (qq|\n"$finaldata"|);
+    							print INSERT (qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|);
                         $count++;
                     }
                     
@@ -1760,9 +1760,7 @@ sub variable_sections_insert {
 
                 elsif ( $colddata eq "True" ) {
 
-						  print ("Cold data set to True \n");
-
-                    print INSERT (qq|\n"$finaldata"|);
+    					  print INSERT (qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|);
                     $count++;
                 }
 
