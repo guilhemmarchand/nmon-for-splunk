@@ -1,0 +1,219 @@
+<form stylesheet="singlevalue.css,ui_simple.css">
+  <label>NMON - Real Time LPAR, Virtual CPU Usage</label>
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" token="timerange" searchWhenChanged="true">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>rt-4h</earliestTime>
+        <latestTime>rtnow</latestTime>
+      </default>
+    </input>
+
+    <input type="dropdown" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| pivot NMON_Data_CPU LPAR count(LPAR) AS "count" SPLITROW frameID AS frameID SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <prefix>frameID is "</prefix>
+      <suffix>"</suffix>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>frameID</fieldForLabel>
+      <fieldForValue>frameID</fieldForValue>
+    </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>
+
+    <input type="dropdown" token="hostname" searchWhenChanged="true">
+      <label>Host Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| pivot NMON_Data_CPU LPAR count(LPAR) AS "count" SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $frameID$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <prefix>hostname is "</prefix>
+      <suffix>"</suffix>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
+    </input>
+
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+
+    <input type="dropdown" token="indicator" searchWhenChanged="true">
+      <label>Show CPU load by:</label>
+      <default>lpar_vp_usage</default>
+      <choice value="lpar_vp_usage">Usage vs VirtualCPUs</choice>
+      <choice value="lpar_vp_PCT_usage">Usage vs VirtualCPUs % Usage</choice>
+      <choice value="lpar_ec_usage">Usage vs Entitled</choice>
+      <choice value="lpar_ec_PCT_usage">Usage vs Entitled % usage</choice>
+    </input>
+
+  </fieldset>
+  
+  <!-- Global Search -->
+  
+        <search id="Global">
+          <query>| pivot NMON_Data_CPU LPAR max($indicator$) AS "max_usage" avg(lpar_vp_PCT_usage) AS "avg_usage" min(lpar_vp_PCT_usage) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs" 
+SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $frameID$ FILTER $hostname$ frameID AS "frameID" SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
+      
+  <row>
+    <panel>
+
+      <single>
+        <search base="Global">
+          <query>stats max(max_usage) AS max</query>
+        </search>
+        <option name="underLabel">Maximum Load</option>
+        <option name="linkView">search</option>
+      </single>
+
+      <single>
+        <search base="Global">
+          <query>stats avg(avg_usage) AS avg | eval avg=round(avg,2)</query>
+        </search>
+        <option name="underLabel">Average Load</option>
+        <option name="linkView">search</option>
+      </single>
+
+      <single>
+        <search base="Global">
+          <query>stats min(min_usage) AS min</query>
+        </search>
+        <option name="underLabel">Minimal Load</option>
+        <option name="linkView">search</option>
+      </single>
+
+      <table>
+        <search base="Global">
+          <query>fields hostname,frameID,max_usage,avg_usage,min_usage,entitled,virtualCPUs</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+      
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Charting parameters:</title>
+		<input type="dropdown" token="period" searchWhenChanged="true">
+		  <label>Period:</label>
+		  <default>auto</default>
+		  <choice value="auto">Auto</choice>
+		  <choice value="second">Secondes</choice>
+		  <choice value="minute">Minutes</choice>
+		  <choice value="hour">Hours</choice>
+		  <choice value="day">Days</choice>
+		  <choice value="month">Months</choice>
+		  <choice value="year">Years</choice>
+		</input>      
+      <input type="dropdown" token="addindicator" searchWhenChanged="true">
+        <label>LPAR additional Series:</label>
+        <default>none</default>
+        <choice value="">none</choice>
+        <choice value="max(entitled) AS entitled">Entitled</choice>
+        <choice value="max(virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
+        <choice value="max(entitled) As entitled max(virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
+      </input>      
+      <input type="dropdown" token="chart" searchWhenChanged="true">
+        <label>Select a type of chart:</label>
+        <default>line</default>
+        <choice value="area">Area</choice>
+        <choice value="line">Line</choice>
+        <choice value="column">Column</choice>
+        <choice value="bar">Bar</choice>
+      </input>
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+        <label>Missing Data:</label>
+        <default>connect</default>
+        <choice value="gaps">Gaps</choice>
+        <choice value="connect">Connect</choice>
+        <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
+      </input>
+      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+        <label>Legend placement:</label>
+        <default>bottom</default>
+        <choice value="bottom">Bottom</choice>
+        <choice value="top">Top</choice>
+        <choice value="left">left</choice>
+        <choice value="right">right</choice>
+        <choice value="center">center</choice>
+        <choice value="none">none</choice>
+      </input>
+    </panel>
+  </row>
+    
+  <row>
+    <panel>
+      <chart>
+  			<search id="timechart">
+    		  <query>| pivot NMON_Data_CPU LPAR $statsmode$($indicator$) $addindicator$ 
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER $frameID$ FILTER $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+  		  </search> 
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">680px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Virtual CPUs</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+    </panel>
+  </row>
+  
+</form>

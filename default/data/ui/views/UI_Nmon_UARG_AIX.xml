@@ -8,11 +8,12 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="radio" token="osfilter" searchWhenChanged="true">
-      <label>Type of OS filter:</label>
-      <default>| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]</default>
-      <choice value="">Any OS</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
+      <label>Filter OS Type:</label>
+      <default>AIX</default>
+      <choice value="*">Any OS</choice>
+      <choice value="AIX">AIX</choice>
     </input>
 
     <input type="text" token="PID" searchWhenChanged="true">
@@ -52,18 +53,22 @@
 
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
       <default>*</default>
     </input>
 
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=UARG $PID$ $COMM$ $USER$ $GROUP$ $FullCommand$ $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <!-- Populating Data Model Search -->
+      <search id="baseSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_UARG where (nodename = UARG) (UARG.hostname="$hostname-prefilter$") (UARG.OStype="$osfilter$") groupby "UARG.hostname" prestats=true | stats dedup_splitvals=t count AS Count by "UARG.hostname" | sort limit=0 "UARG.hostname" | fields - _span | rename "UARG.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
-      <choice value="*">ALL HOSTS</choice>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
     </input>
 
   </fieldset>

@@ -2,6 +2,7 @@
   <label>NMON - TOP, Solaris Processes System Resources statistics</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -9,88 +10,130 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>    
-    <input type="radio" token="osfilter" searchWhenChanged="true">
-      <label>Filter OS Type:</label>
-      <default>| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
-      <choice value="">Inactive</choice>
-    </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
+
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
     </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=TOP $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>Solaris</default>
+      <prefix>TOP_Solaris.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="">Any OS</choice>
+      <choice value="Solaris">Solaris</choice>
+    </input>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) ($osfilter$) groupby "TOP_Solaris.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "TOP_Solaris.frameID"
+| sort limit=0 "TOP_Solaris.frameID"
+| fields - _span | fillnull Count | fields "TOP_Solaris.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>TOP_Solaris.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>TOP_Solaris.frameID</fieldForLabel>
+      <fieldForValue>TOP_Solaris.frameID</fieldForValue>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) groupby "TOP_Solaris.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "TOP_Solaris.hostname"
+| sort limit=0 "TOP_Solaris.hostname"
+| fields - _span | fillnull Count | fields "TOP_Solaris.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>TOP_Solaris.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>TOP_Solaris.hostname</fieldForLabel>
+      <fieldForValue>TOP_Solaris.hostname</fieldForValue>
+    </input>
+
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+
     <input type="text" token="Command" searchWhenChanged="true">
       <label>Optional: Filter by Command</label>
-      <default>*</default>
-      <prefix>Command="</prefix>
+      <prefix>TOP_Solaris.Command="</prefix>
       <suffix>"</suffix>
+      <default>*</default>
     </input>
+
     <input type="text" token="PID" searchWhenChanged="true">
       <label>Optional: Filter by PIDs</label>
       <default>*</default>
-      <prefix>PID="</prefix>
+      <prefix>TOP_Solaris.PID="</prefix>
       <suffix>"</suffix>
-    </input>    
+    </input>   
+
      <input type="text" token="limit" searchWhenChanged="true">
       <label>Limit to TOP processes:</label>
       <default>20</default>
       <prefix>limit="</prefix>
       <suffix>"</suffix>
     </input>    
+
   </fieldset>
+
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>area</default>
-        <choice value="area">Area (recommended)</choice>
+        <choice value="area">Area</choice>
         <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>stacked</default>
-        <choice value="stacked">stacked (recommended)</choice>
-        <choice value="unstacked">unstacked</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>stacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -102,6 +145,11 @@
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11,link12,link13,link14,link15">Select a view:<!--Links go here-->
@@ -110,15 +158,21 @@
       <chart id="link10">
         <title>CPU Usage per logical core</title>
         <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
-| eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit      
+		  <search>          
+          <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval conso_per_core=(pct_CPU/100)
-| stats sum(conso_per_core) As conso_per_core by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
-$statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| timechart `inline_customspan(type=TOP,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f $limit$
+$statsmode$(usage_per_core) as "CPU Usage per core" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -132,7 +186,7 @@ $statsmode$(conso_per_core) as "CPU Usage per core" by Command</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Logical Core</option>
@@ -160,7 +214,7 @@ $statsmode$(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Megabytes (MB)</option>
@@ -188,7 +242,7 @@ $statsmode$(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Megabytes (MB)</option>
@@ -214,7 +268,7 @@ $statsmode$(Paging) as "Paging" by Command</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Number of Page</option>
@@ -240,7 +294,7 @@ $statsmode$(Threads) as Threads by Command</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Number of Threads</option>
@@ -266,7 +320,7 @@ $statsmode$(CharIO) as CharIO by Command</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">bytes/sec</option>
@@ -277,17 +331,22 @@ $statsmode$(CharIO) as CharIO by Command</searchString>
     <panel>
       <table>
         <title>Table stats: CPU Usage per logical core</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,pct_CPU,PID,Command,hostname 
-| eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit
+		  <search>          
+          <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As usage_per_core by _time,Command
-| stats $statsmode$(usage_per_core) as usage_per_core, sparkline($statsmode$(usage_per_core)) As spk_cpuusage_per_core by Command
-| eval usage_per_core=round(usage_per_core,2)
+| stats $statsmode$(usage_per_core) as usage_per_core, sparkline($statsmode$(usage_per_core)) As sparkline by Command
 | rename usage_per_core As "CPU Usage per Logical Cores"
-| sort - "CPU Usage per Logical Cores"</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| sort - "CPU Usage per Logical Cores"</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>

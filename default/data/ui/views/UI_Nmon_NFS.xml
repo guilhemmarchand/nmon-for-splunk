@@ -1,6 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - NFS, Network FileSystem Server / Client statistics</label>
   <fieldset autoRun="false" submitButton="false">
+  
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -8,6 +9,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="dropdown" token="timefilter" searchWhenChanged="true">
       <label>Time Filtering:</label>
       <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -19,26 +21,62 @@
       <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
       <default>No_Filter</default>
     </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
+
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default></default>
-      <choice value="">Any OS</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-    </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
       <default>*</default>
-    </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=NFS* $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+      <prefix>NFS.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="*">Any OS</choice>
+      <choice value="AIX">AIX</choice>
+      <choice value="Linux">Linux</choice>
+    </input>
+    
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS count from datamodel=NMON_Data_NFS where (nodename = NFS) ($osfilter$) 
+groupby "NFS.frameID" prestats=true 
+| stats dedup_splitvals=t count AS count by "NFS.frameID" 
+| sort limit=0 "NFS.frameID" 
+| fields - _span | fillnull count | fields NFS.frameID, count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>NFS.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>NFS.frameID</fieldForLabel>
+      <fieldForValue>NFS.frameID</fieldForValue>
+    </input>    
+    
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>    
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_NFS where (nodename = NFS) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "NFS.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "NFS.hostname"
+| sort limit=0 "NFS.hostname"
+| fields - _span | fillnull Count | fields "NFS.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>NFS.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>NFS.hostname</fieldForLabel>
+      <fieldForValue>NFS.hostname</fieldForValue>
     </input>
+
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -49,6 +87,7 @@
       <choice value="mode">Mode</choice>
       <choice value="range">Range</choice>
     </input>
+
   </fieldset>
 
   <row>
@@ -65,13 +104,17 @@
     <panel>
       <table>
         <title>NFS Server V4</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV4 $hostname$ | `$timefilter$`
-| fields op0-unused,op1-unused,op2-future,access,close,commit,create,delegpurge,delegreturn,getattr,getfh,link,lock,lockt,locku,lookup,lookup_root,nverify,open,openattr,open_conf,open_dgrd,putfh,putpubfh,putrootfh,read,readdir,readlink,remove,rename,renew,restorefh,savefh,secinfo,setattr,setcltid,setcltidconf,verify,write,rellockowner
-| stats sum(*) As * by _time | untable _time monitor value
-| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
-        <option name="wrap">true</option>
+        <search>
+          <query>| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSSVRV4(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
+| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
+    	  <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
@@ -85,15 +128,20 @@
         </format>
       </table>
     </panel>
+
     <panel>
       <table>
         <title>NFS Server V3</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV3 $hostname$ | `$timefilter$`
-| fields null,getattr,setattr,lookup,access,readlink,read,write,create,mkdir,symlink,mknod,remove,rmdir,rename,link,readdir,readdirplus,fsstat,fsinfo,pathconf,commit
-| stats sum(*) As * by _time | untable _time monitor value
-| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>        
+        <query>| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSSVRV3(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
+| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+    	  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -108,15 +156,20 @@
         </format>
       </table>
     </panel>
+  
     <panel>
       <table>
         <title>NFS Server V2</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV2 $hostname$ | `$timefilter$`
-| fields null,getattr,setattr,root,lookup,readlink,read,wrcache,write,create,remove,rename,link,symlink,mkdir,rmdir,readdir,fsstat
-| stats sum(*) As * by _time | untable _time monitor value
-| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>
+        <query>| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSSVRV2(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
+| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>
+    	  </search>	    
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -131,15 +184,21 @@
         </format>
       </table>
     </panel>
+  </row>
+  <row>
     <panel>
       <table>
         <title>NFS Client V4</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV4 $hostname$ | `$timefilter$`
-| fields null,read,write,commit,open,open_conf,open_noat,open_dgrd,close,setattr,fsinfo,renew,setclntid,confirm,lock,lockt,locku,access,getattr,lookup,lookup_root,remove,rename,link,symlink,create,pathconf,statfs,readlink,readdir,server_caps,delegreturn,getacl,setacl,fs_locations
-| stats sum(*) As * by _time | untable _time monitor value
-| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search>
+          <query>| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSCLIV4(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
+| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -154,15 +213,20 @@
         </format>
       </table>
     </panel>
+
     <panel>
       <table>
         <title>NFS Client V3</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV3 $hostname$ | `$timefilter$`
-| fields null,getattr,setattr,lookup,access,readlink,read,write,create,mkdir,symlink,mknod,remove,rmdir,rename,link,readdir,readdirplus,fsstat,fsinfo,pathconf,commit
-| stats sum(*) As * by _time | untable _time monitor value
-| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search>
+          <query>| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSCLIV3(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
+| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -177,15 +241,20 @@
         </format>
       </table>
     </panel>
+
     <panel>
       <table>
         <title>NFS Client V2</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV2 $hostname$ | `$timefilter$`
-| fields null,getattr,setattr,root,lookup,readlink,read,wrcache,write,create,remove,rename,link,symlink,mkdir,rmdir,readdir,fsstat
-| stats sum(*) As * by _time | untable _time monitor value
-| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search>
+          <query>| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSCLIV2(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
+| stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -205,7 +274,7 @@
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
@@ -213,10 +282,18 @@
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+        <label>Missing Data:</label>
+        <default>gaps</default>
+        <choice value="gaps">Gaps</choice>
+        <choice value="connect">Connect</choice>
+        <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
         <label>Select a stacking mode:</label>
         <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
         <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
@@ -229,35 +306,28 @@
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
-        <label>Missing Data:</label>
-        <default>gaps</default>
-        <choice value="gaps">Gaps</choice>
-        <choice value="connect">Connect</choice>
-        <choice value="zero">Zero</choice>
-      </input>
-      <html>
-      <div class="custom">
-        <h1>Charting parameters</h1>
-      </div>
-     </html>
     </panel>
   </row>
+  
   <row>
     <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link10,link11,link12,link13,link14,link15">Select a view:<!--Links go here-->
       </div>
 	   </html>
       <chart id="link10">
         <title>NFS Server V4</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV4 $hostname$ | `$timefilter$`
-| fields _time,hostname,op0-unused,op1-unused,op2-future,access,close,commit,create,delegpurge,delegreturn,getattr,getfh,link,lock,lockt,locku,lookup,lookup_root,nverify,open,openattr,open_conf,open_dgrd,putfh,putpubfh,putrootfh,read,readdir,readlink,remove,rename,renew,restorefh,savefh,secinfo,setattr,setcltid,setcltidconf,verify,write,rellockowner
-| stats sum(*) As * by _time
-| timechart `inline_customspan(type=NFSSVRV4,$hostname$)` $statsmode$(*) as *</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>        
+          <query>| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSSVRV4(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| timechart useother=f limit=0 `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` $statsmode$(value) AS value by monitor</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -271,19 +341,23 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
       </chart>
       <chart id="link11">
         <title>NFS Server V3</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV3 $hostname$ | `$timefilter$`
-| fields _time,hostname,null,getattr,setattr,lookup,access,readlink,read,write,create,mkdir,symlink,mknod,remove,rmdir,rename,link,readdir,readdirplus,fsstat,fsinfo,pathconf,commit
-| stats sum(*) As * by _time
-| timechart `inline_customspan(type=NFSSVRV3,$hostname$)` $statsmode$(*) as *</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>        
+          <query>| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSSVRV3(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| timechart useother=f limit=0 `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` $statsmode$(value) AS value by monitor</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -297,19 +371,23 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
       </chart>
       <chart id="link12">
         <title>NFS Server V2</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSSVRV2 $hostname$ | `$timefilter$`
-| fields _time,hostname,null,getattr,setattr,root,lookup,readlink,read,wrcache,write,create,remove,rename,link,symlink,mkdir,rmdir,readdir,fsstat
-| stats sum(*) As * by _time
-| timechart `inline_customspan(type=NFSSVRV2,$hostname$)` $statsmode$(*) as *</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>        
+          <query>| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSSVRV2(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| timechart useother=f limit=0 `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` $statsmode$(value) AS value by monitor</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -323,26 +401,23 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
       </chart>
-    </panel>
-    <panel>
-      <html>
-      <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link13,link14,link15">Select a view:<!--Links go here-->
-      </div>
-	   </html>
       <chart id="link13">
         <title>NFS Client V4</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV4 $hostname$ | `$timefilter$`
-| fields _time,hostname,null,read,write,commit,open,open_conf,open_noat,open_dgrd,close,setattr,fsinfo,renew,setclntid,confirm,lock,lockt,locku,access,getattr,lookup,lookup_root,remove,rename,link,symlink,create,pathconf,statfs,readlink,readdir,server_caps,delegreturn,getacl,setacl,fs_locations
-| stats sum(*) As * by _time
-| timechart `inline_customspan(type=NFSCLIV4,$hostname$)` $statsmode$(*) as *</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>        
+          <query>| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSCLIV4(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| timechart useother=f limit=0 `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` $statsmode$(value) AS value by monitor</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -356,19 +431,23 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
       </chart>
       <chart id="link14">
         <title>NFS Client V3</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV3 $hostname$ | `$timefilter$`
-| fields _time,hostname,null,getattr,setattr,lookup,access,readlink,read,write,create,mkdir,symlink,mknod,remove,rmdir,rename,link,readdir,readdirplus,fsstat,fsinfo,pathconf,commit
-| stats sum(*) As * by _time
-| timechart `inline_customspan(type=NFSCLIV3,$hostname$)` $statsmode$(*) as *</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>        
+          <query>| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSCLIV3(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| timechart useother=f limit=0 `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` $statsmode$(value) AS value by monitor</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -382,19 +461,23 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
       </chart>
       <chart id="link15">
         <title>NFS Client V2</title>
-        <searchString>index=nmon sourcetype=nmon_data type=NFSCLIV2 $hostname$ | `$timefilter$`
-| fields _time,hostname,null,getattr,setattr,root,lookup,readlink,read,wrcache,write,create,remove,rename,link,symlink,mkdir,rmdir,readdir,fsstat
-| stats sum(*) As * by _time
-| timechart `inline_customspan(type=NFSCLIV2,$hostname$)` $statsmode$(*) as *</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>        
+          <query>| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS 
+where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+| stats dedup_splitvals=t `NFSCLIV2(max)` by _time
+| sort limit=0 _time
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| timechart useother=f limit=0 `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` $statsmode$(value) AS value by monitor</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -408,7 +491,7 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>

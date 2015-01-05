@@ -2,6 +2,7 @@
   <label>NMON - PAGE, Paging Statistics (AIX)</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -9,6 +10,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="dropdown" token="timefilter" searchWhenChanged="true">
       <label>Time Filtering:</label>
       <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -20,19 +22,51 @@
       <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
       <default>No_Filter</default>
     </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-    </input>          
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PAGE $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) groupby "PAGE_AIX.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "PAGE_AIX.frameID"
+| sort limit=0 "PAGE_AIX.frameID"
+| fields - _span | fillnull Count | fields "PAGE_AIX.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>PAGE_AIX.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>PAGE_AIX.frameID</fieldForLabel>
+      <fieldForValue>PAGE_AIX.frameID</fieldForValue>
     </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>         
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) groupby "PAGE_AIX.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "PAGE_AIX.hostname"
+| sort limit=0 "PAGE_AIX.hostname"
+| fields - _span | fillnull Count | fields "PAGE_AIX.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>PAGE_AIX.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>PAGE_AIX.hostname</fieldForLabel>
+      <fieldForValue>PAGE_AIX.hostname</fieldForValue>
+    </input>
+
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -44,13 +78,50 @@
       <choice value="range">Range</choice>
     </input>
   </fieldset>
+
+  <search id="tableStats">
+    <query>
+| tstats max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin max("PAGE_AIX.pgsout") AS pgsout
+max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles 
+max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
+from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
+groupby "PAGE_AIX.frameID", "PAGE_AIX.hostname" prestats=true 
+| stats dedup_splitvals=t 
+max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin 
+max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans 
+max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
+by "PAGE_AIX.frameID", "PAGE_AIX.hostname" 
+| sort limit=0 "PAGE_AIX.frameID" 
+| fields - _span 
+| rename "PAGE_AIX.frameID" AS "frameID" "PAGE_AIX.hostname" AS hostname 
+| fields frameID, hostname, faults, pgin, pgout, pgsin, pgsout, reclaims, scans, cycles, fsin, fsout, scanfree_ratio</query>
+	 <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>
+  </search>  
+
+  <search id="timeStats">
+    <query>
+| tstats max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin max("PAGE_AIX.pgsout") AS pgsout
+max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles 
+max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
+from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
+groupby _time, "PAGE_AIX.hostname" prestats=true `inline_customspan(type=PAGE,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| timechart `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
+max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin 
+max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans 
+max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
+by "PAGE_AIX.hostname"</query>
+	 <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>
+  </search>  
+  
   <row>
     <panel>
       <table>
         <title>Global Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` | stats  $statsmode$(faults) As faults, $statsmode$(pgin) As pgin, $statsmode$(pgout) As pgout,  $statsmode$(pgsin) As pgsin, $statsmode$(pgsout) As pgsout,  $statsmode$(reclaims) As reclaims, $statsmode$(scans) As scans, $statsmode$(cycles) As cyles, $statsmode$(pgsout) As pgsout by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="tableStats">
+          <query>fields frameID,hostname,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -61,9 +132,9 @@
     <panel>
       <table>
         <title>Fs In/Out and Scan Free Ratio Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` | eval fsin=(pgin+pgsin) | eval fsout=(pgout+pgsout) | eval scanfree=round((scans/reclaims),2) | stats $statsmode$(fsin) As "fsin", $statsmode$(fsout) As "fsout", $statsmode$(scanfree) As scanfree_ratio by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="tableStats">
+          <query>fields frameID,hostname,fsin,fsout,scanfree_ratio</query>
+		  </search> 
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -72,29 +143,31 @@
       </table>
     </panel>
   </row>
+
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -106,6 +179,12 @@
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>  
+  
+  <row>
+    <panel>
+      <title>Charting parameters:</title>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
@@ -113,9 +192,9 @@
     </html>
       <chart id="link10">
         <title>Pages In / Pages Out (pgsin / pgsout)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$` |  timechart `inline_customspan(type=PAGE,$hostname$)` limit=0 useother=f $statsmode$(pgsin) As "pgsin", $statsmode$(pgsout) As "pgsout" by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="timeStats">
+          <query>fields _time,pgsin*,pgsout*</query>
+		  </search> 
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -129,17 +208,16 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages</option>
       </chart>
       <chart id="link11">
         <title>Fs In / Fs Out (sum of pgin/pgsin and pgout/pgsout per interval)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$`
-| eval fsin=(pgin+pgsin)
-| eval fsout=(pgout+pgsout)
-| timechart `inline_customspan(type=PAGE,$hostname$)` limit=0 useother=f Max(fsin) As "fsin", Max(fsout) As "fsout" by hostname</searchString>
+		  <search base="timeStats">
+          <query>fields _time,pgin*,pgsin*,pgout*,pgsout*</query>
+		  </search> 
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -155,17 +233,16 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages</option>
       </chart>
       <chart id="link12">
         <title>Scan Free Ratio (Pages scans by reclaims per interval)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PAGE" $hostname$ | `$timefilter$`
-| eval scanfree=round((scans/reclaims),2)
-| timechart `inline_customspan(type=PAGE,$hostname$)` limit=0 useother=f max(scanfree) As scanfree_ratio by hostname
-| fillnull value="0"</searchString>
+		  <search base="timeStats">
+          <query>fields _time,scanfree_ratio* | fillnull value=0</query>
+		  </search> 
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -181,7 +258,7 @@
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages</option>

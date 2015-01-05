@@ -1,6 +1,7 @@
 <form stylesheet="standard.css,singlevalue.css,ui_simple.css,hide_timeindicator.css" script="link_switcher.js, autodiscover.js">
   <label>NMON Summary Light Analysis</label>
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -8,114 +9,269 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default/>
-      <choice value="">Any OS</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+      <default>*</default>
+      <choice value="*">Any OS</choice>
+      <choice value="AIX">AIX</choice>
+      <choice value="Linux">Linux</choice>
+      <choice value="Solaris">Solaris</choice>
     </input>
+
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
       <default>*</default>
     </input>
-    <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=CPU_ALL OR type=LPAR $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="baseSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname="$hostname-prefilter$") (CPU.OStype="$osfilter$") groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.hostname"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname
+| fillnull Count
+| fields hostname, Count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
     </input>
+
   </fieldset>
-  <searchTemplate>index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</searchTemplate>
-  <earliestTime>$timerange.earliest$</earliestTime>
-  <latestTime>$timerange.latest$</latestTime>
+  
+  <!-- Configuration Search will run over earliest Alltime using the accelerated Data Model -->
+
+  <search id="configSearch">
+  	<query>| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | search $hostname$ | fields hostname, OStype, OS_Level, cpu_cores, Processor</query>
+  	<earliest>0</earliest>
+   <latest>$timerange.latest$</latest>
+  </search>
+
+  <search id="MEMSearch">
+  	<query>| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB 
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
+| sort limit=0 "MEM.hostname"
+| fields - _span
+| rename "MEM.hostname" AS hostname
+| fields hostname, avg_Real_used_PCT, max_Real_used_PCT, avg_Virtual_used_PCT, max_Virtual_used_PCT, Real_total_MB, Virtual_total_MB
+| eval avg_Real_used_PCT=round(avg_Real_used_PCT,2)
+| eval avg_Virtual_used_PCT=round(avg_Virtual_used_PCT,2)
+| eval Real_total_MB=round(Real_total_MB,0)
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</query>
+  	<earliest>$timerange.earliest$</earliest>
+   <latest>$timerange.latest$</latest>
+  </search>
+
+  <search id="CPUSearch">
+  	<query>| tstats avg("CPU.CPU_usage") AS avg_usage max("CPU.CPU_usage") AS max_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t avg("CPU.CPU_usage") AS avg_usage max("CPU.CPU_usage") AS max_usage by "CPU.hostname"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname
+| fields hostname, avg_usage, max_usage | eval avg_usage=round(avg_usage,2)</query>
+  	<earliest>$timerange.earliest$</earliest>
+   <latest>$timerange.latest$</latest>
+  </search>
+
+  <search id="IOPSSearch">
+  	<query>| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
+| sort limit=100 _time | rename "DISK_Data_Types.hostname" AS hostname
+| fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
+| stats avg(iops) As avg_iops, max(iops) As max_iops | eval avg_iops=round(avg_iops,2)</query>
+  	<earliest>$timerange.earliest$</earliest>
+   <latest>$timerange.latest$</latest>
+  </search>
+
+  <!-- For now, TOP section can be satisfied using Data Model -->
+  
+  <search id="TOPSearch">
+	<query>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname
+| eval limit=(logical_cpus*100)
+| where pct_CPU&lt;=limit
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| eval conso_per_core=(pct_CPU/100)
+| stats sum(conso_per_core) As conso_per_core by _time,Command
+| stats avg(conso_per_core) as avg_conso_per_core, max(conso_per_core) as max_conso_per_core by Command
+| eval avg_conso_per_core=round(avg_conso_per_core,2)
+| eval max_conso_per_core=round(max_conso_per_core,2)
+| sort - avg_conso_per_core</query>
+  	<earliest>$timerange.earliest$</earliest>
+   <latest>$timerange.latest$</latest>  
+  </search>  
+
   <row>
     <panel>
       <html>
         <h3>Operating System</h3>
       </html>
+
       <single>
-        <searchPostProcess>stats values(OStype) As OStype</searchPostProcess>
+		  <search base="configSearch">
+		  	<query>fields OStype</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Operating System</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>
+        <option name="linkSearch">| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | search $hostname$ | fields hostname, OStype, OS_Level, cpu_cores, Processor</option>
       </single>
+      
       <single>
-        <searchPostProcess>stats values(OS_Level) As OS_Level</searchPostProcess>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="configSearch">
+		  	<query>fields OS_Level</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Operating System Level</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>
+        <option name="linkSearch">| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | search $hostname$ | fields hostname, OStype, OS_Level, cpu_cores, Processor</option>
       </single>
+
     </panel>
     <panel>
       <html>
         <h3>Processor Configuration</h3>
       </html>
+
       <single>
-        <searchPostProcess>stats values(cpu_cores) As cpu_cores</searchPostProcess>
+		  <search base="configSearch">
+		  	<query>fields cpu_cores</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Virtual Proc / Logical Cores</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>
+        <option name="linkSearch">| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | search $hostname$ | fields hostname, OStype, OS_Level, cpu_cores, Processor</option>
       </single>
+
       <single>
-        <searchPostProcess>stats values(Processor) As Processor</searchPostProcess>
+		  <search base="configSearch">
+		  	<query>fields Processor</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Processor Type</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index=nmon sourcetype=nmon_config $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" `timerange_overwrite(nmon,nmon_config)` | head 10 | `nmon_config_rex`</option>        
+        <option name="linkSearch">| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | search $hostname$ | fields hostname, OStype, OS_Level, cpu_cores, Processor</option>        
       </single>
+
     </panel>
+    
     <panel>
       <html>
         <h3>Memory Configuration</h3>
       </html>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Real_total_MB</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+		  <search base="MEMSearch">
+		    <query>fields Real_total_MB</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Total Memory</option>
         <option name="linkView">search</option>
         <option name="afterLabel">MB</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Real_total_MB</option>
+        <option name="linkSearch">| tstats max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
+| sort limit=0 "MEM.hostname" | fields - _span | rename "MEM.hostname" AS hostname | fields hostname, Real_total_MB, Virtual_total_MB</option>
       </single>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Virtual_total_MB=round(Virtual_total_MB,0) | fields Virtual_total_MB</searchString>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+		  <search base="MEMSearch">
+		    <query>fields Virtual_total_MB</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Total Paging Space</option>
         <option name="linkView">search</option>
         <option name="afterLabel">MB</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | head 10 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),0) | eval Virtual_total_MB=round((Virtual_total_MB),0) | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0) | eval memused=round((memtotal-memfree),0) | eval swapused=round((swaptotal-swapfree),0) | stats  max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB, max(memtotal) As memtotal, max(memused) As memused, max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB,  max(swaptotal) As swaptotal, max(swapused) As swapused by _time,hostname | eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal) | eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused) | eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal)  | eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused) | stats latest(Real_total_MB) As Real_total_MB, latest(Virtual_total_MB) As Virtual_total_MB | eval Real_total_MB=round(Real_total_MB,0) | fields Virtual_total_MB</option>
+        <option name="linkSearch">| tstats max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
+| sort limit=0 "MEM.hostname" | fields - _span | rename "MEM.hostname" AS hostname | fields hostname, Real_total_MB, Virtual_total_MB</option>
       </single>
+
     </panel>
   </row>
+  
   <row>
     <panel>
+
       <html>
         <h3>CPU Usage Statistics</h3>
       </html>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$
-| stats count by type | sort - type | head 1
-| eval datasource=case(match(type, "LPAR"), "LPAR (VP usage)", match(type, "CPU_ALL"), "CPU_ALL (% usage)") | stats values(datasource) As datasource</searchString>
-		<earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search id="datasource">
+          <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby "CPU.hostname", "CPU.type" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.hostname", "CPU.type"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname "CPU.type" AS type
+| fillnull Count
+| fields hostname, type, Count
+| sort - type
+| head 1
+| eval datasource=case(match(type, "LPAR"), "LPAR (VP usage)", match(type, "CPU_ALL"), "CPU_ALL (% usage)") | stats values(datasource) As datasource</query>        
+		  <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        </search>
         <option name="drilldown">none</option>
         <option name="underLabel">CPU datasource</option>
         <option name="linkView">search</option>
@@ -124,37 +280,52 @@
 | stats count by type | sort - type | head 1
 | eval datasource=case(match(type, "LPAR"), "LPAR (VP usage)", match(type, "CPU_ALL"), "CPU_ALL (% usage)") | stats values(datasource) As datasource</option>
       </single>      
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$ | eval lpar_vpconso=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)  | eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT) | stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname | eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso) | stats avg(conso) As "avg_CPU_Usage" | eval  avg_CPU_Usage=round(avg_CPU_Usage,3)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="CPUSearch">
+		    <query>fields avg_usage</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Average CPU Usage</option>
         <option name="linkView">search</option>
         <option name="afterLabel">% or VP</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | eval lpar_vpconso=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)  | eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT) | stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname | eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso) | stats avg(conso) As "avg_CPU_Usage" | eval  avg_CPU_Usage=round(avg_CPU_Usage,3)</option>
+        <option name="linkSearch">| tstats avg("CPU.CPU_usage") AS avg_usage max("CPU.CPU_usage") AS max_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t avg("CPU.CPU_usage") AS avg_usage max("CPU.CPU_usage") AS max_usage by "CPU.hostname"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname
+| fields hostname, avg_usage, max_usage | eval avg_usage=round(avg_usage,2)</option>
       </single>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$ | eval lpar_vpconso=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)  | eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT) | stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname | eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso) | stats max(conso) As "max_CPU_Usage"</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="CPUSearch">
+		    <query>fields max_usage</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Max CPU Usage</option>
         <option name="linkView">search</option>
         <option name="afterLabel">% or VP</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | eval lpar_vpconso=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)  | eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT) | stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname | eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso) | stats max(conso) As "max_CPU_Usage"</option>
+        <option name="linkSearch">| tstats avg("CPU.CPU_usage") AS avg_usage max("CPU.CPU_usage") AS max_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t avg("CPU.CPU_usage") AS avg_usage max("CPU.CPU_usage") AS max_usage by "CPU.hostname"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname
+| fields hostname, avg_usage, max_usage | eval avg_usage=round(avg_usage,2)</option>
       </single>
+
       <chart>
-        <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$
+        <search id="cputimechart">
+			<query>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$
 | eval lpar_vpconso=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) 
 | eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT)
 | stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname
 | eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso)
-| timechart `inline_customspan(type=CPU_ALL OR type=LPAR,$hostname$)` max(conso) As "Max CPU Usage", avg(conso) As "Avg CPU Usage"</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=CPU_ALL OR type=LPAR,$hostname$)` max(conso) As "Max CPU Usage", avg(conso) As "Avg CPU Usage"</query>
+         <earliest>$timerange.earliest$</earliest>
+         <latest>$timerange.latest$</latest>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -173,39 +344,57 @@
         <option name="charting.axisTitleY.text">CPU Usage</option>
         <option name="charting.axisY.minimumNumber">0</option>
       </chart>
+
     </panel>
+
     <panel>
+
       <html>
         <h3>I/O Operations per second</h3>
       </html>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ | stats sum(value) As iosec by _time,hostname | stats avg(iosec) As avg_iosec | eval avg_iosec=round(avg_iosec,0)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="IOPSSearch">
+		   <query>fields avg_iops</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Average I/O stats</option>
         <option name="linkView">search</option>
         <option name="afterLabel">IOPS</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | stats sum(value) As iosec by _time,hostname | stats avg(iosec) As avg_iosec | eval avg_iosec=round(avg_iosec,0)</option>
+        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
+| sort limit=100 _time | rename "DISK_Data_Types.hostname" AS hostname
+| fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
+| stats avg(iops) As avg_iosec, max(iops) As max_iops | eval avg_iops=round(avg_iops,2)</option>
       </single>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ | stats sum(value) As iosec by _time,hostname | stats max(iosec) As max_iosec | eval max_iosec=round(max_iosec,0)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="IOPSSearch">
+		   <query>fields max_iops</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Max I/O stats</option>
         <option name="linkView">search</option>
         <option name="afterLabel">IOPS</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$" | stats sum(value) As iosec by _time,hostname | stats max(iosec) As max_iosec | eval max_iosec=round(max_iosec,0)</option>
+        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
+| sort limit=100 _time | rename "DISK_Data_Types.hostname" AS hostname
+| fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
+| stats avg(iops) As avg_iops, max(iops) As max_iops | eval avg_iops=round(avg_iops,2)</option>
       </single>
+
       <chart>
-        <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$
+        <search id="IOPStimechart">
+          <query>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$
 | stats sum(value) As iosec by _time,hostname
-| timechart `inline_customspan(type=DISKXFER,$hostname$)` max(iosec) As "Total I/O"</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=DISKXFER,$hostname$)` max(iosec) As "Total I/O"</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>  
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -228,279 +417,138 @@
   </row>
   <row>
     <panel>
+    
       <html>
         <h3>Memory Statistics</h3>
       </html>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats avg(Real_used_PCT) As avg_Real_used_PCT | eval avg_Real_used_PCT=round(avg_Real_used_PCT,2)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="MEMSearch">
+		    <query>fields avg_Real_used_PCT</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Average RealMem Usage</option>
         <option name="linkView">search</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$"
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats avg(Real_used_PCT) As avg_Real_used_PCT | eval avg_Real_used_PCT=round(avg_Real_used_PCT,2)</option>      
+        <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB 
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
+| sort limit=0 "MEM.hostname"
+| fields - _span
+| rename "MEM.hostname" AS hostname
+| fields hostname, avg_Real_used_PCT, max_Real_used_PCT, avg_Virtual_used_PCT, max_Virtual_used_PCT, Real_total_MB, Virtual_total_MB
+| eval avg_Real_used_PCT=round(avg_Real_used_PCT,2)
+| eval avg_Virtual_used_PCT=round(avg_Virtual_used_PCT,2)
+| eval Real_total_MB=round(Real_total_MB,0)
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</option>      
       </single>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats max(Real_used_PCT) As max_Real_used_PCT | eval max_Real_used_PCT=round(max_Real_used_PCT,2)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="MEMSearch">
+		    <query>fields max_Real_used_PCT</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Max RealMem Usage</option>
         <option name="linkView">search</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$"
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats max(Real_used_PCT) As max_Real_used_PCT | eval max_Real_used_PCT=round(max_Real_used_PCT,2)</option>      
+        <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB 
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
+| sort limit=0 "MEM.hostname"
+| fields - _span
+| rename "MEM.hostname" AS hostname
+| fields hostname, avg_Real_used_PCT, max_Real_used_PCT, avg_Virtual_used_PCT, max_Virtual_used_PCT, Real_total_MB, Virtual_total_MB
+| eval avg_Real_used_PCT=round(avg_Real_used_PCT,2)
+| eval avg_Virtual_used_PCT=round(avg_Virtual_used_PCT,2)
+| eval Real_total_MB=round(Real_total_MB,0)
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</option>      
       </single>
+      
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats avg(Virtual_used_PCT) As avg_Virtual_used_PCT | eval avg_Virtual_used_PCT=round(avg_Virtual_used_PCT,2)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="MEMSearch">
+		    <query>fields avg_Virtual_used_PCT</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Average Virtual Mem Usage</option>
         <option name="linkView">search</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$"
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats avg(Virtual_used_PCT) As avg_Virtual_used_PCT | eval avg_Virtual_used_PCT=round(avg_Virtual_used_PCT,2)</option>      
+        <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB 
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
+| sort limit=0 "MEM.hostname"
+| fields - _span
+| rename "MEM.hostname" AS hostname
+| fields hostname, avg_Real_used_PCT, max_Real_used_PCT, avg_Virtual_used_PCT, max_Virtual_used_PCT, Real_total_MB, Virtual_total_MB
+| eval avg_Real_used_PCT=round(avg_Real_used_PCT,2)
+| eval avg_Virtual_used_PCT=round(avg_Virtual_used_PCT,2)
+| eval Real_total_MB=round(Real_total_MB,0)
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</option>      
       </single>
+      
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats max(Virtual_used_PCT) As max_Virtual_used_PCT | eval max_Virtual_used_PCT=round(max_Virtual_used_PCT,2)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="MEMSearch">
+		    <query>fields max_Virtual_used_PCT</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Max Virtual Mem Usage</option>
         <option name="linkView">search</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ earliest="$timerange.earliest$" latest="$timerange.latest$"
-| eval Real_used_MB=round((Real_total_MB-Real_free_MB),2)
-| eval Virtual_total_MB=round((Virtual_total_MB),2)
-| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),2)
-| eval memused=round((memtotal-memfree),2)
-| eval swapused=round((swaptotal-swapfree),2)
-| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),2)
-| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),2)
-| eval memfree_PCT=round(((memfree/memtotal)*100),2)
-| eval memused_PCT=round(((memused/memtotal)*100),2)
-| eval swapfree_PCT=round(((swapfree/swaptotal)*100),2)
-| eval swapused_PCT=round(((swapused/swaptotal)*100),2)
-| stats 
-max(Real_total_MB) As Real_total_MB, max(Real_used_MB) As Real_used_MB,
-max(memtotal) As memtotal, max(memused) As memused,
-max(Virtual_total_MB) As Virtual_total_MB, max(Virtual_used_MB) As Virtual_used_MB, 
-max(swaptotal) As swaptotal, max(swapused) As swapused max(Real_Free_PCT) As Real_Free_PCT,
-max(memfree_PCT) As memfree_PCT, max(Virtual_free_PCT) As Virtual_free_PCT, max(swapfree_PCT) As swapfree_PCT,
-max(Real_used_PCT) As Real_used_PCT, max(memused_PCT) As memused_PCT,
-max(Virtual_used_PCT) As Virtual_used_PCT, max(swapused_PCT) As swapused_PCT by _time,hostname
-| eval Real_total_MB=if(isnotnull(Real_total_MB),Real_total_MB,memtotal)
-| eval Real_used_MB=if(isnotnull(Real_used_MB),Real_used_MB,memused)
-| eval Virtual_total_MB=if(isnotnull(Virtual_total_MB),Virtual_total_MB,swaptotal) 
-| eval Virtual_used_MB=if(isnotnull(Virtual_used_MB),Virtual_used_MB,swapused)
-| eval Real_Free_PCT=if(isnotnull(Real_Free_PCT),Real_Free_PCT,memfree_PCT)
-| eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
-| eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
-| eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| stats max(Virtual_used_PCT) As max_Virtual_used_PCT | eval max_Virtual_used_PCT=round(max_Virtual_used_PCT,2)</option>      
+        <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB 
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
+max("MEM.allOS_Real_used_PCT") AS max_Real_used_PCT
+avg("MEM.allOS_Virtual_used_PCT") AS avg_Virtual_used_PCT
+max("MEM.allOS_Virtual_used_PCT") AS max_Virtual_used_PCT
+max("MEM.allOS_Real_total_MB") AS Real_total_MB
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
+| sort limit=0 "MEM.hostname"
+| fields - _span
+| rename "MEM.hostname" AS hostname
+| fields hostname, avg_Real_used_PCT, max_Real_used_PCT, avg_Virtual_used_PCT, max_Virtual_used_PCT, Real_total_MB, Virtual_total_MB
+| eval avg_Real_used_PCT=round(avg_Real_used_PCT,2)
+| eval avg_Virtual_used_PCT=round(avg_Virtual_used_PCT,2)
+| eval Real_total_MB=round(Real_total_MB,0)
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</option>      
       </single>
+
       <chart>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
+        <search id="MEMtimechart">
+          <query>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$
 | eval Real_used_MB=round((Real_total_MB-Real_free_MB),1)
 | eval Virtual_total_MB=round((Virtual_total_MB),1)
 | eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),1)
@@ -533,9 +581,10 @@ max(swapused_PCT) As swapused_PCT by _time,hostname
 | eval Virtual_free_PCT=if(isnotnull(Virtual_free_PCT),Virtual_free_PCT,swapfree_PCT)
 | eval Real_used_PCT=if(isnotnull(Real_used_PCT),Real_used_PCT,memused_PCT)
 | eval Virtual_used_PCT=if(isnotnull(Virtual_used_PCT),Virtual_used_PCT,swapused_PCT)
-| timechart `inline_customspan(type=MEM,$hostname$)` max(Real_used_PCT) As "Real Used %", max(Virtual_used_PCT) As "Virtual Used %"</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=MEM,$hostname$)` max(Real_used_PCT) As "Real Used %", max(Virtual_used_PCT) As "Virtual Used %"</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -556,24 +605,18 @@ max(swapused_PCT) As swapused_PCT by _time,hostname
         <option name="charting.axisY.maximumNumber">100</option>
       </chart>
     </panel>
+
     <panel>
+
       <html>
         <h3>Top 10 processes CPU Statistics</h3>
       </html>
+
       <single>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname
-| eval limit=(logical_cpus*100)
-| where pct_CPU&lt;=limit
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| eval conso_per_core=(pct_CPU/100)
-| stats sum(conso_per_core) As conso_per_core by _time,Command
-| stats avg(conso_per_core) as avg_conso_per_core by Command
-| sort - avg_conso_per_core 
-| head 1 | fields Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		
+		  <search base="TOPSearch">
+          <query>head 1 | fields Command</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">TOP Process</option>
         <option name="linkView">search</option>
@@ -591,21 +634,11 @@ max(swapused_PCT) As swapused_PCT by _time,hostname
 | sort - avg_conso_per_core 
 | head 1 | fields Command</option>      
       </single>
+
       <single>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname
-| eval limit=(logical_cpus*100) 
-| where pct_CPU&lt;=limit 
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| eval conso_per_core=(pct_CPU/100)
-| stats sum(conso_per_core) As conso_per_core by _time,Command
-| stats avg(conso_per_core) as avg_conso_per_core by Command
-| sort - avg_conso_per_core
-| eval avg_conso_per_core=round(avg_conso_per_core,3)
-| head 1 | fields avg_conso_per_core</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="TOPSearch">
+          <query>head 1 | fields avg_conso_per_core</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Average Conso for this Command</option>
         <option name="linkView">search</option>
@@ -624,21 +657,11 @@ max(swapused_PCT) As swapused_PCT by _time,hostname
 | eval avg_conso_per_core=round(avg_conso_per_core,3)
 | head 1 | fields avg_conso_per_core</option>
       </single>
+
       <single>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname
-| eval limit=(logical_cpus*100)
-| where pct_CPU&lt;=limit 
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| eval conso_per_core=(pct_CPU/100)
-| stats sum(conso_per_core) As conso_per_core by _time,Command
-| stats avg(conso_per_core) as avg_conso_per_core, max(conso_per_core) as max_conso_per_core by Command
-| sort - avg_conso_per_core
-| eval max_conso_per_core=round(max_conso_per_core,3)
-| head 1 | fields max_conso_per_core</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search base="TOPSearch">
+          <query>head 1 | fields max_conso_per_core</query>
+		  </search>
         <option name="drilldown">none</option>
         <option name="underLabel">Max Conso for this Command</option>
         <option name="linkView">search</option>
@@ -657,8 +680,10 @@ max(swapused_PCT) As swapused_PCT by _time,hostname
 | eval max_conso_per_core=round(max_conso_per_core,3)
 | head 1 | fields max_conso_per_core</option>
       </single>
+
       <chart>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname
+        <search id="TOPtimechart">
+          <query>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname
 | eval limit=(logical_cpus*100)
 | where pct_CPU&lt;=limit      
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
@@ -667,9 +692,10 @@ max(swapused_PCT) As swapused_PCT by _time,hostname
 | eval conso_per_core=(pct_CPU/100)
 | stats sum(conso_per_core) As conso_per_core by _time,Command
 | timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=10
-max(conso_per_core) as "CPU Usage per core" by Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+max(conso_per_core) as "CPU Usage per core" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -688,6 +714,8 @@ max(conso_per_core) as "CPU Usage per core" by Command</searchString>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Logical Core</option>
       </chart>
+
     </panel>
+
   </row>
 </form>

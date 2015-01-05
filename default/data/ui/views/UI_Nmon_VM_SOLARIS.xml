@@ -1,6 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - VM, Solaris Virtual Memory Statistics (Solaris)</label>
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -8,6 +9,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
       <input type="dropdown" token="timefilter" searchWhenChanged="true">
         <label>Time Filtering:</label>
         <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -19,35 +21,48 @@
         <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
         <default>No_Filter</default>
       </input>
+
     <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default>| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
-      <choice value="">Inactive</choice>
+      <default>Solaris</default>
+      <choice value="*">Any OS</choice>
+      <choice value="Solaris">Solaris</choice>
     </input>
+
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
       <default>*</default>
-    </input>    
+    </input>
+
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=VM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <!-- Populating Data Model Search -->
+      <search id="baseSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = VM) (VM.hostname=$hostname-prefilter$) (VM.OStype=$osfilter$) groupby "VM.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "VM.hostname"
+| sort limit=0 "VM.hostname"
+| fields - _span | rename "VM.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
       <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+
   </fieldset>
   <searchTemplate>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
 | timechart `inline_customspan(type=VM,$hostname$)`
@@ -148,7 +163,7 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
@@ -169,7 +184,7 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
@@ -190,7 +205,7 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
@@ -211,7 +226,7 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
@@ -232,7 +247,7 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">KB/Sec</option>
@@ -253,7 +268,7 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">KB/Sec</option>

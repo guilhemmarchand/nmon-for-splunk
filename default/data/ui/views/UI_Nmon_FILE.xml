@@ -2,6 +2,7 @@
   <label>NMON - FILE, Kernel file statistics</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
+  
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -9,6 +10,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
       <input type="dropdown" token="timefilter" searchWhenChanged="true">
         <label>Time Filtering:</label>
         <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -20,50 +22,105 @@
         <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
         <default>No_Filter</default>
       </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
+
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default></default>
-      <choice value="">Any OS</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
-    </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
       <default>*</default>
-    </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=FILE $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+      <prefix>FILE.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="*">Any OS</choice>
+      <choice value="AIX">AIX</choice>
+      <choice value="Solaris">Solaris</choice>
+    </input>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_FILE where (nodename = FILE) ($osfilter$) groupby "FILE.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "FILE.frameID"
+| sort limit=0 "FILE.frameID"
+| fields - _span | fillnull Count | fields "FILE.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>FILE.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>FILE.frameID</fieldForLabel>
+      <fieldForValue>FILE.frameID</fieldForValue>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="baseSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_FILE where (nodename = FILE) (FILE.hostname="$hostname-prefilter$") ($frameID$) ($osfilter$) 
+groupby "FILE.hostname" prestats=true 
+| stats dedup_splitvals=t count AS Count by "FILE.hostname" 
+| sort limit=0 "FILE.hostname" 
+| fields - _span | rename "FILE.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>FILE.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
+    </input>
+
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+
+    <input type="checkbox" token="charting" searchWhenChanged="true">
+      <label>Charting:</label>
+      <default>fields *</default>
+      <choice value="fields *">On</choice>
+    </input>
+
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
-| `$timefilter$` | timechart `inline_customspan(type=FILE,$hostname$)` limit=0 useother=f $statsmode$(readch) As readch, $statsmode$(writech) As writech,
-$statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As dirblk by hostname</searchTemplate>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+  
+<!-- Base Searches for PostProcessing -->
+  
+  <search id="tablestats">
+    <query>| tstats max(FILE.readch) As FILE.readch, max(FILE.writech) As FILE.writech,
+max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk from datamodel=NMON_Data_FILE
+where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
+groupby _time, "FILE.hostname" prestats=true
+| stats dedup_splitvals=t max(FILE.readch) As FILE.readch, max(FILE.writech) As FILE.writech,
+max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk by _time, "FILE.hostname"
+| stats $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech, sparkline(max(FILE.readch)) As spk_readch, sparkline(max(FILE.writech)) As spk_writech
+$statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk, sparkline(max(FILE.iget)) As spk_iget, sparkline(max(FILE.namei)) As spk_namei, sparkline(max(FILE.dirblk)) As spk_dirblk
+by "FILE.hostname"
+| sort limit=0 "FILE.hostname" | rename "FILE.hostname" AS hostname</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+
   <row>
     <panel>
       <table>
         <title>FILE - Kernel Statistics Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$ | `$timefilter$` | stats $statsmode$(readch) As readch, $statsmode$(writech) As writech, sparkline(max(readch)) As spk_readch, sparkline(max(writech)) As spk_writech by hostname</searchString>
-  		  <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search base="tablestats">
+        	<query>fields hostname,readch,writech,spk_readch,spk_writech</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -87,9 +144,9 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
     <panel>
       <table>
         <title>FILE - Kernel Statistics Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$ | `$timefilter$` | stats $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As dirblk, sparkline(max(iget)) As spk_iget, sparkline(max(namei)) As spk_namei, sparkline(max(dirblk)) As spk_dirblk by hostname</searchString>
-  		  <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search base="tablestats">
+        	<query>fields hostname,iget,namei,dirblk,spk_iget,spk_namei,spk_dirblk by hostname</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -117,29 +174,31 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
       </table>
     </panel>    
   </row>
+  
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
         <label>Select a stacking mode:</label>
         <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -151,6 +210,11 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>
+	
+	<row>
+	  <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
@@ -158,7 +222,16 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
     </html>
       <chart id="link10">
         <title>FILE - Read/Write system calls</title>
-        <searchPostProcess>fields _time,*readch*,*writech*</searchPostProcess>
+  		  <search>
+    	  	 <query>| tstats $statsmode$(FILE.readch) As FILE.readch, $statsmode$(FILE.writech) As FILE.writech from datamodel=NMON_Data_FILE
+where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
+groupby _time, "FILE.hostname" prestats=true `inline_customspan(type=FILE,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| $charting$
+| timechart `inline_customspan(type=FILE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0
+$statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE.hostname</query>
+    	    <earliest>$timerange.earliest$</earliest>
+    	    <latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -172,14 +245,23 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Rate/Sec</option>
       </chart>
       <chart id="link11">
         <title>FILE - Other statistics</title>
-        <searchPostProcess>fields _time,*iget,namei*,*dirblk*</searchPostProcess>
+  		  <search>
+    		 <query>| tstats $statsmode$(FILE.iget) As FILE.iget, $statsmode$(FILE.namei) As FILE.namei, $statsmode$(FILE.dirblk) As FILE.dirblk from datamodel=NMON_Data_FILE
+where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
+groupby _time, "FILE.hostname" prestats=true `inline_customspan(type=FILE,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| $charting$
+| timechart `inline_customspan(type=FILE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0
+$statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk by FILE.hostname</query>
+    	    <earliest>$timerange.earliest$</earliest>
+    	    <latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -193,7 +275,7 @@ $statsmode$(iget) As iget, $statsmode$(namei) As namei, $statsmode$(dirblk) As d
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Rate/Sec</option>

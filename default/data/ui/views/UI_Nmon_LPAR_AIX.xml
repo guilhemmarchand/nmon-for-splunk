@@ -1,6 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
-  <label>NMON - LPAR, Virtual CPU Usage (AIX)</label>
+  <label>NMON - LPAR, Virtual CPU Usage</label>
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -8,6 +9,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="dropdown" token="timefilter" searchWhenChanged="true">
       <label>Time Filtering:</label>
       <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -19,34 +21,64 @@
       <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
       <default>No_Filter</default>
     </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
-      <label>Filter OS Type:</label>
-      <default>| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="">Inactive</choice>
-    </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-    </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=LPAR $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) groupby "CPU.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.frameID"
+| sort limit=0 "CPU.frameID"
+| fields - _span | fillnull Count | fields "CPU.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>CPU.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>CPU.frameID</fieldForLabel>
+      <fieldForValue>CPU.frameID</fieldForValue>
     </input>
-    <input type="radio" token="aggregate" searchWhenChanged="true">
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>    
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="baseSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.hostname"
+| sort limit=0 "CPU.hostname" | fields - _span
+| fillnull Count | fields CPU.hostname, Count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>CPU.hostname=</valuePrefix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>CPU.hostname</fieldForLabel>
+      <fieldForValue>CPU.hostname</fieldForValue>
+    </input>
+
+    <input type="dropdown" token="aggregate" searchWhenChanged="true">
       <label>Aggregate:</label>
       <choice value="fields *">Single Series</choice>
-      <choice value="stats avg(usage) As usage, avg(entitled) As entitled, avg(virtualCPUs) As virtualCPUs by _time | setfields hostname=AGGREGATE">Average by Time interval</choice>
-      <choice value="stats sum(usage) As usage, sum(entitled) As entitled, sum(virtualCPUs) As virtualCPUs by _time | setfields hostname=AGGREGATE">Sum by Time interval</choice>
+      <choice value="stats avg(usage) AS usage, avg(CPU.entitled) As CPU.entitled, avg(CPU.virtual_cpus) AS CPU.virtual_cpus by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
+      <choice value="stats avg(usage) AS usage, avg(CPU.entitled) As CPU.entitled, avg(CPU.virtual_cpus) AS CPU.virtual_cpus by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Average by Time interval,frameID</choice>
+      <choice value="stats max(usage) AS usage, max(CPU.entitled) As CPU.entitled, max(CPU.virtual_cpus) AS CPU.virtual_cpus by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
+      <choice value="stats max(usage) AS usage, max(CPU.entitled) As CPU.entitled, max(CPU.virtual_cpus) AS CPU.virtual_cpus by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Max by Time interval,frameID</choice>
+      <choice value="stats sum(usage) AS usage, sum(CPU.entitled) As CPU.entitled, sum(CPU.virtual_cpus) AS CPU.virtual_cpus by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>      
+      <choice value="stats sum(usage) AS usage, sum(CPU.entitled) As CPU.entitled, sum(CPU.virtual_cpus) AS CPU.virtual_cpus by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Sum by Time interval,frameID</choice>
       <default>fields *</default>
     </input>
+
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
-      <label>Select a stats mode:</label>
+      <label>Stats mode:</label>
       <default>max</default>
       <choice value="max">Max</choice>
       <choice value="avg">Avg</choice>
@@ -55,25 +87,71 @@
       <choice value="mode">Mode</choice>
       <choice value="range">Range</choice>
     </input>
-    <input type="radio" token="indicator" searchWhenChanged="true">
+
+    <input type="dropdown" token="indicator" searchWhenChanged="true">
       <label>Show CPU load by:</label>
-      <default>eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)</default>
-      <choice value="eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)">CPU Usage vs VirtualCPUs</choice>
-      <choice value="eval usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2) | eval virtualCPUs=100">CPU Usage vs VirtualCPUs Percent Utilization</choice>
-      <choice value="eval usage=round(((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled/100),2)">CPU Usage vs Entitled</choice>
-      <choice value="eval usage=round((((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled)/virtualCPUs),2) | eval virtualCPUs=100">CPU Usage vs Entitled Percent Utilization</choice>
+      <default>rename CPU.lpar_vp_usage AS usage</default>
+      <choice value="rename CPU.lpar_vp_usage AS usage">Usage vs VirtualCPUs</choice>
+      <choice value="rename CPU.LPAR.lpar_vp_PCT_usage AS usage">Usage vs VirtualCPUs % Usage</choice>
+      <choice value="rename CPU.LPAR.lpar_ec_usage AS usage">Usage vs Entitled</choice>
+      <choice value="rename CPU.LPAR.lpar_ec_PCT_usage AS usage">Usage vs Entitled % usage</choice>
     </input>
+
+    <input type="checkbox" token="charting" searchWhenChanged="true">
+      <label>Charting:</label>
+      <default>fields *</default>
+      <choice value="fields *">On</choice>
+    </input>
+
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0</searchTemplate>
-  <earliestTime>$timerange.earliest$</earliestTime>
-  <latestTime>$timerange.latest$</latestTime>
+  
+  <!-- Global Search -->
+  
+        <search id="Global">
+          <query>| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)` 
+groupby _time,"CPU.frameID","CPU.hostname" prestats=true `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| eval "_time"='_time'
+| stats `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
+| $indicator$
+| $aggregate$
+| sort limit=0 _time
+| stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs, sparkline($statsmode$(usage)) As sparkline by "CPU.frameID","CPU.hostname"
+| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | sort limit=0 frameID | eval avg_usage=round(avg_usage,2)</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
+      
   <row>
     <panel>
+
+      <single>
+        <search base="Global">
+          <query>stats max(max_usage) AS max</query>
+        </search>
+        <option name="underLabel">Maximum Load</option>
+        <option name="linkView">search</option>
+      </single>
+
+      <single>
+        <search base="Global">
+          <query>stats avg(avg_usage) AS avg | eval avg=round(avg,2)</query>
+        </search>
+        <option name="underLabel">Average Load</option>
+        <option name="linkView">search</option>
+      </single>
+
+      <single>
+        <search base="Global">
+          <query>stats min(min_usage) AS min</query>
+        </search>
+        <option name="underLabel">Minimal Load</option>
+        <option name="linkView">search</option>
+      </single>
+
       <table>
-        <title>Table Stats - Virtual CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs, sparkline(max(usage)) As sparkline by hostname | eval avg_usage=round(avg_usage,2)</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search base="Global">
+          <query>fields hostname,frameID,max_usage,avg_usage,min_usage,entitled,virtualCPUs,sparkline</query>
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -86,39 +164,42 @@
           <option name="height">25px</option>
         </format>
       </table>
+      
     </panel>
-  </row>  
+  </row>
+  
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="addindicator" searchWhenChanged="true">
-        <label>Lpar additionnal Series:</label>
+      <input type="dropdown" token="addindicator" searchWhenChanged="true">
+        <label>LPAR additional Series:</label>
         <default>none</default>
         <choice value="">none</choice>
-        <choice value="max(entitled) As entitled">Entitled</choice>
-        <choice value="max(virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
-        <choice value="max(entitled) As entitled, max(virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
-      </input>
-      <input type="radio" token="chart" searchWhenChanged="true">
+        <choice value="max(CPU.entitled) As entitled">Entitled</choice>
+        <choice value="max(CPU.virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
+        <choice value="max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
+      </input>      
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -130,11 +211,24 @@
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>
+    
+  <row>
+    <panel>
       <chart>
-        <title>Chart - Virtual CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage, $addindicator$ by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+  			<search id="timechart">
+    		  <query>| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)` 
+groupby _time,"CPU.frameID","CPU.hostname" prestats=true `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| stats dedup_splitvals=t `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
+| $indicator$
+| $aggregate$
+| $charting$
+| timechart `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
+$statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+  		  </search>  
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -148,7 +242,7 @@
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">450px</option>
+        <option name="height">680px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisTitleY.text">Virtual CPUs</option>
         <option name="charting.axisY.minimumNumber">0</option>
@@ -160,118 +254,5 @@
       </chart>
     </panel>
   </row>
-  <row>
-    <panel>
-      <title>Charting parameters:</title>
-      <input type="radio" token="gauge.type">
-        <label>Gauge Type:</label>
-        <choice value="fillerGauge">fillerGauge</choice>
-        <choice value="markerGauge">markerGauge</choice>
-        <choice value="radialGauge">radialGauge</choice>
-        <default>radialGauge</default>
-      </input>
-      <input type="radio" token="gauge.style">
-        <label>Gauge Style:</label>
-        <choice value="minimal">minimal</choice>
-        <choice value="shiny">shiny</choice>
-        <default>minimal</default>
-      </input>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <chart>
-        <title>Higher CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0 | stats max(usage) As max by _time | sort - max | gauge max [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$gauge.type$</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">default</option>
-        <option name="charting.chart.style">$gauge.style$</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">right</option>
-        <option name="height">200px</option>
-      </chart>
-    </panel>
-    <panel>
-      <chart>
-        <title>Average CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0 | stats avg(usage) As avg | eval avg=round(avg,2) | gauge avg [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$gauge.type$</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">default</option>
-        <option name="charting.chart.style">$gauge.style$</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">right</option>
-        <option name="height">200px</option>
-      </chart>
-    </panel>
-    <panel>
-      <chart>
-        <title>Min CPU Load</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | `$timefilter$` | $indicator$ | $aggregate$ | timechart `inline_customspan(type=LPAR,$hostname$)` $statsmode$(usage) As usage | search usage&gt;0 | stats min(usage) As min | gauge min [ search index="nmon" sourcetype="nmon_data" type="LPAR" $hostname$ | $indicator$ | $aggregate$ | stats max(virtualCPUs) as max | sort - virtualCPUs | head 1 | eval first=0 | eval second=(max*0.75) | eval third=(max*0.90) | eval fourth=max | eval second=round(second,2) | eval third=round(third,2) | eval fourth=round(fourth,2) | eval range=first+" "+second+" "+third+" "+fourth | return $range]</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$gauge.type$</option>
-        <option name="charting.chart.nullValueMode">gaps</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">default</option>
-        <option name="charting.chart.style">$gauge.style$</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">right</option>
-        <option name="height">200px</option>
-      </chart>
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <single>
-        <searchPostProcess>stats max(usage) As max by _time | sort - max | eval time=strftime(_time, "%m/%d/%Y %H:%M") | fields time</searchPostProcess>
-        <option name="beforeLabel">Date of first higher load:</option>
-        <option name="linkView">search</option>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <searchPostProcess>stats avg(usage) As avg | eval avg=round(avg,2)</searchPostProcess>
-        <option name="beforeLabel">Average load:</option>
-        <option name="afterLabel">CPUs</option>
-        <option name="linkView">search</option>
-      </single>
-    </panel>
-    <panel>
-      <single>
-        <searchPostProcess>stats min(usage) As min | eval min=round(min,2)</searchPostProcess>
-        <option name="beforeLabel">Minimal load:</option>
-        <option name="afterLabel">CPUs</option>
-        <option name="linkView">search</option>
-      </single>
-    </panel>
-  </row>
+  
 </form>

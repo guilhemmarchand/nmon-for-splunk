@@ -139,14 +139,55 @@ else
 	# if none of above options worked for some unexpected reasons, use these values
 
 	# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
-	# Default to 20 seconds
-	interval="20"
+	# Default to 240 seconds
+	interval="240"
 	
 	# Number of Data refresh snapshots, Nmon will refresh data X times
-	# Default to 4320 snapshots to provide a full day data measure
-	snapshot="4320"
+	# Default to 340 snapshots to provide a full day data measure
+	snapshot="340"
 
 fi
+
+# Set interval and snapshot values depending on mode of collect
+
+case $mode in
+
+	shortperiod_low)
+			interval="60"
+			snapshot="10"
+	;;
+	
+	shortperiod_middle)
+			interval="30"
+			snapshot="20"
+	;;
+	
+	shortperiod_high)
+			interval="20"
+			snapshot="30"
+	;;		
+
+	longperiod_low)
+			interval="240"
+			snapshot="340"
+	;;
+
+	longperiod_middle)
+			interval="120"
+			snapshot="720"
+	;;
+
+	longperiod_high)
+			interval="60"
+			snapshot="1440"
+	;;
+
+	custom)
+			interval=${custom_interval}
+			snapshot=${custom_snapshot}
+	;;
+
+esac	
 
 ####################################################################
 #############		Main Program 			############
@@ -251,7 +292,7 @@ case ${PIDs} in
 			
 		*)
 			# Nmon is running, nothing to do
-			echo "Nmon is currently running, nothing to do. (PID ${PIDs})"
+			echo "Nmon is running (PID ${PIDs})"
 			;;
 		esac
 		
