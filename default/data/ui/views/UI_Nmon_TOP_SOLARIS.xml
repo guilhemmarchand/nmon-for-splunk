@@ -192,15 +192,20 @@ $statsmode$(usage_per_core) as "CPU Usage per core" by Command</query>
         <option name="charting.axisTitleY.text">Logical Core</option>
       </chart>
       <chart id="link11">
-        <title>Physical Memory (RSS) Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,PID,Command,ResSize,hostname 
-| stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
+        <title>Physical Memory (RSS) Usage per command invocation</title>      
+		  <search>          
+          <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(ResSize) As ResSize by _time,Command
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
-| stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
-$statsmode$(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=TOP,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f $limit$
+$statsmode$(Phys_Mem_MB) as "Phys_Memory" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -220,15 +225,20 @@ $statsmode$(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
         <option name="charting.axisTitleY.text">Megabytes (MB)</option>
       </chart>
       <chart id="link12">
-        <title>Virtual Memory (SIZE) Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,PID,Command,Size,hostname 
-| stats count(Command) As count, max(Size) As Size by _time,hostname,Command
+        <title>Virtual Memory (SIZE) Usage per command invocation</title>      
+		  <search>          
+          <query>| tstats max("TOP_Solaris.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.Size") AS Size by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Size) As Size by _time,Command
 | eval Virt_Mem_MB=round(((Size)/1024),2)
-| stats sum(Virt_Mem_MB) As Virt_Mem_MB by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
-$statsmode$(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=TOP,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f $limit$
+$statsmode$(Virt_Mem_MB) as "Virt_Memory" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -249,12 +259,18 @@ $statsmode$(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
       </chart>
       <chart id="link13">
         <title>Paging, Sum of page faults</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,Paging,PID,Command,hostname 
+		  <search>          
+          <query>| tstats max("TOP_Solaris.Paging") AS Paging from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.Paging") AS Paging by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | stats sum(Paging) As Paging by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
-$statsmode$(Paging) as "Paging" by Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=TOP,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f $limit$
+$statsmode$(Paging) as "Paging" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -275,12 +291,18 @@ $statsmode$(Paging) as "Paging" by Command</searchString>
       </chart>
       <chart id="link14">
         <title>Threads per Command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,Threads,PID,Command,hostname 
-| stats sum(Threads) As Threads By _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
-$statsmode$(Threads) as Threads by Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>          
+          <query>| tstats max("TOP_Solaris.Threads") AS Threads from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.Threads") AS Threads by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Threads) As Threads by _time,Command
+| timechart `inline_customspan(type=TOP,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f $limit$
+$statsmode$(Threads) as "Threads" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -300,13 +322,18 @@ $statsmode$(Threads) as Threads by Command</searchString>
         <option name="charting.axisTitleY.text">Number of Threads</option>
       </chart>
       <chart id="link15">
-        <title>CharIO (Read/Write system calls) per Command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,CharIO,PID,Command,hostname 
-| stats sum(CharIO) As CharIO By _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f $limit$
-$statsmode$(CharIO) as CharIO by Command</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>          
+          <query>| tstats max("TOP_Solaris.CharIO") AS CharIO from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.CharIO") AS CharIO by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(CharIO) As CharIO by _time,Command
+| timechart `inline_customspan(type=TOP,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f $limit$
+$statsmode$(CharIO) as "I/O" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -353,7 +380,7 @@ groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.
         <option name="drilldown">cell</option>
         <option name="count">10</option>
         <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-        <format type="sparkline" field="spk_cpuusage_per_core">
+        <format type="sparkline" field="sparkline">
           <option name="lineColor">#5379af</option>
           <option name="fillColor">#CCDDFF</option>
           <option name="lineWidth">1</option>
@@ -363,22 +390,27 @@ groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.
     </panel>
     <panel>
       <table>
-        <title>Table stats: Physical Memory Usage per command invocation</title>
-        <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ $Command$ $PID$ | `$timefilter$` | dedup _time,PID,Command,ResSize,hostname 
-| stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
+        <title>Table stats: Physical Memory Usage per command invocation</title>      
+		  <search>          
+          <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1s 
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
-| stats $statsmode$(Phys_Mem_MB) As Phys_Mem_MB, sparkline($statsmode$(Phys_Mem_MB)) As spk_Phys_Mem_MB by Command
-| sort - Phys_Mem_MB, hostname | rename Phys_Mem_MB As "Physical Memory (MB)"</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| stats $statsmode$(Phys_Mem_MB) As Phys_Mem_MB, sparkline($statsmode$(Phys_Mem_MB)) As sparkline by Command
+| sort - Phys_Mem_MB, hostname | rename Phys_Mem_MB As "Physical Memory (MB)"</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
         <option name="count">10</option>
         <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-        <format type="sparkline" field="spk_Phys_Mem_MB">
+        <format type="sparkline" field="sparkline">
           <option name="lineColor">#5379af</option>
           <option name="fillColor">#CCDDFF</option>
           <option name="lineWidth">1</option>
