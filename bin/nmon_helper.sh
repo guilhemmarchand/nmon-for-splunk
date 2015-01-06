@@ -121,7 +121,7 @@ NMON_REPOSITORY=${APP}/var/nmon_repository
 [ -d ${APP}/var/config_repository ] || { mkdir -p ${APP}/var/config_repository; }
 
 # Nmon PID file
-PIDFILE=${APP}/var/nmon.pid
+PIDFILE=/tmp/nmon.pid
 
 ############################################
 # Defaults values for interval and snapshot
@@ -177,7 +177,7 @@ case $mode in
 
 	longperiod_middle)
 			interval="120"
-			snapshot="720"
+			snapshot="120"
 	;;
 
 	longperiod_high)
