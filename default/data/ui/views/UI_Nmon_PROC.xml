@@ -2,6 +2,7 @@
   <label>NMON - PROC, Kernel Internal Statistics</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -9,6 +10,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="dropdown" token="timefilter" searchWhenChanged="true">
       <label>Time Filtering:</label>
       <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -20,27 +22,64 @@
       <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
       <default>No_Filter</default>
     </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
+
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default></default>
-      <choice value="">Any OS</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
-    </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
       <default>*</default>
-    </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PROC $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+      <prefix>PROC.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="*">Any OS</choice>
+      <choice value="AIX">AIX</choice>
+      <choice value="Linux">Linux</choice>
+      <choice value="Solaris">Solaris</choice>
+    </input>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS count from datamodel=NMON_Data_PROC where (nodename = PROC) ($osfilter$) groupby "PROC.frameID" prestats=true 
+| stats dedup_splitvals=t count AS count by "PROC.frameID" 
+| sort limit=0 "PROC.frameID" 
+| fields - _span
+| fillnull count | fields "PROC.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>PROC.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>PROC.frameID</fieldForLabel>
+      <fieldForValue>PROC.frameID</fieldForValue>
     </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>   
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS count from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "PROC.hostname" prestats=true 
+| stats dedup_splitvals=t count AS count by "PROC.hostname" 
+| sort limit=0 "PROC.hostname" 
+| fields - _span
+| fillnull count | fields "PROC.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>PROC.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>PROC.hostname</fieldForLabel>
+      <fieldForValue>PROC.hostname</fieldForValue>
+    </input>
+
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -51,22 +90,36 @@
       <choice value="mode">Mode</choice>
       <choice value="range">Range</choice>
     </input>
+
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$`
+
+  <search id="baseSearch">
+    <query>| tstats 
+max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall 
+max("PROC.fork") AS fork max("PROC.exec") AS exec
+from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
+groupby _time, "PROC.frameID", "PROC.hostname" prestats=true
+| stats dedup_splitvals=t max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
+max("PROC.fork") AS fork max("PROC.exec") AS exec by _time, "PROC.frameID", "PROC.hostname"
+| rename "PROC.frameID" AS "frameID", "PROC.hostname" AS "hostname"
 | stats
 $statsmode$(Runnable) As "RunQueue", sparkline($statsmode$(Runnable)) As "spk_RunQueue",
 $statsmode$(Swap_in) As "Swap_in", sparkline($statsmode$(Swap_in)) As "spk_Swap_in",
 $statsmode$(pswitch) As "pswitch/sec", sparkline($statsmode$(pswitch)) As "spk_pswitch/sec",
 $statsmode$(syscall) As "syscall/sec", sparkline($statsmode$(syscall)) As "spk_syscall/sec",
 $statsmode$(fork) As "fork/sec", sparkline($statsmode$(fork)) As "spk_fork/sec",
-$statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" by hostname</searchTemplate>
-  <earliestTime>$timerange.earliest$</earliestTime>
-  <latestTime>$timerange.latest$</latestTime>
+$statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" by frameID,hostname</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+
   <row>
     <panel>
       <table>
         <title>Kernel Threads in run queue and to be paged - Table Stats</title>
-        <searchPostProcess>fields hostname, "RunQueue", "Swap_in", "spk_RunQueue", "spk_Swap_in"</searchPostProcess>
+        <search base="baseSearch">
+          <query>fields frameID,hostname,"RunQueue","Swap_in","spk_RunQueue","spk_Swap_in"</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -86,10 +139,14 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
         </format>
       </table>
     </panel>
+  </row>
+  <row>  
     <panel>
       <table>
         <title>Context switches, System / Fork / Exec calls - Table Stats</title>
-        <searchPostProcess>fields hostname, "pswitch/sec","syscall/sec","fork/sec","exec/sec","spk_pswitch/sec","spk_syscall/sec","spk_fork/sec","spk_exec/sec"</searchPostProcess>
+		  <search base="baseSearch">
+          <query>fields frameID,hostname,"pswitch/sec","syscall/sec","fork/sec","exec/sec","spk_pswitch/sec","spk_syscall/sec","spk_fork/sec","spk_exec/sec"</query>
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -122,29 +179,31 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
       </table>
     </panel>
   </row>
+  
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -156,16 +215,28 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>  
+  
+  <row>
+    <panel>
+      <title>Charting parameters:</title>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
       </div>
     </html>
       <chart id="link10">
-        <title>Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$` | timechart `inline_customspan(type=PROC,$hostname$)` limit=0 useother=f $statsmode$(Runnable) As "RunQueue", $statsmode$(Swap_in) As "Swap_in" by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <title>Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>        
+  			<search id="timechart">
+    		  <query>| tstats $statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in from datamodel=NMON_Data_PROC where (nodename = PROC)
+(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
+groupby _time, "PROC.hostname" prestats=true `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| timechart `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
+$statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in by "PROC.hostname"</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -186,9 +257,15 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
       </chart>
       <chart id="link11">
         <title>Context switches and system calls (pswitch, syscall)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$` | timechart `inline_customspan(type=PROC,$hostname$)` limit=0 useother=f $statsmode$(pswitch) As "pswitch/sec", $statsmode$(syscall) As "syscall/sec" by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search>
+    		  <query>| tstats $statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall from datamodel=NMON_Data_PROC where (nodename = PROC)
+(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
+groupby _time, "PROC.hostname" prestats=true `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| timechart `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
+$statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall by "PROC.hostname"</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -209,9 +286,15 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
       </chart>
       <chart id="link12">
         <title>Fork and Exec system calls (fork, exec)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$` | timechart `inline_customspan(type=PROC,$hostname$)` limit=0 useother=f $statsmode$(fork) As "pswitch/sec", $statsmode$(exec) As "exec/sec" by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+        <search>
+    		  <query>| tstats $statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC)
+(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
+groupby _time, "PROC.hostname" prestats=true `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| timechart `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
+$statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec by "PROC.hostname"</query>
+    		  <earliest>$timerange.earliest$</earliest>
+    		  <latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
