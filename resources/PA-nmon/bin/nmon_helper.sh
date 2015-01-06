@@ -120,6 +120,9 @@ NMON_REPOSITORY=${APP}/var/nmon_repository
 [ -d ${APP}/var/csv_repository ] || { mkdir -p ${APP}/var/csv_repository; }
 [ -d ${APP}/var/config_repository ] || { mkdir -p ${APP}/var/config_repository; }
 
+# Nmon PID file
+PIDFILE=${APP}/var/nmon.pid
+
 ############################################
 # Defaults values for interval and snapshot
 ############################################
@@ -263,7 +266,7 @@ fi
 
 # Search for any running Nmon instance, stop it if exist and start it, start it if does not
 cd ${NMON_REPOSITORY}
-PIDs=`ps -ef| grep "${nmon_command}" | grep -v grep | awk '{print $2}'`
+PIDs=`ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}'`
 
 case ${PIDs} in
 
@@ -271,6 +274,7 @@ case ${PIDs} in
     	# Start NMON
 		echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 		${nmon_command} >/dev/null 2>&1
+		ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
 	;;
 	
 	* )
@@ -291,8 +295,34 @@ case ${PIDs} in
 			;;
 			
 		*)
-			# Nmon is running, nothing to do
-			echo "Nmon is running (PID ${PIDs})"
+			# Nmon is running, ensure current PID matches the saved PID
+			if [ -f ${PIDFILE} ]; then
+			
+				SAVED_PID=`cat ${PIDFILE}`
+				
+				echo ${PIDs} | grep ${SAVED_PID}	>/dev/null 2>&1
+				
+				case $? in
+				0)
+					echo "Nmon is running (PID ${PIDs})"	
+				;;
+				*)
+					rm ${PIDFILE}
+					echo "Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
+					echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+					ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
+				;;
+				
+				esac
+				
+			else
+
+				echo "Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
+				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+				ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
+			
+			fi			
+			
 			;;
 		esac
 		
