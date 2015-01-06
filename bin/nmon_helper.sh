@@ -307,7 +307,7 @@ case ${PIDs} in
 					echo "Nmon is running (PID ${PIDs})"	
 				;;
 				*)
-					rm ${PIDFILE}
+					kill ${PIDs}
 					echo "Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
 					echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 					ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
@@ -316,7 +316,7 @@ case ${PIDs} in
 				esac
 				
 			else
-
+				kill ${PIDs}
 				echo "Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
 				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 				ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
