@@ -256,6 +256,8 @@ esac
 # Initialize PID variable
 PIDs="" 
 
+# who am I
+MYUSER=`whoami`
 
 # Check nmon binary exists and is executable
 if [ ! -x ${NMON} ]; then
@@ -266,7 +268,7 @@ fi
 
 # Search for any running Nmon instance, stop it if exist and start it, start it if does not
 cd ${NMON_REPOSITORY}
-PIDs=`ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}'`
+PIDs=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | awk '{print $2}'`
 
 case ${PIDs} in
 
@@ -275,6 +277,7 @@ case ${PIDs} in
 		echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 		${nmon_command} >/dev/null 2>&1
 		ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
+		exit 0
 	;;
 	
 	* )
@@ -292,9 +295,26 @@ case ${PIDs} in
 			echo "Detected orphan nmon instance(s) running (probably TA-nmon upgrade), instance(s) with PID(s) ${PIDs} were killed"
 			echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 			${nmon_command} >/dev/null 2>&1
+			ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
+			exit 0
 			;;
 			
 		*)
+			# Don't allow multiple execution of Nmon
+			NBR_PIDs=`echo ${PIDs} | wc -l`
+			
+			if [ ${NBR_PIDs} -gt 1 ]; then
+
+				kill ${PIDs}				
+				echo "Detected multiple nmon instances running, instances with PIDs ${PIDs} were killed"				
+				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+				${nmon_command} >/dev/null 2>&1
+				ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
+				exit 0
+			fi		
+		
+		
+		
 			# Nmon is running, ensure current PID matches the saved PID
 			if [ -f ${PIDFILE} ]; then
 			
@@ -310,7 +330,9 @@ case ${PIDs} in
 					kill ${PIDs}
 					echo "Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
 					echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+					${nmon_command} >/dev/null 2>&1
 					ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
+					exit 0
 				;;
 				
 				esac
@@ -319,7 +341,9 @@ case ${PIDs} in
 				kill ${PIDs}
 				echo "Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
 				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+				${nmon_command} >/dev/null 2>&1
 				ps -ef | grep "${nmon_command}" | grep -v grep | awk '{print $2}' > ${PIDFILE}
+				exit 0
 			
 			fi			
 			
