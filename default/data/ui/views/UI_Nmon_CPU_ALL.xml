@@ -274,7 +274,8 @@
     <panel>
       <chart>
   			<search id="timechart">
-    		  <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname" prestats=true `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+    		  <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)`
+ groupby _time, "CPU.hostname" prestats=true span=1s
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
 | $aggregate$
 | $charting$

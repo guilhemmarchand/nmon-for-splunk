@@ -1,6 +1,7 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - PROCSOL, Percentage of Time Processes have spent in (Solaris)</label>
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -8,6 +9,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="dropdown" token="timefilter" searchWhenChanged="true">
       <label>Time Filtering:</label>
       <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -19,19 +21,51 @@
       <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
       <default>No_Filter</default>
     </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-    </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PROCSOL $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) groupby "PROCSOL.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "PROCSOL.frameID"
+| sort limit=0 "PROCSOL.frameID"
+| fields - _span | fillnull Count | fields "PROCSOL.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>PROCSOL.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>PROCSOL.frameID</fieldForLabel>
+      <fieldForValue>PROCSOL.frameID</fieldForValue>
     </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>  
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (PROCSOL.hostname=$hostname-prefilter$) ($frameID$) groupby "PROCSOL.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "PROCSOL.hostname"
+| sort limit=0 "PROCSOL.hostname"
+| fields - _span | fillnull Count | fields "PROCSOL.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>PROCSOL.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>PROCSOL.hostname</fieldForLabel>
+      <fieldForValue>PROCSOL.hostname</fieldForValue>
+    </input>
+
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -42,21 +76,35 @@
       <choice value="mode">Mode</choice>
       <choice value="range">Range</choice>
     </input>
+
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="PROCSOL" $hostname$ | `$timefilter$` | stats
+
+  <search id="BaseSearch">
+    <query>| tstats 
+max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL 
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT 
+from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (PROCSOL.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PROCSOL)`
+groupby _time, "PROCSOL.frameID", "PROCSOL.hostname" prestats=true 
+| stats dedup_splitvals=t max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL 
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, "PROCSOL.hostname"
+| stats
 $statsmode$(USR) As "USR (%time in User Mode)", sparkline($statsmode$(USR)) As "spk_USR",
 $statsmode$(SYS) As "SYS (%time in System Mode)", sparkline($statsmode$(SYS)) As "spk_SYS",
 $statsmode$(TRP) As "TRP (%time Processing system traps)", sparkline($statsmode$(TRP)) As "spk_TRP",
 $statsmode$(TFL) As "TFL (%time Processing text page faults)", sparkline($statsmode$(TFL)) As "spk_TFL",
 $statsmode$(DFL) As "DFL (%time Processing data page faults)", sparkline($statsmode$(DFL)) As "spk_DFL",
-$statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) As "spk_LAT" by hostname</searchTemplate>
-  <earliestTime>$timerange.earliest$</earliestTime>
-  <latestTime>$timerange.latest$</latestTime>
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) As "spk_LAT" by PROCSOL.hostname</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+
   <row>
     <panel>
       <table>
         <title>Table Stats</title>
-        <searchPostProcess>fields hostname, "USR (%time in User Mode)", "spk_USR","SYS (%time in System Mode)", "spk_SYS","TRP (%time Processing system traps)","spk_TRP"</searchPostProcess>
+        <search base="BaseSearch">
+          <query>fields hostname, "USR (%time in User Mode)", "spk_USR","SYS (%time in System Mode)", "spk_SYS","TRP (%time Processing system traps)","spk_TRP"</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -87,7 +135,9 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
     <panel>
       <table>
         <title/>
-        <searchPostProcess>fields, hostname, "TFL (%time Processing text page faults)", "spk_TFL", "DFL (%time Processing data page faults)", "spk_DFL", "LAT (%time Waiting for CPU)", "spk_LAT"</searchPostProcess>
+        <search base="BaseSearch">
+          <query>fields, hostname, "TFL (%time Processing text page faults)", "spk_TFL", "DFL (%time Processing data page faults)", "spk_DFL", "LAT (%time Waiting for CPU)", "spk_LAT"</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -115,29 +165,31 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
       </table>
     </panel>
   </row>
+  
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -149,11 +201,28 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
       <chart>
         <title>Chart - Percentage of Time All processes have spent in: (estimation since terminated processes are not accounted)</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="PROCSOL" $hostname$ | `$timefilter$` | timechart `inline_customspan(type=PROCSOL,$hostname$)` limit=0 useother=f $statsmode$(USR) As "USR (%time in User Mode)", $statsmode$(SYS) As "SYS (%time in System Mode)", $statsmode$(TRP) As "TRP (%time Processing system traps)", $statsmode$(TFL) As "TFL (%time Processing text page faults)", $statsmode$(DFL) As "DFL (%time Processing data page faults)", $statsmode$(LAT) As "LAT (%time Waiting for CPU)" by hostname</searchString>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+		  <search>
+          <query>| tstats
+max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL 
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT 
+from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (PROCSOL.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PROCSOL)`
+groupby _time, "PROCSOL.frameID", "PROCSOL.hostname" prestats=true 
+| stats dedup_splitvals=t max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL 
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, "PROCSOL.hostname"
+| timechart `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)` limit=0 useother=f 
+$statsmode$(USR) As "USR (%time in User Mode)", $statsmode$(SYS) As "SYS (%time in System Mode)", $statsmode$(TRP) As "TRP (%time Processing system traps)",
+$statsmode$(TFL) As "TFL (%time Processing text page faults)", $statsmode$(DFL) As "DFL (%time Processing data page faults)",
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)" by PROCSOL.hostname</query>        
+    	    <earliest>$timerange.earliest$</earliest>
+    	    <latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
