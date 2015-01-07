@@ -172,7 +172,7 @@ case $mode in
 
 	longperiod_low)
 			interval="240"
-			snapshot="340"
+			snapshot="120"
 	;;
 
 	longperiod_middle)
@@ -182,7 +182,7 @@ case $mode in
 
 	longperiod_high)
 			interval="60"
-			snapshot="1440"
+			snapshot="120"
 	;;
 
 	custom)
