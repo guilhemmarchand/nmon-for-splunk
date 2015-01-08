@@ -200,7 +200,7 @@ if ($CLEANCSV) {
                 if ( $timediff > $MAXSECONDS_CSV ) {
 
                     # information
-                    print ("Max set retention of $MAXSECONDS_CSV seconds seconds expired for file: $file")
+                    print ("Max set retention of $MAXSECONDS_CSV seconds seconds expired for file: $file");
 
                     # purge file
                     unlink $file;
@@ -245,7 +245,7 @@ foreach $key (@cleaning) {
             if ( $timediff > $MAXSECONDS_NMON ) {
             
                 # information
-                print ("Max set retention of $MAXSECONDS_NMON seconds seconds expired for file: $file")
+                print ("Max set retention of $MAXSECONDS_NMON seconds seconds expired for file: $file");
 
                 # purge file
                 unlink $file;

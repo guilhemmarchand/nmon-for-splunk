@@ -349,8 +349,8 @@ else:
 
             os.remove(xfile)  # Permanently remove the file!
 
-        msg = str(counter_expired) + ' files were permanently removed due to retention expired for directory ' + DIR
-        print (msg)
+    msg = str(counter_expired) + ' files were permanently removed due to retention expired for directory ' + DIR
+    print (msg)
 
 ###################
 # End
