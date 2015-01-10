@@ -1,8 +1,12 @@
 <form script="single_trend.js,table_icons_rangemap.js" stylesheet="singlevalue.css,ui_simple.css,single_trend_transposed.css,table_decorations.css">
   <label>NMON - Usage Comparison Interface</label>
   <description/>
+
   <row>
+
     <panel>
+    <title>Select Period 1</title>
+    
       <input type="time" token="TimeRange1" searchWhenChanged="true">
         <label>Time Range:</label>
         <default>
@@ -21,15 +25,11 @@
         <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
         <default>No_Filter</default>
       </input>
-      <html>
-        
-        <div class="custom">
-         <h1>Select Period 1</h1>
-        </div>
-          
-      </html>
     </panel>
+
     <panel>
+    <title>Select Period 2</title>
+
       <input type="time" token="TimeRange2" searchWhenChanged="true">
         <label>Time Range:</label>
         <default>
@@ -48,23 +48,23 @@
         <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
         <default>No_Filter</default>
       </input>
-      <html>
-        
-        <div class="custom">
-         <h1>Select Period 2</h1>
-        </div>
-        
-      </html>
+
     </panel>
+
   </row>
+
   <row>
+
     <panel>
+	 <title>Statistics Parameters</title>
+	 
      <input type="checkbox" token="chartactivate" searchWhenChanged="true">
        <label>Charting:</label>
        <choice value="fields *">Activated</choice>
        <default>fields *</default>
      </input>
-     <input type="radio" token="osfilter" searchWhenChanged="true">
+
+     <input type="dropdown" token="osfilter" searchWhenChanged="true">
        <label>Filter OS Type:</label>
        <default></default>
        <choice value="">Any OS</choice>
@@ -72,6 +72,7 @@
        <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
        <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
      </input>
+
       <input type="dropdown" token="monitor" searchWhenChanged="true">
         <label>Monitor:</label>
         <choice value="CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)">CPU_ALL - CPU Usage in %</choice>
@@ -84,19 +85,28 @@
         <choice value="MEM | `MEM_eval` | eval usage=Virtual_used_PCT">MEM - Paging Mem Pct usage</choice>
         <default>CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)</default>
       </input>
+
       <input type="text" token="hostname-prefilter" searchWhenChanged="true">
         <label>Optional: Filter hosts populating</label>
         <prefix>hostname="</prefix>
         <suffix>"</suffix>
         <default>*</default>
       </input>      
+
       <input type="multiselect" token="hostname" searchWhenChanged="true">
         <label>Hosts Selection:</label>
-        <populatingSearch earliest="$TimeRange1.earliest$" latest="$TimeRange1.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data $hostname-prefilter$ type=$monitor$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+        <search>
+          <query>index=nmon sourcetype=nmon_data $hostname-prefilter$ type=$monitor$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
+          <earliest>$TimeRange1.earliest$</earliest>
+        	 <latest>$TimeRange2.latest$</latest>
+        </search>
         <valuePrefix>hostname="</valuePrefix>
         <valueSuffix>"</valueSuffix>
         <delimiter> OR </delimiter>
+        <fieldForLabel>hostname</fieldForLabel>
+        <fieldForValue>hostname</fieldForValue>
       </input>
+
       <input type="dropdown" token="statsmode" searchWhenChanged="true">
         <label>Select a stats mode:</label>
         <default>max</default>
@@ -107,21 +117,34 @@
         <choice value="mode">Mode</choice>
         <choice value="range">Range</choice>
       </input>
-      <html>
-        
-        <div class="custom">
-         <h1>Statistics Parameters</h1>
-        </div>
-          
-      </html>
+
     </panel>
+
   </row>
+
   <row>
     <panel>
+
       <single>
-        <searchString>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ | `$TimeFilter$` | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname | fields hostname,usage_period1* | join hostname [ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname$ $monitor$ | `$TimeFilter$` | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname | fields hostname,usage_period2* ] | `eval_compare` | stats avg(usage_period1) As trend1, avg(usage_period2) As trend2 | eval trend1=round(trend1,2) | eval trend2=round(trend2,2) | transpose | sort - column | fields row* | rename "row 1" As value</searchString>
+        <searchString></searchString>
         <earliestTime>$TimeRange1.earliest$</earliestTime>
         <latestTime>$TimeRange1.latest$</latestTime>
+		  <search>
+		    <query>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$
+| `$TimeFilter$`
+| stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
+| fields hostname,usage_period1*
+| join hostname 
+[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname$ $monitor$
+| `$TimeFilter$` 
+| stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
+| fields hostname,usage_period2* ] 
+| `eval_compare` 
+| stats avg(usage_period1) As trend1, avg(usage_period2) As trend2 | eval trend1=round(trend1,2) | eval trend2=round(trend2,2) 
+| transpose | sort - column | fields row* | rename "row 1" As value</query>
+          <earliest>$TimeRange1.earliest$</earliest>
+        	 <latest>$TimeRange1.latest$</latest>
+		  </search>
         <option name="drilldown">none</option>
         <option name="field">value</option>
         <option name="underLabel">GLOBAL TREND EVOLUTION OVER PERIOD 1</option>
@@ -129,11 +152,23 @@
         <option name="beforeLabel">Period 2:</option>
         <option name="afterLabel">Usage</option>
       </single>
+      
       <table id="table1">
         <title>Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ | `$TimeFilter$` | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname | fields hostname,usage_period1* | join hostname [ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname$ $monitor$ | `$TimeFilter$` | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname | fields hostname,usage_period2* ] | `eval_compare`</searchString>
-        <earliestTime>$TimeRange1.earliest$</earliestTime>
-        <latestTime>$TimeRange1.latest$</latestTime>
+		  <search>
+		    <query>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ 
+| `$TimeFilter$` 
+| stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname 
+| fields hostname,usage_period1* 
+| join hostname 
+[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname$ $monitor$ 
+| `$TimeFilter$` 
+| stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
+| fields hostname,usage_period2* ] 
+| `eval_compare`</query>
+          <earliest>$TimeRange1.earliest$</earliest>
+        	 <latest>$TimeRange1.latest$</latest>		  
+		  </search>
         <option name="height">680px</option>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -141,11 +176,14 @@
         <option name="drilldown">cell</option>
         <option name="count">10</option>
       </table>
+
     </panel>
   </row>
+  
   <row>
     <panel>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <title>Charting parameters:</title>
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
@@ -153,17 +191,18 @@
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
         <label>Select a stacking mode:</label>
         <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
         <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
@@ -176,23 +215,27 @@
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
-      <html>
-
-       	<div class="custom">
-         <h1>Charting Options</h1>
-        </div>
-
-        
-      </html>
     </panel>
-  </row>
+  </row>  
+
   <row>
     <panel>
       <chart>
         <title>Combined Chart (Time line period 1</title>
-        <searchString>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ | $chartactivate$ | `$TimeFilter$` | timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname | fields _time,usage_period1* | appendcols [ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname$ $monitor$ | `$TimeFilter$` | timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname | fields usage_period2* ]</searchString>
-        <earliestTime>$TimeRange1.earliest$</earliestTime>
-        <latestTime>$TimeRange1.latest$</latestTime>
+			<search>
+			  <query>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ 
+| $chartactivate$ 
+| `$TimeFilter$` 
+| timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname 
+| fields _time,usage_period1* 
+| appendcols 
+[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname$ $monitor$ 
+| `$TimeFilter$` 
+| timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
+| fields usage_period2* ]</query>
+           <earliest>$TimeRange1.earliest$</earliest>
+        	  <latest>$TimeRange1.latest$</latest>			
+			</search>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -221,9 +264,14 @@
     <panel>
       <chart>
         <title>Chart Period 1</title>
-        <searchString>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ | $chartactivate$ | `$TimeFilter$` | timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname</searchString>
-        <earliestTime>$TimeRange1.earliest$</earliestTime>
-        <latestTime>$TimeRange1.latest$</latestTime>
+		  <search>
+		    <query>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ 
+| $chartactivate$ 
+| `$TimeFilter$` 
+| timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname</query>
+          <earliest>$TimeRange1.earliest$</earliest>
+        	 <latest>$TimeRange1.latest$</latest>			
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -250,9 +298,14 @@
     <panel>
       <chart>
         <title>Chart Period 2</title>
-        <searchString>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ | $chartactivate$ | `$TimeFilter$` | timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname</searchString>
-        <earliestTime>$TimeRange2.earliest$</earliestTime>
-        <latestTime>$TimeRange2.latest$</latestTime>
+		  <search>
+		    <query>index="nmon" sourcetype="nmon_data" $hostname$ $monitor$ 
+| $chartactivate$ 
+| `$TimeFilter$` 
+| timechart `inline_customspan(type=CPU_ALL OR type=LPAR OR type=DISKFER OR type=NET OR type=MEM,$hostname$)` limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname</query>		  
+          <earliest>$TimeRange2.earliest$</earliest>
+        	 <latest>$TimeRange2.latest$</latest>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>

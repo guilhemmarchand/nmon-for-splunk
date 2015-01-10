@@ -7,12 +7,20 @@
 {% block css %}
 {{block.super}}
 <style type="text/css">
+
 #bubble1{
    height: 600px;
 }
 #d3chart1{
    height: 600px;
 }
+
+.html h3 {
+	font-size: 12px;
+	font-weight: normal;
+	line-height: 16px;
+}
+
 </style>
 {% endblock css %}
 
@@ -46,71 +54,58 @@
 
     {% block usage%}
 
+
         <table class="table table-striped table-bordered">
+          <tr>
+          
+            <td>
 
+              <h3>Time Range:</h3>
 
-            <tr>
-                <td>
+    			  {% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}                
+
+            </td>
+
+            <td>
 				
-				<p></p>
-                <h2>TimeRange:</h2>
-                </td>
-                <td>
-					<p></p>
-    				{% timerange id="timerange" 
-					managerid="search1" 
-        			preset="Last 24 hours"
-        			earliest_time="$earlyval$"|token_safe
-        			latest_time="$lateval$"|token_safe %}                
-					<p></p>                
-                </td>
-            </tr>
+              <h3>Time Filtering:</h3>
 
-            <tr>
-                <td>
-					 <p></p>
-                <h2>Time Filtering:</h2>
-                </td>
-                <td>
-                	<p></p>
-						{% dropdown id="filtertime-dropdown" width="200" default="No_Filter" value="$valuesfiltertime$"|token_safe %}
-						<p></p>                
-                </td>
-            </tr>		
+				  {% dropdown id="filtertime-dropdown" default="No_Filter" value="$timefilter$"|token_safe %}
 
-            <tr>
-                <td>
-					<p></p>
-					<h2>Optional: Filter hosts</h2>
-				</td>
-					<td>
+            </td>
 
-                <p></p>                
-                <h2>Filter OS Type:</h2>
-                <p></p>                
-                {% radiogroup id="osfilter-radiogroup" default="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
+            <td>
 
-					<h2>Hosts Filtering:</h2>					
+              <h3>Filter OS Type:</h3>
 
-					<p></p>
-					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
+              {% dropdown id="osfilter-dropdown" default="Solaris" value="$OStype$"|token_safe%}
+
+            </td>
+
+            <td>
+
+				   <h3>Frame IDs:</h3>					
+					{% dropdown id="sn-dropdown" managerid="frameid-populate" valueField="CPU.frameID" default="*" value="$frameID$"|token_safe %}						
+
+            </td>
+
+            <td>
+
+				   <h3>Hosts Filtering:</h3>					
 					
-					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
+					{% textinput id="hosts-textinput" value="$hostname$"|token_safe default="*" %}	
 
-				</td>
-            </tr>			
-	
-            <tr>
-                <td>
-					<p></p>
-					<h2>Select a Stats Mode:</h2>
-                </td>
-                <td>
-					<p></p>
-					{% dropdown id="stats-dropdown" width="250" default="avg" value="$valuesstats$"|token_safe %}	
-				</td>
-            </tr>
+            </td>
 
+            <td>
+
+					<h3>Stats Mode:</h3>
+
+					{% dropdown id="stats-dropdown" width="250" default="avg" value="$statsmode$"|token_safe %}	
+
+            </td>
+
+          </tr>
         </table>
 		
     {% endblock usage%}
@@ -142,33 +137,39 @@
 	
 {% block managers %}
     
+	{% searchmanager
+		id="frameid-populate" search='| tstats count AS count from datamodel=NMON_Data_CPU where (CPU.OStype="$OStype$") (CPU.hostname="$hostname$") groupby "CPU.frameID", "CPU.hostname" prestats=true | stats dedup_splitvals=t count AS Count by "CPU.frameID", "CPU.hostname" | fields "CPU.frameID" | dedup "CPU.frameID" | sort "CPU.frameID"'|token_safe
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		cache=False
+		auto_cancel=60
+		preview=True %}	
+    
 	{% searchmanager 
-	id="search1"
-	search='index=nmon sourcetype=nmon_data $valueshosts$ type=CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT) $valuesosfilter$ | `$valuesfiltertime$` | stats $valuesstats$(usage) As usage by hostname | sort - usage | head 100'|token_safe 
-	earliest_time="$earlyval$"|token_safe
-	latest_time="$lateval$"|token_safe
-	auto_cancel=60
-	cache=False
-	preview=True %}
+		id="search1" search='| tstats `CPU_ALL($statsmode$,$frameID$,$OStype$,$hostname$,$timefilter$)` | sort - usage | head 100'|token_safe 
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		auto_cancel=60
+		cache=False
+		preview=True %}
 	
 	{% searchmanager 
-	id="search2" 
-	search='index=nmon sourcetype=nmon_data $valueshosts$ type=CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT) $valuesosfilter$ | `$valuesfiltertime$` | stats $valuesstats$(usage) As usage by hostname'|token_safe 
-	earliest_time="$earlyval$"|token_safe
-	latest_time="$lateval$"|token_safe
-	auto_cancel=60
-	cache=False
-	preview=True %}
+		id="search2" search='| tstats `CPU_ALL($statsmode$,$frameID$,$OStype$,$hostname$,$timefilter$)` | fields frameID,hostname,usage,*'|token_safe 
+		earliest_time="$earlyval$"|token_safe
+		latest_time="$lateval$"|token_safe
+		auto_cancel=60
+		cache=False
+		preview=True %}
 	
 	{% postprocessmanager 
-	id="post1" 
-	managerid="search2" 
-	search="| sort - usage | fields hostname,usage | head 20" %}
+		id="post1" 
+		managerid="search2" 
+		search="| eval usage_PCT=if(isnull(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields hostname,usage | head 20" %}
 	
 	{% postprocessmanager 
-	id="post2" 
-	managerid="search2" 
-	search="| sort hostname" %}
+		id="post2" 
+		managerid="search2" 
+		search="| sort frameID,hostname" %}
 	
 	
 {% endblock managers %}
@@ -200,6 +201,14 @@
 		splunkjs.mvc.Components.getInstance("stats-dropdown").settings.set("choices", choices);
 		
 		var choices = [
+        {label: " Any OS", value: "*"},		
+        {label: " Solaris", value: "Solaris"}
+        ] 
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("osfilter-dropdown").settings.set("choices", choices);
+		
+		var choices = [
         {label: " No Filter", value: "No_Filter"},
         {label: " Day BusinessDays 8h-19h", value: "Day_BusinessDays_8h-19h"},
         {label: " Day WeekEnd 8h-19h", value: "Day_WeekEnd_8h-19h"},
@@ -210,15 +219,7 @@
         ] 
  
 		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("filtertime-dropdown").settings.set("choices", choices);
-		
-		var choices = [
-        {label: " Solaris", value: "| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]"},
-        {label: " Inactive", value: ""}                
-        ] 
- 
-		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);				
+		splunkjs.mvc.Components.getInstance("filtertime-dropdown").settings.set("choices", choices);				
 		
 		
     });

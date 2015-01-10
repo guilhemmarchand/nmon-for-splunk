@@ -20,6 +20,12 @@
    height: 572px;
 }
 
+.html h3 {
+	font-size: 12px;
+	font-weight: normal;
+	line-height: 16px;
+}
+
 </style>
 {% endblock css %}
 
@@ -36,107 +42,68 @@
     {% endblock heading %}
     
     
-   
     {% block usage%}
 
-      <p>Change your parameters if required:</p>
-		<p> </p>
 
-		
         <table class="table table-striped table-bordered">
+          <tr>
+          
+            <td>
 
+              <h3>Time Range:</h3>
 
-            <tr>
-                <td>
+    			  {% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}                
+
+            </td>
+
+            <td>
 				
-				<p></p>
-                <h2>TimeRange:</h2>
-                </td>
-                <td>
-					<p></p>
-    				{% timerange id="timerange" 
-					managerid="search1" 
-        			preset="Last 24 hours"
-        			earliest_time="$earlyval$"|token_safe
-        			latest_time="$lateval$"|token_safe %}                
-					<p></p>                
-                </td>
-            </tr>
+              <h3>Time Filtering:</h3>
 
-            <tr>
-                <td>
-					 <p></p>
-                <h2>Time Filtering:</h2>
-                </td>
-                <td>
-                	<p></p>
-						{% dropdown id="filtertime-dropdown" width="200" default="No_Filter" value="$valuesfiltertime$"|token_safe %}
-						<p></p>                
-                </td>
-            </tr>		
+				  {% dropdown id="filtertime-dropdown" default="No_Filter" value="$timefilter$"|token_safe %}
 
-            <tr>
-                <td>
-					<p></p>
-					<h2>Optional Filters</h2>
-				</td>
-					<td>
+            </td>
 
-                <p></p>                
-                <h2>Filter OS Type:</h2>
-                <p></p>                
-                {% radiogroup id="osfilter-radiogroup" default="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
+            <td>
+
+              <h3>Filter OS Type:</h3>
+
+              {% dropdown id="osfilter-dropdown" default="AIX" value="$OStype$"|token_safe%}
+
+            </td>
+
+            <td>
+
+				   <h3>Frame IDs:</h3>					
+					{% dropdown id="sn-dropdown" managerid="frameid-populate" valueField="CPU.frameID" default="*" value="$frameID$"|token_safe %}						
+
+            </td>
+
+            <td>
+
+				   <h3>Hosts Filtering:</h3>					
 					
-					<h2>Hosts Filtering:</h2>					
+					{% textinput id="hosts-textinput" value="$hostname$"|token_safe default="*" %}	
 
-					<p></p>
-					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
-					
-					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
+            </td>
 
-					<h2>PSeries Filtering - AIX Serial Number: (can be pre-filtered by Hosts filter)</h2>					
+            <td>
 
-					<p></p>
-					<p>Enter or Select AIX Serial Numbers, in PSeries environment the S/N of AIX hosts is the PSeries S/N</p>					
-					
-					{% dropdown id="sn-dropdown" managerid="sn-populate" valueField="AIX_Machine_SerialNumber" default="*" value="$valuesserialnum$"|token_safe %}						
+					<h3>Monitors Information:</h3>
 
-				</td>
-            </tr>			
-	
-            <tr>
-                <td>
-					<p></p>
-					<h2>Select a CPU usage Monitor:</h2>
-				</td>
-					<td>
-					
-					<p></p>
+					{% dropdown id="monitor-dropdown" width="250" value="$monitor$"|token_safe %}	
 
-					<h2>Monitors Information:</h2>
+            </td>
 
-					<li>CPU_ALL: CPU Usage in Percentage</li>
-					<li>LPAR: Micro Partition Usage in VPs</li>
-					<li>LPAR: Default Pool Usage in VPs (keeping 1 partition per PSeries)</li>
+            <td>
 
-					<p></p>
+					<h3>Stats Mode:</h3>
 
-					{% dropdown id="monitor-dropdown" width="250" default="LPAR | eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)" value="$valuesmonitor$"|token_safe %}	
+					{% dropdown id="stats-dropdown" width="250" default="avg" value="$statsmode$"|token_safe %}	
 
-				</td>
-            </tr>			
-			
-            <tr>
-                <td>
-					<p></p>
-					<h2>Select a Stats Mode:</h2>
-                </td>
-                <td>
-					<p></p>
-					{% dropdown id="stats-dropdown" width="250" default="avg" value="$valuesstats$"|token_safe %}	
-				</td>
-            </tr>
+            </td>
 
+          </tr>
         </table>
 		
     {% endblock usage%}
@@ -237,39 +204,38 @@
 	<!-- Populate dropdown (main search) -->
 	
 	{% searchmanager
-		id="sn-populate" search='| inputlookup nmon_inventory | search hostname=$valueshosts$ | stats count by AIX_Machine_SerialNumber | sort AIX_Machine_SerialNumber'|token_safe
+		id="frameid-populate" search='| tstats count AS count from datamodel=NMON_Data_CPU where (CPU.OStype="$OStype$") (CPU.hostname="$hostname$") groupby "CPU.frameID", "CPU.hostname" prestats=true | stats dedup_splitvals=t count AS Count by "CPU.frameID", "CPU.hostname" | fields "CPU.frameID" | dedup "CPU.frameID" | sort "CPU.frameID"'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
-		cache=True
+		cache=False
 		auto_cancel=60
 		preview=True %}
 
 <!-- CPU Usage -->
-    	
+
 	{% searchmanager 
-	id="search-cpu" 
-	search='index=nmon hostname=$valueshosts$ serialnum=*$valuesserialnum$* $valuesmonitor$ $valuesosfilter$ | `$valuesfiltertime$` | stats $valuesstats$(usage) As usage, $valuesstats$(pct_usage) As pct_usage, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | fields hostname,usage,pct_usage,*'|token_safe 
+	id="search-cpu" search='| tstats `$monitor$($statsmode$,$frameID$,$OStype$,$hostname$,$timefilter$)` | fields frameID,hostname,usage*,*'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
-	cache=False
 	auto_cancel=60
-	preview=True %}
+	cache=False
+	preview=True %}	
 	
 	{% postprocessmanager 
 	id="search-cpu-top30" 
 	managerid="search-cpu" 
-	search="| sort - pct_usage | fields hostname,usage | head 30" %}
+	search="| sort - usage | fields hostname,usage | head 30" %}
 	
 	{% postprocessmanager 
 	id="search-table-cpu" 
 	managerid="search-cpu" 
-	search="| sort - pct_usage | eval usage=round(usage,2) | eval pct_usage=round(pct_usage,2)" %}
+	search="| sort - usage" %}
 	
 <!-- MEMORY Usage -->
     
 	{% searchmanager 
 	id="search-memory" 
-	search='index="nmon" sourcetype="nmon_data" hostname=$valueshosts$ serialnum=*$valuesserialnum$* type="MEM" $valuesosfilter$ | `$valuesfiltertime$` | `MEM_eval` | stats $valuesstats$(Real_free_MB) As Real_free_MB, $valuesstats$(Real_used_MB) As Real_used_MB, $valuesstats$(Real_total_MB) As Real_total_MB, $valuesstats$(Real_used_PCT) As Real_used_PCT by hostname'|token_safe 
+	search='| tstats `MEM($statsmode$,$frameID$,$OStype$,$hostname$,$timefilter$)`'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
@@ -284,28 +250,19 @@
 	{% postprocessmanager 
 	id="search-table-memory" 
 	managerid="search-memory" 
-	search="| fields hostname,Real_used_PCT, Real_used_MB, Real_total_MB | eval Real_used_PCT=round(Real_used_PCT,2) | eval Real_used_MB=round(Real_used_MB,0) | eval Real_total_MB=round(Real_total_MB,0)" %}
+	search="| fields frameID,hostname,Real_used_PCT, Real_used_MB, Real_total_MB | eval Real_used_PCT=round(Real_used_PCT,2) | eval Real_used_MB=round(Real_used_MB,0) | eval Real_total_MB=round(Real_total_MB,0)" %}
 
 <!-- SWAP Usage -->
     
-	{% searchmanager 
-	id="search-swap" 
-	search='index="nmon" sourcetype="nmon_data" hostname=$valueshosts$ serialnum=*$valuesserialnum$* type="MEM" $valuesosfilter$ | `$valuesfiltertime$` | `MEM_eval` | stats $valuesstats$(Virtual_free_MB) As Virtual_free_MB, $valuesstats$(Virtual_used_MB) As Virtual_used_MB, $valuesstats$(Virtual_total_MB) As Virtual_total_MB, $valuesstats$(Virtual_used_PCT) As Virtual_used_PCT by hostname'|token_safe
-	earliest_time="$earlyval$"|token_safe
-	latest_time="$lateval$"|token_safe
-	cache=False
-	auto_cancel=60
-	preview=True %}
-	
 	{% postprocessmanager 
 	id="search-swap-top30" 
-	managerid="search-swap" 
+	managerid="search-memory" 
 	search=" | fields hostname,Virtual_used_PCT | eval Virtual_used_PCT=round(Virtual_used_PCT,2) | sort - Virtual_used_PCT | where Virtual_used_PCT>0 | head 30" %}
 	
 	{% postprocessmanager 
 	id="search-table-swap" 
-	managerid="search-swap" 
-	search="| fields hostname,Virtual_used_PCT, Virtual_used_MB, Virtual_total_MB | eval Virtual_used_PCT=round(Virtual_used_PCT,2) | eval Virtual_used_MB=round(Virtual_used_MB,0) | eval Virtual_total_MB=round(Virtual_total_MB,0) | sort - Virtual_used_PCT | where Virtual_total_MB>=0" %}
+	managerid="search-memory" 
+	search="| fields frameID,hostname,Virtual_used_PCT, Virtual_used_MB, Virtual_total_MB | eval Virtual_used_PCT=round(Virtual_used_PCT,2) | eval Virtual_used_MB=round(Virtual_used_MB,0) | eval Virtual_total_MB=round(Virtual_total_MB,0) | sort - Virtual_used_PCT | where Virtual_total_MB>=0" %}
 	
 	
 {% endblock managers %}
@@ -350,14 +307,14 @@
 				});
 				
 		var choices = [
-        {label: " CPU_ALL - CPU Usage in %", value: "CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT) | eval pct_usage=(Sys_PCT+User_PCT+Wait_PCT)"},
-        {label: " LPAR - MicroPartition CPU Usage in VCPUs", value: "LPAR | eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)"},
-        {label: " LPAR - Pools CPU Usage in VCPUs", value: "LPAR PoolIdle>0 | eval usage=round((poolCPUs-PoolIdle),2) | where usage>0 AND usage<poolCPUs | eval pct_usage=round(((poolCPUs-PoolIdle)*poolCPUs/100),2)"},
-        ]  
+        {label: " CPU_ALL - CPU Usage in %", value: "CPU_ALL"},
+        {label: " LPAR - CPU Usage (VCPUs)", value: "LPAR_usage"},
+        {label: " LPAR - Default Pool Usage (1 partition per frameID)", value: "LPAR_poolusage"},
+        ] 
  
 		// Assign them to the button group
 		splunkjs.mvc.Components.getInstance("monitor-dropdown").settings.set("choices", choices);
-		
+
 		var choices = [
         {label: " Max", value: "max"},
         {label: " Average", value: "avg"},
@@ -367,12 +324,12 @@
 		splunkjs.mvc.Components.getInstance("stats-dropdown").settings.set("choices", choices);
 		
 		var choices = [
-        {label: " AIX", value: "| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]"},
-        {label: " Inactive", value: ""}                
+        {label: " Any OS", value: "*"},		
+        {label: " AIX", value: "AIX"}
         ] 
  
 		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);	
+		splunkjs.mvc.Components.getInstance("osfilter-dropdown").settings.set("choices", choices);
 		
 		var choices = [
         {label: " No Filter", value: "No_Filter"},
