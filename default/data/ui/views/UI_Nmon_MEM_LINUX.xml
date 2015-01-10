@@ -1,7 +1,9 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - MEM, Linux Memory and Swap Usage</label>
   <description></description>
+ 
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -9,6 +11,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+
     <input type="dropdown" token="timefilter" searchWhenChanged="true">
       <label>Time Filtering:</label>
       <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -20,25 +23,67 @@
       <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
       <default>No_Filter</default>
     </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
+
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default>| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-      <choice value="">Inactive</choice>
+      <default>Linux</default>
+      <prefix>MEM.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="*">Any OS</choice>
+      <choice value="Linux">Linux</choice>
     </input>
+
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
       <default>*</default>
     </input>
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+
+     <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($osfilter$) groupby "MEM.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "MEM.frameID"
+| sort limit=0 "MEM.frameID"
+| fields - _span | fillnull Count | fields "MEM.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>MEM.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>MEM.frameID</fieldForLabel>
+      <fieldForValue>MEM.frameID</fieldForValue>
+    </input>   
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input>   
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "MEM.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "MEM.hostname"
+| sort limit=0 "MEM.hostname"
+| fields - _span | fillnull Count | fields "MEM.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>MEM.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>MEM.hostname</fieldForLabel>
+      <fieldForValue>MEM.hostname</fieldForValue>
     </input>
+
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -49,39 +94,57 @@
       <choice value="mode">Mode</choice>
       <choice value="range">Range</choice>
     </input>
+
+    <input type="checkbox" token="charting" searchWhenChanged="true">
+      <label>Charting:</label>
+      <default>fields *</default>
+      <choice value="fields *">On</choice>
+    </input>
+
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| rename memfree As memfree_MB, memtotal As memtotal_MB,
-buffers As buffers_MB, cached As cached_MB, active As active_MB, inactive As inactive_MB,
-swapfree As swapfree_MB, swaptotal As swaptotal_MB, swapcached As swapcached_MB
-| eval memused_MB=round((memtotal_MB-memfree_MB),2)
-| eval swapused_MB=round((swaptotal_MB-swapfree_MB),2)
-| eval memfree_PCT=round(((memfree_MB/memtotal_MB)*100),2)
-| eval memused_PCT=round(((memused_MB/memtotal_MB)*100),2)
-| eval buffers_PCT=round(((buffers_MB/memtotal_MB)*100),2)
-| eval cached_PCT=round(((cached_MB/memtotal_MB)*100),2)
-| eval active_PCT=round(((active_MB/memtotal_MB)*100),2)
-| eval inactive_PCT=round(((inactive_MB/memtotal_MB)*100),2)
-| eval swapfree_PCT=round(((swapfree_MB/swaptotal_MB)*100),2)
-| eval swapused_PCT=round(((swapused_MB/swaptotal_MB)*100),2)
-| eval swapcached_PCT=round(((swapcached_MB/swaptotal_MB)*100),2)
-| stats
-$statsmode$(memtotal_MB) As memtotal_MB, $statsmode$(memused_MB) As memused_MB, $statsmode$(memfree_MB) As memfree_MB,
-$statsmode$(swaptotal_MB) As swaptotal_MB, $statsmode$(swapused_MB) As swapused_MB, $statsmode$(swapfree_MB) As swapfree_MB, $statsmode$(swapcached_MB) As swapcached_MB,
-$statsmode$(memfree_PCT) As memfree_PCT, $statsmode$(swapfree_PCT) As swapfree_PCT,
-$statsmode$(memused_PCT) As memused_PCT, $statsmode$(swapused_PCT) As swapused_PCT, $statsmode$(swapcached_PCT) As swapcached_PCT,
-$statsmode$(buffers_PCT) As buffers_PCT, $statsmode$(cached_PCT) As cached_PCT, $statsmode$(active_PCT) As active_PCT, $statsmode$(inactive_PCT) As inactive_PCT,
-$statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $statsmode$(active_MB) As active_MB, $statsmode$(inactive_MB) As inactive_MB by hostname</searchTemplate>
-  <earliestTime>$timerange.earliest$</earliestTime>
-  <latestTime>$timerange.latest$</latestTime>
+
+  <search id="Global">
+    <query>| tstats 
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
+max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB 
+max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
+max("MEM.inactive_PCT") AS inactive_PCT max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t 
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
+max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
+max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
+max("MEM.inactive_PCT") AS inactive_PCT max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
+by _time, "MEM.frameID", "MEM.hostname" | sort limit=0 "MEM.hostname" 
+| fields - _span 
+| rename "MEM.hostname" AS hostname "MEM.frameID" AS "frameID"
+| stats dedup_splitvals=t 
+$statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT 
+$statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("buffers_MB") AS buffers_MB $statsmode$("buffers_PCT") AS buffers_PCT $statsmode$("cached_MB") AS cached_MB
+$statsmode$("cached_PCT") AS cached_PCT $statsmode$("active_MB") AS active_MB $statsmode$("active_PCT") AS active_PCT $statsmode$("inactive_MB") AS inactive_MB 
+$statsmode$("inactive_PCT") AS inactive_PCT $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB 
+$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB $statsmode$("swapcached_MB") AS swapcached_MB $statsmode$("swapcached_PCT") AS swapcached_PCT 
+by _time, frameID, hostname | sort limit=0 frameID,hostname
+| fields frameID, hostname, memused_MB, memused_PCT, memfree_MB, memfree_PCT, memtotal_MB, buffers_MB, buffers_PCT, cached_MB, cached_PCT, active_MB, active_PCT,
+ inactive_MB, inactive_PCT, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT, swaptotal_MB, swapcached_MB, swapcached_PCT
+| foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
+| foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>    
+  </search>  
+
   <row>
     <panel>
       <title>Memory parameters:</title>
       <input type="radio" token="memmode" searchWhenChanged="true">
         <label>Memory Usage by:</label>
-        <default>fields _time,hostname,*_PCT*</default>
-        <choice value="fields _time,hostname,*_PCT*">Usage in percentage (%)</choice>
-        <choice value="fields _time,hostname,*_MB*">Activity in Data Volume (MB)</choice>
+        <default>fields _time,frameID,hostname,*_PCT*</default>
+        <choice value="fields _time,frameID,hostname,*_PCT*">Usage in percentage (%)</choice>
+        <choice value="fields _time,frameID,hostname,*_MB*">Activity in Data Volume (MB)</choice>
       </input>
       <input type="checkbox" token="memfilter" searchWhenChanged="true">
         <label>Memory - Filter monitors:</label>
@@ -112,7 +175,8 @@ $statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $sta
     <panel>
       <table>
         <title>MEM - Memory Table Stats</title>
-        <searchPostProcess>eval memfree_MB=round(memfree_MB,0)
+        <search base="Global">
+          <query>eval memfree_MB=round(memfree_MB,0)
 | eval memused_MB=round(memused_MB,0)
 | eval memtotal_MB=round(memtotal_MB,0)
 | eval buffers_MB=round(buffers_MB,0)
@@ -122,9 +186,8 @@ $statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $sta
 | $memmode$ | fields - _time
 | rename memfree_MB As "memfree (MB)", memused_MB As "memused (MB)", memtotal_MB As "memtotal (MB)", buffers_MB As "buffers (MB)", cached_MB As "cached (MB)", active_MB As "active (MB)", inactive_MB As "inactive (MB)"
 | rename memfree_PCT As "memfree (%)", memused_PCT As "memused (%)", buffers_PCT As "buffers (%)" , cached_PCT As "cached (%)", active_PCT As "active (%)", inactive_PCT As "inactive (%)"
-| fields hostname,$memfilter$</searchPostProcess>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| fields frameID,hostname,$memfilter$</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -135,16 +198,16 @@ $statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $sta
     <panel>
       <table>
         <title>MEM - Swap Table Stats</title>
-        <searchPostProcess>eval swapfree_MB=round(swapfree_MB,0)
+        <search base="Global">
+          <query>eval swapfree_MB=round(swapfree_MB,0)
 | eval swapused_MB=round(swapused_MB,0)
 | eval swaptotal_MB=round(swaptotal_MB,0)
 | eval swapcached_MB=round(swapcached_MB,0)
 | $memmode$ | fields - _time
 | rename swaptotal_MB As "swaptotal (MB)", swapused_MB As "swapused (MB)", swapfree_MB As "swapfree (MB)", swapcached_MB As "swapcached (MB)"
 | rename swapused_PCT As "swapused (%)", swapfree_PCT As "swapfree (%)", swapcached_PCT As "swapcached (%)", 
-| fields hostname,$swapfilter$</searchPostProcess>
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
+| fields frameID,hostname,$swapfilter$</query>
+		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -153,29 +216,31 @@ $statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $sta
       </table>
     </panel>
   </row>
+
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -187,6 +252,11 @@ $statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $sta
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>  
+  
+  <row>
+    <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
@@ -194,23 +264,28 @@ $statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $sta
     </html>
       <chart id="link10">
         <title>Memory Usage</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| rename memfree As memfree_MB, memtotal As memtotal_MB, buffers As buffers_MB, cached As cached_MB, active As active_MB, inactive As inactive_MB
-| eval memused_MB=round((memtotal_MB-memfree_MB),2)
-| eval memfree_PCT=round(((memfree_MB/memtotal_MB)*100),2)
-| eval memused_PCT=round(((memused_MB/memtotal_MB)*100),2)
-| eval buffers_PCT=round(((buffers_MB/memtotal_MB)*100),2)
-| eval cached_PCT=round(((cached_MB/memtotal_MB)*100),2)
-| eval active_PCT=round(((active_MB/memtotal_MB)*100),2)
-| eval inactive_PCT=round(((inactive_MB/memtotal_MB)*100),2)
-| timechart `inline_customspan(type=MEM,$hostname$)`
-$statsmode$(memtotal_MB) As memtotal_MB, $statsmode$(memused_MB) As memused_MB, $statsmode$(memfree_MB) As memfree_MB,
-$statsmode$(memfree_PCT) As memfree_PCT, $statsmode$(memused_PCT) As memused_PCT
-$statsmode$(buffers_PCT) As buffers_PCT, $statsmode$(cached_PCT) As cached_PCT, $statsmode$(active_PCT) As active_PCT, $statsmode$(inactive_PCT) As inactive_PCT,
-$statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $statsmode$(active_MB) As active_MB, $statsmode$(inactive_MB) As inactive_MB by hostname
-| $memmode$ | fields _time,$memfilter$</searchString>
-  		  <earliestTime>$timerange.earliest$</earliestTime>
-  		  <latestTime>$timerange.latest$</latestTime>
+  		  <search>
+    		 <query>| tstats 
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
+max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB 
+max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
+max("MEM.inactive_PCT") AS inactive_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
+| bucket _time span=1s
+| stats dedup_splitvals=t 
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
+max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
+max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
+max("MEM.inactive_PCT") AS inactive_PCT by _time, "MEM.frameID", "MEM.hostname" | sort limit=0 "MEM.hostname" 
+| fields - _span 
+| timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t 
+$statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT 
+$statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("buffers_MB") AS buffers_MB $statsmode$("buffers_PCT") AS buffers_PCT $statsmode$("cached_MB") AS cached_MB
+$statsmode$("cached_PCT") AS cached_PCT $statsmode$("active_MB") AS active_MB $statsmode$("active_PCT") AS active_PCT $statsmode$("inactive_MB") AS inactive_MB 
+$statsmode$("inactive_PCT") AS inactive_PCT by "MEM.hostname" | $memmode$ | fields _time, $memfilter$ | $charting$</query>
+    		 <earliest>$timerange.earliest$</earliest>
+    		 <latest>$timerange.latest$</latest>    
+  		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -231,16 +306,25 @@ $statsmode$(buffers_MB) As buffers_MB, $statsmode$(cached_MB) As cached_MB, $sta
       </chart>
       <chart id="link11">
         <title>Swap Usage</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
-| rename swapfree As swapfree_MB, swapfree As swapfree_MB, swaptotal As swaptotal_MB, swapcached As swapcached_MB
-| eval swapused_MB=round((swaptotal_MB-swapfree_MB),2)
-| eval swapfree_PCT=round(((swapfree_MB/swaptotal_MB)*100),0)
-| eval swapused_PCT=round(((swapused_MB/swaptotal_MB)*100),0)
-| eval swapcached_PCT=round(((swapcached_MB/swaptotal_MB)*100),0)
-| timechart `inline_customspan(type=MEM,$hostname$)`
-$statsmode$(swaptotal_MB) As swaptotal_MB, $statsmode$(swapused_MB) As swapused_MB, $statsmode$(swapfree_MB) As swapfree_MB, $statsmode$(swapcached_MB) As swapcached_MB,
-$statsmode$(swapfree_PCT) As swapfree_PCT, $statsmode$(swapused_PCT) As swapused_PCT, $statsmode$(swapcached_PCT) As swapcached_PCT by hostname
-| $memmode$ | fields _time,$swapfilter$*</searchString>
+  		  <search>
+    		 <query>| tstats 
+max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
+| bucket _time span=1s
+| stats dedup_splitvals=t 
+max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
+by _time, "MEM.frameID", "MEM.hostname"
+| fields - _span 
+| timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t 
+$statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB 
+$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB $statsmode$("swapcached_MB") AS swapcached_MB $statsmode$("swapcached_PCT") AS swapcached_PCT 
+by "MEM.hostname" | $memmode$ | fields _time, $swapfilter$ | $charting$</query>
+    		 <earliest>$timerange.earliest$</earliest>
+    		 <latest>$timerange.latest$</latest>    
+  		  </search>
   		  <earliestTime>$timerange.earliest$</earliestTime>
   		  <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>

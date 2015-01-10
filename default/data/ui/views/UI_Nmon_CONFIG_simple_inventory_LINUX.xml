@@ -1,24 +1,11 @@
-<form stylesheet="Home.css,singlevalue.css,ui_simple.css">
+<form stylesheet="singlevalue.css,ui_simple.css">
   <label>NMON CONFIG, Linux Simple Inventory</label>
   <description/>
-  <fieldset autoRun="true" submitButton="false">
-    <input type="time" token="timerange" searchWhenChanged="true">
-      <label>Time Range:</label>
-      <default>
-        <earliestTime>-24h@h</earliestTime>
-        <latestTime>now</latestTime>
-      </default>
-    </input>
-    <input type="radio" token="datasource" searchWhenChanged="true">
-      <label>Data Source:</label>
-      <choice value="inputlookup nmon_inventory | search OStype=Linux">Based on Nmon Inventory Lookup</choice>
-      <choice value="search `nmon_config` | search OStype=&quot;Linux&quot; | stats values(OStype) As OStype,values(cpu_cores) As cpu_cores, values(Processor) As Processor, values(Linux_memory_MB) As Linux_memory_MB, values(Linux_swap_MB) As Linux_swap_MB, values(Linux_distribution) As Linux_distribution, values(Linux_kernelversion) As Linux_kernelversion, values(nmon_version) As nmon_version by hostname | fillnull value=Undeterminated">Based on Nmon Raw Data</choice>
-      <default>inputlookup nmon_inventory | search OStype=Linux</default>
-    </input>
-  </fieldset>
-  <searchTemplate>| $datasource$</searchTemplate>
-  <earliestTime>$timerange.earliest$</earliestTime>
-  <latestTime>$timerange.latest$</latestTime>
+
+  <search id="Global">
+    <query>| inputlookup nmon_inventory | search OStype=Linux $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$</query>
+  </search> 
+
   <row>
     <html>
       <div style="text-align: center;">
@@ -78,7 +65,9 @@
   
   <row>
     <single>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count</searchPostProcess>
+		<search base="Global">
+        <query>stats count</query>
+		</search>
       <option name="afterLabel">Hosts known within this period</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">Linux</option>
@@ -89,7 +78,9 @@
   <row grouping="1,1">
     <chart>
       <title>Linux Distribution</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by Linux_distribution</searchPostProcess>
+      <search base="Global">
+        <query>stats count by Linux_distribution</query>
+		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -107,13 +98,17 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 Linux_distribution | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <search base="Global">
+        <query>top limit=0 Linux_distribution | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+		</search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Processor</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by Processor</searchPostProcess>
+      <search base="Global">
+        <query>stats count by Processor</query>
+		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -131,13 +126,17 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <search base="Global">
+        <query>top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+		</search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>CPUs cores Capacity</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by cpu_cores</searchPostProcess>
+      <search base="Global">
+        <query>stats count by cpu_cores</query>
+		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -155,13 +154,17 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <search base="Global">
+        <query>top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+		</search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Linux Kernel</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by Linux_kernelversion</searchPostProcess>
+      <search base="Global">
+        <query>stats count by Linux_kernelversion</query>
+		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -179,13 +182,17 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 Linux_kernelversion | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <search base="Global">
+        <query>top limit=0 Linux_kernelversion | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+		</search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Nmon version</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | stats count by nmon_version</searchPostProcess>
+      <search base="Global">
+        <query>stats count by nmon_version</query>
+		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -203,15 +210,17 @@
     </chart>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
+      <search base="Global">
+        <query>top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+		</search>
     </table>
   </row>
   <row>
     <table>
       <title>Table Stats</title>
-      <searchPostProcess>search $hostname$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$ | fields hostname,cpu_cores,OStype,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</searchPostProcess>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+      <search base="Global">
+        <query>fields hostname,cpu_cores,OStype,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</query>
+		</search>
     </table>
   </row>
 </form>
