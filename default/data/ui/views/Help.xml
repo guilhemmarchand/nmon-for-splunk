@@ -176,7 +176,7 @@
 
 			<br />
 
-			<li><a href="#ADVANCED_SN">AIX MAPPING SN WITH PSERIES</a></li>
+			<li><a href="#ADVANCED_FRAMEID">FRAMEID: MAP HOSTS WITH THEIR FRAME IDENTIFIER (example: Pseries with hostnames)</a></li>
 
 			<br />
 
@@ -2145,7 +2145,7 @@ This configuration file is sourced at starting time by the "nmon_helper.sh" inpu
 <pre>
 #	longperiod_low)
 #			interval="240"
-#			snapshot="340"
+#			snapshot="120"
 </pre>
 
 <b>longperiod_middle</b>
@@ -2153,7 +2153,7 @@ This configuration file is sourced at starting time by the "nmon_helper.sh" inpu
 <pre>
 #	longperiod_middle)
 #			interval="120"
-#			snapshot="720"
+#			snapshot="120"
 </pre>
 
 <b>longperiod_high</b>
@@ -2161,13 +2161,13 @@ This configuration file is sourced at starting time by the "nmon_helper.sh" inpu
 <pre>
 #	longperiod_high)
 #			interval="60"
-#			snapshot="1440"
+#			snapshot="120"
 </pre>
 
 
 <br />
 
-<b>The default mode is set to "longperiod_low", is a good compromise between accuracy, CPU / licensing cost and operational intelligence, and should relevant for very large deployment in Production environments</b>
+<b>The default mode is set to "longperiod_high", which is a good compromise between accuracy, CPU / licensing cost and operational intelligence, and should be relevant for very large deployment in Production environments</b>
 
 <br />
 <br />
@@ -2244,11 +2244,11 @@ Linux_NFS="0"
 </div>
 
 
-<div id="ADVANCED_SN">
+<div id="ADVANCED_FRAMEID">
 
 <br />
 
-<h2>5.3 AIX IBM PSeries Environments: Mapping Partitions with PSeries names</h2>
+<h2>5.3 FRAME ID: Mapping hostnames with a Frame Identifier</h2>
 
 </div>
 
@@ -2257,65 +2257,130 @@ Linux_NFS="0"
 <p>
 
 <b>
-If you are planning to manage many partitions in IBM Pseries environment, you will take advantages of mapping lpars (also called micro-partitions) with your PSeries identification hostname.
+In large deployment scenarios, mapping hostnames with their Frame Identifier can be very useful to help Analysis, or simply finding the required host.
+
+<br />
+Since Version 1.5.0, a Frame ID feature is included within interfaces, in default configuration the frame ID is mapped to the Serial Number of the host.
+
+<br />
+In AIX OS, the Serial Number is associated the PSeries Serial Number (in Pseries environments), in Linux / Solaris, this is equal to the hostname.
+
+<br />
+<br />
+
+You can customize the Frame Identifier using any external lookup table which will contains one field for the frameIDs, and one field containing hostnames.
+
+<br />
+To achieve this, please follow the configuration above:
+<br />
+
 </b>
 
+
 <br />
 <br />
-This will add a supplementary filter (interfaces, reports...) using the PSeries name, very useful in big environment.
+
+<b>1. Configure your table lookup in transforms.conf</b>
+
 <br />
 <br />
-This can be achieved by adding a csv lookup based on "serialnum" field present in every NMON data section.
+
+Create a local/transforms.conf and set your lookup table:
+
 <br />
-<br />
-In IBM Pseries environments, this serial number is in fact the PSeries serial number, create a csv lookup adapted to your need and store in SPLUNK_HOME/etc/apps/nmon/lookups, such as:
-<br />
-</p>
 
 <pre>
-PSERIES_NAME,serialnum<br />
+
+[myframeidtable]
+filename = my_frameid_lookup.csv
+</pre>
+
+<br />
+
+<b>Example 1: Map Pseries with hostnames using the serial number field</b>
+
+<br />
+
+<pre>
+PSERIES_NAME,serialnum
 PSERIESfoo,xxxxxxxxxxx
 PSERIESbar,xxxxxxxxxxx
 </pre>
 
 <br />
 
-Create a stanza in "$SPLUNK_HOME/etc/apps/nmon/local/transforms.conf" such as:
+<b>Example 2: Map frameID with hostnames (using the hostname field)</b>
 
 <br />
 
 <pre>
-[mylookup]
-filename = mylookupfile.csv
+FRAME_NAME,hostname
+frame1,hostname1
+frame1,hostname2
+frame2,hostname3
+frame3,hostname4
 </pre>
 
 <br />
+
+<b>2. Map your hostnames with the frameID in props.conf</b>
+
 <br />
-Then, copy "props.conf" from default directory to local directory, within the [nmon_data] stanza, add your csv lookup mapping such as: 
+<br />
+
+Create a local/props.conf and map your hosts within the nmon_data stanza:
+
+<br />
+<br />
+
+<b>Example 1: (Pseries with serial number field)</b>
 
 <pre>
-# mylookup Mapping
-lookup_mylookup = mylookup serialnum OUTPUTNEW PSERIES
+[nmon_data]
+LOOKUP-myframeidtable = myframeidtable serialnum AS serialnum OUTPUT PSERIES AS frameID
 </pre>
 
 <br />
-Restart Splunk (or refresh the configuration using debug URL), once this is done every lpar host will be associated with its PSeries.
+
+<b>Example 2: (frameID with hostnames)</b>
+
+<pre>
+[nmon_data]
+LOOKUP-myframeidtable = myframeidtable hostname OUTPUT FRAME_NAME AS frameID
+</pre>
 
 <br />
-Beyond this point, you are free to modify views to include this information as a new important filter within dropdowns and so on... As always ensure you are working with files located in "local"
-directory to be upgrade resilient.
+<br />
+
+NOTE: Use "OUTPUT" to generate the frameID field, don't use OUTPUTNEW which wont't overwrite the default frameID field
 
 <br />
-You can off course add many other technical of functional informations depending on your environment to improve the way you exploit your data.
+<br />
+
+<b>3. Restart Splunk to apply settings</b>
 
 <br />
+<br />
+
+<b>4. Rebuild Acceleration for Datamodel</b>
+
+<br />
+<br />
+
+For each accelerated Data model, please rebuild the acceleration to update the frameID field. (Go in Pivot, manage datamodels, develop each data model and rebuild)
+
+<br />
+<br />
+
+</p>
+
 
 <div id="ADVANCED_SPAN">
 
 <br />
 <br />
 
-<h2>5.3 Time Interval definition: Custom macros used by App to dynamically define the more accurate span value</h2>
+<h2>5.4 Time Interval definition: Custom macros used by App to dynamically define the more accurate span value</h2>
 
 </div>
 

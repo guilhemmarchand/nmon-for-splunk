@@ -86,7 +86,7 @@ Available options are:
 my $MAXSECONDS_CSV_DEFAULT = 900;
 
 # Default values for NMON retention (7 days)
-my $MAXSECONDS_CSV_DEFAULT = 604800;
+my $MAXSECONDS_NMON_DEFAULT = 604800;
 
 #################################################
 ##      Functions
@@ -111,7 +111,7 @@ my $SPLUNK_HOME = $ENV{SPLUNK_HOME};
 # Verify SPLUNK_HOME definition
 if ( not $SPLUNK_HOME ) {
     print(
-"\n$time ERROR: The environment variable SPLUNK_HOME could not be verified, if you want to run this script manually you need to export it before processing"
+"\n$time ERROR: The environment variable SPLUNK_HOME could not be verified, if you want to run this script manually you need to export it before processing \n"
     );
     die;
 }
@@ -200,7 +200,7 @@ if ($CLEANCSV) {
                 if ( $timediff > $MAXSECONDS_CSV ) {
 
                     # information
-                    print ("Max set retention of $MAXSECONDS_CSV seconds seconds expired for file: $file");
+                    print ("Max set retention of $MAXSECONDS_CSV seconds seconds expired for file: $file \n");
 
                     # purge file
                     unlink $file;
@@ -245,7 +245,7 @@ foreach $key (@cleaning) {
             if ( $timediff > $MAXSECONDS_NMON ) {
             
                 # information
-                print ("Max set retention of $MAXSECONDS_NMON seconds seconds expired for file: $file");
+                print ("Max set retention of $MAXSECONDS_NMON seconds seconds expired for file: $file \n");
 
                 # purge file
                 unlink $file;
