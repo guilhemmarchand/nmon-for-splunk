@@ -242,7 +242,7 @@ if maxseconds_csv is None:
 
 # Default value for NMON retention
 if maxseconds_nmon is None:
-    maxseconds_nmon = 604800
+    maxseconds_nmon = 86400
 
 # Show current time
 msg = now + " Starting nmon cleaning"

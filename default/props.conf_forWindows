@@ -54,6 +54,22 @@ LOOKUP-OStype = nmon_inventory hostname AS hostname OUTPUTNEW OStype AS OStype
 # This alias will prevent the problem was previously indexed data
 FIELDALIAS-VP_IdlePCT = VP_IdlePCT AS VP_Idle_PCT
 
+### frameID ###
+
+#
+# NEW ! Starting with V1.5.0, use the frameID to automatically associate hosts with the Frame IDs, like associating AIX hosts with PSeries names for example
+# In default configuration, the "frameid" will be equivalent to the host Serial Number using the above Alias
+
+FIELDALIAS-frameID = serialnum AS frameID
+
+# To create your custom association (automatic lookup)
+
+# 1. Create a custom local/transforms.conf to configure your lookup table (see transforms.conf)
+# 2. Create a custom local/props.conf with a [nmon_data] stanza
+# 3. Configure your automatic lookup to overwrite the frameID field (use OUTPUT, don't use OUTPUTNEW which wont't overwrite the frameID field)
+
+# LOOKUP-PSERIES = my_lookup_table serialnum AS serialnum OUTPUT PSERIES AS frameID
+
 ###########################################
 #			nmon processing stanza				#
 ###########################################

@@ -85,8 +85,8 @@ Available options are:
 # Default values for CSV retention (10 minutes)
 my $MAXSECONDS_CSV_DEFAULT = 900;
 
-# Default values for NMON retention (7 days)
-my $MAXSECONDS_NMON_DEFAULT = 604800;
+# Default values for NMON retention (1 day)
+my $MAXSECONDS_NMON_DEFAULT = 86400;
 
 #################################################
 ##      Functions
