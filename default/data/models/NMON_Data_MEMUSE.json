@@ -3,19 +3,31 @@
     "displayName": "NMON Data - MEMUSE, Various Memory Statistics",
     "description": "Various Memory Statistics: Cache Hit Ratio, System Buffer Accesses...",
     "objectSummary": {
-        "Event-Based": 1,
+        "Event-Based": 2,
         "Transaction-Based": 0,
         "Search-Based": 0
     },
     "objects": [
         {
-            "objectName": "MEMUSE",
-            "displayName": "MEMUSE Data type",
+            "objectName": "AIX",
+            "displayName": "For AIX",
             "parentName": "BaseEvent",
             "fields": [
                 {
+                    "fieldName": "date_wday",
+                    "owner": "AIX",
+                    "type": "string",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "date_wday",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
                     "fieldName": "hostname",
-                    "owner": "MEMUSE",
+                    "owner": "AIX",
                     "type": "string",
                     "required": false,
                     "multivalue": false,
@@ -27,7 +39,7 @@
                 },
                 {
                     "fieldName": "serialnum",
-                    "owner": "MEMUSE",
+                    "owner": "AIX",
                     "type": "string",
                     "required": false,
                     "multivalue": false,
@@ -38,14 +50,62 @@
                     "fieldSearch": ""
                 },
                 {
-                    "fieldName": "type",
-                    "owner": "MEMUSE",
-                    "type": "string",
+                    "fieldName": "PCTmaxclient",
+                    "owner": "AIX",
+                    "type": "number",
                     "required": false,
                     "multivalue": false,
                     "hidden": false,
                     "editable": true,
-                    "displayName": "type",
+                    "displayName": "PCTmaxclient",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "PCTmaxperm",
+                    "owner": "AIX",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "PCTmaxperm",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "PCTminperm",
+                    "owner": "AIX",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "PCTminperm",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "PCTnumclient",
+                    "owner": "AIX",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "PCTnumclient",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "PCTnumperm",
+                    "owner": "AIX",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "PCTnumperm",
                     "comment": "",
                     "fieldSearch": ""
                 },
@@ -67,7 +127,7 @@
                     "type": "string",
                     "required": false,
                     "multivalue": false,
-                    "hidden": false,
+                    "hidden": true,
                     "editable": true,
                     "displayName": "host",
                     "comment": "",
@@ -79,7 +139,7 @@
                     "type": "string",
                     "required": false,
                     "multivalue": false,
-                    "hidden": false,
+                    "hidden": true,
                     "editable": true,
                     "displayName": "source",
                     "comment": "",
@@ -91,7 +151,7 @@
                     "type": "string",
                     "required": false,
                     "multivalue": false,
-                    "hidden": false,
+                    "hidden": true,
                     "editable": true,
                     "displayName": "sourcetype",
                     "comment": "",
@@ -103,7 +163,7 @@
                     "outputFields": [
                         {
                             "fieldName": "OStype",
-                            "owner": "MEMUSE",
+                            "owner": "AIX",
                             "type": "string",
                             "required": false,
                             "multivalue": false,
@@ -114,24 +174,331 @@
                             "fieldSearch": ""
                         }
                     ],
-                    "calculationID": "53h2kua17bzc9pb9",
-                    "owner": "MEMUSE",
+                    "calculationID": "t296uq7ul92j4i",
+                    "owner": "AIX",
                     "editable": true,
                     "comment": "",
                     "calculationType": "Eval",
                     "expression": "if(isnotnull(OStype), OStype, \"Unknown\")"
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "frameID",
+                            "owner": "AIX",
+                            "type": "string",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "frameID: Frame Identifier",
+                            "comment": "",
+                            "fieldSearch": ""
+                        }
+                    ],
+                    "calculationID": "fvhed13wpja1c3di",
+                    "owner": "AIX",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Eval",
+                    "expression": "if(isnotnull(frameID), frameID, serialnum)"
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "local_time",
+                            "owner": "AIX",
+                            "type": "number",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": true,
+                            "editable": true,
+                            "displayName": "local_time",
+                            "comment": "",
+                            "fieldSearch": ""
+                        }
+                    ],
+                    "calculationID": "hlip5dimyxkr19k9",
+                    "owner": "AIX",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Eval",
+                    "expression": "strftime(_time, \"%H%M\")"
                 }
             ],
             "constraints": [
                 {
-                    "search": "index=nmon sourcetype=nmon_data type=MEMUSE",
-                    "owner": "MEMUSE"
+                    "search": "index=nmon sourcetype=nmon_data type=MEMUSE OStype=AIX",
+                    "owner": "AIX"
                 }
             ],
-            "lineage": "MEMUSE"
+            "lineage": "AIX"
+        },
+        {
+            "objectName": "Solaris",
+            "displayName": "For Solaris",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "hostname",
+                    "owner": "Solaris",
+                    "type": "string",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "hostname",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "serialnum",
+                    "owner": "Solaris",
+                    "type": "string",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "serialnum",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "PCTrcache",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "PCTrcache",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "PCTwcache",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "PCTwcache",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "bread",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "bread",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "bwrite",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "bwrite",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "lread",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "lread",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "lwrite",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "lwrite",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "pread",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "pread",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "pwrite",
+                    "owner": "Solaris",
+                    "type": "number",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "pwrite",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "date_wday",
+                    "owner": "Solaris",
+                    "type": "string",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "date_wday",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "_time",
+                    "owner": "BaseEvent",
+                    "type": "timestamp",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "editable": true,
+                    "displayName": "_time",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "host",
+                    "owner": "BaseEvent",
+                    "type": "string",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": true,
+                    "editable": true,
+                    "displayName": "host",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "source",
+                    "owner": "BaseEvent",
+                    "type": "string",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": true,
+                    "editable": true,
+                    "displayName": "source",
+                    "comment": "",
+                    "fieldSearch": ""
+                },
+                {
+                    "fieldName": "sourcetype",
+                    "owner": "BaseEvent",
+                    "type": "string",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": true,
+                    "editable": true,
+                    "displayName": "sourcetype",
+                    "comment": "",
+                    "fieldSearch": ""
+                }
+            ],
+            "calculations": [
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "OStype",
+                            "owner": "Solaris",
+                            "type": "string",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "OStype",
+                            "comment": "",
+                            "fieldSearch": ""
+                        }
+                    ],
+                    "calculationID": "3l9ugn7yzypq4cxr",
+                    "owner": "Solaris",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Eval",
+                    "expression": "if(isnotnull(OStype), OStype, \"Unknown\")"
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "frameID",
+                            "owner": "Solaris",
+                            "type": "string",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "frameID: Frame Identifier",
+                            "comment": "",
+                            "fieldSearch": ""
+                        }
+                    ],
+                    "calculationID": "eue32ouck3f8ncdi",
+                    "owner": "Solaris",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Eval",
+                    "expression": "if(isnotnull(frameID), frameID, serialnum)"
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "local_time",
+                            "owner": "Solaris",
+                            "type": "number",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": true,
+                            "editable": true,
+                            "displayName": "local_time",
+                            "comment": "",
+                            "fieldSearch": ""
+                        }
+                    ],
+                    "calculationID": "bhl3kh9z75unb3xr",
+                    "owner": "Solaris",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Eval",
+                    "expression": "strftime(_time, \"%H%M\")"
+                }
+            ],
+            "constraints": [
+                {
+                    "search": "index=nmon sourcetype=nmon_data type=MEMUSE OStype=Solaris",
+                    "owner": "Solaris"
+                }
+            ],
+            "lineage": "Solaris"
         }
     ],
     "objectNameList": [
-        "MEMUSE"
+        "AIX",
+        "Solaris"
     ]
 }

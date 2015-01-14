@@ -125,6 +125,9 @@ colddata = False
 # Current date
 now = time.strftime("%d-%m-%Y %H:%M:%S")
 
+# Current date in epoch time
+now_epoch = time.strftime("%s")
+
 # timestamp used to name csv files
 csv_timestamp = time.strftime("%Y%m%d%H%M%S")
 
@@ -201,6 +204,12 @@ if is_windows:
     ID_REF = APP_VAR + '\\id_reference.txt'
 else:
     ID_REF = APP_VAR + '/id_reference.txt'
+
+# Config Reference file
+if is_windows:
+    CONFIG_REF = APP_VAR + '\\config_reference.txt'
+else:
+    CONFIG_REF = APP_VAR + '/config_reference.txt'
 
 # CSV Perf data repository
 if is_windows:
@@ -607,11 +616,13 @@ if (int(start_time) - (4 * int(INTERVAL))) > int(ending_epochtime):
 
 else:
     realtime = True
-    # Override ID_REF
+    # Override ID_REF & CONFIG_REF
     if is_windows:
         ID_REF = APP_VAR + '\\id_reference_realtime.txt'
+        CONFIG_REF = APP_VAR + '\\config_reference_realtime.txt'
     else:
         ID_REF = APP_VAR + '/id_reference_realtime.txt'
+        CONFIG_REF = APP_VAR + '/config_reference_realtime.txt'
 
 # NMON file id (concatenation of ids)
 idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + starting_epochtime + ',' + ending_epochtime
@@ -694,9 +705,10 @@ msg = "Ending_epochtime: " + ZZZZ_epochtime
 print(msg)
 ref.write(msg + '\n')
 
-
-print('last known epoch time: ' + str(last_known_epochtime))
-
+# Show and save last known epoch time
+msg = 'last known epoch time: ' + str(last_known_epochtime)
+print(msg)
+ref.write(msg + '\n')
 
 # Set last known epochtime equal to starting epochtime if the nmon has not been yet proceeded
 if last_known_epochtime == 0:
@@ -707,6 +719,8 @@ if last_known_epochtime == 0:
 ####################
 
 # Extraction of the AAA and BBB sections with a supplementary header to allow Splunk identifying the host and timestamp as a multi-lines event
+# In any case, the Configuration extraction will not be executed more than once per hour
+# In the case of Real Time data, the extraction will only be achieved once per Nmon file
 
 # Set section
 section = "CONFIG"
@@ -715,12 +729,87 @@ section = "CONFIG"
 config_output = CONFIG_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + str(
     bytes_total) + '_' + csv_timestamp + '.nmon.config.csv'
 
-if realtime:
+# Set default for config_run:
+# 0 --> Extract configuration
+# 1 --> Don't Extract configuration
+# default is extract
+config_run=0
 
-    # Only allow one extraction of the config section per nmon file
-    limit = (int(starting_epochtime) + (4 * int(INTERVAL)))
+# Search in ID_REF for a last matching execution
+if os.path.isfile(CONFIG_REF):
 
-    if int(last_known_epochtime) < int(limit):
+    with open(CONFIG_REF, "rb") as f:
+
+        for line in f:
+
+            # Only proceed if hostname has the same value
+            if HOSTNAME in line:
+
+                CONFIG_REFDETAILS = re.match(r'^.+:\s(\d+)', line)
+                config_lastepoch = CONFIG_REFDETAILS.group(1)
+
+                if config_lastepoch:
+
+                    time_delta = (int(now_epoch) - int(config_lastepoch))
+
+                    if time_delta < 3600:
+
+                        config_run=1
+
+                    elif time_delta > 3600:
+
+                        config_run=0
+
+if config_run==0:
+
+    if realtime:
+
+        # Only allow one extraction of the config section per nmon file
+        limit = (int(starting_epochtime) + (4 * int(INTERVAL)))
+
+        if int(last_known_epochtime) < int(limit):
+
+            msg = "CONFIG section will be extracted"
+            print(msg)
+            ref.write(msg + "\n")
+
+            # Open config output for writing
+            with open(config_output, "wb") as config:
+
+                # counter
+                count = 0
+
+                # Write header
+                config.write('CONFIG' + ',' + DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + '\n')
+
+                for line in data:
+
+                    # Extract AAA and BBB sections, and write to config output
+                    AAABBB = re.match(r'^[AAA|BBB].+', line)
+
+                    if AAABBB:
+                        # Increment
+                        count += 1
+
+                        # Write
+                        config.write(line)
+
+                # Show number of lines extracted
+                result = "CONFIG section: Wrote" + " " + str(count) + " lines"
+                print(result)
+                ref.write(result + '\n')
+
+                # Save the a combo of HOSTNAME: current_epochtime in CONFIG_REF
+                with open(CONFIG_REF, "wb") as f:
+                    f.write(HOSTNAME + ": " + now_epoch + "\n")
+
+        else:
+
+            msg = "CONFIG section: Assuming we already extracted for this file"
+            print(msg)
+            ref.write(msg + "\n")
+
+    elif colddata:
 
         msg = "CONFIG section will be extracted"
         print(msg)
@@ -732,7 +821,7 @@ if realtime:
             # counter
             count = 0
 
-            # Write header
+            # write header
             config.write('CONFIG' + ',' + DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + '\n')
 
             for line in data:
@@ -752,43 +841,15 @@ if realtime:
             print(result)
             ref.write(result + '\n')
 
-    else:
+            # Save the a combo of HOSTNAME: current_epochtime in CONFIG_REF
+            with open(CONFIG_REF, "wb") as f:
+                f.write(HOSTNAME + ": " + now_epoch + "\n")
 
-        msg = "CONFIG section: Assuming we already extracted for this file"
-        print(msg)
-        ref.write(msg + "\n")
-
-elif colddata:
-
-    msg = "CONFIG section will be extracted"
-    print(msg)
-    ref.write(msg + "\n")
-
-    # Open config output for writing
-    with open(config_output, "wb") as config:
-
-        # counter
-        count = 0
-
-        # write header
-        config.write('CONFIG' + ',' + DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + '\n')
-
-        for line in data:
-
-            # Extract AAA and BBB sections, and write to config output
-            AAABBB = re.match(r'^[AAA|BBB].+', line)
-
-            if AAABBB:
-                # Increment
-                count += 1
-
-                # Write
-                config.write(line)
-
-        # Show number of lines extracted
-        result = "CONFIG section: Wrote" + " " + str(count) + " lines"
-        print(result)
-        ref.write(result + '\n')
+elif config_run==1:
+    # Show number of lines extracted
+    result = "CONFIG section: will not be extracted (time delta of " + str(time_delta) + " seconds is inferior to 1 hour)"
+    print(result)
+    ref.write(result + '\n')
 
 ##########################
 # Write PERFORMANCE DATA #

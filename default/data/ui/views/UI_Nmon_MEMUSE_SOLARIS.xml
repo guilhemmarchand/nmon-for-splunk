@@ -1,6 +1,8 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - MEMUSE, Various Solaris Memory Statistics</label>
+
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -8,125 +10,147 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>    
-    <input type="radio" token="osfilter" searchWhenChanged="true">
-      <label>Filter OS Type:</label>
-      <default>| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
-      <choice value="">Inactive</choice>
+
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
     </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-    </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMUSE $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>Solaris</default>
+      <prefix>Solaris.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="*">Any OS</choice>
+      <choice value="Solaris">Solaris</choice>
+    </input>
+
+     <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) groupby "Solaris.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "Solaris.frameID"
+| sort limit=0 "Solaris.frameID"
+| fields - _span | fillnull Count | fields "Solaris.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>Solaris.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>Solaris.frameID</fieldForLabel>
+      <fieldForValue>Solaris.frameID</fieldForValue>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input> 
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "Solaris.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "Solaris.hostname"
+| sort limit=0 "Solaris.hostname"
+| fields - _span | fillnull Count | fields "Solaris.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>Solaris.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>Solaris.hostname</fieldForLabel>
+      <fieldForValue>Solaris.hostname</fieldForValue>
+    </input>
+
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+
+    <input type="checkbox" token="charting" searchWhenChanged="true">
+      <label>Charting:</label>
+      <default>fields *</default>
+      <choice value="fields *">On</choice>
+    </input>
+
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$ | `$timefilter$`
-| timechart `inline_customspan(type=MEMUSE,$hostname$)`
-$statsmode$(PCTrcache) As PCT_rcache,
-$statsmode$(PCTwcache) As PCT_wcache,
-$statsmode$(lread) As lread,
-$statsmode$(lwrite) As lwrite,
-$statsmode$(pread) As pread,
-$statsmode$(pwrite) As pwrite,
-$statsmode$(bread) As bread,
-$statsmode$(bwrite) As bwrite by hostname</searchTemplate>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+
   <row>
     <panel>
-      <table>
-        <title>Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$ | `$timefilter$`
-| stats
-$statsmode$(PCTrcache) As PCT_rcache,
-$statsmode$(PCTwcache) As PCT_wcache,
-$statsmode$(lread) As lread,
-$statsmode$(lwrite) As lwrite,
-$statsmode$(pread) As pread,
-$statsmode$(pwrite) As pwrite,
-$statsmode$(bread) As bread,
-$statsmode$(bwrite) As bwrite by hostname</searchString>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+    <title>Table Stats</title>
+      <table>   
+        <search>
+          <query>| tstats
+max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite 
+max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
+| bucket _time span=1s
+| stats dedup_splitvals=t 
+max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite 
+max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by "Solaris.frameID", "Solaris.hostname"
+| stats dedup_splitvals=t 
+$statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache $statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite 
+$statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite $statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by "Solaris.frameID", "Solaris.hostname"
+| rename "Solaris.frameID" AS "frameID" "Solaris.hostname" AS hostname
+| sort frameID, hostname
+| fields frameID, hostname, PCT*,*</query>
+           <earliest>$timerange.earliest$</earliest>
+           <latest>$timerange.latest$</latest>
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
         <option name="count">10</option>
-        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-        <format type="sparkline" field="spk_PCTnumperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_PCTminperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_PCTmaxperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
       </table>
     </panel>
   </row>
+
   <row>
     <panel>
-      <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <title>Charting parameters:</title>         
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -138,6 +162,12 @@ $statsmode$(bwrite) As bwrite by hostname</searchString>
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>  
+
+
+  <row>
+    <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link10,link11,link12,link13">Select a view:<!--Links go here-->
@@ -145,7 +175,19 @@ $statsmode$(bwrite) As bwrite by hostname</searchString>
     </html>
       <chart id="link10">
         <title>Cache Hit Ratio (%)</title>
-        <searchPostProcess>fields _time,*PCT_rcache*,*PCT_wcache*</searchPostProcess>
+        <search>        
+          <query>| tstats
+max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
+| bucket _time span=1s
+| stats dedup_splitvals=t 
+max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache by _time, "Solaris.frameID", "Solaris.hostname"
+| timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
+$statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache by "Solaris.hostname"</query>
+           <earliest>$timerange.earliest$</earliest>
+           <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -168,6 +210,19 @@ $statsmode$(bwrite) As bwrite by hostname</searchString>
       <chart id="link11">
         <title>System Buffer Accesses</title>
         <searchPostProcess>fields _time,*lread*,*lwrite*</searchPostProcess>
+        <search>        
+          <query>| tstats
+max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
+| bucket _time span=1s
+| stats dedup_splitvals=t 
+max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite by _time, "Solaris.frameID", "Solaris.hostname"
+| timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
+$statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite by "Solaris.hostname"</query>
+           <earliest>$timerange.earliest$</earliest>
+           <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -187,7 +242,19 @@ $statsmode$(bwrite) As bwrite by hostname</searchString>
       </chart>
       <chart id="link12">
         <title>Transfers using raw (physical) device mechanism</title>
-        <searchPostProcess>fields _time,*pread*,*pwrite*</searchPostProcess>
+        <search>        
+          <query>| tstats 
+max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
+| bucket _time span=1s
+| stats dedup_splitvals=t 
+max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite by _time, "Solaris.frameID", "Solaris.hostname"
+| timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
+$statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite by "Solaris.hostname"</query>
+           <earliest>$timerange.earliest$</earliest>
+           <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -207,7 +274,19 @@ $statsmode$(bwrite) As bwrite by hostname</searchString>
       </chart>
       <chart id="link13">
         <title>Transfer of data between system buffers and disk or other block device</title>
-        <searchPostProcess>fields _time,*bread*,*bwrite*</searchPostProcess>
+        <search>        
+          <query>| tstats
+max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
+| bucket _time span=1s
+| stats dedup_splitvals=t 
+max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by _time, "Solaris.frameID", "Solaris.hostname"
+| timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
+$statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by "Solaris.hostname"</query>
+           <earliest>$timerange.earliest$</earliest>
+           <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>

@@ -156,9 +156,11 @@ if ( !-d "$OUTPUTCONF_DIR" ) { mkdir "$OUTPUTCONF_DIR"; }
 # generating duplicates by relaunching the conversion process
 # Splunk when using a custom archive mode, launches twice the custom script
 
-# Supplementary note: Since V1.2.2, the ID_REF is overwritten if running real time mode
-
+# Supplementary note: Since V1.2.2, ID_REF & CONFIG_REF are overwritten if running real time mode
 my $ID_REF = "$APP/var/id_reference.txt";
+
+# Config Reference file
+my $CONFIG_REF = "$APP/var/config_reference.txt";
 
 #################################################
 ## 	Various
@@ -550,8 +552,9 @@ foreach $FILENAME (@nmon_files) {
         $realtime = True;
         print "ANALYSIS: Assuming Nmon realtime data \n";
 
-        # Override ID_REF
-        $ID_REF = "$APP/var/id_reference_realtime.txt";
+        # Override ID_REF & CONFIG_REF
+        $ID_REF     = "$APP/var/id_reference_realtime.txt";
+        $CONFIG_REF = "$APP/var/config_reference_realtime.txt";
 
     }
 
@@ -660,10 +663,10 @@ foreach $FILENAME (@nmon_files) {
 
     # Save Analysis
     if ( $realtime eq "True" ) {
-    	print ID_REF "ANALYSIS: Assuming Nmon realtime data \n";
-    }	
+        print ID_REF "ANALYSIS: Assuming Nmon realtime data \n";
+    }
     elsif ( $colddata eq "True" ) {
-    	print ID_REF "ANALYSIS: Assuming Nmon cold data \n";    
+        print ID_REF "ANALYSIS: Assuming Nmon cold data \n";
     }
 
     # Show and Save timestamps information
@@ -686,15 +689,159 @@ foreach $FILENAME (@nmon_files) {
         $BASEFILENAME =
 "$OUTPUTCONF_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${bytes}_${csv_timestamp}.nmon.config.csv";
 
-        if ( $realtime eq "True" ) {
+        # Set default for config_run:
+        # 0 --> Extract configuration
+        # 1 --> Don't Extract configuration
+        # default is extract
+        my $config_run = 0;
 
-            $limit = ( ($starting_epochtime) + ( 4 * $INTERVAL ) );
+        # Search in ID_REF for a last matching execution
+        if ( -e $CONFIG_REF ) {
 
-            print "last known epoch is $last_known_epochtime \n";
+            open( CONFIG_REF, "< $CONFIG_REF" )
+              or die "ERROR: Can't open $CONFIG_REF : $!";
+            chomp $CONFIG_REF;
 
-            if ( $last_known_epochtime < $limit ) {
+            # Only proceed if hostname has the same value
+            if ( <CONFIG_REF> =~ m/$HOSTNAME:\s(\d+)/ ) {
 
-                print "CONFIG section will be extracted \n";
+                $config_lastepoch = $1;
+
+            }
+
+            # Evaluate the delta
+            $time_delta = ( $time_epoch - $config_lastepoch );
+
+            # Only generate data once per hour
+            if ( $time_delta < 3600 ) {
+
+                $config_run = "1";
+
+            }
+
+            elsif ( $time_delta > 3600 ) {
+
+                $config_run = "0";
+
+            }
+
+        }
+
+        if ( $config_run eq "0" ) {
+
+            if ( $realtime eq "True" ) {
+
+                $limit = ( ($starting_epochtime) + ( 4 * $INTERVAL ) );
+
+                print "last known epoch is $last_known_epochtime \n";
+
+                if ( $last_known_epochtime < $limit ) {
+
+                    print "CONFIG section will be extracted \n";
+
+                    unless ( open( INSERT, ">$BASEFILENAME" ) ) {
+                        die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
+                    }
+
+                    # Initialize variables
+                    my $section      = "CONFIG";
+                    my $time         = "";
+                    my $date         = "";
+                    my $hostnameT    = "Unknown";
+                    my $SerialNumber = "Unknown";
+                    $count = 0;
+
+            # Get nmon/server settings (search string, return column, delimiter)
+                    $AIXVER   = &get_setting( "AIX",      2, "," );
+                    $HOSTNAME = &get_setting( "host",     2, "," );
+                    $DATE     = &get_setting( "AAA,date", 2, "," );
+                    $TIME     = &get_setting( "AAA,time", 2, "," );
+
+                    if ( $AIXVER eq "-1" ) {
+                        $SN = $HOSTNAME;    # Probably a Linux host
+                    }
+                    else {
+                        $SN = &get_setting( "systemid", 4, "," );
+                        $SN =
+                          ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
+                    }
+
+                    # write event header
+
+                    my $write =
+                        $section . ","
+                      . $DATE . ":"
+                      . $TIME . ","
+                      . $SN . ","
+                      . $HOSTNAME;
+                    print( INSERT "$write\n" );
+                    $count++;
+
+                    # Open NMON file for reading
+                    if ( !open( FIC, $file ) ) {
+                        die(    "ERROR: while trying to open NMON Source file '"
+                              . $file
+                              . "'" );
+                    }
+
+                    while ( defined( my $l = <FIC> ) ) {
+                        chomp $l;
+
+                        # CONFIG Section"
+
+                        if ( $l =~ /^AAA/ ) {
+
+                            my $x = $l;
+
+                            # Manage some fields we statically set
+                            $x =~ s/CONFIG,//g;
+                            $x =~ s/Time,//g;
+
+                            my $write = $x;
+
+                            print( INSERT "$write\n" );
+                            $count++;
+
+                        }
+
+                        if ( $l =~ /^BBB/ ) {
+
+                            my $x = $l;
+
+                            # Manage some fields we statically set
+                            $x =~ s/CONFIG,//g;
+                            $x =~ s/Time,//g;
+
+                            my $write = $x;
+
+                            print( INSERT "$write\n" );
+                            $count++;
+
+                        }
+
+                    }
+
+                    print "$key section: Wrote $count lines\n";
+                    print ID_REF "$key section: Wrote $count lines\n";
+
+                    # Open CONFIG_REF for writing in create mode
+                    open( CONFIG_REF, ">$CONFIG_REF" );
+
+                    # save configuration extraction
+                    print CONFIG_REF "$HOSTNAME: $time_epoch \n";
+
+                }
+
+                else {
+
+                    print
+"CONFIG section: Assuming we already extracted for this file \n";
+
+                }
+
+            }
+
+            elsif ( $colddata eq "True" ) {
 
                 unless ( open( INSERT, ">$BASEFILENAME" ) ) {
                     die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
@@ -780,102 +927,22 @@ foreach $FILENAME (@nmon_files) {
                 print "$key section: Wrote $count lines\n";
                 print ID_REF "$key section: Wrote $count lines\n";
 
-            }
+                # Open CONFIG_REF for writing in create mode
+                open( CONFIG_REF, ">$CONFIG_REF" );
 
-            else {
-
-                print
-"CONFIG section: Assuming we already extracted for this file \n";
+                # save configuration extraction
+                print CONFIG_REF "$HOSTNAME: $time_epoch \n";
 
             }
 
         }
 
-        elsif ( $colddata eq "True" ) {
+        elsif ( $config_run eq "1" ) {
 
-            unless ( open( INSERT, ">$BASEFILENAME" ) ) {
-                die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
-            }
-
-            # Initialize variables
-            my $section      = "CONFIG";
-            my $time         = "";
-            my $date         = "";
-            my $hostnameT    = "Unknown";
-            my $SerialNumber = "Unknown";
-            $count = 0;
-
-            # Get nmon/server settings (search string, return column, delimiter)
-            $AIXVER   = &get_setting( "AIX",      2, "," );
-            $HOSTNAME = &get_setting( "host",     2, "," );
-            $DATE     = &get_setting( "AAA,date", 2, "," );
-            $TIME     = &get_setting( "AAA,time", 2, "," );
-
-            if ( $AIXVER eq "-1" ) {
-                $SN = $HOSTNAME;    # Probably a Linux host
-            }
-            else {
-                $SN = &get_setting( "systemid", 4, "," );
-                $SN = ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
-            }
-
-            # write event header
-
-            my $write =
-                $section . ","
-              . $DATE . ":"
-              . $TIME . ","
-              . $SN . ","
-              . $HOSTNAME;
-            print( INSERT "$write\n" );
-            $count++;
-
-            # Open NMON file for reading
-            if ( !open( FIC, $file ) ) {
-                die(    "ERROR: while trying to open NMON Source file '"
-                      . $file
-                      . "'" );
-            }
-
-            while ( defined( my $l = <FIC> ) ) {
-                chomp $l;
-
-                # CONFIG Section"
-
-                if ( $l =~ /^AAA/ ) {
-
-                    my $x = $l;
-
-                    # Manage some fields we statically set
-                    $x =~ s/CONFIG,//g;
-                    $x =~ s/Time,//g;
-
-                    my $write = $x;
-
-                    print( INSERT "$write\n" );
-                    $count++;
-
-                }
-
-                if ( $l =~ /^BBB/ ) {
-
-                    my $x = $l;
-
-                    # Manage some fields we statically set
-                    $x =~ s/CONFIG,//g;
-                    $x =~ s/Time,//g;
-
-                    my $write = $x;
-
-                    print( INSERT "$write\n" );
-                    $count++;
-
-                }
-
-            }
-
-            print "$key section: Wrote $count lines\n";
-            print ID_REF "$key section: Wrote $count lines\n";
+            print
+"CONFIG section: will not be extracted (time delta of $time_delta seconds is inferior to 1 hour) \n";
+            print ID_REF
+"CONFIG section: will not be extracted (time delta of $time_delta seconds is inferior to 1 hour) \n";
 
         }
 
@@ -1705,6 +1772,38 @@ sub variable_sections_insert {
         $rawdata[$i] =~ s/,$//;
         @cols = split( /,/, $rawdata[$i] );
 
+        $timestamp = $DATETIME{ $cols[1] };
+
+     # Convert timestamp string to epoch time (from format: YYYY-MM-DD hh:mm:ss)
+        my ( $year, $month, $day, $hour, $min, $sec ) = split /\W+/, $timestamp;
+        my $ZZZZ_epochtime =
+          timelocal( $sec, $min, $hour, $day, $month - 1, $year );
+
+        # Write only new data if in realtime mode
+
+        if ( $realtime eq "True" ) {
+
+            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                print INSERT (
+qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[2]",$cols[2]|
+                );
+
+                $count++;
+            }
+
+        }
+
+        elsif ( $colddata eq "True" ) {
+
+            print INSERT (
+qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[2]",$cols[2]|
+            );
+
+            $count++;
+
+        }
+
         for ( $j = 3 ; $j < @cols ; $j++ ) {
 
             $finaldata =
@@ -1745,22 +1844,26 @@ sub variable_sections_insert {
                   $timestamp;
                 my $ZZZZ_epochtime =
                   timelocal( $sec, $min, $hour, $day, $month - 1, $year );
-                  
+
                 # Write only new data if in realtime mode
-                
+
                 if ( $realtime eq "True" ) {
 
                     if ( $ZZZZ_epochtime > $last_known_epochtime ) {
-                    
-    							print INSERT (qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|);
+
+                        print INSERT (
+qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+                        );
                         $count++;
                     }
-                    
+
                 }
 
                 elsif ( $colddata eq "True" ) {
 
-    					  print INSERT (qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|);
+                    print INSERT (
+qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+                    );
                     $count++;
                 }
 

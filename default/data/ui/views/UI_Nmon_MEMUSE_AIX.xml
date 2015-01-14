@@ -1,6 +1,8 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
   <label>NMON - MEMUSE, AIX vmtune Statistics</label>
+
   <fieldset autoRun="false" submitButton="false">
+
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -8,111 +10,150 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-      <input type="dropdown" token="timefilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
-      <label>Filter OS Type:</label>
-      <default>| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="">Inactive</choice>
+
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
     </input>
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-    </input>    
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEMUSE $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
-      <valuePrefix>hostname="</valuePrefix>
+
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>AIX</default>
+      <prefix>AIX.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="*">Any OS</choice>
+      <choice value="AIX">AIX</choice>
+    </input>
+
+     <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE where (nodename = AIX) ($osfilter$) groupby "AIX.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "AIX.frameID"
+| sort limit=0 "AIX.frameID"
+| fields - _span | fillnull Count | fields "AIX.frameID"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>AIX.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>AIX.frameID</fieldForLabel>
+      <fieldForValue>AIX.frameID</fieldForValue>
     </input>
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <default>*</default>
+    </input> 
+
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <!-- Populating Data Model Search -->
+      <search id="hostsSearch">
+        <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE where (nodename = AIX) (AIX.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "AIX.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "AIX.hostname"
+| sort limit=0 "AIX.hostname"
+| fields - _span | fillnull Count | fields "AIX.hostname"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>AIX.hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL Hosts</choice>
+      <fieldForLabel>AIX.hostname</fieldForLabel>
+      <fieldForValue>AIX.hostname</fieldForValue>
+    </input>
+
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+
+    <input type="checkbox" token="charting" searchWhenChanged="true">
+      <label>Charting:</label>
+      <default>fields *</default>
+      <choice value="fields *">On</choice>
+    </input>
+
   </fieldset>
+
   <row>
     <panel>
-      <table>
-        <title>MEMUSE - Vmtune Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$ | `$timefilter$`
-| stats 
-$statsmode$(PCTnumperm) As PCTnumperm,
-$statsmode$(PCTminperm) As PCTminperm,
-$statsmode$(PCTmaxperm) As PCTmaxperm
-sparkline($statsmode$(PCTnumperm)) As spk_PCTnumperm,
-sparkline($statsmode$(PCTminperm)) As spk_PCTminperm,
-sparkline($statsmode$(PCTmaxperm)) As spk_PCTmaxperm by hostname</searchString>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+    <title>Table Stats</title>
+      <table>   
+        <search>
+          <query>| tstats 
+max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm 
+max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient 
+max("AIX.PCTnumperm") AS PCTnumperm 
+from datamodel=NMON_Data_MEMUSE 
+where (nodename = AIX) ($osfilter$) (AIX.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(AIX)`
+groupby _time, "AIX.frameID", "AIX.hostname" prestats=true span=1s
+| stats dedup_splitvals=t 
+max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm 
+max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient 
+max("AIX.PCTnumperm") AS PCTnumperm by _time, "AIX.frameID", "AIX.hostname"
+| stats dedup_splitvals=t 
+$statsmode$("PCTmaxclient") AS PCTmaxclient $statsmode$("PCTmaxperm") AS PCTmaxperm 
+$statsmode$("PCTminperm") AS PCTminperm $statsmode$("PCTnumclient") AS PCTnumclient 
+$statsmode$("PCTnumperm") AS PCTnumperm by "AIX.frameID", "AIX.hostname"
+| rename "AIX.frameID" AS "frameID" "AIX.hostname" AS hostname
+| sort frameID, hostname
+| fields frameID, hostname, PCTmaxclient, PCTmaxperm, PCTminperm, PCTnumclient, PCTnumperm</query>
+           <earliest>$timerange.earliest$</earliest>
+           <latest>$timerange.latest$</latest>
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
         <option name="count">10</option>
-        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-        <format type="sparkline" field="spk_PCTnumperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_PCTminperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_PCTmaxperm">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
       </table>
     </panel>
   </row>
+  
   <row>
     <panel>
-      <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <title>Charting parameters:</title>         
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
-        <default>line</default>
+        <default>area</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>stacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -124,15 +165,32 @@ sparkline($statsmode$(PCTmaxperm)) As spk_PCTmaxperm by hostname</searchString>
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>  
+  
+  <row>
+    <panel>
       <chart>
         <title>MEMUSE - Vmtune Statistics</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="MEMUSE" $hostname$ | `$timefilter$`
-| timechart `inline_customspan(type=MEMUSE,$hostname$)` limit=0 useother=f
-$statsmode$(PCTnumperm) As PCTnumperm,
-$statsmode$(PCTminperm) As PCTminperm,
-$statsmode$(PCTmaxperm) As PCTmaxperm by hostname</searchString>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+        <search>
+          <query>| tstats 
+max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm 
+max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient 
+max("AIX.PCTnumperm") AS PCTnumperm 
+from datamodel=NMON_Data_MEMUSE 
+where (nodename = AIX) ($osfilter$) (AIX.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(AIX)`
+groupby _time, "AIX.frameID", "AIX.hostname" prestats=true span=1s
+| stats dedup_splitvals=t 
+max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm 
+max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient 
+max("AIX.PCTnumperm") AS PCTnumperm by _time, "AIX.frameID", "AIX.hostname"
+| timechart `inline_customspan(type=MEMNEW,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
+$statsmode$("PCTmaxclient") AS PCTmaxclient $statsmode$("PCTmaxperm") AS PCTmaxperm 
+$statsmode$("PCTminperm") AS PCTminperm $statsmode$("PCTnumclient") AS PCTnumclient 
+$statsmode$("PCTnumperm") AS PCTnumperm by "AIX.hostname"</query>
+           <earliest>$timerange.earliest$</earliest>
+           <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>

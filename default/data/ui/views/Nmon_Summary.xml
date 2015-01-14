@@ -99,8 +99,8 @@ max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
   </search>
 
   <search id="IOPSSearch">
-  	<query>| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
-| bucket _time span=1m
+  	<query>| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1s
+| bucket _time span=1s
 | stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
 | sort limit=100 _time | rename "DISK_Data_Types.hostname" AS hostname
 | fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
@@ -362,8 +362,8 @@ last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Proc
         <option name="linkView">search</option>
         <option name="afterLabel">IOPS</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
-| bucket _time span=1m
+        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1s
+| bucket _time span=1s
 | stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
 | sort limit=100 _time | rename "DISK_Data_Types.hostname" AS hostname
 | fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
@@ -379,8 +379,8 @@ last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Proc
         <option name="linkView">search</option>
         <option name="afterLabel">IOPS</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
-| bucket _time span=1m
+        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1s
+| bucket _time span=1s
 | stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
 | sort limit=100 _time | rename "DISK_Data_Types.hostname" AS hostname
 | fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
