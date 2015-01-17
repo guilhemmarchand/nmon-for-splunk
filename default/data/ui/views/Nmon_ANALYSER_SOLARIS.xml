@@ -1,6 +1,8 @@
 <form stylesheet="standard.css,singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON Analyser SOLARIS</label>
+  
   <fieldset autoRun="false" submitButton="false">
+  
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -9,30 +11,58 @@
       </default>
     </input>
 
-    <input type="radio" token="osfilter" searchWhenChanged="true">
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default>| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]</default>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
-      <choice value="">Inactive</choice>
+      <default>Solaris</default>
+      <prefix>CPU.OStype="</prefix>
+      <suffix>"</suffix>      
+      <choice value="*">Any OS</choice>
+      <choice value="Solaris">Solaris</choice>
     </input>
-    
+
+    <input type="dropdown" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search id="frameIDSearch">
+		  <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID="*") ($osfilter$) 
+groupby "CPU.frameID", "CPU.hostname" prestats=true 
+| stats dedup_splitvals=t count AS count by "CPU.frameID" 
+| rename "CPU.frameID" AS "frameID" | fields frameID | sort frameID</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>frameID</fieldForLabel>
+      <fieldForValue>frameID</fieldForValue>
+    </input>
+
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
       <default>*</default>
     </input>
-        
+
     <input type="dropdown" token="hostname" searchWhenChanged="true">
-      <label>Select a Host:</label>
+      <label>Host:</label>
+      <!-- Populating Data Model Search -->
+      <search id="baseSearch">
+		  <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID=$frameID$) (CPU.hostname=$hostname-prefilter$) ($osfilter$) 
+groupby "CPU.hostname" prestats=true 
+| stats dedup_splitvals=t count AS count by "CPU.hostname" 
+| rename "CPU.hostname" AS hostname 
+| fields hostname | sort hostname		  
+		  </query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForValue="hostname" fieldForLabel="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_data type=CPU_ALL $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
-      </populatingSearch>
     </input>
 
   </fieldset>
+  
   <row>
     <html>
       <div style="text-align: center;">

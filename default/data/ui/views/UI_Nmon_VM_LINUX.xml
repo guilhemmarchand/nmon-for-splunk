@@ -37,7 +37,7 @@
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
       <!-- Populating Data Model Search -->
-      <search id="baseSearch">
+      <search>
         <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = VM) (VM.hostname=$hostname-prefilter$) (VM.OStype=$osfilter$) groupby "VM.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "VM.hostname"
 | sort limit=0 "VM.hostname"
@@ -172,29 +172,31 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </table>
     </panel>
   </row>
+  
   <row>
     <panel>
       <title>Charting parameters:</title>
-      <input type="radio" token="chart" searchWhenChanged="true">
+      <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line (recommended)</choice>
+        <choice value="line">Line</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked</choice>
-        <choice value="unstacked">unstacked (recommended)</choice>
-      </input>
-      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked (lines excluded)</choice>
+        <choice value="stacked100">100% stacked (lines excluded)</choice>
+        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -206,6 +208,11 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="link1,link2,link3,link4,link5,link6,link7,link8,link9,link10,link11,link12">Select a view:<!--Links go here-->

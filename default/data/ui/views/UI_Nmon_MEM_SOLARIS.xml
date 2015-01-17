@@ -225,9 +225,10 @@ groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
 max("MEM.memtotal") AS memtotal_MB 
 by _time, "MEM.frameID", "MEM.hostname"
+| $charting$
 | timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
 $statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT 
-$statsmode$("memtotal_MB") AS memtotal_MB by "MEM.hostname" | $memmode$ | $charting$</query>
+$statsmode$("memtotal_MB") AS memtotal_MB by "MEM.hostname" | $memmode$</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>    
   		  </search> 
@@ -262,9 +263,10 @@ groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB 
 by _time, "MEM.frameID", "MEM.hostname"
+| $charting$
 | timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
 $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB 
-$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB by "MEM.hostname" | $memmode$ | $charting$</query>
+$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB by "MEM.hostname" | $memmode$</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>    
   		  </search> 

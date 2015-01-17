@@ -79,7 +79,7 @@
       <label>Hosts Selection:</label>
       <!-- Populating Data Model Search -->
       <search id="baseSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) ($Pool_id$) ($appfilter$) (CPU.hostname=$hostname-prefilter$) groupby "CPU.hostname" prestats=true
+        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) ($Pool_id$) ($appfilter$) (CPU.hostname=$hostname-prefilter$) ($frameID$) groupby "CPU.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "CPU.hostname"
 | sort limit=0 "CPU.hostname" | fields - _span
 | fillnull Count | fields CPU.hostname, Count</query>
@@ -139,7 +139,7 @@
           <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS "CPU.LPAR.Pool_usage" values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) 
 (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", "CPU.hostname" prestats=true `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
 | stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS "CPU.LPAR.Pool_usage" values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
-| $aggregate$ | eval CPU.LPAR.Pool_id=if(isnull(CPU.LPAR.Pool_id), "N/A", CPU.LPAR.Pool_id)
+| $aggregate$
 | sort limit=0 _time
 | rename CPU.LPAR.Pool_usage AS usage
 | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id", max("CPU.poolCPUs") AS "CPU.poolCPUs", sparkline($statsmode$(usage)) As sparkline by "CPU.frameID", "CPU.hostname"

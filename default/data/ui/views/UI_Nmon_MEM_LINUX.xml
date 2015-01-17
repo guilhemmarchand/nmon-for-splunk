@@ -277,12 +277,13 @@ max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.
 max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
 max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
 max("MEM.inactive_PCT") AS inactive_PCT by _time, "MEM.frameID", "MEM.hostname" | sort limit=0 "MEM.hostname" 
-| fields - _span 
+| fields - _span
+| $charting$
 | timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t 
 $statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT 
 $statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("buffers_MB") AS buffers_MB $statsmode$("buffers_PCT") AS buffers_PCT $statsmode$("cached_MB") AS cached_MB
 $statsmode$("cached_PCT") AS cached_PCT $statsmode$("active_MB") AS active_MB $statsmode$("active_PCT") AS active_PCT $statsmode$("inactive_MB") AS inactive_MB 
-$statsmode$("inactive_PCT") AS inactive_PCT by "MEM.hostname" | $memmode$ | fields _time, $memfilter$ | $charting$</query>
+$statsmode$("inactive_PCT") AS inactive_PCT by "MEM.hostname" | $memmode$ | fields _time, $memfilter$</query>
     		 <earliest>$timerange.earliest$</earliest>
     		 <latest>$timerange.latest$</latest>    
   		  </search>
