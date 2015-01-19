@@ -23,7 +23,7 @@
       <label>Frame IDs:</label>
       <!-- Populating Data Model Search -->
       <search id="frameIDSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) ($osfilter$) groupby "CPU.frameID" prestats=true
+        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.OStype=$osfilter$) groupby "CPU.frameID" prestats=true
 | stats dedup_splitvals=t count AS Count by "CPU.frameID"
 | sort limit=0 "CPU.frameID"
 | fields - _span | fillnull Count | fields "CPU.frameID"</query>

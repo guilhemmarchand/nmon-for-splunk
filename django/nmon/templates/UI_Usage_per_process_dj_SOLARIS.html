@@ -158,9 +158,18 @@
 				{% table 
 					id="table-cpu" 
 					managerid="search-table-cpu"
-					pageSize="20" %}
+					pageSize="19" %}
 			
-    {% endblock table-cpu %}	
+    {% endblock table-cpu %}
+    
+    {% block table-cpu-byhosts %}
+
+				{% table 
+					id="table-cpu-byhosts" 
+					managerid="search-cpu-byhosts"
+					pageSize="19" %}
+			
+    {% endblock table-cpu-byhosts %}	    
 
 
 <!-- ##################################################################################### MEMORY Usage per Command Invocation ##################################################################################### -->
@@ -195,9 +204,18 @@
 				{% table 
 					id="table-memory" 
 					managerid="search-table-memory"
-					pageSize="20" %}
+					pageSize="19" %}
 			
-    {% endblock table-memory %}	
+    {% endblock table-memory %}
+    
+    {% block table-memory-byhosts %}
+
+				{% table 
+					id="table-memory-byhosts" 
+					managerid="search-memory-byhosts"
+					pageSize="19" %}
+			
+    {% endblock table-memory-byhosts %}	    	
 
 <!-- ##################################################################################### BLOCK MANAGERS ##################################################################################### -->	
 	
@@ -238,6 +256,15 @@
 	id="search-table-cpu" 
 	managerid="search-cpu" 
 	search="| sort - Usage_per_single_core" %}
+	
+	{% searchmanager 
+	id="search-cpu-byhosts" 
+	search='| tstats `TOP_Solaris_cpu($frameID$,$OStype$,$hostname$,$timefilter$,$Command$,$PID$)` | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,hostname,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,hostname,Command | stats $statsmode$(conso_per_core) as "Usage_per_single_core" by hostname,Command | sort - Usage_per_single_core'|token_safe 
+	earliest_time="$earlyval$"|token_safe
+	latest_time="$lateval$"|token_safe
+	cache=False
+	auto_cancel=60
+	preview=True %}	
 
 <!-------------------------------------------------------------------- MEMORY Usage -------------------------------------------------------------------->
 
@@ -254,6 +281,15 @@
 	id="search-table-memory" 
 	managerid="search-memory" 
 	search="| sort - Used_Memory_MB" %}
+
+	{% searchmanager 
+	id="search-memory-byhosts" 
+	search='| tstats `TOP_Solaris_mem($frameID$,$OStype$,$hostname$,$timefilter$,$Command$,$PID$)` | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,hostname,Command | where Used_Mem_MB>0 | stats $statsmode$(Used_Mem_MB) as "Used_Memory_MB" by hostname,Command | eval Used_Memory_MB=round(Used_Memory_MB,2) | sort - Used_Memory_MB'|token_safe 
+	earliest_time="$earlyval$"|token_safe
+	latest_time="$lateval$"|token_safe
+	cache=False
+	auto_cancel=60
+	preview=True %}
 
 {% endblock managers %}
 
