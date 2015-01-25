@@ -1,5 +1,6 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
   <label>NMON - VM, Solaris Virtual Memory Statistics (Solaris)</label>
+
   <fieldset autoRun="false" submitButton="false">
 
     <input type="time" token="timerange" searchWhenChanged="true">
@@ -22,11 +23,32 @@
         <default>No_Filter</default>
       </input>
 
-    <input type="radio" token="osfilter" searchWhenChanged="true">
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>Solaris</default>
-      <choice value="*">Any OS</choice>
+      <prefix>Solaris.OStype="</prefix>
+      <suffix>"</suffix>      
       <choice value="Solaris">Solaris</choice>
+    </input>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search>
+        <query>| tstats count AS Count from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) ($osfilter$) groupby "Solaris.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "Solaris.frameID"
+| sort limit=0 "Solaris.frameID"
+| fields Solaris.frameID, Count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>Solaris.frameID="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>Solaris.frameID</fieldForLabel>
+      <fieldForValue>Solaris.frameID</fieldForValue>
     </input>
 
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
@@ -37,21 +59,21 @@
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
       <!-- Populating Data Model Search -->
-      <search id="baseSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = VM) (VM.hostname=$hostname-prefilter$) (VM.OStype=$osfilter$) groupby "VM.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "VM.hostname"
-| sort limit=0 "VM.hostname"
-| fields - _span | rename "VM.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+      <search>
+        <query>| tstats count AS Count from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) ($frameID$) (Solaris.hostname=$hostname-prefilter$) ($osfilter$) groupby "Solaris.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "Solaris.hostname"
+| sort limit=0 "Solaris.hostname"
+| fields Solaris.hostname, Count</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>hostname="</valuePrefix>
+      <valuePrefix>Solaris.hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
-      <fieldForLabel>hostname</fieldForLabel>
-      <fieldForValue>hostname</fieldForValue>
+      <fieldForLabel>Solaris.hostname</fieldForLabel>
+      <fieldForValue>Solaris.hostname</fieldForValue>
     </input>
-
+    
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Select a stats mode:</label>
       <default>max</default>
@@ -61,45 +83,34 @@
       <choice value="median">Median</choice>
       <choice value="mode">Mode</choice>
       <choice value="range">Range</choice>
-    </input>
+    </input>    
 
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
-| timechart `inline_customspan(type=VM,$hostname$)`
-$statsmode$(minfaults) As minfaults,
-$statsmode$(majfaults) As majfaults,
-$statsmode$(pgin) As pgin,
-$statsmode$(pgout) As pgout,
-$statsmode$(scans) As scans,
-$statsmode$(reclaims) As reclaims,
-$statsmode$(pgpgin) As pgpgin,
-$statsmode$(pgpgout) As pgpgout,
-$statsmode$(pswpin) As pswpin,
-$statsmode$(pswpout) As pswpout,
-$statsmode$(pgfree) As pgfree by hostname</searchTemplate>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+
+  <search id="Global">
+    <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Solaris)` groupby _time, "Solaris.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.hostname"
+| timechart `inline_customspan(type=VM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 `VM_Solaris($statsmode$)` by Solaris.hostname
+| rename Solaris.* AS *</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+
   <row>
     <panel>
       <table>
         <title>Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
-| stats
-$statsmode$(minfaults) As minfaults,
-$statsmode$(majfaults) As majfaults,
-$statsmode$(pgin) As pgin,
-$statsmode$(pgout) As pgout,
-$statsmode$(scans) As scans,
-$statsmode$(reclaims) As reclaims,
-$statsmode$(pgpgin) As pgpgin,
-$statsmode$(pgpgout) As pgpgout,
-$statsmode$(pswpin) As pswpin,
-$statsmode$(pswpout) As pswpout,
-$statsmode$(pgfree) As pgfre by hostname</searchString>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+        <search>
+    	    <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris 
+where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Solaris)` groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.frameID", "Solaris.hostname"
+| rename Solaris.* AS *
+| stats $statsmode$(*) AS * by frameID, hostname</query>
+    		<earliest>$timerange.earliest$</earliest>
+    		<latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -156,7 +167,9 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
     </html>
       <chart id="link1">
         <title>(pages/s) Minor faults and major faults</title>
-        <searchPostProcess>fields _time,*minfaults*,*majfaults*</searchPostProcess>
+        <search base="Global">
+          <query>fields _time,*minfaults*,*majfaults*</query>
+		  </search>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -177,7 +190,9 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
       </chart>
       <chart id="link2">
         <title>(pages/s) Pages IN and OUT</title>
-        <searchPostProcess>fields _time,*pgin*,*pgout*</searchPostProcess>
+        <search base="Global">
+          <query>fields _time,*pgin*,*pgout*</query>
+        </search>  
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -198,7 +213,9 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
       </chart>
       <chart id="link3">
         <title>(pages/s) Pages examined and freed by pageout daemon</title>
-        <searchPostProcess>fields _time,*scans*,*reclaims*</searchPostProcess>
+        <search base="Global">
+          <query>fields _time,*scans*,*reclaims*</query>
+        </search>  
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -219,7 +236,9 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
       </chart>
       <chart id="link4">
         <title>(KB/s) Pages paged IN and OUT</title>
-        <searchPostProcess>fields _time,*pgpgin*,*pgpgout*</searchPostProcess>
+        <search base="Global">
+          <query>fields _time,*pgpgin*,*pgpgout*</query>
+        </search>  
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -240,7 +259,9 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
       </chart>
       <chart id="link5">
         <title>(KB/s) Pages swapped IN and OUT</title>
-        <searchPostProcess>fields _time,*pswpin*,*pswpout*</searchPostProcess>
+        <search base="Global">
+          <query>fields _time,*pswpin*,*pswpout*</query>
+        </search>  
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -261,7 +282,9 @@ $statsmode$(pgfree) As pgfre by hostname</searchString>
       </chart>
       <chart id="link6">
         <title>(KB/s) Pages freed by daemon or auto</title>
-        <searchPostProcess>fields _time,*pgfree*</searchPostProcess>
+        <search base="Global">
+          <query>fields _time,*pgfree*</query>
+		  </search>        
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>

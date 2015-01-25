@@ -22,11 +22,32 @@
         <default>No_Filter</default>
       </input>
 
-    <input type="radio" token="osfilter" searchWhenChanged="true">
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>Linux</default>
-      <choice value="*">Any OS</choice>
+      <prefix>Linux.OStype="</prefix>
+      <suffix>"</suffix>      
       <choice value="Linux">Linux</choice>
+    </input>
+
+    <input type="multiselect" token="frameID" searchWhenChanged="true">
+      <label>Frame IDs:</label>
+      <!-- Populating Data Model Search -->
+      <search>
+        <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = Linux) ($osfilter$) groupby "Linux.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "Linux.frameID"
+| sort limit=0 "Linux.frameID"
+| fields Linux.frameID, Count</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <valuePrefix>Linux.frameID="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <fieldForLabel>Linux.frameID</fieldForLabel>
+      <fieldForValue>Linux.frameID</fieldForValue>
     </input>
 
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
@@ -38,18 +59,18 @@
       <label>Hosts Selection:</label>
       <!-- Populating Data Model Search -->
       <search>
-        <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = VM) (VM.hostname=$hostname-prefilter$) (VM.OStype=$osfilter$) groupby "VM.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "VM.hostname"
-| sort limit=0 "VM.hostname"
-| fields - _span | rename "VM.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+        <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = Linux) ($frameID$) (Linux.hostname=$hostname-prefilter$) ($osfilter$) groupby "Linux.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "Linux.hostname"
+| sort limit=0 "Linux.hostname"
+| fields Linux.hostname, Count</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>hostname="</valuePrefix>
+      <valuePrefix>Linux.hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
-      <fieldForLabel>hostname</fieldForLabel>
-      <fieldForValue>hostname</fieldForValue>
+      <fieldForLabel>Linux.hostname</fieldForLabel>
+      <fieldForValue>Linux.hostname</fieldForValue>
     </input>
 
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -64,106 +85,31 @@
     </input>
 
   </fieldset>
-  <searchTemplate>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
-| timechart `inline_customspan(type=VM,$hostname$)`
-$statsmode$(nr_dirty) As nr_dirty,
-$statsmode$(nr_writeback) As nr_writeback,
-$statsmode$(nr_unstable) As nr_unstable,
-$statsmode$(nr_page_table_pages) As nr_page_table_pages,
-$statsmode$(nr_mapped) As nr_mapped,
-$statsmode$(nr_slab) As nr_slab,
-$statsmode$(pgpgin) As pgpgin,
-$statsmode$(pgpgout) As pgpgout,
-$statsmode$(pswpin) As pswpin,
-$statsmode$(pswpout) As pswpout,
-$statsmode$(pgalloc_high) As pgalloc_high,
-$statsmode$(pgalloc_normal) As pgalloc_normal,
-$statsmode$(pgalloc_dma32) As pgalloc_dma32,
-$statsmode$(pgalloc_dma) As pgalloc_dma,
-$statsmode$(pgfree) As pgfree,
-$statsmode$(pgactivate) As pgactivate,
-$statsmode$(pgdeactivate) As pgdeactivate,
-$statsmode$(pgfault) As pgfault,
-$statsmode$(pgmajfault) As pgmajfault,
-$statsmode$(pgrefill_high) As pgrefill_high,
-$statsmode$(pgrefill_normal) As pgrefill_normal,
-$statsmode$(pgrefill_dma32) As pgrefill_dma32,
-$statsmode$(pgrefill_dma) As pgrefill_dma,
-$statsmode$(pgsteal_high) As pgsteal_high, 
-$statsmode$(pgsteal_normal) As pgsteal_normal,
-$statsmode$(pgsteal_dma32) As pgsteal_dma32,
-$statsmode$(pgsteal_dma) As pgsteal_dma,
-$statsmode$(pgscan_kswapd_high) As pgscan_kswapd_high,
-$statsmode$(pgscan_kswapd_normal) As pgscan_kswapd_normal,
-$statsmode$(pgscan_kswapd_dma32) As pgscan_kswapd_dma32,
-$statsmode$(pgscan_kswapd_dma) As pgscan_kswapd_dma,
-$statsmode$(pgscan_direct_high) As pgscan_direct_high,
-$statsmode$(pgscan_direct_normal) As pgscan_direct_normal,
-$statsmode$(pgscan_direct_dma32) As pgscan_direct_dma32,
-$statsmode$(pgscan_direct_dma) As pgscan_direct_dma,
-$statsmode$(pginodesteal) As pginodesteal,
-$statsmode$(slabs_scanned) As slabs_scanned,
-$statsmode$(kswapd_steal) As kswapd_steal,
-$statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
-$statsmode$(pageoutrun) As pageoutrun,
-$statsmode$(allocstall) As allocstall,
-$statsmode$(pgrotated) As pgrotated,
-$statsmode$(nr_bounce) As nr_bounce by hostname</searchTemplate>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
+
+  <search id="Global">
+    <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Linux)` groupby _time, "Linux.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.hostname"
+| timechart `inline_customspan(type=VM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 `VM_Linux($statsmode$)` by Linux.hostname
+| rename Linux.* AS *</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+
   <row>
     <panel>
       <table>
         <title>Table Stats</title>
-        <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
-| stats
-$statsmode$(nr_dirty) As nr_dirty,
-$statsmode$(nr_writeback) As nr_writeback,
-$statsmode$(nr_unstable) As nr_unstable,
-$statsmode$(nr_page_table_pages) As nr_page_table_pages,
-$statsmode$(nr_mapped) As nr_mapped,
-$statsmode$(nr_slab) As nr_slab,
-$statsmode$(pgpgin) As pgpgin,
-$statsmode$(pgpgout) As pgpgout,
-$statsmode$(pswpin) As pswpin,
-$statsmode$(pswpout) As pswpout,
-$statsmode$(pgalloc_high) As pgalloc_high,
-$statsmode$(pgalloc_normal) As pgalloc_normal,
-$statsmode$(pgalloc_dma32) As pgalloc_dma32,
-$statsmode$(pgalloc_dma) As pgalloc_dma,
-$statsmode$(pgfree) As pgfree,
-$statsmode$(pgactivate) As pgactivate,
-$statsmode$(pgdeactivate) As pgdeactivate,
-$statsmode$(pgfault) As pgfault,
-$statsmode$(pgmajfault) As pgmajfault,
-$statsmode$(pgrefill_high) As pgrefill_high,
-$statsmode$(pgrefill_normal) As pgrefill_normal,
-$statsmode$(pgrefill_dma32) As pgrefill_dma32,
-$statsmode$(pgrefill_dma) As pgrefill_dma,
-$statsmode$(pgsteal_high) As pgsteal_high, 
-$statsmode$(pgsteal_normal) As pgsteal_normal,
-$statsmode$(pgsteal_dma32) As pgsteal_dma32,
-$statsmode$(pgsteal_dma) As pgsteal_dma,
-$statsmode$(pgscan_kswapd_high) As pgscan_kswapd_high,
-$statsmode$(pgscan_kswapd_normal) As pgscan_kswapd_normal,
-$statsmode$(pgscan_kswapd_dma32) As pgscan_kswapd_dma32,
-$statsmode$(pgscan_kswapd_dma) As pgscan_kswapd_dma,
-$statsmode$(pgscan_direct_high) As pgscan_direct_high,
-$statsmode$(pgscan_direct_normal) As pgscan_direct_normal,
-$statsmode$(pgscan_direct_dma32) As pgscan_direct_dma32,
-$statsmode$(pgscan_direct_dma) As pgscan_direct_dma,
-$statsmode$(pginodesteal) As pginodesteal,
-$statsmode$(slabs_scanned) As slabs_scanned,
-$statsmode$(kswapd_steal) As kswapd_steal,
-$statsmode$(kswapd_inodesteal) As kswapd_inodesteal,
-$statsmode$(pageoutrun) As pageoutrun,
-$statsmode$(allocstall) As allocstall,
-$statsmode$(pgrotated) As pgrotated,
-$statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
-<earliestTime>$timerange.earliest$</earliestTime>
-<latestTime>$timerange.latest$</latestTime>
-        <earliestTime>$earliest$</earliestTime>
-        <latestTime>$latest$</latestTime>
+        <search>
+    	    <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM 
+where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Linux)` groupby _time, "Linux.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.frameID", "Linux.hostname"
+| rename Linux.* AS *
+| stats $statsmode$(*) AS * by frameID, hostname</query>
+    		<earliest>$timerange.earliest$</earliest>
+    		<latest>$timerange.latest$</latest>  
+  		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -220,7 +166,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
     </html>
       <chart id="link1">
         <title>Pages dirty, under writeback or unstable</title>
-        <searchPostProcess>fields _time,*nr_dirty*,*nr_writeback*,*nr_unstable*</searchPostProcess>
+		  <search base="Global">        
+          <query>fields _time,*nr_dirty*,*nr_writeback*,*nr_unstable*</query>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -241,7 +189,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link2">
         <title>Pages allocated to page tables, mapped by files or allocated by the kernel slab allocator</title>
-        <searchPostProcess>fields _time,*nr_page_table_pages*,*nr_mapped*,*nr_slab*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*nr_page_table_pages*,*nr_mapped*,*nr_slab*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -262,7 +212,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link3">
         <title>Pageins and pageouts (since last boot)</title>
-        <searchPostProcess>fields _time,*pgpgin*,*pgpgout*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgpgin*,*pgpgout*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -283,7 +235,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link4">
         <title>swapins and swapouts (since last boot)</title>
-        <searchPostProcess>fields _time,*pswpin*,*pswpout*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pswpin*,*pswpout*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -304,7 +258,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link5">
         <title>Page allocations per zone (since last boot)</title>
-        <searchPostProcess>fields _time,*pgalloc_high*,*pgalloc_normal*,*pgalloc_dma32*,*pgalloc_dma*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgalloc_high*,*pgalloc_normal*,*pgalloc_dma32*,*pgalloc_dma*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -325,7 +281,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link6">
         <title>Page frees, activations and deactivations (since last boot)</title>
-        <searchPostProcess>fields _time,*pgfree*,*pgactivate*,*pgdeactivate*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgfree*,*pgactivate*,*pgdeactivate*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -346,7 +304,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link7">
         <title>Minor and major page faults (since last boot)</title>
-        <searchPostProcess>fields _time,*pgfault*,*pgmajfault*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgfault*,*pgmajfault*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -367,7 +327,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link8">
         <title>Page refills (per zone, since last boot):</title>
-        <searchPostProcess>fields _time,*pgrefill_high*,*pgrefill_normal*,*pgrefill_dma32*,*pgrefill_dma*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgrefill_high*,*pgrefill_normal*,*pgrefill_dma32*,*pgrefill_dma*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -388,7 +350,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link9">
         <title>Page steals (per zone, since last boot)</title>
-        <searchPostProcess>fields _time,*pgsteal_high*,*pgsteal_normal*,*pgsteal_dma32*,*pgsteal_dma*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgsteal_high*,*pgsteal_normal*,*pgsteal_dma32*,*pgsteal_dma*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -409,7 +373,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link10">
         <title>Pages scanned by kswapd daemon (per zone, since last boot)</title>
-        <searchPostProcess>fields _time,*pgscan_kswapd_high*,*pgscan_kswapd_normal*,*pgscan_kswapd_dma32*,*pgscan_kswapd_dma*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgscan_kswapd_high*,*pgscan_kswapd_normal*,*pgscan_kswapd_dma32*,*pgscan_kswapd_dma*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -430,7 +396,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link11">
         <title>Pages reclaimed directly (per zone, since last boot)</title>
-        <searchPostProcess>fields _time,*pgscan_direct_high*,*pgscan_direct_normal*,*pgscan_direct_dma32*,*pgscan_direct_dma*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pgscan_direct_high*,*pgscan_direct_normal*,*pgscan_direct_dma32*,*pgscan_direct_dma*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -451,7 +419,9 @@ $statsmode$(nr_bounce) As nr_bounce by hostname</searchString>
       </chart>
       <chart id="link12">
         <title>Miscellaneous statistics</title>
-        <searchPostProcess>fields _time,*pginodesteal*,*slabs_scanned*,*kswapd_steal*,*kswapd_inodesteal*,*pageoutrun*,*allocstall*,*pgrotated*,*nr_bounce*</searchPostProcess>
+		  <search base="Global">
+          <query>fields _time,*pginodesteal*,*slabs_scanned*,*kswapd_steal*,*kswapd_inodesteal*,*pageoutrun*,*allocstall*,*pgrotated*,*nr_bounce*</query>
+		  </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
