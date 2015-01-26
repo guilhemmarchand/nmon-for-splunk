@@ -1,7 +1,13 @@
 <dashboard script="single_trend.js" stylesheet="Home.css,hover.css,singlevalue.css,hide_timeindicator.css,single_trend_transposed.css">
   <label>NMON Performance Monitor</label>
-  <description>Version 1.5.05</description>
-  <searchTemplate>| `indexes_datestats` | where (sourcetype == "nmon_data")</searchTemplate>
+  <description>Version 1.5.06</description>
+
+  <!-- Global Search -->
+
+  <search id="Global">
+    <query>| `indexes_datestats` | where (sourcetype == "nmon_data")</query>
+  </search>
+
   <row>
     <panel>
       <html>
@@ -78,7 +84,9 @@
       </div>
      </html>
       <single>
-        <searchPostProcess>fields index</searchPostProcess>
+        <search base="Global">
+	       <query>fields index</query>
+	     </search>
         <option name="linkView">search</option>
         <option name="underLabel">DATA INDEX NAME</option>
         <option name="drilldown">none</option>
@@ -87,7 +95,9 @@
         <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
       </single>
       <single>
-        <searchPostProcess>fields First*</searchPostProcess>
+        <search base="Global">
+	       <query>fields First*</query>
+	     </search>
         <option name="linkView">search</option>
         <option name="underLabel">DATE OF FIRST EVENT</option>
         <option name="drilldown">none</option>
@@ -97,7 +107,9 @@
         <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
       </single>
       <single>
-        <searchString>| `indexes_datestats` | where (sourcetype == "nmon_data") | fields Last*</searchString>
+        <search>
+	       <query>| `indexes_datestats` | where (sourcetype == "nmon_data") | fields Last*</query>
+	     </search>
         <option name="linkView">search</option>
         <option name="underLabel">DATE OF LAST EVENT</option>
         <option name="drilldown">none</option>
@@ -107,7 +119,7 @@
         <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
       </single>
       <single>
-        <searchName>Hosts with data within last 7 days</searchName>
+        <search ref="Hosts with data within last 7 days"></search>
         <option name="linkView">search</option>
         <option name="beforeLabel">There have been</option>
         <option name="afterLabel">Host(s) with activity</option>
@@ -120,7 +132,7 @@
 | eval serialnum=if(isnull(AIX_Machine_SerialNumber), hostname, AIX_Machine_SerialNumber) | fields hostname,serialnum | stats count</option>
       </single>
       <single>
-        <searchName>Volume of Data indexed Today</searchName>
+        <search ref="Volume of Data indexed Today"></search>
         <option name="linkView">search</option>
         <option name="beforeLabel">There have been</option>
         <option name="afterLabel">MB Indexed</option>
@@ -134,7 +146,7 @@
 [ search index=_internal source=*metrics.log group=per_index_thruput series="nmon" earliest="-1d@d" latest="@d" | eval MB = round(kb/1024,2) | stats sum(MB) As "Volume indexed yesterday" ]</option>
       </single>
       <single>
-        <searchName>Number of Errors in Data Processing since last 24 Hours</searchName>
+        <search ref="Number of Errors in Data Processing since last 24 Hours"></search>
         <option name="linkView">search</option>
         <option name="afterLabel">Errors Reported</option>
         <option name="underLabel">IN THE LAST 24 HOURS</option>
