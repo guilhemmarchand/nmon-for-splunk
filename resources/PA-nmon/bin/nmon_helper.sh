@@ -17,8 +17,9 @@
 # Modified by Guilhem Marchand 26102014: Improved APP dir definition (are we running nmon / TA-nmon / PA-nmon)
 # Modified by Guilhem Marchand 22122014: Modification of default values for interval and snapshot, added override features by default and local nmon.conf, kill evolution for TA upgrade management
 # Modified by Guilhem Marchand 15012015: AIX compatibility fix
+# Modified by Guilhem Marchand 08022015: Improvements for Solaris (terminal detaching issue)
 
-# Version 1.2.01
+# Version 1.2.02
 
 # For AIX / Linux / Solaris
 
@@ -141,6 +142,28 @@ NMON_REPOSITORY=${APP}/var/nmon_repository
 
 # Nmon PID file
 PIDFILE=/tmp/nmon.pid
+
+############################################
+# functions
+############################################
+
+start_nmon () {
+
+case `uname` in
+
+	AIX|Linux )
+		${nmon_command} >/dev/null 2>&1
+	;;
+
+	SunOS )
+		NMONNOSAFILE=1 # Do not generate useless sa files
+		export NMONNOSAFILE
+		${nmon_command} >/dev/null 2>&1 &
+	;;
+
+esac
+
+}
 
 ############################################
 # Defaults values for interval and snapshot
@@ -294,7 +317,7 @@ case ${PIDs} in
 	"" )
     	# Start NMON
 		echo "`date`, starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-		${nmon_command} >/dev/null 2>&1
+		start_nmon
 		ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | awk '{print $2}' > ${PIDFILE}
 		exit 0
 	;;
@@ -313,7 +336,7 @@ case ${PIDs} in
 			kill ${PIDs}
 			echo "`date`, Detected orphan nmon instance(s) running (probably TA-nmon upgrade), instance(s) with PID(s) ${PIDs} were killed"
 			echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-			${nmon_command} >/dev/null 2>&1
+			start_nmon
 			ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | awk '{print $2}' > ${PIDFILE}
 			exit 0
 			;;
@@ -327,7 +350,7 @@ case ${PIDs} in
 				kill ${PIDs}				
 				echo "`date`, Detected multiple nmon instances running, instances with PIDs ${PIDs} were killed"				
 				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-				${nmon_command} >/dev/null 2>&1
+				start_nmon
 				ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | awk '{print $2}' > ${PIDFILE}
 				exit 0
 			fi		
@@ -349,7 +372,7 @@ case ${PIDs} in
 					kill ${PIDs}
 					echo "`date`, Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
 					echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-					${nmon_command} >/dev/null 2>&1
+					start_nmon
 					ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | awk '{print $2}' > ${PIDFILE}
 					exit 0
 				;;
@@ -360,7 +383,7 @@ case ${PIDs} in
 				kill ${PIDs}
 				echo "`date`, Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
 				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-				${nmon_command} >/dev/null 2>&1
+				start_nmon
 				ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | awk '{print $2}' > ${PIDFILE}
 				exit 0
 			
