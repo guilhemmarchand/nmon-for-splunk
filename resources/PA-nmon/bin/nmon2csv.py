@@ -55,6 +55,7 @@
 #                               - This is a major release of the nmon2csv converter that introduces real time capacity, the converter will now identify if it is
 #											dealing with real time or coldata
 #										  - If real time is detected, only newer events that the last run will be proceeded such that the converter can manage a running nmon file all along its runtime
+# - 02/08/2015, V1.1.1: Guilhem Marchand: Arguments options to overwrite mode detection, DATA and CONFIG DIR, correction of sections data availability detection (count => 1)
 
 # Load libs
 
@@ -69,9 +70,10 @@ import csv
 import logging
 import cStringIO
 import platform
+import optparse
 
 # Converter version
-nmon2csv_version = '1.1.0'
+nmon2csv_version = '1.1.1'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -238,6 +240,44 @@ ZZZZ_timestamp = "-1"
 INTERVAL = "-1"
 SNAPSHOTS = "-1"
 sanity_check = "-1"
+
+#################################################
+##      Arguments
+#################################################
+
+parser = optparse.OptionParser(usage='usage: %prog [options]', version='%prog '+nmon2csv_version)
+
+parser.set_defaults(mode='auto', datadir=DATA_DIR, configdir=CONFIG_DIR, dumpargs=False)
+
+parser.add_option('-d', '--datadir', action='store', type='string', dest='datadir', help='sets the output directory for data CSV files (Default: %default)')
+parser.add_option('-c', '--configdir', action='store', type='string', dest='configdir', help='sets the output directory for config CSV files (Default: %default)')
+opmodes = ['auto', 'realtime', 'colddata']
+parser.add_option('-m', '--mode', action='store', type='choice', dest='mode', choices=opmodes, help='sets the operation mode (Default: %default); supported modes: ' + ', '.join(opmodes))
+parser.add_option('--dumpargs', action='store_true', dest='dumpargs', help='only dump the passed arguments and exit (for debugging purposes only)')
+
+(options, args) = parser.parse_args()
+
+if options.dumpargs:
+    print("options: ", options)
+    print("args: ", args)
+    sys.exit(0)
+
+DATA_DIR = options.datadir
+CONFIG_DIR = options.configdir
+
+if not os.path.exists(DATA_DIR):
+    try:
+        os.makedirs(DATA_DIR)
+    except Exception as ex:
+        logging.error("Unable to create data output directory '%s': %s" % (DATA_DIR, ex))
+        sys.exit(1)
+
+if not os.path.exists(CONFIG_DIR):
+    try:
+        os.makedirs(CONFIG_DIR)
+    except Exception as ex:
+        logging.error("Unable to create config output directory '%s': %s" % (CONFIG_DIR, ex))
+        sys.exit(1)
 
 #################################################
 ##      Functions
@@ -611,11 +651,19 @@ except:
     sys.exit(1)
 
 # Evaluate if we are dealing with real time data or cold data
-if (int(start_time) - (4 * int(INTERVAL))) > int(ending_epochtime):
+if options.mode == 'colddata':
     colddata = True
-
-else:
+elif options.mode == 'realtime':
     realtime = True
+else:
+    # options.mode is 'auto', therefore:
+    # Evaluate if we are dealing with real time data or cold data
+    if (int(start_time) - (4 * int(INTERVAL))) > int(ending_epochtime):
+        colddata = True
+    else:
+        realtime = True
+
+if realtime:
     # Override ID_REF & CONFIG_REF
     if is_windows:
         ID_REF = APP_VAR + '\\id_reference_realtime.txt'
@@ -882,7 +930,7 @@ for section in static_section:
             # increment
             count += 1
 
-    if count > 2:
+    if count >= 1:
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -1090,7 +1138,7 @@ for section in static_section:
         if sanity_check == 1:
             if os.path.isfile(currsection_output):
                 os.remove(currsection_output)
-        elif count < 2:
+        elif count < 1:
             if os.path.isfile(currsection_output):
                 os.remove(currsection_output)
         else:
@@ -1125,7 +1173,7 @@ for section in top_section:
             # increment
             count += 1
 
-    if count > 2:
+    if count >= 1:
 
         # Open output for writing
         with open(currsection_output, "wb") as currsection:
@@ -1237,7 +1285,7 @@ for section in top_section:
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
-        if count < 2:
+        if count < 1:
             if os.path.isfile(currsection_output):
                 os.remove(currsection_output)
         else:
@@ -1278,7 +1326,7 @@ for section in uarg_section:
             # increment
             count += 1
 
-    if count > 2:
+    if count >= 1:
 
         # Open StringIO for temp in memory
         membuffer = cStringIO.StringIO()
@@ -1446,7 +1494,7 @@ for section in uarg_section:
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
-        if count > 2:
+        if count >= 1:
             # Show number of lines extracted
             result = section + " section: Wrote" + " " + str(count) + " lines"
             print(result)
@@ -1503,7 +1551,7 @@ for subsection in dynamic_section1:
                 # increment
                 count += 1
 
-        if count > 2:
+        if count >= 1:
 
             # Open StringIO for temp in memory
             membuffer = cStringIO.StringIO()
@@ -1696,7 +1744,7 @@ for subsection in dynamic_section1:
 
                 # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
                 # In any case, don't allow empty files to kept in repository
-                if count < 2:
+                if count < 1:
                     if os.path.isfile(currsection_output):
                         os.remove(currsection_output)
                 else:
@@ -1742,7 +1790,7 @@ for section in dynamic_section2:
             # increment
             count += 1
 
-    if count > 2:
+    if count >= 1:
 
         # Open StringIO for temp in memory
         membuffer = cStringIO.StringIO()
@@ -1934,7 +1982,7 @@ for section in dynamic_section2:
 
             # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
             # In any case, don't allow empty files to kept in repository
-            if count < 2:
+            if count < 1:
                 if os.path.isfile(currsection_output):
                     os.remove(currsection_output)
             else:
