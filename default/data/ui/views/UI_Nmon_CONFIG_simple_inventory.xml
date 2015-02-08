@@ -21,13 +21,13 @@
     	<search base="Global">
         <query>inputlookup nmon_inventory | stats dc(hostname) As count</query>
       </search>
-      <option name="afterLabel">Hosts known within this period</option>
+      <option name="afterLabel">Hosts known</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">ANY OS</option>
       <option name="linkView">search</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | stats count by hostname</option>
+      <option name="linkSearch">| inputlookup nmon_inventory</option>
     </single>
   </row>
   <row>
@@ -42,7 +42,8 @@
       <option name="linkView">search</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | search OStype="AIX" | stats count by hostname</option>
+      <option name="linkSearch">| inputlookup nmon_inventory | search OStype=AIX
+| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</option>
     </single>
     <html>
     	<div>
@@ -60,7 +61,8 @@
       <option name="underLabel">LINUX</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | search OStype="Linux" | stats count by hostname</option>
+      <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Linux
+|fields hostname,OStype,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</option>
     </single>
     <html>
     	<div>
@@ -78,7 +80,8 @@
       <option name="underLabel">SOLARIS</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | search OStype="Solaris" | stats count by hostname</option>
+      <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Solaris
+| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</option>
     </single>
     <html>
     	<div>
