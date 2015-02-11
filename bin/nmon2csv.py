@@ -56,7 +56,7 @@
 #											dealing with real time or coldata
 #										  - If real time is detected, only newer events that the last run will be proceeded such that the converter can manage a running nmon file all along its runtime
 # - 02/08/2015, V1.1.1: Guilhem Marchand: Arguments options to overwrite mode detection, DATA and CONFIG DIR, correction of sections data availability detection (count => 1)
-
+# - 02/10/2015, V1.1.2: Guilhem Marchand: Hotfix for Windows, string to epoch time conversion (%s) failing issue
 # Load libs
 
 from __future__ import print_function
@@ -73,7 +73,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.1'
+nmon2csv_version = '1.1.2'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -124,15 +124,6 @@ logging.root.addHandler(handler)
 realtime = False
 colddata = False
 
-# Current date
-now = time.strftime("%d-%m-%Y %H:%M:%S")
-
-# Current date in epoch time
-now_epoch = time.strftime("%s")
-
-# timestamp used to name csv files
-csv_timestamp = time.strftime("%Y%m%d%H%M%S")
-
 # Starting time of process
 start_time = time.time()
 
@@ -150,6 +141,18 @@ ostype = platform.system().lower()
 
 # If running Windows OS (used for directory identification)
 is_windows = re.match(r'^win\w+', (platform.system().lower()))
+
+# Current date
+now = time.strftime("%d-%m-%Y %H:%M:%S")
+
+# Current date in epoch time
+if is_windows:
+    now_epoch = time.time()
+else:
+    now_epoch = time.strftime("%s")
+
+# timestamp used to name csv files
+csv_timestamp = time.strftime("%Y%m%d%H%M%S")
 
 # Python version
 python_version = platform.python_version()
@@ -586,11 +589,21 @@ NMON_DATE = DATE + ' ' + TIME
 # For Nmon V10 and more
 timestamp_match = re.match(r'\d*-\w*-\w*\s\d*:\d*:\d*', NMON_DATE)
 if timestamp_match:
-    starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S').strftime('%s')
+
+    if is_windows:
+        starting_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S'))
+    else:
+        starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S').strftime('%s')
     starting_time = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S').strftime('%d-%m-%Y %H:%M:%S')
+
 else:
     # For Nmon v9 and prior
-    starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S').strftime('%s')
+
+    if is_windows:
+        starting_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S'))
+    else:
+        starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S').strftime('%s')
+
     starting_time = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S').strftime('%d-%m-%Y %H:%M:%S')
 
 # Search for last epochtime in data
@@ -617,7 +630,10 @@ for line in data:
         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
         # Convert in epochtime
-        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+        if is_windows:
+            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+        else:
+            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
     # For Nmon V9 and less
 
@@ -633,7 +649,10 @@ for line in data:
             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
             # Convert in epochtime
-            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+            if is_windows:
+                ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+            else:
+                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
 # Set ending epochtime
 # noinspection PyBroadException
@@ -1035,7 +1054,11 @@ for section in static_section:
 
                         # Compose final timestamp
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        if is_windows:
+                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                        else:
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -1049,7 +1072,11 @@ for section in static_section:
                         if timestamp_match:
                             ZZZZ_TIME = timestamp_match.group(2)
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                            if is_windows:
+                                ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                            else:
+                                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # Extract Data
                     myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -1239,7 +1266,11 @@ for section in top_section:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        if is_windows:
+                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                        else:
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -1254,7 +1285,10 @@ for section in top_section:
                             ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                            if is_windows:
+                                ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                            else:
+                                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 # Extract Data
                 perfdata_match = re.match('^TOP,([0-9]+),(T\d+),(.+)\n', line)
@@ -1397,7 +1431,11 @@ for section in uarg_section:
                     ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                     ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                    ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                    if is_windows:
+                        ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                    else:
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 # For Nmon V9 and less
 
@@ -1412,7 +1450,13 @@ for section in uarg_section:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        if is_windows:
+                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                        else:
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+
 
             if oslevel == 'Linux':  # Linux OS specific header
 
@@ -1619,7 +1663,11 @@ for subsection in dynamic_section1:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        if is_windows:
+                            ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                        else:
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -1634,7 +1682,11 @@ for subsection in dynamic_section1:
                             ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                            if is_windows:
+                                ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                            else:
+                                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                     # Extract Data
                     myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -1858,7 +1910,11 @@ for section in dynamic_section2:
                     ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                     ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                    ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                    if is_windows:
+                        ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                    else:
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 # For Nmon V9 and less
 
@@ -1873,7 +1929,11 @@ for section in dynamic_section2:
                         ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
 
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
-                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        if is_windows:
+                            ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                        else:
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
                 # Extract Data
                 myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
