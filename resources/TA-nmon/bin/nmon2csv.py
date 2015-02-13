@@ -670,10 +670,14 @@ except:
     sys.exit(1)
 
 # Evaluate if we are dealing with real time data or cold data
+# This feature can be overriden by the --mode option
+# Windows guest is not concerned
 if options.mode == 'colddata':
     colddata = True
 elif options.mode == 'realtime':
     realtime = True
+elif is_windows:
+    colddata = True
 else:
     # options.mode is 'auto', therefore:
     # Evaluate if we are dealing with real time data or cold data
@@ -692,10 +696,10 @@ if realtime:
         CONFIG_REF = APP_VAR + '/config_reference_realtime.txt'
 
 # NMON file id (concatenation of ids)
-idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + starting_epochtime + ',' + ending_epochtime
+idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + str(starting_epochtime) + ',' + str(ending_epochtime)
 
 # Partial idnmon that won't contain ending_epochtime for compare operation, to used for cold data
-partial_idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + starting_epochtime
+partial_idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + str(starting_epochtime)
 
 # Show Nmon ID
 print("NMON ID:", idnmon)
@@ -763,12 +767,12 @@ ref.write(msg + '\n')
 ref.write(idnmon + '\n')
 
 # write starting epoch
-msg = "Starting_epochtime: " + starting_epochtime
+msg = "Starting_epochtime: " + str(starting_epochtime)
 print(msg)
 ref.write(msg + '\n')
 
 # write last epochtime of Nmon data
-msg = "Ending_epochtime: " + ZZZZ_epochtime
+msg = "Ending_epochtime: " + str(ZZZZ_epochtime)
 print(msg)
 ref.write(msg + '\n')
 
@@ -910,7 +914,7 @@ if config_run==0:
 
             # Save the a combo of HOSTNAME: current_epochtime in CONFIG_REF
             with open(CONFIG_REF, "wb") as f:
-                f.write(HOSTNAME + ": " + now_epoch + "\n")
+                f.write(HOSTNAME + ": " + str(now_epoch) + "\n")
 
 elif config_run==1:
     # Show number of lines extracted
@@ -1665,7 +1669,7 @@ for subsection in dynamic_section1:
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                         if is_windows:
-                            ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                         else:
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
@@ -1684,7 +1688,7 @@ for subsection in dynamic_section1:
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                             if is_windows:
-                                ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                                ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                             else:
                                 ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
@@ -1912,7 +1916,7 @@ for section in dynamic_section2:
                     ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                     if is_windows:
-                        ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                        ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                     else:
                         ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
@@ -1931,7 +1935,7 @@ for section in dynamic_section2:
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                         if is_windows:
-                            ZZZZ_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%m-%Y %H:%M:%S'))
+                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                         else:
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
 
