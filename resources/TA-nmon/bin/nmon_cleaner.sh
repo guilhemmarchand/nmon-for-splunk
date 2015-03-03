@@ -9,8 +9,9 @@
 # Disclaimer:  this provided "as is".  
 # Date - February 2015
 # Guilhem Marchand 2015/02/08, initial version
+# Guilhem Marchand 2015/03/03, correction for script calling execution
 
-# Version 1.0.0
+# Version 1.0.01
 
 # For AIX / Linux / Solaris
 
@@ -51,11 +52,11 @@ PYTHON=`which python` >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
 
-	./nmon_cleaner.py ${userargs}
+	$APP/bin/nmon_cleaner.py ${userargs}
 	
 else
 
-	./nmon_cleaner.pl ${userargs}
+	$APP/bin/nmon_cleaner.pl ${userargs}
 
 fi
 
