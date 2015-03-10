@@ -18,8 +18,9 @@
 # Modified by Guilhem Marchand 22122014: Modification of default values for interval and snapshot, added override features by default and local nmon.conf, kill evolution for TA upgrade management
 # Modified by Guilhem Marchand 15012015: AIX compatibility fix
 # Modified by Guilhem Marchand 08022015: Improvements for Solaris (terminal detaching issue)
+# Modified by Guilhem Marchand with the contribution of Flexible 10032015: nmon_cleaner.sh corrective hotfix (collision when nmon is in bin/)
 
-# Version 1.2.02
+# Version 1.2.03
 
 # For AIX / Linux / Solaris
 
