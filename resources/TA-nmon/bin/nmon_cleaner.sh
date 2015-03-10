@@ -10,8 +10,9 @@
 # Date - February 2015
 # Guilhem Marchand 2015/02/08, initial version
 # Guilhem Marchand 2015/03/03, correction for script calling execution
+# Guilhem Marchand 2015/03/10, Added Python 2.7.x version check before executing py script
 
-# Version 1.0.01
+# Version 1.0.03
 
 # For AIX / Linux / Solaris
 
@@ -52,7 +53,16 @@ PYTHON=`which python` >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
 
-	$APP/bin/nmon_cleaner.py ${userargs}
+	# Supplementary check: Ensure Python is at least 2.7 version
+	python_subversion=`python --version`
+
+	echo $python_subversion | grep '2.7' >/dev/null
+
+	if [ $? -eq 0 ]; then
+		$APP/bin/nmon_cleaner.py ${userargs}
+	else
+		$APP/bin/nmon_cleaner.pl ${userargs}
+	fi
 	
 else
 
