@@ -141,7 +141,7 @@ if ( !-d "$APP" ) {
 
 # var main directory
 my $APP_MAINVAR = "$SPLUNK_HOME/var/run/nmon";
-my $APP_VAR = "$SAPP_MAINVAR/var";
+my $APP_VAR = "$APP_MAINVAR/var";
 
 # If may main directories do not exist
 if ( !-d "$APP_MAINVAR" ) { mkdir "$APP_MAINVAR"; }
@@ -151,7 +151,7 @@ if ( !-d "$APP_VAR" ) { mkdir "$APP_VAR"; }
 my $SPOOL_DIR = "$APP_VAR/spool";
 if ( !-d "$SPOOL_DIR" ) { mkdir "$SPOOL_DIR"; }
 
-#  Output directory of csv files to be consummated by Splunk
+#  Output directory of csv files to be managed by Splunk
 my $OUTPUT_DIR = "$APP_VAR/csv_repository";
 if ( !-d "$OUTPUT_DIR" ) { mkdir "$OUTPUT_DIR"; }
 
