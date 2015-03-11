@@ -10,8 +10,9 @@
 
 # - December 2014, V1.0.0: Guilhem Marchand, Initial version
 # - 28/12/2014, V1.1.0: Guilhem Marchand, rewritten version for Nmon Splunk App V1.5.0
+# - 11/03/2015, V1.1.1: Guilhem Marchand, migration of var directory
 
-$version = "1.1.0";
+$version = "1.1.1";
 
 use Time::Local;
 use Time::HiRes;
@@ -150,6 +151,19 @@ if ( !-d "$APP" ) {
     die;
 }
 
+
+# var directories
+my $APP_MAINVAR = "$SPLUNK_HOME/var/run/nmon";
+my $APP_VAR = "$APP_MAINVAR/var";
+
+if ( !-d "$APP_MAINVAR" ) {
+    print(
+"\n$time INFO: main var directory not found ($APP_MAINVAR),  no need to run.\n"
+    );
+    exit 0;
+}
+
+
 ####################################################################
 #############		Main Program
 ####################################################################
@@ -180,7 +194,7 @@ if ($CLEANCSV) {
 
     # CSV Items to clean
     @cleaning =
-      ( "$APP/var/$CSV_REPOSITORY/*.csv", "$APP/var/$CONFIG_REPOSITORY/*.csv" );
+      ( "$APP_VAR/$CSV_REPOSITORY/*.csv", "$APP_VAR/$CONFIG_REPOSITORY/*.csv" );
 
     # Enter loop
     foreach $key (@cleaning) {
@@ -225,7 +239,7 @@ if ($CLEANCSV) {
 $count = 0;
 
 # NMON Items to clean
-@cleaning = ("$APP/var/$NMON_REPOSITORY/*.nmon");
+@cleaning = ("$APP_VAR/$NMON_REPOSITORY/*.nmon");
 
 # Enter loop
 foreach $key (@cleaning) {

@@ -10,6 +10,7 @@
 
 # - November 2014, V1.0.0: Guilhem Marchand, Initial version
 # - 12/28/2014, V1.1.0: Guilhem Marchand, Rewritten version for Nmon Splunk App V1.5.0
+# - 11/03/2015, V1.1.1: Guilhem Marchand, migration of var directory
 
 # Load libs
 
@@ -25,7 +26,7 @@ import re
 import argparse
 
 # Converter version
-version = '1.1.0'
+version = '1.1.1'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -195,13 +196,18 @@ else:
         logging.error(msg)
         sys.exit(1)
 
-# APP_VAR directory
+# APP_MAINVAR and APP_VAR directories
 if is_windows:
-    APP_VAR = APP + '\\var'
+    APP_MAINVAR = SPLUNK_HOME + '\\var\\run\\nmon'
+    APP_VAR = APP_MAINVAR + '\\var'
 else:
-    APP_VAR = APP + '/var'
-if not os.path.exists(APP_VAR):
-    os.mkdir(APP_VAR)
+    APP_MAINVAR = SPLUNK_HOME + '/var/run/nmon'
+    APP_VAR = APP_MAINVAR + '/var'
+
+
+if not os.path.exists(APP_MAINVAR):
+    msg = 'The main var directory ' + APP_VAR + ' has not been found, there is no need to run now.'
+    sys.exit(1)
 
 # Repositories definition
 if is_windows:

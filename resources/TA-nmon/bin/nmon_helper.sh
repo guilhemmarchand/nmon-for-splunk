@@ -19,8 +19,9 @@
 # Modified by Guilhem Marchand 15012015: AIX compatibility fix
 # Modified by Guilhem Marchand 08022015: Improvements for Solaris (terminal detaching issue)
 # Modified by Guilhem Marchand with the contribution of Flexible 10032015: nmon_cleaner.sh corrective hotfix (collision when nmon is in bin/)
+# Modified by Guilhem Marchand 11032015: Migration of main var directory for Nmon App
 
-# Version 1.2.03
+# Version 1.2.04
 
 # For AIX / Linux / Solaris
 
@@ -59,6 +60,9 @@ else
         exit 1
 
 fi
+
+# Var directory for data generation
+APP_VAR=$SPLUNK_HOME/var/run/nmon
 
 # Nmon Binary
 
@@ -134,12 +138,12 @@ esac
 
 # Nmon file final destination
 # Default to nmon_repository of Nmon Splunk App
-NMON_REPOSITORY=${APP}/var/nmon_repository
+NMON_REPOSITORY=${APP_VAR}/var/nmon_repository
 [ ! -d $NMON_REPOSITORY ] && { mkdir -p $NMON_REPOSITORY; }
 
 #also needed - 
-[ -d ${APP}/var/csv_repository ] || { mkdir -p ${APP}/var/csv_repository; }
-[ -d ${APP}/var/config_repository ] || { mkdir -p ${APP}/var/config_repository; }
+[ -d ${APP_VAR}/var/csv_repository ] || { mkdir -p ${APP_VAR}/var/csv_repository; }
+[ -d ${APP_VAR}/var/config_repository ] || { mkdir -p ${APP_VAR}/var/config_repository; }
 
 # Nmon PID file
 PIDFILE=/tmp/nmon.pid

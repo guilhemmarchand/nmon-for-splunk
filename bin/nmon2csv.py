@@ -57,6 +57,7 @@
 #										  - If real time is detected, only newer events that the last run will be proceeded such that the converter can manage a running nmon file all along its runtime
 # - 02/08/2015, V1.1.1: Guilhem Marchand: Arguments options to overwrite mode detection, DATA and CONFIG DIR, correction of sections data availability detection (count => 1)
 # - 02/10/2015, V1.1.2: Guilhem Marchand: Hotfix for Windows, string to epoch time conversion (%s) failing issue
+# - 11/10/2015, V1.1.3: Guilhem Marchand: Migration of var nmon directory
 # Load libs
 
 from __future__ import print_function
@@ -73,7 +74,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.2'
+nmon2csv_version = '1.1.3'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -194,9 +195,13 @@ else:
 
 # APP_VAR directory
 if is_windows:
-    APP_VAR = APP + '\\var'
+    APP_MAINVAR = SPLUNK_HOME + 'var\\run\\nmon'
+    APP_VAR = SPLUNK_HOME + 'var\\run\\nmon\\var'
 else:
-    APP_VAR = APP + '/var'
+    APP_MAINVAR = SPLUNK_HOME + '/var/run/nmon'
+    APP_VAR = SPLUNK_HOME + '/var/run/nmon/var'
+if not os.path.exists(APP_MAINVAR):
+    os.mkdir(APP_MAINVAR)
 if not os.path.exists(APP_VAR):
     os.mkdir(APP_VAR)
 

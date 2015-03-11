@@ -41,8 +41,9 @@
 # Guilhem Marchand 12/05/2014, V1.2.01: Minor correction of APP definition, moved $SPLUNK_HOME test after definition, Added $APP dir existence verification
 # Guilhem Marchand 12/26/2014, V1.2.2: Major release of the nmon2csv converter: Implements the distinction between real time and cold data, the script can now run over a running nmon file
 # and only create new events that have not yet been proceeded
+# Guilhem Marchand 11/03/2015, V1.2.3: Guilhem Marchand: Migration of var nmon directory
 
-$version = "1.2.2";
+$version = "1.2.3";
 
 use Time::Local;
 use Time::HiRes;
@@ -138,18 +139,23 @@ if ( !-d "$APP" ) {
     die;
 }
 
+# var main directory
+my $APP_MAINVAR = "$SPLUNK_HOME/var/run/nmon";
+my $APP_VAR = "$SAPP_MAINVAR/var";
+
 # If may main directories do not exist
-if ( !-d "$APP/var" ) { mkdir "$APP/var"; }
+if ( !-d "$APP_MAINVAR" ) { mkdir "$APP_MAINVAR"; }
+if ( !-d "$APP_VAR" ) { mkdir "$APP_VAR"; }
 
 # Spool directory for NMON files processing
-my $SPOOL_DIR = "$APP/var/spool";
+my $SPOOL_DIR = "$APP_VAR/spool";
 if ( !-d "$SPOOL_DIR" ) { mkdir "$SPOOL_DIR"; }
 
 #  Output directory of csv files to be consummated by Splunk
-my $OUTPUT_DIR = "$APP/var/csv_repository";
+my $OUTPUT_DIR = "$APP_VAR/csv_repository";
 if ( !-d "$OUTPUT_DIR" ) { mkdir "$OUTPUT_DIR"; }
 
-my $OUTPUTCONF_DIR = "$APP/var/config_repository";
+my $OUTPUTCONF_DIR = "$APP_VAR/config_repository";
 if ( !-d "$OUTPUTCONF_DIR" ) { mkdir "$OUTPUTCONF_DIR"; }
 
 # ID reference file, will be used to temporarily store the last execution result for a given nmon file, and prevent Splunk from
@@ -157,10 +163,10 @@ if ( !-d "$OUTPUTCONF_DIR" ) { mkdir "$OUTPUTCONF_DIR"; }
 # Splunk when using a custom archive mode, launches twice the custom script
 
 # Supplementary note: Since V1.2.2, ID_REF & CONFIG_REF are overwritten if running real time mode
-my $ID_REF = "$APP/var/id_reference.txt";
+my $ID_REF = "$APP_VAR/id_reference.txt";
 
 # Config Reference file
-my $CONFIG_REF = "$APP/var/config_reference.txt";
+my $CONFIG_REF = "$APP_VAR/config_reference.txt";
 
 #################################################
 ## 	Various
@@ -553,8 +559,8 @@ foreach $FILENAME (@nmon_files) {
         print "ANALYSIS: Assuming Nmon realtime data \n";
 
         # Override ID_REF & CONFIG_REF
-        $ID_REF     = "$APP/var/id_reference_realtime.txt";
-        $CONFIG_REF = "$APP/var/config_reference_realtime.txt";
+        $ID_REF     = "$APP_VAR/id_reference_realtime.txt";
+        $CONFIG_REF = "$APP_VAR/config_reference_realtime.txt";
 
     }
 

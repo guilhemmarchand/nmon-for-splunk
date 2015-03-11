@@ -11,8 +11,9 @@
 # Guilhem Marchand 2015/02/08, initial version
 # Guilhem Marchand 2015/03/03, correction for script calling execution
 # Guilhem Marchand 2015/03/10, Added Python 2.7.x version check before executing py script
+# Guilhem Marchand 2015/03/11, /dev/null redirection for python version check step
 
-# Version 1.0.03
+# Version 1.0.04
 
 # For AIX / Linux / Solaris
 
@@ -54,7 +55,7 @@ PYTHON=`which python` >/dev/null 2>&1
 if [ $? -eq 0 ]; then
 
 	# Supplementary check: Ensure Python is at least 2.7 version
-	python_subversion=`python --version`
+	python_subversion=`python --version` >/dev/null 2>&1
 
 	echo $python_subversion | grep '2.7' >/dev/null
 
