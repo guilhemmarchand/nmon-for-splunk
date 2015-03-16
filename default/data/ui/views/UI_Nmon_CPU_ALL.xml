@@ -111,7 +111,7 @@
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
 | $aggregate$
 | stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname"
-| sort limit=0 "CPU.hostname" | rename "CPU.hostname" AS hostname | `CPU_ALL_rename`
+| sort limit=0 "CPU.hostname" | rename CPU.* AS *
 | eval "Idle %"=round('Idle %',2)
 | eval "Sys %"=round('Sys %',2)
 | eval "User %"=round('User %',2)
@@ -214,7 +214,7 @@
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
+        <option name="drilldown">row</option>
         <option name="count">10</option>
         <format type="sparkline" field="sparkline">
           <option name="lineColor">#5379af</option>
@@ -222,11 +222,19 @@
           <option name="lineWidth">1</option>
           <option name="height">25px</option>
         </format>
+		  <drilldown target="search">
+			<link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)`
+from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname" prestats=true
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
+| $aggregate$
+| stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname"
+| sort limit=0 "CPU.hostname" | rename CPU.* AS *</link>
+        </drilldown>      
       </table>
     </panel>
   </row>
   
-  <row>
+  <row depends="$charting$">
     <panel>
       <title>Charting parameters:</title>
     	<input type="dropdown" token="cpumode" searchWhenChanged="true">
@@ -270,7 +278,7 @@
     </panel>
   </row>
 
-  <row>
+  <row depends="$charting$">
     <panel>
       <chart>
   			<search id="timechart">
@@ -313,6 +321,15 @@ by "CPU.hostname"</query>
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisY2.enabled">false</option>
         <option name="charting.axisY2.scale">inherit</option>
+		  <drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
+| $aggregate$
+| stats `CPU_ALL($statsmode$)` by _time,"CPU.hostname"
+| sort limit=0 "CPU.hostname" | rename "CPU.hostname" AS hostname | `CPU_ALL_rename`
+| fields _time,hostname,*</link>
+        </drilldown>        
       </chart>
     </panel>
   </row>

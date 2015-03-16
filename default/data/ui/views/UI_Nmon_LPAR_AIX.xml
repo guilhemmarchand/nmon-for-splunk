@@ -155,7 +155,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true `inline_customspan(type
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
+        <option name="drilldown">row</option>
         <option name="count">10</option>
         <format type="sparkline" field="sparkline">
           <option name="lineColor">#5379af</option>
@@ -163,12 +163,24 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true `inline_customspan(type
           <option name="lineWidth">1</option>
           <option name="height">25px</option>
         </format>
+		  <drilldown target="search">
+			<link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `LPAR(max)`
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$click.value$) `$timefilter$(CPU)` 
+groupby _time,"CPU.frameID","CPU.hostname" prestats=true `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| eval "_time"='_time'
+| stats `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
+| $indicator$
+| $aggregate$
+| sort limit=0 _time
+| stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs, sparkline($statsmode$(usage)) As sparkline by "CPU.frameID","CPU.hostname"
+| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | sort limit=0 frameID | eval avg_usage=round(avg_usage,2)</link>
+        </drilldown>        
       </table>
       
     </panel>
   </row>
   
-  <row>
+  <row depends="$charting$">
     <panel>
       <title>Charting parameters:</title>
       <input type="dropdown" token="addindicator" searchWhenChanged="true">
@@ -214,7 +226,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true `inline_customspan(type
     </panel>
   </row>
     
-  <row>
+  <row depends="$charting$">
     <panel>
       <chart>
   			<search id="timechart">
@@ -251,6 +263,16 @@ $statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisY2.enabled">false</option>
         <option name="charting.axisY2.scale">inherit</option>
+		  <drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `LPAR(max)`
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)` 
+groupby _time,"CPU.frameID","CPU.hostname" prestats=true `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| stats `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
+| $indicator$
+| $aggregate$
+| stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs by _time,"CPU.frameID","CPU.hostname"
+| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | eval avg_usage=round(avg_usage,2)</link>
+        </drilldown>        
       </chart>
     </panel>
   </row>
