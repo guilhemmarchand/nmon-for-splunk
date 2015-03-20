@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Program name: nmon_cleaner.py
 # Compatibility: Python 2.7
@@ -11,6 +11,7 @@
 # - November 2014, V1.0.0: Guilhem Marchand, Initial version
 # - 12/28/2014, V1.1.0: Guilhem Marchand, Rewritten version for Nmon Splunk App V1.5.0
 # - 11/03/2015, V1.1.1: Guilhem Marchand, migration of var directory
+# - 20/03/2015, V1.1.11: Guilhem Marchand, shebang correction
 
 # Load libs
 
@@ -26,7 +27,7 @@ import re
 import argparse
 
 # Converter version
-version = '1.1.1'
+version = '1.1.11'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
