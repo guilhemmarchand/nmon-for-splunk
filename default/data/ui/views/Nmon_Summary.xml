@@ -120,10 +120,10 @@ avg("CPU.cpu_PCT") AS avg_pct_usage max("CPU.cpu_PCT") AS max_pct_usage by "CPU.
   </search>
 
   <search id="IOPSSearch">
-  	<query>| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
+  	<query>| tstats sum("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$) groupby _time, "DISKXFER.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
-| sort limit=0 _time | rename "DISK_Data_Types.hostname" AS hostname
+| stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
+| sort limit=0 _time | rename "DISKXFER.hostname" AS hostname
 | fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
 | stats avg(iops) As avg_iops, max(iops) As max_iops | eval avg_iops=round(avg_iops,2)</query>
   	<earliest>$timerange.earliest$</earliest>
@@ -441,10 +441,10 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
         <option name="linkView">search</option>
         <option name="afterLabel">IOPS</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
+        <option name="linkSearch">| tstats sum("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$) groupby _time, "DISKXFER.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
-| sort limit=0 _time | rename "DISK_Data_Types.hostname" AS hostname
+| stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
+| sort limit=0 _time | rename "DISKXFER.hostname" AS hostname
 | fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
 | stats avg(iops) As avg_iops, max(iops) As max_iops | eval avg_iops=round(avg_iops,2)</option>
       </single>
@@ -458,20 +458,20 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
         <option name="linkView">search</option>
         <option name="afterLabel">IOPS</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname$) groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
+        <option name="linkSearch">| tstats sum("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$) groupby _time, "DISKXFER.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
-| sort limit=0 _time | rename "DISK_Data_Types.hostname" AS hostname
+| stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
+| sort limit=0 _time | rename "DISKXFER.hostname" AS hostname
 | fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
 | stats avg(iops) As avg_iops, max(iops) As max_iops | eval avg_iops=round(avg_iops,2)</option>
       </single>
 
       <chart>
         <search id="IOPStimechart">
-			<query>| tstats sum("DISK_Data_Types.value") AS iops from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname$)
-groupby _time, "DISK_Data_Types.hostname" prestats=true span=1m
+			<query>| tstats sum("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$)
+groupby _time, "DISKXFER.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t sum("DISK_Data_Types.value") AS iops by _time, "DISK_Data_Types.hostname"
+| stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
 | fields _time, hostname, iops
 | timechart `inline_customspan(type=DISKXFER,hostname=$hostname$)` max(iops) As "Total I/O"</query>
           <earliest>$timerange.earliest$</earliest>

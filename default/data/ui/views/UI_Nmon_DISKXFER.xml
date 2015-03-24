@@ -27,7 +27,7 @@
     <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>*</default>
-      <prefix>DISK_Data_Types.OStype="</prefix>
+      <prefix>DISKXFER.OStype="</prefix>
       <suffix>"</suffix>      
       <choice value="*">Any OS</choice>
       <choice value="AIX">AIX</choice>
@@ -39,20 +39,20 @@
       <label>Frame IDs:</label>
       <!-- Populating Data Model Search -->
       <search id="frameIDSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) ($osfilter$) groupby "DISK_Data_Types.frameID" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISK_Data_Types.frameID"
-| sort limit=0 "DISK_Data_Types.frameID"
-| fields - _span | fillnull Count | fields "DISK_Data_Types.frameID"</query>
+        <query>| tstats count AS Count from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) ($osfilter$) groupby "DISKXFER.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "DISKXFER.frameID"
+| sort limit=0 "DISKXFER.frameID"
+| fields - _span | fillnull Count | fields "DISKXFER.frameID"</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>DISK_Data_Types.frameID="</valuePrefix>
+      <valuePrefix>DISKXFER.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <choice value="*">Any</choice>
       <default>*</default>
-      <fieldForLabel>DISK_Data_Types.frameID</fieldForLabel>
-      <fieldForValue>DISK_Data_Types.frameID</fieldForValue>
+      <fieldForLabel>DISKXFER.frameID</fieldForLabel>
+      <fieldForValue>DISKXFER.frameID</fieldForValue>
     </input>
 
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
@@ -64,51 +64,51 @@
       <label>Hosts Selection:</label>
       <!-- Populating Data Model Search -->
       <search id="HostsbaseSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISK_Data_Types.hostname", "DISK_Data_Types.device"
-| sort limit=0 "DISK_Data_Types.hostname"
+        <query>| tstats count AS Count from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "DISKXFER.hostname", "DISKXFER.device" prestats=true
+| stats dedup_splitvals=t count AS Count by "DISKXFER.hostname", "DISKXFER.device"
+| sort limit=0 "DISKXFER.hostname"
 | fields - _span
-| fillnull Count | fields DISK_Data_Types.hostname | dedup DISK_Data_Types.hostname | sort DISK_Data_Types.hostname</query>
+| fillnull Count | fields DISKXFER.hostname | dedup DISKXFER.hostname | sort DISKXFER.hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>DISK_Data_Types.hostname="</valuePrefix>
+      <valuePrefix>DISKXFER.hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <choice value="*">ALL Hosts</choice>
-      <fieldForLabel>DISK_Data_Types.hostname</fieldForLabel>
-      <fieldForValue>DISK_Data_Types.hostname</fieldForValue>
+      <fieldForLabel>DISKXFER.hostname</fieldForLabel>
+      <fieldForValue>DISKXFER.hostname</fieldForValue>
     </input>
 
     <input type="multiselect" token="device" searchWhenChanged="true">
       <label>Disks Selection:</label>
       <!-- Populating Data Model Search -->
       <search id="DisksbaseSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISK_Data_Types.hostname", "DISK_Data_Types.device"
-| sort limit=0 "DISK_Data_Types.hostname"
+        <query>| tstats count AS Count from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "DISKXFER.hostname", "DISKXFER.device" prestats=true
+| stats dedup_splitvals=t count AS Count by "DISKXFER.hostname", "DISKXFER.device"
+| sort limit=0 "DISKXFER.hostname"
 | fields - _span
-| fillnull Count | fields DISK_Data_Types.device | dedup DISK_Data_Types.device | sort DISK_Data_Types.device</query>
+| fillnull Count | fields DISKXFER.device | dedup DISKXFER.device | sort DISKXFER.device</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>DISK_Data_Types.device="</valuePrefix>
+      <valuePrefix>DISKXFER.device="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <choice value="*">ALL Devices</choice>
-      <fieldForLabel>DISK_Data_Types.device</fieldForLabel>
-      <fieldForValue>DISK_Data_Types.device</fieldForValue>
+      <fieldForLabel>DISKXFER.device</fieldForLabel>
+      <fieldForValue>DISKXFER.device</fieldForValue>
     </input>
 
     <input type="dropdown" token="aggregate" searchWhenChanged="true">
       <label>Aggregate:</label>
       <choice value="fields *">Single Series</choice>
-      <choice value="stats dedup_splitvals=t avg(DISK_Data_Types.value) AS DISK_Data_Types.value by _time, DISK_Data_Types.hostname, DISK_Data_Types.device | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-      <choice value="stats dedup_splitvals=t avg(DISK_Data_Types.value) AS DISK_Data_Types.value by _time | eval DISK_Data_Types.hostname=&quot;aggreg_hostname&quot; | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Average by Time interval</choice>      
-      <choice value="stats dedup_splitvals=t max(DISK_Data_Types.value) AS DISK_Data_Types.value by _time, DISK_Data_Types.hostname, DISK_Data_Types.device | eval DISK_Data_Types.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-      <choice value="stats dedup_splitvals=t max(DISK_Data_Types.value) AS DISK_Data_Types.value by _time | eval DISK_Data_Types.hostname=&quot;aggreg_hostname&quot; | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Max by Time interval</choice>      
-      <choice value="stats dedup_splitvals=t sum(DISK_Data_Types.value) AS DISK_Data_Types.value by _time, DISK_Data_Types.hostname, DISK_Data_Types.device | eval DISK_Data_Types.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
-      <choice value="stats dedup_splitvals=t sum(DISK_Data_Types.value) AS DISK_Data_Types.value by _time | eval DISK_Data_Types.hostname=&quot;aggreg_hostname&quot; | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>      
+      <choice value="stats dedup_splitvals=t avg(DISKXFER.value) AS DISKXFER.value by _time, DISKXFER.hostname, DISKXFER.device | eval DISKXFER.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+      <choice value="stats dedup_splitvals=t avg(DISKXFER.value) AS DISKXFER.value by _time | eval DISKXFER.hostname=&quot;aggreg_hostname&quot; | eval DISKXFER.device=&quot;aggreg_device&quot;">Average by Time interval</choice>      
+      <choice value="stats dedup_splitvals=t max(DISKXFER.value) AS DISKXFER.value by _time, DISKXFER.hostname, DISKXFER.device | eval DISKXFER.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+      <choice value="stats dedup_splitvals=t max(DISKXFER.value) AS DISKXFER.value by _time | eval DISKXFER.hostname=&quot;aggreg_hostname&quot; | eval DISKXFER.device=&quot;aggreg_device&quot;">Max by Time interval</choice>      
+      <choice value="stats dedup_splitvals=t sum(DISKXFER.value) AS DISKXFER.value by _time, DISKXFER.hostname, DISKXFER.device | eval DISKXFER.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
+      <choice value="stats dedup_splitvals=t sum(DISKXFER.value) AS DISKXFER.value by _time | eval DISKXFER.hostname=&quot;aggreg_hostname&quot; | eval DISKXFER.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>      
       <default>fields *</default>
     </input>
 
@@ -135,12 +135,12 @@
     <panel>
       <table>
   		<search id="tablestats">
-    	  <query>| tstats max("DISK_Data_Types.value") AS DISK_Data_Types.value from datamodel=NMON_Data_DISK 
-where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) 
-groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true span=1s
-| stats dedup_splitvals=t max("DISK_Data_Types.value") AS DISK_Data_Types.value by _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device"
+    	  <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
+where (nodename = DISKXFER) (DISKXFER.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKXFER)`
+groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1s
+| stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | $aggregate$
-| rename "DISK_Data_Types.hostname" AS hostname, "DISK_Data_Types.device" AS device, "DISK_Data_Types.value" AS value
+| rename "DISKXFER.hostname" AS hostname, "DISKXFER.device" AS device, "DISKXFER.value" AS value
 | stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
 | sort limit=0 "hostname"
 | eval value=round(value,2)
@@ -206,13 +206,13 @@ groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=tru
     <panel>
       <chart>
   			<search id="timechart">
-          <query>| tstats max("DISK_Data_Types.value") AS DISK_Data_Types.value from datamodel=NMON_Data_DISK 
-where (nodename = DISK_Data_Types.DISKXFER) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) 
-groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true span=1s
-| stats dedup_splitvals=t max("DISK_Data_Types.value") AS DISK_Data_Types.value by _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device"
+          <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
+where (nodename = DISKXFER) (DISKXFER.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKXFER)`
+groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1s
+| stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | $aggregate$
 | $charting$
-| rename DISK_Data_Types.hostname AS hostname, DISK_Data_Types.device AS device, DISK_Data_Types.value AS value
+| rename DISKXFER.hostname AS hostname, DISKXFER.device AS device, DISKXFER.value AS value
 | bucket _time `inline_customspan(type=DISKXFER,earliest=$timerange.earliest$,latest=$timerange.latest$)`
 | stats $statsmode$(value) As value by _time,hostname,device
 | eval s1="value"

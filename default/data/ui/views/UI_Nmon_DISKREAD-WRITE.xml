@@ -10,6 +10,7 @@
         <latestTime>now</latestTime>
       </default>
     </input>
+    
     <input type="dropdown" token="timefilter" searchWhenChanged="true">
       <label>Time Filtering:</label>
       <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
@@ -21,10 +22,11 @@
       <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
       <default>No_Filter</default>
     </input>
+    
     <input type="dropdown" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
       <default>*</default>
-      <prefix>DISK_Data_Types.OStype="</prefix>
+      <prefix>DISKREADWRITE.OStype="</prefix>
       <suffix>"</suffix>      
       <choice value="*">Any OS</choice>
       <choice value="AIX">AIX</choice>
@@ -36,20 +38,20 @@
       <label>Frame IDs:</label>
       <!-- Populating Data Model Search -->
       <search id="frameIDSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKREADWRITE) ($osfilter$) groupby "DISK_Data_Types.frameID" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISK_Data_Types.frameID"
-| sort limit=0 "DISK_Data_Types.frameID"
-| fields - _span | fillnull Count | fields "DISK_Data_Types.frameID"</query>
+        <query>| tstats count AS Count from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) ($osfilter$) groupby "DISKREADWRITE.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "DISKREADWRITE.frameID"
+| sort limit=0 "DISKREADWRITE.frameID"
+| fields - _span | fillnull Count | fields "DISKREADWRITE.frameID"</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>DISK_Data_Types.frameID="</valuePrefix>
+      <valuePrefix>DISKREADWRITE.frameID="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <choice value="*">Any</choice>
       <default>*</default>
-      <fieldForLabel>DISK_Data_Types.frameID</fieldForLabel>
-      <fieldForValue>DISK_Data_Types.frameID</fieldForValue>
+      <fieldForLabel>DISKREADWRITE.frameID</fieldForLabel>
+      <fieldForValue>DISKREADWRITE.frameID</fieldForValue>
     </input>
 
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
@@ -61,51 +63,51 @@
       <label>Hosts Selection:</label>
       <!-- Populating Data Model Search -->
       <search id="HostsbaseSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISK_Data_Types.hostname", "DISK_Data_Types.device"
-| sort limit=0 "DISK_Data_Types.hostname"
+        <query>| tstats count AS Count from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true
+| stats dedup_splitvals=t count AS Count by "DISKREADWRITE.hostname", "DISKREADWRITE.device"
+| sort limit=0 "DISKREADWRITE.hostname"
 | fields - _span
-| fillnull Count | fields DISK_Data_Types.hostname | dedup DISK_Data_Types.hostname | sort DISK_Data_Types.hostname</query>
+| fillnull Count | fields DISKREADWRITE.hostname | dedup DISKREADWRITE.hostname | sort DISKREADWRITE.hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>DISK_Data_Types.hostname="</valuePrefix>
+      <valuePrefix>DISKREADWRITE.hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <choice value="*">ALL Hosts</choice>
-      <fieldForLabel>DISK_Data_Types.hostname</fieldForLabel>
-      <fieldForValue>DISK_Data_Types.hostname</fieldForValue>
+      <fieldForLabel>DISKREADWRITE.hostname</fieldForLabel>
+      <fieldForValue>DISKREADWRITE.hostname</fieldForValue>
     </input>
 
     <input type="multiselect" token="device" searchWhenChanged="true">
       <label>Disks Selection:</label>
       <!-- Populating Data Model Search -->
       <search id="DisksbaseSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_DISK where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISK_Data_Types.hostname", "DISK_Data_Types.device"
-| sort limit=0 "DISK_Data_Types.hostname"
+        <query>| tstats count AS Count from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true
+| stats dedup_splitvals=t count AS Count by "DISKREADWRITE.hostname", "DISKREADWRITE.device"
+| sort limit=0 "DISKREADWRITE.hostname"
 | fields - _span
-| fillnull Count | fields DISK_Data_Types.device | dedup DISK_Data_Types.device | sort DISK_Data_Types.device</query>
+| fillnull Count | fields DISKREADWRITE.device | dedup DISKREADWRITE.device | sort DISKREADWRITE.device</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <valuePrefix>DISK_Data_Types.device="</valuePrefix>
+      <valuePrefix>DISKREADWRITE.device="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
       <choice value="*">ALL Devices</choice>
-      <fieldForLabel>DISK_Data_Types.device</fieldForLabel>
-      <fieldForValue>DISK_Data_Types.device</fieldForValue>
+      <fieldForLabel>DISKREADWRITE.device</fieldForLabel>
+      <fieldForValue>DISKREADWRITE.device</fieldForValue>
     </input>
 
     <input type="dropdown" token="aggregate" searchWhenChanged="true">
       <label>Aggregate:</label>
       <choice value="fields *">Single Series</choice>
-      <choice value="stats dedup_splitvals=t avg(DISK_Data_Types.value) AS DISK_Data_Types.value by _time, DISK_Data_Types.hostname, DISK_Data_Types.device | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-      <choice value="stats dedup_splitvals=t avg(DISK_Data_Types.value) AS DISK_Data_Types.value by _time | eval DISK_Data_Types.hostname=&quot;aggreg_hostname&quot; | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Average by Time interval</choice>      
-      <choice value="stats dedup_splitvals=t max(DISK_Data_Types.value) AS DISK_Data_Types.value by _time, DISK_Data_Types.hostname, DISK_Data_Types.device | eval DISK_Data_Types.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-      <choice value="stats dedup_splitvals=t max(DISK_Data_Types.value) AS DISK_Data_Types.value by _time | eval DISK_Data_Types.hostname=&quot;aggreg_hostname&quot; | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Max by Time interval</choice>      
-      <choice value="stats dedup_splitvals=t sum(DISK_Data_Types.value) AS DISK_Data_Types.value by _time, DISK_Data_Types.hostname, DISK_Data_Types.device | eval DISK_Data_Types.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
-      <choice value="stats dedup_splitvals=t sum(DISK_Data_Types.value) AS DISK_Data_Types.value by _time | eval DISK_Data_Types.hostname=&quot;aggreg_hostname&quot; | eval DISK_Data_Types.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>      
+      <choice value="stats dedup_splitvals=t avg(DISKREADWRITE.value) AS DISKREADWRITE.value by _time, DISKREADWRITE.hostname, DISKREADWRITE.device | eval DISKREADWRITE.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+      <choice value="stats dedup_splitvals=t avg(DISKREADWRITE.value) AS DISKREADWRITE.value by _time | eval DISKREADWRITE.hostname=&quot;aggreg_hostname&quot; | eval DISKREADWRITE.device=&quot;aggreg_device&quot;">Average by Time interval</choice>      
+      <choice value="stats dedup_splitvals=t max(DISKREADWRITE.value) AS DISKREADWRITE.value by _time, DISKREADWRITE.hostname, DISKREADWRITE.device | eval DISKREADWRITE.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+      <choice value="stats dedup_splitvals=t max(DISKREADWRITE.value) AS DISKREADWRITE.value by _time | eval DISKREADWRITE.hostname=&quot;aggreg_hostname&quot; | eval DISKREADWRITE.device=&quot;aggreg_device&quot;">Max by Time interval</choice>      
+      <choice value="stats dedup_splitvals=t sum(DISKREADWRITE.value) AS DISKREADWRITE.value by _time, DISKREADWRITE.hostname, DISKREADWRITE.device | eval DISKREADWRITE.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
+      <choice value="stats dedup_splitvals=t sum(DISKREADWRITE.value) AS DISKREADWRITE.value by _time | eval DISKREADWRITE.hostname=&quot;aggreg_hostname&quot; | eval DISKREADWRITE.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>      
       <default>fields *</default>
     </input>
 
@@ -133,11 +135,12 @@
       <table>
         <title>DISKREAD - Disk Read Table Stats (Kbytes/sec)</title>
   		  <search id="tablestats_read">
-    	  <query>| tstats max("DISK_Data_Types.value") AS DISK_Data_Types.value from datamodel=NMON_Data_DISK 
-where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.type=DISKREAD) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true 
-| stats dedup_splitvals=t max("DISK_Data_Types.value") AS DISK_Data_Types.value by _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device"
+    	  <query>| tstats max("DISKREADWRITE.value") AS DISKREADWRITE.value from datamodel=NMON_Data_DISKREADWRITE
+where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKREAD) (DISKREADWRITE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKREADWRITE)`
+groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true 
+| stats dedup_splitvals=t max("DISKREADWRITE.value") AS DISKREADWRITE.value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | $aggregate$
-| rename "DISK_Data_Types.hostname" AS hostname, "DISK_Data_Types.device" AS device, "DISK_Data_Types.value" AS value
+| rename "DISKREADWRITE.hostname" AS hostname, "DISKREADWRITE.device" AS device, "DISKREADWRITE.value" AS value
 | stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
 | sort limit=0 "hostname"
 | eval value=round(value,2)
@@ -163,11 +166,12 @@ where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.type=DISKREAD)
       <table>
         <title>DISKWRITE - Disk Wite Table Stats (Kbytes/sec)</title>
         <search id="tablestats_write">
-    	  <query>| tstats max("DISK_Data_Types.value") AS DISK_Data_Types.value from datamodel=NMON_Data_DISK 
-where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.type=DISKWRITE) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true 
-| stats dedup_splitvals=t max("DISK_Data_Types.value") AS DISK_Data_Types.value by _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device"
+    	  <query>| tstats max("DISKREADWRITE.value") AS DISKREADWRITE.value from datamodel=NMON_Data_DISKREADWRITE 
+where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKWRITE) (DISKREADWRITE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKREADWRITE)`
+groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true 
+| stats dedup_splitvals=t max("DISKREADWRITE.value") AS DISKREADWRITE.value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | $aggregate$
-| rename "DISK_Data_Types.hostname" AS hostname, "DISK_Data_Types.device" AS device, "DISK_Data_Types.value" AS value
+| rename "DISKREADWRITE.hostname" AS hostname, "DISKREADWRITE.device" AS device, "DISKREADWRITE.value" AS value
 | stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
 | sort limit=0 "hostname"
 | eval value=round(value,2)
@@ -239,13 +243,13 @@ where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.type=DISKWRITE
       <chart id="link10">
         <title>DISKREAD - Disk Read Data Rate</title>
   			<search id="timechart_read">
-          <query>| tstats max("DISK_Data_Types.value") AS DISK_Data_Types.value from datamodel=NMON_Data_DISK 
-where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.type=DISKREAD) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) 
-groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true span=1s
-| stats dedup_splitvals=t max("DISK_Data_Types.value") AS DISK_Data_Types.value by _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device"
+          <query>| tstats max("DISKREADWRITE.value") AS DISKREADWRITE.value from datamodel=NMON_Data_DISKREADWRITE 
+where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKREAD) (DISKREADWRITE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKREADWRITE)`
+groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1s
+| stats dedup_splitvals=t max("DISKREADWRITE.value") AS DISKREADWRITE.value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | $aggregate$
 | $charting$
-| rename DISK_Data_Types.hostname AS hostname, DISK_Data_Types.device AS device, DISK_Data_Types.value AS value
+| rename DISKREADWRITE.hostname AS hostname, DISKREADWRITE.device AS device, DISKREADWRITE.value AS value
 | bucket _time `inline_customspan(type=DISKREAD,earliest=$timerange.earliest$,latest=$timerange.latest$)`
 | stats $statsmode$(value) As value by _time,hostname,device
 | eval s1="value"
@@ -279,13 +283,13 @@ groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=tru
       <chart id="link11">
         <title>DISKWRITE - Disk Write Data Rate</title>
   			<search id="timechart_write">
-          <query>| tstats max("DISK_Data_Types.value") AS DISK_Data_Types.value from datamodel=NMON_Data_DISK 
-where (nodename = DISK_Data_Types.DISKREADWRITE) (DISK_Data_Types.type=DISKWRITE) (DISK_Data_Types.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) 
-groupby _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device" prestats=true span=1s
-| stats dedup_splitvals=t max("DISK_Data_Types.value") AS DISK_Data_Types.value by _time, "DISK_Data_Types.hostname", "DISK_Data_Types.device"
+          <query>| tstats max("DISKREADWRITE.value") AS DISKREADWRITE.value from datamodel=NMON_Data_DISKREADWRITE 
+where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKWRITE) (DISKREADWRITE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKREADWRITE)`
+groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1s
+| stats dedup_splitvals=t max("DISKREADWRITE.value") AS DISKREADWRITE.value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | $aggregate$
 | $charting$
-| rename DISK_Data_Types.hostname AS hostname, DISK_Data_Types.device AS device, DISK_Data_Types.value AS value
+| rename DISKREADWRITE.hostname AS hostname, DISKREADWRITE.device AS device, DISKREADWRITE.value AS value
 | bucket _time `inline_customspan(type=DISKREAD,earliest=$timerange.earliest$,latest=$timerange.latest$)`
 | stats $statsmode$(value) As value by _time,hostname,device
 | eval s1="value"
