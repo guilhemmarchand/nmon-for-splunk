@@ -1,0 +1,97 @@
+<form script="autodiscover.js" stylesheet="ui_simple.css">
+
+    <label>Data Dictionary - Discover and Explore Nmon Splunk Application Data</label>
+
+  <row>
+    <html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/icons/grey_theme/dictionary.png" alt="Dictionary"/>
+      </div>
+      <div class="custom">
+        <h1>Data Dictionary</h1>
+      </div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <title>Filtering Options:</title>
+      <input type="checkbox" token="osfilter" searchWhenChanged="true">
+        <label>Is relevant for:</label>
+        <choice value="AIX=true">AIX</choice>
+        <choice value="Linux=true">Linux</choice>
+        <choice value="Solaris=true">Solaris</choice>
+        <delimiter> OR </delimiter>
+        <default>AIX=true,Linux=true,Solaris=true</default>
+      </input>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+
+      <html>
+		<div class="customlink">
+
+			<img src="../../static/app/nmon/icons/grey_theme/link.png"/>
+			<a href="search?&amp;q=%7C%20inputlookup%20data_dictionary%20%7C%20search%20$osfilter$%20%7C%20stats%20count%20by%20index%2Csourcetype%2Cmain_type%2Cperf_item%2Cnmon_section%2Cunity%2Cdescription%2Clong_description%2C&quot;formula%20(or%20field%20name%20if%20not%20evaluated)&quot;%2Cis_evaluated%2CAIX%2CLinux%2CSolaris%2C&quot;SPL%20root%20search&quot;" target="_blank">
+			  <h3>Link: Access to full Data table</h3>
+         </a>
+         		         				
+		</div>
+		</html>      
+
+      <table>
+        <title>Brief Data Table:</title>
+        <search>
+          <query>| inputlookup data_dictionary | search $osfilter$ | stats count AS Nbr_items by main_type,index,sourcetype,perf_item</query>
+		  </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">50</option>
+      </table>
+            
+    </panel>
+  </row>
+
+    <!-- See https://github.com/hobbes3/splunk_dendrogram-->
+    <!-- All components are integrated within the App core -->  
+  
+  <row>
+    <panel>
+    <title>NMON Performance Data and Application internal dictionary</title>
+      <html>
+        <h4>Click on nodes to develop associated items:</h4>
+        <div id="dendrogram_search" class="splunk-manager" data-require="splunkjs/mvc/searchmanager" data-options='{
+          "search": {
+            "type": "token_safe",
+            "value": "| inputlookup data_dictionary | search $$osfilter$$
+| stats count by main_type,sourcetype,perf_item,nmon_section,description,long_description"
+          },
+          "preview": true,
+          "earliest_time": {
+            "type": "token_safe",
+            "value": "$$earliest$$"
+          },
+          "latest_time": {
+            "type": "token_safe",
+            "value": "$$latest$$"
+          }
+        }'>
+        </div>
+        <div id="dendrogram" class="splunk-view" data-require="app/nmon/components/dendrogram/dendrogram" data-options='{
+          "managerid": "dendrogram_search",
+          "root_label": "Nmon Splunk App",
+          "height": 3000,
+          "initial_open_level": 5,
+          "has_size": true,
+          "margin_left": 200,
+          "margin_right": 200
+        }'>
+        </div>
+      </html>
+    </panel>
+  </row>
+</form>

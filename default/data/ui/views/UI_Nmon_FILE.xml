@@ -1,5 +1,5 @@
 <form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
-  <label>NMON - FILE, Kernel file statistics</label>
+  <label>NMON - FILE, Kernel file statistics: per-second frequency of selected file and the TTY statistics</label>
   <description/>
   <fieldset autoRun="false" submitButton="false">
   
@@ -101,19 +101,51 @@ groupby "FILE.hostname" prestats=true
   
   <search id="tablestats">
     <query>| tstats max(FILE.readch) As FILE.readch, max(FILE.writech) As FILE.writech,
-max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk from datamodel=NMON_Data_FILE
+max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk,
+$statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch from datamodel=NMON_Data_FILE
 where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
 groupby _time, "FILE.hostname" prestats=true
 | stats dedup_splitvals=t max(FILE.readch) As FILE.readch, max(FILE.writech) As FILE.writech,
-max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk by _time, "FILE.hostname"
+max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk,
+$statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch by _time, "FILE.hostname"
 | stats $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech, sparkline(max(FILE.readch)) As spk_readch, sparkline(max(FILE.writech)) As spk_writech
-$statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk, sparkline(max(FILE.iget)) As spk_iget, sparkline(max(FILE.namei)) As spk_namei, sparkline(max(FILE.dirblk)) As spk_dirblk
-by "FILE.hostname"
+$statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk,
+$statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, $statsmode$(FILE.ttyrawch) As ttyrawch by "FILE.hostname"
 | sort limit=0 "FILE.hostname" | rename "FILE.hostname" AS hostname</query>
     <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>  
   </search>
 
+  <!-- Information panel -->
+  
+  <row>
+    <panel>
+      <html>
+
+		<div class="imgheader">
+        <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+        <h4>Metrics information:</h4> 
+
+		  <br />
+		  <br />
+		  <br />
+		  
+		  <lu>
+			<li>Readch: The amount of bytes read per second through the read system call over the monitoring interval</li>
+			<li>Writech: The amount of bytes written per second through the write system call over the monitoring interval</li>
+			<li>Rawin: The amount of raw bytes read per second from TTYs over the monitoring interval</li>
+			<li>Ttyout: The amount of bytes written to TTYs per second over the monitoring interval</li>
+			<li>Igets: The number of calls per second to the inode lookup routines over the monitoring interval</li>
+			<li>Namei: The number of calls per second to the path name lookup routines over the monitoring interval</li>
+			<li>Dirblk: The number of directory blocks scanned per second by the directory search routine over the monitoring interval</li>		  
+		  </lu>
+
+		</div>
+      
+     </html>
+    </panel>
+  </row>
+  
   <row>
     <panel>
       <table>
@@ -145,37 +177,18 @@ by "FILE.hostname"
       <table>
         <title>FILE - Kernel Statistics Table Stats</title>
         <search base="tablestats">
-        	<query>fields hostname,iget,namei,dirblk,spk_iget,spk_namei,spk_dirblk by hostname</query>
+        	<query>fields hostname,iget,namei,dirblk,tty* by hostname</query>
 		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
         <option name="count">10</option>
-        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
-        <format type="sparkline" field="spk_iget">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_namei">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
-        <format type="sparkline" field="spk_dirblk">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
       </table>
     </panel>    
   </row>
   
-  <row>
+  <row depends="$charting$">
     <panel>
       <title>Charting parameters:</title>
       <input type="dropdown" token="chart" searchWhenChanged="true">
@@ -213,7 +226,7 @@ by "FILE.hostname"
     </panel>
   </row>
 	
-	<row>
+	<row depends="$charting$">
 	  <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -253,12 +266,15 @@ $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE
       <chart id="link11">
         <title>FILE - Other statistics</title>
   		  <search>
-    		 <query>| tstats $statsmode$(FILE.iget) As FILE.iget, $statsmode$(FILE.namei) As FILE.namei, $statsmode$(FILE.dirblk) As FILE.dirblk from datamodel=NMON_Data_FILE
+    		 <query>| tstats
+$statsmode$(FILE.iget) As FILE.iget, $statsmode$(FILE.namei) As FILE.namei, $statsmode$(FILE.dirblk) As FILE.dirblk
+$statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch from datamodel=NMON_Data_FILE
 where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
 groupby _time, "FILE.hostname" prestats=true `inline_customspan(type=FILE,earliest=$timerange.earliest$,latest=$timerange.latest$)`
 | $charting$
 | timechart `inline_customspan(type=FILE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0
-$statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk by FILE.hostname</query>
+$statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk
+$statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, $statsmode$(FILE.ttyrawch) As ttyrawch by FILE.hostname</query>
     	    <earliest>$timerange.earliest$</earliest>
     	    <latest>$timerange.latest$</latest>  
   		  </search>
