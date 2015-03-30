@@ -96,12 +96,103 @@
     <latest>$timerange.latest$</latest>  
   </search>
 
+  <!-- Information panel -->
+  
+  <row>
+
+    <panel>
+      <html>
+
+		 <div class="imgheader">
+        <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+        <h4>Metrics information:</h4>
+        
+       </div>
+		     
+      </html>
+    </panel>
+  </row>     
+
+  <row>
+
+    <panel>
+      <html>
+
+		 <div class="imgheader">
+		  
+		  <lu>
+<li>nr_dirty: Number of pages that are dirty</li>
+<li>nr_writeback: Number of pages that are under writeback</li>
+<li>nr_unstable: Number of pages that are unstable</li>
+<li>nr_page_table_pages: Number of pages allocated to page tables</li>
+<li>nr_mapped: Number of pages mapped by files</li>
+<li>nr_slab: allocated by the kernel slab allocator</li>
+<li>pgpgin: Number of pageins (since the last boot)</li>
+<li>pgpgout: Number of pageouts (since the last boot)</li>
+<li>pswpin: Number of swapins (since the last boot)</li>
+<li>pswpout: Number of swapouts (since the last boot)</li>
+<li>pgalloc_high: Number of page allocations per zone (since the last boot)</li>
+<li>pgalloc_normal: Number of page allocations per zone (since the last boot)</li>
+<li>pgalloc_dma32: Number of page allocations per zone (since the last boot)</li>
+<li>pgalloc_dma: Number of page allocations per zone (since the last boot)</li>
+<li>pgfree: Number of page frees (since the last boot)</li>
+<li>pgactivate: Number of page activations (since the last boot)</li>
+<li>pgdeactivate: Number of page deactivations (since the last boot)</li>
+<li>pgfault: Number of minor page faults (since the last boot)</li>
+<li>pgmajfault: Number of major page faults (since the last boot)</li>
+<li>pgrefill_high: Number of page refills (per zone, since the last boot)</li>
+<li>pgrefill_normal: Number of page refills (per zone, since the last boot)</li>
+<li>pgrefill_dma32: Number of page refills (per zone, since the last boot)</li>
+<li>pgrefill_dma: Number of page refills (per zone, since the last boot)</li>
+		  </lu>
+
+		</div>
+      
+     </html>
+    </panel>
+
+    <panel>
+      <html>
+
+		<div class="imgheader">
+		  
+		  <lu>
+<li>pgsteal_high: Number of page steals (per zone, since the last boot)</li>
+<li>pgsteal_normal: Number of page steals (per zone, since the last boot)</li>
+<li>pgsteal_dma32: Number of page steals (per zone, since the last boot)</li>
+<li>pgsteal_dma: Number of page steals (per zone, since the last boot)</li>
+<li>pgscan_kswapd_high: Number of pages scanned by the kswapd daemon (per zone, since the last boot)</li>
+<li>pgscan_kswapd_normal: Number of pages scanned by the kswapd daemon (per zone, since the last boot)</li>
+<li>pgscan_kswapd_dma32: Number of pages scanned by the kswapd daemon (per zone, since the last boot)</li>
+<li>pgscan_kswapd_dma: Number of pages scanned by the kswapd daemon (per zone, since the last boot)</li>
+<li>pgscan_direct_high: Number of pages reclaimed directly (per zone, since the last boot)</li>
+<li>pgscan_direct_normal: Number of pages reclaimed directly (per zone, since the last boot)</li>
+<li>pgscan_direct_dma32: Number of pages reclaimed directly (per zone, since the last boot)</li>
+<li>pgscan_direct_dma: Number of pages reclaimed directly (per zone, since the last boot)</li>
+<li>pginodesteal: Number of pages reclaimed via inode freeing (since the last boot)</li>
+<li>slabs_scanned: Number of slab objects scanned (since the last boot)</li>
+<li>kswapd_steal: Number of pages reclaimed by kswapd (since the last boot)</li>
+<li>kswapd_inodesteal: Number of pages reclaimed by kswapd via inode freeing (since the last boot)</li>
+<li>pageoutrun: Number of kswapd's calls to page reclaim (since the last boot)</li>
+<li>allocstall: Number of direct reclaim calls (since the last boot)</li>
+<li>pgrotated: Miscellaneous statistics</li>
+<li>nr_bounce: Miscellaneous statistics</li>
+		  </lu>
+
+		</div>
+      
+     </html>
+    </panel>
+
+
+  </row>
+
   <row>
     <panel>
       <table>
         <title>Table Stats</title>
         <search>
-    	    <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM 
+    	    <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM
 where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Linux)` groupby _time, "Linux.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.frameID", "Linux.hostname"

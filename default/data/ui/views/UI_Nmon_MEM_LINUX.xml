@@ -33,13 +33,6 @@
       <choice value="Linux">Linux</choice>
     </input>
 
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <default>*</default>
-    </input>
-
      <input type="multiselect" token="frameID" searchWhenChanged="true">
       <label>Frame IDs:</label>
       <!-- Populating Data Model Search -->
@@ -62,8 +55,10 @@
 
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
       <default>*</default>
-    </input>   
+    </input>  
 
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
@@ -217,7 +212,7 @@ by _time, frameID, hostname | sort limit=0 frameID,hostname
     </panel>
   </row>
 
-  <row>
+  <row depends="$charting$">
     <panel>
       <title>Charting parameters:</title>
       <input type="dropdown" token="chart" searchWhenChanged="true">
@@ -255,7 +250,7 @@ by _time, frameID, hostname | sort limit=0 frameID,hostname
     </panel>
   </row>  
   
-  <row>
+  <row depends="$charting$">
     <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
@@ -318,11 +313,12 @@ groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
 by _time, "MEM.frameID", "MEM.hostname"
-| fields - _span 
+| fields - _span
+| $charting$
 | timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t 
 $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB 
 $statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB $statsmode$("swapcached_MB") AS swapcached_MB $statsmode$("swapcached_PCT") AS swapcached_PCT 
-by "MEM.hostname" | $memmode$ | fields _time, $swapfilter$ | $charting$</query>
+by "MEM.hostname" | $memmode$ | fields _time, $swapfilter$</query>
     		 <earliest>$timerange.earliest$</earliest>
     		 <latest>$timerange.latest$</latest>    
   		  </search>
