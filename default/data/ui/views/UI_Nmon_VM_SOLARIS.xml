@@ -85,12 +85,19 @@
       <choice value="range">Range</choice>
     </input>    
 
+    <input type="checkbox" token="charting" searchWhenChanged="true">
+      <label>Charting:</label>
+      <default>fields *</default>
+      <choice value="fields *">On</choice>
+    </input>    
+
   </fieldset>
 
   <search id="Global">
     <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Solaris)` groupby _time, "Solaris.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.hostname"
+| $charting$
 | timechart `inline_customspan(type=VM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 `VM_Solaris($statsmode$)` by Solaris.hostname
 | rename Solaris.* AS *</query>
     <earliest>$timerange.earliest$</earliest>
@@ -155,7 +162,7 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
     </panel>
   </row>
   
-  <row>
+  <row depends="$charting$">
     <panel>
       <title>Charting parameters:</title>
       <input type="dropdown" token="chart" searchWhenChanged="true">
@@ -193,7 +200,7 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
     </panel>
   </row>
   
-  <row>
+  <row depends="$charting$">
     <panel>
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
