@@ -16,6 +16,7 @@
   <row>
     <panel>
       <title>Filtering Options:</title>
+      
       <input type="checkbox" token="osfilter" searchWhenChanged="true">
         <label>Is relevant for:</label>
         <choice value="AIX=true">AIX</choice>
@@ -24,6 +25,26 @@
         <delimiter> OR </delimiter>
         <default>AIX=true,Linux=true,Solaris=true</default>
       </input>
+
+      <input type="checkbox" token="itemfilter" searchWhenChanged="true">
+        <label>Categories:</label>
+        <choice value="APPLICATION*">Application Internal</choice>
+        <choice value="CONFIGURATION DATA">Configuration Data</choice>
+        <choice value="CPU USAGE STATISTICS">CPU Usage</choice>
+        <choice value="KERNEL STATISTICS">Kernel Statistics</choice>
+        <choice value="PROCESSES STATISTICS">Processes Statistics</choice>
+        <choice value="MEMORY STATISTICS">Memory Statistics</choice>
+        <choice value="DISKS STATISTICS">Disks Statistics</choice>        
+        <choice value="NETWORK*">Network Statistics</choice>
+        <choice value="PAGING STATISTICS">Paging Statistics</choice>
+        <choice value="FILESYSTEMS STATISTICS">FileSystems Statistics</choice>
+        <choice value="FIBER CHANNEL STATISTICS">Fiber Channel Statistics</choice>
+        <valuePrefix>perf_item="</valuePrefix>
+        <valueSuffix>"</valueSuffix>
+        <delimiter> OR </delimiter>
+        <default>"APPLICATION*","CONFIGURATION DATA","CPU USAGE STATISTICS","KERNEL STATISTICS","PROCESSES STATISTICS","MEMORY STATISTICS","DISKS STATISTICS","NETWORK*","PAGING STATISTICS","FILESYSTEMS STATISTICS","FIBER CHANNEL STATISTICS"</default>
+      </input>
+
     </panel>
   </row>
 
@@ -44,7 +65,7 @@
       <table>
         <title>Brief Data Table:</title>
         <search>
-          <query>| inputlookup data_dictionary | search $osfilter$ | stats count AS Nbr_items by main_type,index,sourcetype,perf_item</query>
+          <query>| inputlookup data_dictionary | search $osfilter$ $itemfilter$ | stats count AS Nbr_items by main_type,index,sourcetype,perf_item</query>
 		  </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -67,7 +88,7 @@
         <div id="dendrogram_search" class="splunk-manager" data-require="splunkjs/mvc/searchmanager" data-options='{
           "search": {
             "type": "token_safe",
-            "value": "| inputlookup data_dictionary | search $$osfilter$$
+            "value": "| inputlookup data_dictionary | search $$osfilter$$ $$itemfilter$$
 | stats count by main_type,sourcetype,perf_item,nmon_section,OS_compatibility,description"
           },
           "preview": true,
@@ -84,7 +105,7 @@
         <div id="dendrogram" class="splunk-view" data-require="app/nmon/components/dendrogram/dendrogram" data-options='{
           "managerid": "dendrogram_search",
           "root_label": "Nmon Splunk App",
-          "height": 3000,
+          "height": 3500,
           "initial_open_level": 6,
           "has_size": true,
           "margin_left": 200,
