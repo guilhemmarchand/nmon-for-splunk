@@ -296,24 +296,24 @@ case `uname` in
 AIX )
 
 	if [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot} splunkapp"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot} nmonsplunk"
 	elif [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot} splunkapp"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot} nmonsplunk"
 	else
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot} splunkapp"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot} nmonsplunk"
 	fi
 	;;
 
 SunOS )
-	nmon_command="${NMON} ${interval} ${snapshot} splunkapp"
+	nmon_command="${NMON} ${interval} ${snapshot} nmonsplunk"
 	;;
 
 Linux )
 
 	if [ ${Linux_NFS} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot} splunkapp"
+		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot} nmonsplunk"
 	else
-		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot} splunkapp"
+		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot} nmonsplunk"
 	fi
 	;;
 
