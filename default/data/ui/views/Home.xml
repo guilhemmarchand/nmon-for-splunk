@@ -155,7 +155,7 @@
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| pivot NMON_Config Nmon_Config last(AIX_Machine_SerialNumber) AS "AIX_Machine_SerialNumber" dc(hostname) AS "dcount" SPLITROW hostname AS hostname SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
-| eval serialnum=if(isnull(AIX_Machine_SerialNumber), hostname, AIX_Machine_SerialNumber) | fields hostname,serialnum | stats count</option>
+| eval serialnum=if(isnull(AIX_Machine_SerialNumber), hostname, AIX_Machine_SerialNumber) | fields - AIX_Machine_SerialNumber | fields hostname,serialnum | stats count</option>
       </single>
       <single>
         <search ref="Volume of Data indexed Today"></search>
@@ -170,15 +170,15 @@
         <option name="linkSearch">| savedsearch "Volume of Data indexed Today"</option>
       </single>
       <single>
-        <search ref="Number of Errors in Data Processing since last 24 Hours"></search>
+        <search ref="Number of Errors in Data Processing or Data Collect since last 24 Hours"></search>
         <option name="linkView">search</option>
         <option name="afterLabel">Errors Reported</option>
-        <option name="underLabel">IN THE LAST 24 HOURS</option>
+        <option name="underLabel">PROCESSING/COLLECT LAST 24 HOURS</option>
         <option name="refresh.auto.interval">130</option>
         <option name="field">value</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">| savedsearch "Number of Errors in Data Processing since last 24 Hours"</option>
+        <option name="linkSearch">index=nmon sourcetype=nmon_collect OR souretype=nmon_processing error earliest="-24h" latest="now"</option>
       </single>
     </panel>
   </row>
