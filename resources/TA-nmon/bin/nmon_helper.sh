@@ -195,7 +195,7 @@ write_pid () {
 	;;
 
 	SunOS )
-	started_pid=`/usr/ucb/ps awx | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $1}'`
+	started_pid=`/usr/ucb/ps auww | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 	;;
 	
 	esac
@@ -357,7 +357,7 @@ PIDs=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | 
 ;;
 
 SunOS )
-PIDs=`/usr/ucb/ps awx | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $1}'`
+PIDs=`/usr/ucb/ps auww | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 ;;
 	
 esac
