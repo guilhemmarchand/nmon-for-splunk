@@ -25,6 +25,7 @@
 #													  - Prevents from killing non Application related Nmon instance by adding a "nmonsplunk" pattern at the end of nmon command
 #													  - Update of PID identification (nmonsplunk tag)
 #													  - Moving pid file to $SPLUNK_HOME/var/run/nmon
+#													  - Solaris change using /usr/ucb/ps to identify processes
 
 # Version 1.2.06
 
@@ -69,9 +70,11 @@ fi
 # Var directory for data generation
 APP_VAR=$SPLUNK_HOME/var/run/nmon
 
-# Nmon Binary
+# Which type of OS are we running
+UNAME=`uname`
 
-case `uname` in
+# Nmon Binary
+case $UNAME in
 
 AIX )
 
@@ -159,7 +162,7 @@ PIDFILE=${APP_VAR}/nmon.pid
 
 start_nmon () {
 
-case `uname` in
+case $UNAME in
 
 	AIX )
 		${nmon_command} >/dev/null 2>&1
@@ -185,7 +188,18 @@ esac
 
 write_pid () {
 
-started_pid=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+	case $UNAME in
+
+	AIX|Linux )
+	started_pid=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+	;;
+
+	SunOS )
+	started_pid=`/usr/ucb/ps awx | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $1}'`
+	;;
+	
+	esac
+
 echo ${started_pid} > ${PIDFILE}
 
 }
@@ -335,7 +349,18 @@ fi
 
 # Search for any running Nmon instance, stop it if exist and start it, start it if does not
 cd ${NMON_REPOSITORY}
+
+case $UNAME in
+
+AIX|Linux )
 PIDs=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+;;
+
+SunOS )
+PIDs=`/usr/ucb/ps awx | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $1}'`
+;;
+	
+esac
 
 case ${PIDs} in
 
