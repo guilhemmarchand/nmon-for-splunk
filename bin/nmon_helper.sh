@@ -20,8 +20,13 @@
 # Modified by Guilhem Marchand 08022015: Improvements for Solaris (terminal detaching issue)
 # Modified by Guilhem Marchand with the contribution of Flexible 10032015: nmon_cleaner.sh corrective hotfix (collision when nmon is in bin/)
 # Modified by Guilhem Marchand 11032015: Migration of main var directory for Nmon App, PID writing step improvement
+# Modified by Guilhem Marchand 04032015: 
+#													  - Linux improvement, analyse and return error code when launching nmon instance
+#													  - Prevents from killing non Application related Nmon instance by adding a "nmonsplunk" pattern at the end of nmon command
+#													  - Update of PID identification (nmonsplunk tag)
+#													  - Moving pid file to $SPLUNK_HOME/var/run/nmon
 
-# Version 1.2.04
+# Version 1.2.06
 
 # For AIX / Linux / Solaris
 
@@ -146,7 +151,7 @@ NMON_REPOSITORY=${APP_VAR}/var/nmon_repository
 [ -d ${APP_VAR}/var/config_repository ] || { mkdir -p ${APP_VAR}/var/config_repository; }
 
 # Nmon PID file
-PIDFILE=/tmp/nmon.pid
+PIDFILE=${APP_VAR}/nmon.pid
 
 ############################################
 # functions
@@ -156,8 +161,16 @@ start_nmon () {
 
 case `uname` in
 
-	AIX|Linux )
+	AIX )
 		${nmon_command} >/dev/null 2>&1
+	;;
+
+	Linux )
+		${nmon_command}
+		
+		if [ $? -ne 0 ]; then
+			echo "`date`, ERROR, nmon binary returned a non 0 code while trying to start, please verify manually (missing shared libraries?)"
+		fi
 	;;
 
 	SunOS )
@@ -172,7 +185,7 @@ esac
 
 write_pid () {
 
-started_pid=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+started_pid=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 echo ${started_pid} > ${PIDFILE}
 
 }
@@ -283,24 +296,24 @@ case `uname` in
 AIX )
 
 	if [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot} splunkapp"
 	elif [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot} splunkapp"
 	else
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot} splunkapp"
 	fi
 	;;
 
 SunOS )
-	nmon_command="${NMON} ${interval} ${snapshot}" 
+	nmon_command="${NMON} ${interval} ${snapshot} splunkapp"
 	;;
 
 Linux )
 
 	if [ ${Linux_NFS} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot} splunkapp"
 	else
-		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot} splunkapp"
 	fi
 	;;
 
@@ -322,7 +335,7 @@ fi
 
 # Search for any running Nmon instance, stop it if exist and start it, start it if does not
 cd ${NMON_REPOSITORY}
-PIDs=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+PIDs=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 
 case ${PIDs} in
 
