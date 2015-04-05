@@ -170,7 +170,7 @@ case $UNAME in
 	Linux )
 		${nmon_command}		
 		if [ $? -ne 0 ]; then
-			echo "`date`, ERROR, nmon binary returned a non 0 code while trying to start, please verify manually (missing shared libraries?)"
+			echo "`date`, ERROR, nmon binary returned a non 0 code while trying to start, please verify error traces in splunkd log (missing shared libraries?)"
 		fi
 	;;
 

@@ -236,6 +236,10 @@
 			<li><a href="#FAQ_customize">Nmon_SplunkApp_Customize.py: Customize the Application</a></li>
 
 			<br />
+
+			<li><a href="#FAQ_createagent">create_agent.py: Create custom TA packages to manage different deployment configurations</a></li>
+
+			<br />
 				
 			<li><a href="#FAQ_customize_extraction">Performance Monitors extraction: Customize Monitors to extract (reduce Data volume and licence costs)</a></li>
 
@@ -671,6 +675,11 @@ These are 2 small and specific versions of the standard Application, and are exp
 
 <br />
 
+<b>Since V1.5.14, a Python script utility "create_agent.py" is available in the resource directory, it can be used to manage multiple configurations of the TA-nmon agent package, see: <a href="#FAQ_createagent">create_agent.py: Create custom TA packages to manage different deployment configurations</a></b>
+
+<br />
+<br />
+
 Installation and configuration of these 2 additional App are fully described in the deployment section.
 
 <br />
@@ -863,10 +872,17 @@ Under normal circumstances (such as NMON data collect through Splunk of the Univ
 
 </div>
 
-<h2>In this scenario, A single Splunk indexer will collect NMON Metrics data from clients servers using Splunk Forwarders
+<h2>In this scenario, A single Splunk indexer can collect NMON Metrics data from clients servers using Splunk Forwarders
 
 <br />
 Indexers themselves will collect local NMON Data.</h2>
+
+<br />
+
+<b>Since V1.5.14, a Python script utility "create_agent.py" is available in the resource directory, it can be used to manage multiple configurations of the TA-nmon agent package, see: <a href="#FAQ_createagent">create_agent.py: Create custom TA packages to manage different deployment configurations</a></b>
+
+<br />
+<br />
 
 <img src="../../static/app/nmon/various/diagram_forwarding.png" alt="Diagram"/>
 
@@ -2879,6 +2895,17 @@ A Python command line tool to automatically customize the Application to fit you
 <br />
 It can be used over future release to allow easy update, even when adapting the App to your needs is required.
 
+<br />
+<br />
+
+<li>
+<b>resources/create_agent.py</b>
+</li>
+
+<br />
+
+A Python command line tool to automatically create custom TA-nmon packages to manage different deployment configuration.
+
 </lu>
 
 </p>
@@ -3099,6 +3126,109 @@ INFO: Customizing the PA-nmon Root directory from the default PA-nmon to my_cust
 INFO: Tar creation done of: my_custom_pa_custom.tar.gz
 INFO: Creating the custom nmon_performance_monitor_custom.spl archive in current root directory
 INFO: Tar creation done of: nmon_performance_monitor_custom.spl
+Operation terminated.
+
+</pre>
+
+<br />
+<br />
+
+<div id="FAQ_createagent">
+
+<br />
+
+<h2>- create_agent.py: Create multiple TA packages to manage different deployment configurations</h2> 
+
+</div>
+
+<b>You may be interested in having different versions of the TA-nmon with the goal to manage different configurations, and target for example specific operating systems or versions with specific configurations.</b>
+
+<br />
+<br />
+
+A Python script utility is provided to allow creating on demand custom TA-nmon packages ready to be deployed, the Python tool allows to:
+
+<br />
+<br />
+
+<lu>
+
+<li>Create a new TA-nmon package with the name of your choice</li>
+<li>Customize the target index name if required (eg. for example if you use the customization tool to change the default index name</li>
+<li>Choose between Python Data Processing, or Perl Data Processing</li>
+
+</lu>
+
+<br />
+<br />
+
+<pre>
+
+./create_agent.py 
+
+create_agent.py
+
+This utility had been designed to allow creating customized agents for the Nmon Splunk Application, please follow these instructions:
+
+- Download the current release of Nmon App in Splunk Base: https://apps.splunk.com/app/1753
+- Uncompress the create_agent.py.gz script available in resources directory of the Application
+- Place the downloaded tgz Archive and this Python tool a temporary directory of your choice
+- Run the tool: ./create_agent.py and check for available options
+- After the execution, a new agent package will have been created in the resources directory
+- Extract its content to your Splunk deployment server, configure the server class, associated clients and deploy the agent
+- Don't forget to set the application to restart splunkd after deployment
+
+</pre>
+
+<br />
+<br />
+
+<pre>
+
+./create_agent.py -h
+usage: create_agent.py [-h] [-f INFILE] [--indexname INDEX_NAME]
+                       [--agentname TA_NMON] [--agentmode AGENTMODE]
+                       [--version]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f INFILE             Name of the Nmon Splunk APP tgz Archive file
+  --indexname INDEX_NAME
+                        Customize the Application Index Name (default: nmon)
+  --agentname TA_NMON   Define the TA Agent name and root directory
+  --agentmode AGENTMODE
+                        Define the Data Processing mode, valid values are:
+                        python,perl / Default value is python
+  --version             show program's version number and exit
+  
+</pre>
+
+<br />
+<br />
+
+<b>Example of utilization: Create a custom TA package called "TA-nmon-perl" that will use "myindex" as the App index, and Perl as the Data processing language</b>
+
+<br />
+<br />
+
+<pre>
+
+./create_agent.py -f nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz --agentname TA-nmon-perl --agentmode perl --indexname myindex
+
+Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz
+INFO: Extracting Agent tgz resources Archives
+INFO: Renaming TA-nmon default agent to TA-nmon-perl
+Achieving files transformation...
+Done.
+INFO: Customizing any reference to index name in files
+INFO: ************* Tar creation done of: TA-nmon-perl.tar.gz *************
+
+*** Agent Creation terminated: To install the agent: ***
+
+ - Upload the tgz Archive TA-nmon-perl.tar.gz to your Splunk deployment server
+ - Extract the content of the TA package in $SPLUNK_HOME/etc/deployment-apps/
+ - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
+
 Operation terminated.
 
 </pre>
