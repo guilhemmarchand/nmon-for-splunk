@@ -20,12 +20,11 @@
 # Modified by Guilhem Marchand 08022015: Improvements for Solaris (terminal detaching issue)
 # Modified by Guilhem Marchand with the contribution of Flexible 10032015: nmon_cleaner.sh corrective hotfix (collision when nmon is in bin/)
 # Modified by Guilhem Marchand 11032015: Migration of main var directory for Nmon App, PID writing step improvement
-# Modified by Guilhem Marchand 04032015: 
+# Modified by Guilhem Marchand 04032015: Major rewrite of the script:
 #													  - Linux improvement, analyse and return error code when launching nmon instance
-#													  - Prevents from killing non Application related Nmon instance by adding a "nmonsplunk" pattern at the end of nmon command
-#													  - Update of PID identification (nmonsplunk tag)
+#													  - Prevents from killing non Application related Nmon instances
+#													  - Better management of PID identification and PID file verification
 #													  - Moving pid file to $SPLUNK_HOME/var/run/nmon
-#													  - Solaris change using /usr/ucb/ps to identify processes
 
 # Version 1.2.06
 
@@ -84,7 +83,7 @@ if [ -x /usr/bin/topas_nmon ]; then
 	NMON="/usr/bin/topas_nmon"
 
 else
-	NMON=`which nmon` >/dev/null 2>&1
+	NMON=`which nmon >/dev/null 2>&1`
 
 	if [ ! -x "$NMON" ]; then
 		echo "`date`, ERROR, Nmon could not be found, cannot continue."
@@ -97,7 +96,7 @@ fi
 Linux )
 
 # Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
-NMON=`which nmon` >/dev/null 2>&1
+NMON=`which nmon >/dev/null 2>&1`
 if [ ! -x "$NMON" ];then
 	# No nmon found in env, so using prepackaged version
 	case `uname` in 
@@ -115,7 +114,7 @@ fi
 SunOS )
 
 # Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
-NMON=`which sadc` >/dev/null 2>&1
+NMON=`which sadc >/dev/null 2>&1`
 if [ ! -x "$NMON" ];then
 
 	# No nmon found in env, so using prepackaged version
@@ -169,8 +168,7 @@ case $UNAME in
 	;;
 
 	Linux )
-		${nmon_command}
-		
+		${nmon_command}		
 		if [ $? -ne 0 ]; then
 			echo "`date`, ERROR, nmon binary returned a non 0 code while trying to start, please verify manually (missing shared libraries?)"
 		fi
@@ -186,23 +184,59 @@ esac
 
 }
 
-write_pid () {
+# This small function takes a pid in arg and returns currently opened files associated with this pid
 
-	case $UNAME in
+verify_pid() {
 
-	AIX|Linux )
-	started_pid=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-	;;
-
-	SunOS )
-	started_pid=`/usr/ucb/ps auww | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-	;;
+	givenpid=$1
 	
+	case $UNAME in
+	
+		AIX )
+			procfiles -n $givenpid ;;
+			
+		Linux )
+
+			if [ -x /usr/bin/lsof ]; then
+			
+				LSOF="/usr/bin/lsof"
+			
+			elif [ -x /sbin/lsof ]; then
+			
+				LSOF="/sbin/lsof"
+				
+			else
+			
+				LSOF=`which lsof >/dev/null 2>&1`
+				
+			fi
+			$LSOF -p $givenpid ;;
+		
+		SunOS )
+			/usr/proc/bin/pfiles $givenpid ;;
+			
 	esac
 
-echo ${started_pid} > ${PIDFILE}
+}
+
+# Search for running process, ensure it is related to App, and write PID file
+write_pid() {
+
+PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+
+for p in ${PIDs}; do
+			
+	# Verify resources open by the process, if it matches the App directory kill it, else don't touch the process
+	verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+					
+	if [ $? -eq 0 ]; then
+		echo $p > ${PIDFILE}
+	fi					
+
+done
 
 }
+
 
 ############################################
 # Defaults values for interval and snapshot
@@ -310,24 +344,24 @@ case `uname` in
 AIX )
 
 	if [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot} nmonsplunk"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot}"
 	elif [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot} nmonsplunk"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot}"
 	else
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot} nmonsplunk"
+		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot}"
 	fi
 	;;
 
 SunOS )
-	nmon_command="${NMON} ${interval} ${snapshot} nmonsplunk"
+	nmon_command="${NMON} ${interval} ${snapshot}"
 	;;
 
 Linux )
 
 	if [ ${Linux_NFS} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot} nmonsplunk"
+		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot}"
 	else
-		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot} nmonsplunk"
+		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot}"
 	fi
 	;;
 
@@ -340,6 +374,9 @@ PIDs=""
 # who am I
 MYUSER=`whoami`
 
+# Initialize nmon status
+nmon_isstarted=0
+
 # Check nmon binary exists and is executable
 if [ ! -x ${NMON} ]; then
 	
@@ -349,99 +386,194 @@ fi
 
 # Search for any running Nmon instance, stop it if exist and start it, start it if does not
 cd ${NMON_REPOSITORY}
-
-case $UNAME in
-
-AIX|Linux )
-PIDs=`ps -ef | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-;;
-
-SunOS )
-PIDs=`/usr/ucb/ps auww | grep ${NMON} | grep ${MYUSER} | grep nmonsplunk | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-;;
-	
-esac
+PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 
 case ${PIDs} in
 
+	# CASE 1: Could not found any running Nmon instances
+	
 	"" )
-    	# Start NMON
-		echo "`date`, starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-		start_nmon
-		write_pid	
-		exit 0
+
+		# In case for some reason the running nmon instance could not be identified, first verify pid from file if it exists
+		if [ -f ${PIDFILE} ]; then
+		
+			SAVED_PID=`cat ${PIDFILE}`
+			
+			case ${SAVED_PID} in
+			
+			# CASE 1.1: Could not identify a running process, but a pid file exists
+			
+			"" )
+				# CASE 1.1.1: PID file is empty
+				
+				# Set the nmon status (Needs to start)
+				nmon_isstarted=1
+				
+				echo "`date`, removing stale pid file"
+			;;
+			* )
+
+				# CASE 1.1.2: PID file is not empty, very the process is App related
+
+				for p in ${SAVED_PID}; do
+			
+					# Verify resources opened by the process
+					verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+
+					if [ $? -eq 0 ]; then
+						echo "`date`, Nmon is running (PID ${p})"
+
+						# CASE 1.1.2.1: OK, PID file is fine, process is running and App related, for some reason we did not correctly identified it
+
+						# Set the nmon status (don't start)
+						nmon_isstarted=0
+
+					else
+
+						# CASE 1.1.2.2: KO, Nmon needs to be started
+
+						# Set the nmon status (start)
+						nmon_isstarted=1
+						
+					fi		
+				done			
+			
+			;;
+			esac
+
+		else
+		
+			# CASE 1.2: KO, No process running were found AND no pid file were found, remove the stale pid file and set the status to ask for nmon start
+		
+			# Set the nmon status (ask to start)
+			nmon_isstarted=1
+			
+			echo "`date`, removing stale pid file"
+			
+		fi			
+
 	;;
+
+	# CASE 2: We found Nmon instances running, there may be multiple instances that are App related or not
 	
 	* )
-		# Nmon is running, verify we have at least one nmon file in nmon repository
-		# In case of a TA upgraded by the deployment server, the var directory will have been deleted but nmon binary will still be alive with no where to write to
-		# In such as case, we need to kill nmon then relaunch it
-		# The following count using find is compatible with any *nix OS		
-		nbr_files=`find .  \(  -name . -o -prune \) -name "*.nmon" -type f -exec ls -l {} \; | wc -l`
 		
-		case ${nbr_files} in
+		if [ -f ${PIDFILE} ]; then
 
-		0)
-			# Soft kill
-			kill ${PIDs}
-			echo "`date`, Detected orphan nmon instance(s) running (probably TA-nmon upgrade), instance(s) with PID(s) ${PIDs} were killed"
-			echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-			start_nmon
-			write_pid	
-			exit 0
+			# CASE 2.1: Nmon instances running, found an existing pid file 
+			
+			SAVED_PID=`cat ${PIDFILE}`
+
+			case $SAVED_PID in
+			
+			# CASE 2.1.1: Nmon instances running, but pid file is empty			
+			
+			"")
+			
+				# Set the nmon status (ask to start)
+				nmon_isstarted=1
+			
+				echo "`date`, removing stale pid file"
+			
+				for p in ${PIDs}; do
+				
+					echo "`date`, Found Nmon instance running with PID ${p}, will verify if it is App related"
+
+					if [ $? -eq 0 ]; then
+
+							# CASE 2.1.1.1: Process is ours, running but orphan, kill it and save this information
+					
+							kill $p
+							echo "`date`, Nmon PID (${p}) related to Nmon App did not matched pid file, instance with PID ${p} were softly killed"
+					fi
+				done
+			
 			;;
 			
-		*)
-			# Don't allow multiple execution of Nmon
-			NBR_PIDs=`echo ${PIDs} | wc -l`
+			# CASE 2.1.2: Nmon instances running, pid file not empty
 			
-			if [ ${NBR_PIDs} -gt 1 ]; then
+			*)
 
-				kill ${PIDs}				
-				echo "`date`, Detected multiple nmon instances running, instances with PIDs ${PIDs} were killed"				
-				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-				start_nmon
-				write_pid	
-				exit 0
-			fi		
-		
-		
-		
-			# Nmon is running, ensure current PID matches the saved PID
-			if [ -f ${PIDFILE} ]; then
+				# for each process running, check if it matches the saved pid, if not, verify it matches an App related nmon instance and kill it
 			
-				SAVED_PID=`cat ${PIDFILE}`
-				
-				echo ${PIDs} | grep ${SAVED_PID}	>/dev/null 2>&1
-				
-				case $? in
-				0)
-					echo "`date`, Nmon is running (PID ${PIDs})"	
-				;;
-				*)
-					kill ${PIDs}
-					echo "`date`, Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
-					echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-					start_nmon
-					write_pid	
-					exit 0
-				;;
-				
-				esac
-				
-			else
-				kill ${PIDs}
-				echo "`date`, Nmon PID (${PIDs}) did not matched pid file, instance(s) with PID(s) ${PIDs} were killed"
-				echo "starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-				start_nmon
-				write_pid
-				exit 0
+				for p in ${PIDs}; do
 			
-			fi			
+					if [ $p -eq ${SAVED_PID} ]; then
+				
+						# CASE 2.1.2.1, OK: Found an App related process AND it matches the PID file, save this information and set the Nmon status				
+				
+						echo "`date`, Nmon is running (PID ${p})"
+
+						# Set the nmon status
+						nmon_isstarted=0
+
+					else
+				
+						# CASE 2.1.2.2, KO: Found a running Process that does not match the pid file, verify if it is App related, kill it if it does, don't touch if if doesn't
+
+						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+
+						echo "`date`, Found Nmon instance running with PID ${p}, will verify if it is App related"
+
+						if [ $? -eq 0 ]; then
+
+							# CASE 2.1.2.2.1: Process is ours, running but orphan, kill it and save this information
+					
+							kill $p
+							echo "`date`, Nmon PID (${p}) related to Nmon App did not matched pid file, instance with PID ${p} were softly killed"
+						fi
+										
+					fi
 			
+				done
+
 			;;
-		esac
+			esac
+
+		else
 		
-	;;
+			# CASE 2.2: Nmon instances running but none could match the pid file as it does not exist, Set the nmon status, verify each process, if app related let's kill it, don't touch if does not
+		
+			# Set the nmon status
+			nmon_isstarted=1		
+		
+			# Don't let App related Nmon instances running if it does not match pid file
+			# If the nmon instance is not App related, don't touch it
+
+			for p in ${PIDs}; do
+		
+				# Verify resources open by the process, if it matches the App directory kill it, else don't touch the process
+				verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+					
+				if [ $? -eq 0 ]; then
 	
-esac
+					# CASE 2.2.1: Process is ours and orphan, kill it				
+				
+					kill $p
+					echo "`date`, Detected orphan Nmon PID (${p}) related to Nmon App, instance with PID ${p} were softly killed"
+				fi
+							
+			done
+			
+		fi	
+			
+	;;
+	esac
+
+# Start Nmon if required
+
+# nmon_is_started=0 --> Don't start
+# nmon_is_started=1 --> start and save pid file
+
+if [ $nmon_isstarted -eq 1 ]; then
+
+	echo "`date`, starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+	start_nmon
+	write_pid
+	exit 0
+
+fi
+
+####################################################################
+#############		End of Main Program 			############
+####################################################################
