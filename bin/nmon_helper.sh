@@ -83,7 +83,7 @@ if [ -x /usr/bin/topas_nmon ]; then
 	NMON="/usr/bin/topas_nmon"
 
 else
-	NMON=`which nmon >/dev/null 2>&1`
+	NMON=`which nmon 2>&1`
 
 	if [ ! -x "$NMON" ]; then
 		echo "`date`, ERROR, Nmon could not be found, cannot continue."
@@ -96,7 +96,7 @@ fi
 Linux )
 
 # Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
-NMON=`which nmon >/dev/null 2>&1`
+NMON=`which nmon 2>&1`
 if [ ! -x "$NMON" ];then
 	# No nmon found in env, so using prepackaged version
 	case `uname` in 
@@ -114,7 +114,7 @@ fi
 SunOS )
 
 # Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
-NMON=`which sadc >/dev/null 2>&1`
+NMON=`which sadc 2>&1`
 if [ ! -x "$NMON" ];then
 
 	# No nmon found in env, so using prepackaged version
@@ -207,7 +207,7 @@ verify_pid() {
 				
 			else
 			
-				LSOF=`which lsof >/dev/null 2>&1`
+				LSOF=`which lsof 2>&1`
 				
 			fi
 			$LSOF -p $givenpid ;;
