@@ -146,7 +146,7 @@ max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AI
 max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
 from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
 groupby _time, "PAGE_AIX.hostname" prestats=true `inline_customspan(type=PAGE,earliest=$timerange.earliest$,latest=$timerange.latest$)`
-| timechart `inline_customspan(type=CPU_ALL,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
+| timechart `inline_customspan(type=PAGE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
 max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin 
 max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans 
 max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
@@ -230,9 +230,9 @@ by "PAGE_AIX.hostname"</query>
       </div>
     </html>
       <chart id="link10">
-        <title>Pages In / Pages Out (pgsin / pgsout)</title>
+        <title>Pages In / Pages Out (pgsin / pgsout, pgin / pgout)</title>
 		  <search base="timeStats">
-          <query>fields _time,pgsin*,pgsout*</query>
+          <query>fields _time,pgsin*,pgsout*,pgin*,pgout*</query>
 		  </search> 
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
@@ -255,10 +255,8 @@ by "PAGE_AIX.hostname"</query>
       <chart id="link11">
         <title>Fs In / Fs Out (sum of pgin/pgsin and pgout/pgsout per interval)</title>
 		  <search base="timeStats">
-          <query>fields _time,pgin*,pgsin*,pgout*,pgsout*</query>
+          <query>fields _time,fsin*,fsout*</query>
 		  </search> 
-        <earliestTime>$timerange.earliest$</earliestTime>
-        <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>

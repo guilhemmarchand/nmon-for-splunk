@@ -135,8 +135,8 @@
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite 
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite 
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by "Solaris.frameID", "Solaris.hostname"
@@ -209,8 +209,8 @@ $statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite $statsmode$("bread
           <query>| tstats
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
@@ -244,8 +244,8 @@ $statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache by "
           <query>| tstats
 max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
@@ -276,8 +276,8 @@ $statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite by "Solaris.hostna
           <query>| tstats 
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
@@ -308,8 +308,8 @@ $statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite by "Solaris.hostna
           <query>| tstats
 max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart `inline_customspan(type=MEMUSE,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t

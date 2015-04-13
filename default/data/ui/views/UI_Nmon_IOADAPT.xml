@@ -221,7 +221,7 @@ groupby _time, "IOADAPT.hostname", "IOADAPT.device" prestats=true
 		  <search>
 		    <query>| tstats max(IOADAPT.value) As IOADAPT.value from datamodel=NMON_Data_IOADAPT
 where (nodename = IOADAPT) (IOADAPT.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) (IOADAPT.device!="*tps*") `$timefilter$(IOADAPT)`
-groupby _time, "IOADAPT.hostname", "IOADAPT.device" prestats=true span=1s
+groupby _time, "IOADAPT.hostname", "IOADAPT.device" prestats=true span=1m
 | stats dedup_splitvals=t max(IOADAPT.value) As IOADAPT.value by _time, "IOADAPT.hostname", "IOADAPT.device"
 | $aggregate$
 | stats $statsmode$(IOADAPT.value) As value by _time,IOADAPT.hostname,IOADAPT.device
@@ -265,7 +265,7 @@ groupby _time, "IOADAPT.hostname", "IOADAPT.device" prestats=true span=1s
 		  <search>
 		    <query>| tstats max(IOADAPT.value) As IOADAPT.value from datamodel=NMON_Data_IOADAPT
 where (nodename = IOADAPT) (IOADAPT.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) (IOADAPT.device="*tps*") `$timefilter$(IOADAPT)`
-groupby _time, "IOADAPT.hostname", "IOADAPT.device" prestats=true span=1s
+groupby _time, "IOADAPT.hostname", "IOADAPT.device" prestats=true span=1m
 | stats dedup_splitvals=t max(IOADAPT.value) As IOADAPT.value by _time, "IOADAPT.hostname", "IOADAPT.device"
 | $aggregate$
 | stats $statsmode$(IOADAPT.value) As value by _time,IOADAPT.hostname,IOADAPT.device

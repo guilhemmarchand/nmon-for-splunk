@@ -137,7 +137,7 @@
   		<search id="tablestats">
     	  <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
 where (nodename = DISKXFER) (DISKXFER.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKXFER)`
-groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1s
+groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | $aggregate$
 | rename "DISKXFER.hostname" AS hostname, "DISKXFER.device" AS device, "DISKXFER.value" AS value
@@ -208,7 +208,7 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1s
   			<search id="timechart">
           <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
 where (nodename = DISKXFER) (DISKXFER.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKXFER)`
-groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1s
+groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | $aggregate$
 | $charting$

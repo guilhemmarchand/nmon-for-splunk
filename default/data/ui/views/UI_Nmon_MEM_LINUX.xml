@@ -106,8 +106,8 @@ max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.acti
 max("MEM.inactive_PCT") AS inactive_PCT max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
 from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
 max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
@@ -123,7 +123,7 @@ $statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("buffers_MB") AS buffers_M
 $statsmode$("cached_PCT") AS cached_PCT $statsmode$("active_MB") AS active_MB $statsmode$("active_PCT") AS active_PCT $statsmode$("inactive_MB") AS inactive_MB 
 $statsmode$("inactive_PCT") AS inactive_PCT $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB 
 $statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB $statsmode$("swapcached_MB") AS swapcached_MB $statsmode$("swapcached_PCT") AS swapcached_PCT 
-by _time, frameID, hostname | sort limit=0 frameID,hostname
+by frameID, hostname | sort limit=0 frameID,hostname
 | fields frameID, hostname, memused_MB, memused_PCT, memfree_MB, memfree_PCT, memtotal_MB, buffers_MB, buffers_PCT, cached_MB, cached_PCT, active_MB, active_PCT,
  inactive_MB, inactive_PCT, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT, swaptotal_MB, swapcached_MB, swapcached_PCT
 | foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
@@ -300,8 +300,8 @@ max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.
 max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB 
 max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
 max("MEM.inactive_PCT") AS inactive_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
 max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
@@ -342,8 +342,8 @@ $statsmode$("inactive_PCT") AS inactive_PCT by "MEM.hostname" | $memmode$ | fiel
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
 from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1s
-| bucket _time span=1s
+groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| bucket _time span=1m
 | stats dedup_splitvals=t 
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 

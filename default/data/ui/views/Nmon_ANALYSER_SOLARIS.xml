@@ -1,4 +1,4 @@
-<form stylesheet="standard.css,singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+<form stylesheet="standard.css,singlevalue.css,ui_simple.css,hide_timeindicator.css" script="link_switcher.js, autodiscover.js">
   <label>NMON Analyser SOLARIS</label>
   
   <fieldset autoRun="false" submitButton="false">
@@ -81,6 +81,21 @@ groupby "CPU.hostname" prestats=true
     </panel>
   </row>
   
+  <!-- Configuration Search will run over earliest Alltime using the accelerated Data Model -->
+
+  <search id="configSearch">
+  	<query>| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | fields hostname, OStype, OS_Level, cpu_cores, Processor</query>
+  	<earliest>0</earliest>
+   <latest>$timerange.latest$</latest>
+  </search>  
+  
   <row>
     <html>
       <div style="text-align: center;">
@@ -93,26 +108,95 @@ groupby "CPU.hostname" prestats=true
   </row>
   
   <row>
+    <panel>  
+  
     <html>
       <div style="text-align: center;">
         <h1>System Summary</h1>
       </div>
     </html>
+      
+      <single>
+		  <search base="configSearch">
+		  	<query>fields OS_Level</query>
+		  </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Operating System Level</option>
+        <option name="linkView">search</option>
+        <option name="linkFields">result</option>
+        <option name="linkSearch">| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | fields hostname, OStype, OS_Level, cpu_cores, Processor</option>
+      </single>
+
+      <single>
+		  <search base="configSearch">
+		  	<query>fields cpu_cores</query>
+		  </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Virtual Proc / Logical Cores</option>
+        <option name="linkView">search</option>
+        <option name="linkFields">result</option>
+        <option name="linkSearch">| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | fields hostname, OStype, OS_Level, cpu_cores, Processor</option>
+      </single>
+
+      <single>
+		  <search base="configSearch">
+		  	<query>fields Processor</query>
+		  </search>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Processor Type</option>
+        <option name="linkView">search</option>
+        <option name="linkFields">result</option>
+        <option name="linkSearch">| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | fields hostname, OStype, OS_Level, cpu_cores, Processor</option>        
+      </single>  
+
+    </panel>
   </row>  
   
   <row>
    <panel>
+
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label></label>
+      <default>max</default>
+      <choice value="max">max</choice>
+      <choice value="avg">avg</choice>
+    </input>
    
     <chart>
       <title>CPU Usage</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$
-| eval lpar_vpconso=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) 
-| eval cpu_pctconso=(Sys_PCT+User_PCT+Wait_PCT)
-| stats values(lpar_vpconso) As lpar_vpconso, values(cpu_pctconso) As cpu_pctconso by _time,hostname
-| eval conso=if(isnotnull(lpar_vpconso),lpar_vpconso,cpu_pctconso)
-| timechart `inline_customspan(type=CPU_ALL OR type=LPAR,$hostname$)` max(conso) As "CPU Usage"</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+		<search>
+			<query>| tstats
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+| timechart `inline_customspan(type=CPU_ALL OR type=LPAR,$hostname$)` $statsmode$(usage) AS $statsmode$_cpu_usage</query>
+      	<earliest>$timerange.earliest$</earliest>
+      	<latest>$timerange.latest$</latest>		
+		</search>      
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -130,18 +214,42 @@ groupby "CPU.hostname" prestats=true
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">CPU Usage</option>
       <option name="charting.axisY.minimumNumber">0</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+| timechart span=1m $statsmode$(usage) AS $statsmode$_usage</link>
+      </drilldown>      
     </chart>
 
    </panel>
    <panel>
 
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label></label>
+      <default>max</default>
+      <choice value="max">max</choice>
+      <choice value="avg">avg</choice>
+    </input>
+
     <chart>
       <title>I/O Per second</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="DISKXFER*" $hostname$
-| stats sum(value) As iosec by _time,hostname
-| timechart `inline_customspan(type=DISKXFER,$hostname$)` max(iosec) As "IO Per sec"</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+      <search>
+			<query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
+where (nodename = DISKXFER) (DISKXFER.$hostname$)
+groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
+| rename DISKXFER.hostname AS hostname, DISKXFER.device AS device, DISKXFER.value AS value
+| stats sum(value) As value by _time
+| timechart `inline_customspan(type=DISKXFER,$hostname$)` $statsmode$(value) AS $statsmode$_iops_usage</query>
+      	<earliest>$timerange.earliest$</earliest>
+      	<latest>$timerange.latest$</latest>
+      </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -159,6 +267,16 @@ groupby "CPU.hostname" prestats=true
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">I/O per Sec</option>
       <option name="charting.axisY.minimumNumber">0</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
+where (nodename = DISKXFER) (DISKXFER.$hostname$)
+groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
+| rename DISKXFER.hostname AS hostname, DISKXFER.device AS device, DISKXFER.value AS value
+| stats sum(value) As value by _time
+| timechart span=1m $statsmode$(value) AS $statsmode$_iops_usage</link>
+      </drilldown>
     </chart>    
 
    </panel>
@@ -174,6 +292,20 @@ groupby "CPU.hostname" prestats=true
     </html>
   </row>
     
+  <search id="CPU_ALL">
+			<query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$)
+ groupby _time, "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
+| timechart `inline_customspan(type=CPU_ALL,$hostname$)`
+avg("CPU.Idle_PCT") AS "Idle %",
+avg("CPU.Sys_PCT") AS "Sys %",
+avg("CPU.User_PCT") AS "User %",
+avg("CPU.Wait_PCT") AS "Wait %",
+avg("CPU.cpu_PCT") AS "CPU %"</query>
+  	<earliest>$timerange.earliest$</earliest>
+  	<latest>$timerange.latest$</latest>
+  </search>
+    
   <row>
    <panel>  
   
@@ -186,9 +318,9 @@ groupby "CPU.hostname" prestats=true
 
     <chart id="link1">
       <title>CPU_ALL, % by category</title>
-	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan(type=CPU_ALL,$hostname$)` avg(Sys_PCT) As Sys_PCT, avg(User_PCT) As User_PCT, avg(Wait_PCT) As Wait_PCT, avg(Idle_PCT) As Idle_PCT</searchString> 
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+		<search base="CPU_ALL">
+			<query>fields _time,"Idle %","Sys %","User %","Wait %"</query>
+		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -207,13 +339,23 @@ groupby "CPU.hostname" prestats=true
       <option name="charting.axisTitleY.text">% CPUs</option>
       <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisY.maximumNumber">100</option>
+		  <drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$)
+ groupby _time, "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
+| timechart span=1m
+avg("CPU.Idle_PCT") AS "Idle_PCT",
+avg("CPU.Sys_PCT") AS "Sys_PCT",
+avg("CPU.User_PCT") AS "User_PCT",
+avg("CPU.Wait_PCT") AS "Wait_PCT"</link>
+        </drilldown>
     </chart>
 
     <chart id="link2">
       <title>CPU_ALL, % global usage</title>
-	  <searchString>index="nmon" sourcetype="nmon_data" type="CPU_ALL" $hostname$ | eval cpu_PCT=(Sys_PCT+User_PCT+Wait_PCT) | timechart `inline_customspan(type=CPU_ALL,$hostname$)` max(cpu_PCT) As "%CPU Max Usage", avg(cpu_PCT) As "%CPU Avg Usage"</searchString> 
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+		<search base="CPU_ALL">
+			<query>fields _time,"CPU %"</query>
+		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -232,6 +374,13 @@ groupby "CPU.hostname" prestats=true
       <option name="charting.axisTitleY.text">% CPUs</option>
       <option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisY.maximumNumber">100</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$)
+ groupby _time, "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
+| timechart span=1m
+avg("CPU.cpu_PCT") AS "CPU_PCT"</link>
+      </drilldown>
     </chart>
 
    </panel>
@@ -256,24 +405,29 @@ groupby "CPU.hostname" prestats=true
       </div>
     </html>
 
-    <chart id="link10">
-      <title>TOP, CPU Usage per logical core</title>
-      <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,pct_CPU,PID,Command,hostname | bucket _time span=1s
-| eval limit=(logical_cpus*100) | where pct_CPU&lt;=limit      
+      <chart id="link10">
+        <title>CPU Usage per logical core</title>
+        <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
+		  <search>          
+          <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.$hostname$)
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m 
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval conso_per_core=(pct_CPU/100)
-| stats sum(conso_per_core) As conso_per_core by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
-max(conso_per_core) as "CPU Usage per core" by Command</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(usage_per_core) as "CPU Usage per core" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
       <option name="charting.axisY.scale">linear</option>
       <option name="charting.chart">area</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.nullValueMode">stacked</option>
       <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.style">shiny</option>
@@ -283,26 +437,30 @@ max(conso_per_core) as "CPU Usage per core" by Command</searchString>
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Logical Core</option>
-    </chart>
+      </chart>
 
-    <chart id="link11">
-      <title>TOP, Physical Memory (RSS) Usage per command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,ResSize,hostname | bucket _time span=1s
-| stats count(Command) As count, max(ResSize) As ResSize by _time,hostname,Command
+      <chart id="link11">
+        <title>Physical Memory (RSS) Usage per command invocation</title>      
+		  <search>          
+          <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.$hostname$)
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m 
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(ResSize) As ResSize by _time,Command
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
-| stats sum(Phys_Mem_MB) As Phys_Mem_MB by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
-max(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(Phys_Mem_MB) as "Phys_Memory" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>        
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
       <option name="charting.axisY.scale">linear</option>
       <option name="charting.chart">area</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.nullValueMode">stacked</option>
       <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.style">shiny</option>
@@ -312,26 +470,30 @@ max(Phys_Mem_MB) as "Phys_Memory" by Command</searchString>
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Megabytes (MB)</option>
-    </chart>
+      </chart>
 
-    <chart id="link12">
-      <title>TOP, Virtual Memory (SIZE) Usage per command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,PID,Command,Size,hostname | bucket _time span=1s
-| stats count(Command) As count, max(Size) As Size by _time,hostname,Command
+      <chart id="link12">
+        <title>Virtual Memory (SIZE) Usage per command invocation</title>      
+		  <search>          
+          <query>| tstats max("TOP_Solaris.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.$hostname$)
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m 
+| stats dedup_splitvals=t max("TOP_Solaris.Size") AS Size by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Size) As Size by _time,Command
 | eval Virt_Mem_MB=round(((Size)/1024),2)
-| stats sum(Virt_Mem_MB) As Virt_Mem_MB by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
-max(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(Virt_Mem_MB) as "Virt_Memory" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
       <option name="charting.axisY.scale">linear</option>
       <option name="charting.chart">area</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.nullValueMode">stacked</option>
       <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.style">shiny</option>
@@ -341,24 +503,29 @@ max(Virt_Mem_MB) as "Virt_Memory" by Command</searchString>
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Megabytes (MB)</option>
-    </chart>
+      </chart>
 
-    <chart id="link13">
-      <title>TOP, Paging, Sum of page faults</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Paging,PID,Command,hostname | bucket _time span=1s
+      <chart id="link13">
+        <title>Paging, Sum of page faults</title>
+		  <search>          
+          <query>| tstats max("TOP_Solaris.Paging") AS Paging from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.$hostname$)
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m 
+| stats dedup_splitvals=t max("TOP_Solaris.Paging") AS Paging by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | stats sum(Paging) As Paging by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
-max(Paging) as "Paging" by Command</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(Paging) as "Paging" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>        
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
       <option name="charting.axisY.scale">linear</option>
       <option name="charting.chart">area</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.nullValueMode">stacked</option>
       <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.style">shiny</option>
@@ -368,25 +535,29 @@ max(Paging) as "Paging" by Command</searchString>
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
-      <option name="charting.axisTitleY.text">Number of Page</option>
-    </chart>
+	  	<option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Number of Page</option>
+      </chart>
 
-    <chart id="link14">
-      <title>TOP, Threads per Command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,Threads,PID,Command,hostname | bucket _time span=1s
-| stats sum(Threads) As Threads By _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
-max(Threads) as Threads by Command
-</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+      <chart id="link14">
+        <title>Threads per Command invocation</title>
+		  <search>          
+          <query>| tstats max("TOP_Solaris.Threads") AS Threads from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.$hostname$)
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m 
+| stats dedup_splitvals=t max("TOP_Solaris.Threads") AS Threads by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Threads) As Threads by _time,Command
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(Threads) as "Threads" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
       <option name="charting.axisY.scale">linear</option>
       <option name="charting.chart">area</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.nullValueMode">stacked</option>
       <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.style">shiny</option>
@@ -396,25 +567,28 @@ max(Threads) as Threads by Command
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
-      <option name="charting.axisTitleY.text">Number of Threads</option>
-    </chart>
+	  	<option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Number of Threads</option>
+      </chart>
 
-    <chart id="link15">
-      <title>TOP, CharIO (Read/Write system calls) per Command invocation</title>
-      <searchString>index=nmon sourcetype=nmon_data type=TOP $hostname$ | dedup _time,CharIO,PID,Command,hostname | bucket _time span=1s
-| stats sum(CharIO) As CharIO By _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0
-max(CharIO) as CharIO by Command
-</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+      <chart id="link15">
+		  <search>          
+          <query>| tstats max("TOP_Solaris.CharIO") AS CharIO from datamodel=NMON_Data_TOP.TOP_Solaris 
+where (nodename = TOP_Solaris) (TOP_Solaris.$hostname$)
+groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m 
+| stats dedup_splitvals=t max("TOP_Solaris.CharIO") AS CharIO by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" 
+| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(CharIO) As CharIO by _time,Command
+| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(CharIO) as "I/O" by Command</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		  </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
       <option name="charting.axisY.scale">linear</option>
       <option name="charting.chart">area</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.nullValueMode">stacked</option>
       <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.style">shiny</option>
@@ -424,13 +598,24 @@ max(CharIO) as CharIO by Command
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">bytes/sec</option>
-    </chart>
+      </chart>
 
    </panel>
   </row>
 
+  <search id="FILE">
+	<query>| tstats max(FILE.readch) As readch, max(FILE.writech) As writech
+max(FILE.iget) As iget, max(FILE.namei) As namei, max(FILE.dirblk) As dirblk
+max(FILE.ttycanch) As ttycanch, max(FILE.ttyoutch) As ttyoutch, max(FILE.ttyrawch) As ttyrawch from datamodel=NMON_Data_FILE
+where (nodename = FILE) (FILE.$hostname$) groupby _time, "FILE.hostname" prestats=true `inline_customspan(type=FILE,$hostname$)`
+| timechart `inline_customspan(type=FILE,$hostname$)` max(FILE.readch) As readch, max(FILE.writech) As writech
+max(FILE.iget) As iget, max(FILE.namei) As namei, max(FILE.dirblk) As dirblk
+max(FILE.ttycanch) As ttycanch, max(FILE.ttyoutch) As ttyoutch, max(FILE.ttyrawch) As ttyrawch</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>  
+  </search>
 
   <row>
    <panel>
@@ -443,10 +628,9 @@ max(CharIO) as CharIO by Command
 
     <chart id="link20">
       <title>FILE, Read/Write system calls</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
-| timechart `inline_customspan(type=FILE,$hostname$)` max(readch) As readch, max(writech) As writech</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+  		<search base="FILE">
+    	  	 <query>fields _time,readch,writech</query>
+  		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -462,16 +646,20 @@ max(CharIO) as CharIO by Command
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Rate/Sec</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max(FILE.readch) As readch, max(FILE.writech) As writech from datamodel=NMON_Data_FILE
+where (nodename = FILE) (FILE.$hostname$) groupby _time, "FILE.hostname" prestats=true span=1m
+| timechart span=1m max(FILE.readch) As readch, max(FILE.writech) As writech</link>
+      </drilldown>      
     </chart>
     
     <chart id="link21">
       <title>FILE, Various statistics</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="FILE" $hostname$
-| timechart `inline_customspan(type=FILE,$hostname$)` max(iget) As iget, max(namei) As namei, max(dirblk) As dirblk</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+  		<search base="FILE">
+    		<query>fields _time,iget,namei,dirblk,ttycanch,ttyoutch,ttyrawch</query>
+  		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -487,12 +675,31 @@ max(CharIO) as CharIO by Command
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Rate/Sec</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max(FILE.iget) As iget, max(FILE.namei) As namei, max(FILE.dirblk) As dirblk
+max(FILE.ttycanch) As ttycanch, max(FILE.ttyoutch) As ttyoutch, max(FILE.ttyrawch) As ttyrawch from datamodel=NMON_Data_FILE
+where (nodename = FILE) (FILE.$hostname$) groupby _time, "FILE.hostname" prestats=true span=1m
+| timechart span=1m max(FILE.iget) As iget, max(FILE.namei) As namei, max(FILE.dirblk) As dirblk
+max(FILE.ttycanch) As ttycanch, max(FILE.ttyoutch) As ttyoutch, max(FILE.ttyrawch) As ttyrawch</link>
+      </drilldown>      
     </chart>
 
    </panel>
   </row>
+
+  <search id="PROC">
+  	<query>| tstats max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in
+max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
+max("PROC.fork") AS fork max("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC)
+(PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true `inline_customspan(type=PROC,$hostname$)`
+| timechart `inline_customspan(type=PROC,$hostname$)` max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in
+max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
+max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
+   <earliest>$timerange.earliest$</earliest>
+   <latest>$timerange.latest$</latest>  
+  </search>
 
   <row>
    <panel>  
@@ -505,9 +712,9 @@ max(CharIO) as CharIO by Command
     
     <chart id="link30">
       <title>PROC, Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan(type=PROC,$hostname$)` max(Runnable) As "RunQueue", max(Swap_in) As "Swap_in"</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+  		<search base="PROC">
+    		<query>fields _time,Runnable,Swap_in</query>
+  		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -523,15 +730,20 @@ max(CharIO) as CharIO by Command
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Value</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in from datamodel=NMON_Data_PROC where (nodename = PROC)
+(PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
+| timechart span=1m max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in</link>
+      </drilldown>      
     </chart>
 
     <chart id="link31">
       <title>PROC, Context switches and system calls (pswitch, syscall) </title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan(type=PROC,$hostname$)` max(pswitch) As "pswitch/sec", max(syscall) As "syscall/sec"</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+      <search base="PROC">
+    		<query>fields _time,pswitch,syscall</query>
+  		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -547,15 +759,20 @@ max(CharIO) as CharIO by Command
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Rates per Second</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall from datamodel=NMON_Data_PROC where (nodename = PROC)
+(PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
+| timechart span=1m max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall</link>
+      </drilldown>
     </chart>
 
     <chart id="link32">
       <title>PROC, Fork and Exec system calls (fork, exec)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | timechart `inline_customspan(type=PROC,$hostname$)` max(fork) As "pswitch/sec", max(exec) As "exec/sec"</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+      <search base="PROC">
+    		<query>fields _time,fork,exec</query>
+  		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -571,8 +788,13 @@ max(CharIO) as CharIO by Command
       <option name="charting.legend.placement">bottom</option>
       <option name="height">680px</option>
       <option name="charting.axisTitleX.text">Time</option>
-	  <option name="charting.axisY.minimumNumber">0</option>
+	  	<option name="charting.axisY.minimumNumber">0</option>
       <option name="charting.axisTitleY.text">Rates per Second</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("PROC.fork") AS fork max("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC)
+(PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
+| timechart span=1m max("PROC.fork") AS fork max("PROC.exec") AS exec</link>
+      </drilldown>
     </chart>
 
    </panel>
@@ -589,15 +811,25 @@ max(CharIO) as CharIO by Command
     
     <chart id="link33">
       <title>PROCSOL, Percentage of Time All processes have spent in: (estimation since terminated processes are not accounted)</title>
-      <searchString>index="nmon" sourcetype="nmon_data" type="PROCSOL" $hostname$ | timechart `inline_customspan(type=PROCSOL,$hostname$)`
-max(USR) As "USR (%time in User Mode)",
-max(SYS) As "SYS (%time in System Mode)",
-max(TRP) As "TRP (%time Processing system traps)",
-max(TFL) As "TFL (%time Processing text page faults)",
-max(DFL) As "DFL (%time Processing data page faults)",
-max(LAT) As "LAT (%time Waiting for CPU)"</searchString>
-      <earliestTime>$timerange.earliest$</earliestTime>
-      <latestTime>$timerange.latest$</latestTime>
+		<search>
+     		<query>| tstats
+max("PROCSOL.USR") As "USR (%time in User Mode)",
+max("PROCSOL.SYS") As "SYS (%time in System Mode)",
+max("PROCSOL.TRP") As "TRP (%time Processing system traps)",
+max("PROCSOL.TFL") As "TFL (%time Processing text page faults)", 
+max("PROCSOL.DFL") As "DFL (%time Processing data page faults)",
+max("PROCSOL.LAT") As "LAT (%time Waiting for CPU)" from datamodel=NMON_Data_PROCSOL
+where (nodename = PROCSOL) (PROCSOL.$hostname$) groupby _time, "PROCSOL.frameID", "PROCSOL.hostname" prestats=true `inline_customspan(type=PROC,$hostname$)`
+| timechart `inline_customspan(type=PROC,$hostname$)`
+max("PROCSOL.USR") As "USR (%time in User Mode)",
+max("PROCSOL.SYS") As "SYS (%time in System Mode)",
+max("PROCSOL.TRP") As "TRP (%time Processing system traps)",
+max("PROCSOL.TFL") As "TFL (%time Processing text page faults)", 
+max("PROCSOL.DFL") As "DFL (%time Processing data page faults)",
+max("PROCSOL.LAT") As "LAT (%time Waiting for CPU)"</query>        
+    		<earliest>$timerange.earliest$</earliest>
+    	   <latest>$timerange.latest$</latest>  
+  		</search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>

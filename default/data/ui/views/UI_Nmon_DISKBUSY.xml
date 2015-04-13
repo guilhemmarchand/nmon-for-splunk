@@ -203,7 +203,7 @@ groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true
   			<search id="timechart">
           <query>| tstats max("DISKBUSY.value") AS DISKBUSY.value from datamodel=NMON_Data_DISKBUSY
 where (nodename = DISKBUSY) (DISKBUSY.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKBUSY)`
-groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1s
+groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKBUSY.value") AS DISKBUSY.value by _time, "DISKBUSY.hostname", "DISKBUSY.device"
 | $aggregate$
 | $charting$

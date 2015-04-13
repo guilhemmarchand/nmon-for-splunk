@@ -183,7 +183,7 @@
 		  <search>          
           <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP 
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1s 
+groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m 
 | stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" 
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
@@ -219,7 +219,7 @@ $statsmode$(usage_per_core) as "CPU Usage per core" by Command</query>
 		  <search>          
           <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP 
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1s 
+groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m 
 | stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" 
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval Used_Mem_MB=((ResData+ResText)/1024)
@@ -252,7 +252,7 @@ $statsmode$(Used_Mem_MB) as "Used_Memory" by Command</query>
 		  <search>          
           <query>| tstats max("TOP_AIX.CharIO") AS CharIO from datamodel=NMON_Data_TOP 
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1s 
+groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m 
 | stats dedup_splitvals=t max("TOP_AIX.CharIO") AS CharIO by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" 
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | stats sum(CharIO) As CharIO by _time,Command
@@ -284,7 +284,7 @@ $statsmode$(CharIO) as "I/O" by Command</query>
 		  <search>          
           <query>| tstats max("TOP_AIX.Paging") AS Paging from datamodel=NMON_Data_TOP 
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1s 
+groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m 
 | stats dedup_splitvals=t max("TOP_AIX.Paging") AS Paging by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" 
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | stats sum(Paging) As Paging by _time,Command
@@ -316,7 +316,7 @@ $statsmode$(Paging) as "Paging" by Command</query>
 		  <search>          
           <query>| tstats max("TOP_AIX.Threads") AS Threads from datamodel=NMON_Data_TOP 
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1s 
+groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m 
 | stats dedup_splitvals=t max("TOP_AIX.Threads") AS Threads by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" 
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | stats sum(Threads) As Threads by _time,Command
@@ -352,7 +352,7 @@ $statsmode$(Threads) as "Threads" by Command</query>
 		  <search>          
           <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP 
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1s 
+groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m 
 | stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" 
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
@@ -386,7 +386,7 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 		  <search>          
           <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP 
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1s 
+groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m 
 | stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" 
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval Used_Mem_MB=((ResData+ResText)/1024)

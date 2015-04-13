@@ -78,9 +78,9 @@
         <choice value="CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)">CPU_ALL - CPU Usage in %</choice>
         <choice value="LPAR | eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)">LPAR - Partitions CPU Usage</choice>
         <choice value="LPAR PoolIdle&gt;0 | eval usage=round((poolCPUs-PoolIdle),2) | where usage&gt;0 AND usage&lt;poolCPUs | eval pct_usage=round(((poolCPUs-PoolIdle)*poolCPUs/100),2)">LPAR - Pools CPU Usage</choice>
-        <choice value="NET device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1s | stats sum(rate) As usage by _time,hostname | setfields device=Network_All">NET - Global Network Activity</choice>
-        <choice value="NET device!=&quot;lo*&quot; | bucket _time span=1s | stats sum(value) As usage by _time,hostname | setfields device=Network_All">NETPACKET - Global Network Packets</choice>
-        <choice value="DISKXFER device=* | bucket _time span=1s | stats sum(value) As usage by _time,hostname | setfields device=IOPS">DISKXFER - Global I/Os per sec</choice>
+        <choice value="NET device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1m | stats sum(rate) As usage by _time,hostname | setfields device=Network_All">NET - Global Network Activity</choice>
+        <choice value="NET device!=&quot;lo*&quot; | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=Network_All">NETPACKET - Global Network Packets</choice>
+        <choice value="DISKXFER device=* | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=IOPS">DISKXFER - Global I/Os per sec</choice>
         <choice value="MEM | `MEM_eval` | eval usage=Real_used_PCT">MEM - Real Mem Pct usage</choice>
         <choice value="MEM | `MEM_eval` | eval usage=Virtual_used_PCT">MEM - Paging Mem Pct usage</choice>
         <default>CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)</default>
