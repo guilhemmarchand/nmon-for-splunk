@@ -181,7 +181,7 @@ groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As usage_per_core by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(usage_per_core) as "CPU Usage per core" by Command</query>
+| timechart `inline_customspan(type=TOP,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 max(usage_per_core) as "CPU Usage per core" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
         </search>
