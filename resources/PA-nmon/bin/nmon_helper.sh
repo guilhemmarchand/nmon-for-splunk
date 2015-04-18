@@ -25,8 +25,9 @@
 #													  - Prevents from killing non Application related Nmon instances
 #													  - Better management of PID identification and PID file verification
 #													  - Moving pid file to $SPLUNK_HOME/var/run/nmon
+# Modified by Guilhem Marchand 17042015: Linux maximum number of devices is now overcharged by nmon.conf 
 
-# Version 1.2.06
+# Version 1.2.07
 
 # For AIX / Linux / Solaris
 
@@ -359,9 +360,9 @@ SunOS )
 Linux )
 
 	if [ ${Linux_NFS} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -d 1500 -N -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -d ${Linux_devices} -N -s ${interval} -c ${snapshot}"
 	else
-		nmon_command="${NMON} -f -T -d 1500 -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -d ${Linux_devices} -s ${interval} -c ${snapshot}"
 	fi
 	;;
 

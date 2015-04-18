@@ -42,8 +42,11 @@
 # Guilhem Marchand 12/26/2014, V1.2.2: Major release of the nmon2csv converter: Implements the distinction between real time and cold data, the script can now run over a running nmon file
 # and only create new events that have not yet been proceeded
 # Guilhem Marchand 11/03/2015, V1.2.3: Guilhem Marchand: Migration of var nmon directory
+# Guilhem Marchand 17/04/2015, V1.2.4:
+#                                         - Number of maximum devices taken in charge increased to 3000 devices (20 x 150 devices per section)
+#                                         - Prevents in Real time mode a failing configuration extraction if the BBB configuration occurs lately, especially for large systems
 
-$version = "1.2.3";
+$version = "1.2.4";
 
 use Time::Local;
 use Time::HiRes;
@@ -73,17 +76,43 @@ use POSIX 'strftime';
 
 # Sections of Performance Monitors with Dynamic header, eg. device context
 @dynamic_vars = (
-    "DISKBSIZE",  "DISKBSIZE1", "DISKBSIZE2", "DISKBSIZE3",
-    "DISKBSIZE4", "DISKBUSY",   "DISKBUSY1",  "DISKBUSY2",
-    "DISKBUSY3",  "DISKBUSY4",  "DISKREAD",   "DISKREAD1",
-    "DISKREAD2",  "DISKREAD3",  "DISKREAD4",  "DISKWRITE",
-    "DISKWRITE1", "DISKWRITE2", "DISKWRITE3", "DISKWRITE4",
-    "DISKXFER",   "DISKXFER1",  "DISKXFER2",  "DISKXFER3",
-    "DISKXFER4",  "DISKRIO",    "DISKRIO1",   "DISKRIO2",
-    "DISKRIO3",   "DISKRIO4",   "DISKWIO",    "DISKWIO1",
-    "DISKWIO2",   "DISKWIO3",   "DISKWIO4",   "IOADAPT",
-    "NETERROR",   "NET",        "NETPACKET",  "JFSFILE",
-    "JFSINODE"
+    "DISKBSIZE",   "DISKBSIZE1",  "DISKBSIZE2",  "DISKBSIZE3",
+    "DISKBSIZE4",  "DISKBSIZE5",  "DISKBSIZE6",  "DISKBSIZE7",
+    "DISKBSIZE8",  "DISKBSIZE9",  "DISKBSIZE10", "DISKBSIZE11",
+    "DISKBSIZE12", "DISKBSIZE13", "DISKBSIZE14", "DISKBSIZE15",
+    "DISKBSIZE16", "DISKBSIZE17", "DISKBSIZE18", "DISKBSIZE19",
+    "DISKBUSY",    "DISKBUSY1",   "DISKBUSY2",   "DISKBUSY3",
+    "DISKBUSY4",   "DISKBUSY5",   "DISKBUSY6",   "DISKBUSY7",
+    "DISKBUSY8",   "DISKBUSY9",   "DISKBUSY10",  "DISKBUSY11",
+    "DISKBUSY12",  "DISKBUSY13",  "DISKBUSY14",  "DISKBUSY15",
+    "DISKBUSY16",  "DISKBUSY17",  "DISKBUSY18",  "DISKBUSY19",
+    "DISKREAD",    "DISKREAD1",   "DISKREAD2",   "DISKREAD3",
+    "DISKREAD4",   "DISKREAD5",   "DISKREAD6",   "DISKREAD7",
+    "DISKREAD8",   "DISKREAD9",   "DISKREAD10",  "DISKREAD11",
+    "DISKREAD12",  "DISKREAD13",  "DISKREAD14",  "DISKREAD15",
+    "DISKREAD16",  "DISKREAD17",  "DISKREAD18",  "DISKREAD19",
+    "DISKWRITE",   "DISKWRITE1",  "DISKWRITE2",  "DISKWRITE3",
+    "DISKWRITE4",  "DISKWRITE5",  "DISKWRITE6",  "DISKWRITE7",
+    "DISKWRITE8",  "DISKWRITE9",  "DISKWRITE10", "DISKWRITE11",
+    "DISKWRITE12", "DISKWRITE13", "DISKWRITE14", "DISKWRITE15",
+    "DISKWRITE16", "DISKWRITE17", "DISKWRITE18", "DISKWRITE19",
+    "DISKXFER",    "DISKXFER1",   "DISKXFER2",   "DISKXFER3",
+    "DISKXFER4",   "DISKXFER5",   "DISKXFER6",   "DISKXFER7",
+    "DISKXFER8",   "DISKXFER9",   "DISKXFER10",  "DISKXFER11",
+    "DISKXFER12",  "DISKXFER13",  "DISKXFER14",  "DISKXFER15",
+    "DISKXFER16",  "DISKXFER17",  "DISKXFER18",  "DISKXFER19",
+    "DISKRIO",     "DISKRIO1",    "DISKRIO2",    "DISKRIO3",
+    "DISKRIO4",    "DISKRIO5",    "DISKRIO6",    "DISKRIO7",
+    "DISKRIO8",    "DISKRIO9",    "DISKRIO10",   "DISKRIO11",
+    "DISKRIO12",   "DISKRIO13",   "DISKRIO14",   "DISKRIO15",
+    "DISKRIO16",   "DISKRIO17",   "DISKRIO18",   "DISKRIO19",
+    "DISKWIO",     "DISKWIO1",    "DISKWIO2",    "DISKWIO3",
+    "DISKWIO4",    "DISKWIO5",    "DISKWIO6",    "DISKWIO7",
+    "DISKWIO8",    "DISKWIO9",    "DISKWIO10",   "DISKWIO11",
+    "DISKWIO12",   "DISKWIO13",   "DISKWIO14",   "DISKWIO15",
+    "DISKWIO16",   "DISKWIO17",   "DISKWIO18",   "DISKWIO19",
+    "IOADAPT",     "NETERROR",    "NET",         "NETPACKET",
+    "JFSFILE",     "JFSINODE"
 );
 
 #################################################
@@ -141,11 +170,11 @@ if ( !-d "$APP" ) {
 
 # var main directory
 my $APP_MAINVAR = "$SPLUNK_HOME/var/run/nmon";
-my $APP_VAR = "$APP_MAINVAR/var";
+my $APP_VAR     = "$APP_MAINVAR/var";
 
 # If may main directories do not exist
 if ( !-d "$APP_MAINVAR" ) { mkdir "$APP_MAINVAR"; }
-if ( !-d "$APP_VAR" ) { mkdir "$APP_VAR"; }
+if ( !-d "$APP_VAR" )     { mkdir "$APP_VAR"; }
 
 # Spool directory for NMON files processing
 my $SPOOL_DIR = "$APP_VAR/spool";
@@ -167,6 +196,9 @@ my $ID_REF = "$APP_VAR/id_reference.txt";
 
 # Config Reference file
 my $CONFIG_REF = "$APP_VAR/config_reference.txt";
+
+# BBB extraction flag
+my $BBB_FLAG = "$APP_VAR/BBB_status.flag";
 
 #################################################
 ## 	Various
@@ -721,7 +753,18 @@ foreach $FILENAME (@nmon_files) {
             # Only generate data once per hour
             if ( $time_delta < 3600 ) {
 
-                $config_run = "1";
+                # Don't extract only if BBB_FLAG does not exist
+                if ( -e $BBB_FLAG ) {
+
+                    $config_run = "0";
+
+                }
+
+                else {
+
+                    $config_run = "1";
+
+                }
 
             }
 
@@ -755,7 +798,8 @@ foreach $FILENAME (@nmon_files) {
                     my $date         = "";
                     my $hostnameT    = "Unknown";
                     my $SerialNumber = "Unknown";
-                    $count = 0;
+                    $count     = 0;
+                    $BBB_count = 0;
 
             # Get nmon/server settings (search string, return column, delimiter)
                     $AIXVER   = &get_setting( "AIX",      2, "," );
@@ -822,8 +866,27 @@ foreach $FILENAME (@nmon_files) {
 
                             print( INSERT "$write\n" );
                             $count++;
+                            $BBB_count++;
 
                         }
+
+                    }
+
+# If we extracted at least 10 lines of BBB data, estimate we successfully extracted it
+                    if ( $BBB_count > 10 ) {
+
+                        if ( -e $BBB_FLAG ) {
+
+                            unlink $BBB_FLAG;
+
+                        }
+
+                    }
+
+                    else {
+
+                        open( BBB_FLAG, ">$BBB_FLAG" );
+                        print BBB_FLAG "BBB_status KO";
 
                     }
 

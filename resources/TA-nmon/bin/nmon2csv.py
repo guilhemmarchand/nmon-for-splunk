@@ -58,6 +58,10 @@
 # - 02/08/2015, V1.1.1: Guilhem Marchand: Arguments options to overwrite mode detection, DATA and CONFIG DIR, correction of sections data availability detection (count => 1)
 # - 02/10/2015, V1.1.2: Guilhem Marchand: Hotfix for Windows, string to epoch time conversion (%s) failing issue
 # - 11/10/2015, V1.1.3: Guilhem Marchand: Migration of var nmon directory
+# - 04/17/2015, V1.1.4: Guilhem Marchand:
+#                                         - Number of maximum devices taken in charge increased to 3000 devices (20 x 150 devices per section)
+#                                         - Prevents in Real time mode a failing configuration extraction if the BBB configuration occurs lately, especially for large systems
+
 # Load libs
 
 from __future__ import print_function
@@ -74,7 +78,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.3'
+nmon2csv_version = '1.1.4'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -220,6 +224,12 @@ if is_windows:
     CONFIG_REF = APP_VAR + '\\config_reference.txt'
 else:
     CONFIG_REF = APP_VAR + '/config_reference.txt'
+
+# BBB extraction flag
+if is_windows:
+    BBB_FLAG = APP_VAR + '\\BBB_status.flag'
+else:
+    BBB_FLAG = APP_VAR + '/BBB_status.flag'
 
 # CSV Perf data repository
 if is_windows:
@@ -798,6 +808,11 @@ if last_known_epochtime == 0:
 # In any case, the Configuration extraction will not be executed more than once per hour
 # In the case of Real Time data, the extraction will only be achieved once per Nmon file
 
+# Update 04/17/2015: In real time mode with very large system, the performance collect may starts before the
+# configuration ends (eg. an AAA section, followed by Perf metrics and later the BBB section)
+# This would implies partial configuration extraction to be proceeded
+# The script now verifies that the BBB section has been successfully extracted before setting the status to do not extract
+
 # Set section
 section = "CONFIG"
 
@@ -830,7 +845,11 @@ if os.path.isfile(CONFIG_REF):
 
                     if time_delta < 3600:
 
-                        config_run=1
+                        # Only set the status to do not extract is the BBB_FLAG is not present
+                        if not os.path.isfile(BBB_FLAG):
+                            config_run=1
+                        else:
+                            config_run=0
 
                     elif time_delta > 3600:
 
@@ -848,6 +867,9 @@ if config_run==0:
             msg = "CONFIG section will be extracted"
             print(msg)
             ref.write(msg + "\n")
+
+            # Initialize BBB_count
+            BBB_count=0
 
             # Open config output for writing
             with open(config_output, "wb") as config:
@@ -867,8 +889,20 @@ if config_run==0:
                         # Increment
                         count += 1
 
+                        # Increment the BBB counter
+                        if "BBB" in line:
+                            BBB_count += 1
+
                         # Write
                         config.write(line)
+
+                # Under 10 lines of data in BBB, estimate extraction is not complete
+                if BBB_count < 10:
+                    with open(BBB_FLAG, "wb") as bbb_flag:
+                        bbb_flag.write("BBB_status KO")
+                else:
+                    if os.path.isfile(BBB_FLAG):
+                        os.remove(BBB_FLAG)
 
                 # Show number of lines extracted
                 result = "CONFIG section: Wrote" + " " + str(count) + " lines"
@@ -1579,7 +1613,9 @@ for section in uarg_section:
 for subsection in dynamic_section1:
 
     subsection = [subsection, subsection + "1", subsection + "2", subsection + "3", subsection + "4", subsection + "5",
-                  subsection + "6", subsection + "7", subsection + "8", subsection + "9"]
+                  subsection + "6", subsection + "7", subsection + "8", subsection + "9", subsection + "10",
+                  subsection + "11", subsection + "12", subsection + "13", subsection + "14", subsection + "15",
+                  subsection + "17", subsection + "18", subsection + "19"]
 
     for section in subsection:
 
