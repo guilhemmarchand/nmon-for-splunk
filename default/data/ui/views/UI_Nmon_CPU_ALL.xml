@@ -140,11 +140,7 @@
 | $aggregate$
 | stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname"
 | sort limit=0 "CPU.hostname" | rename CPU.* AS *
-| eval "Idle %"=round('Idle %',2)
-| eval "Sys %"=round('Sys %',2)
-| eval "User %"=round('User %',2)
-| eval "Wait %"=round('Wait %',2)
-| eval "CPU %"=round('CPU %',2)
+| foreach *_PCT [ eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2) ] | rename *_PCT AS "* (%)"
 | fields hostname, *</query>
     <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>  
