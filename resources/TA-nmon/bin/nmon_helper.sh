@@ -26,8 +26,9 @@
 #													  - Better management of PID identification and PID file verification
 #													  - Moving pid file to $SPLUNK_HOME/var/run/nmon
 # Modified by Guilhem Marchand 17042015: Linux maximum number of devices is now overcharged by nmon.conf 
+# Modified by Guilhem Marchand 24042015: Solaris update, activate VxVM volumes statistics by nmon.conf, deactivate by default CPUnn statistics (useless in the App context)
 
-# Version 1.2.07
+# Version 1.2.08
 
 # For AIX / Linux / Solaris
 
@@ -178,6 +179,15 @@ case $UNAME in
 	SunOS )
 		NMONNOSAFILE=1 # Do not generate useless sa files
 		export NMONNOSAFILE
+		NMONEXCLUDECPUN=1 # Do not generate CPUnn data, this reduces Nmon volume of data and isn't used in the App
+		export NMONEXCLUDECPUN
+
+		# Manage VxVM volume statistics activation
+		if [ ${Solaris_VxVM} -eq 1 ]; then
+			NMONVXVM=1
+			export NMONVXVM
+		fi
+
 		${nmon_command} >/dev/null 2>&1 &
 	;;
 
