@@ -1945,11 +1945,258 @@ for section in dynamic_section2:
 # Solaris secton : data requires to be transposed to be exploitable within Splunk
 ###################
 
+# Specially for WLM Solaris section, we will add the number of logical CPUs to allow evaluation of % CPU
+# report in logical CPU
+
+def solaris_wlm_section_fn(section):
+
+    # Set output file (will be opened for writing after data transposition)
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
+        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+
+    # Sequence to search for
+    seq = str(section) + ',' + 'T'
+
+    # counter
+    count = 0
+
+    # Initialize num_cols_header to 0 (see sanity_check)
+    num_cols_header = 0
+
+    for line in data:
+
+        # Extract sections
+        if str(seq) in line:  # Don't use regex here for more performance
+
+            # increment
+            count += 1
+
+    if count >= 1:
+
+        # Open StringIO for temp in memory
+        membuffer = cStringIO.StringIO()
+
+        # counter
+        count = 0
+
+        for line in data:
+
+            # Extract sections, and write to output
+            myregex = r'^' + section + '[0-9]*' + '|ZZZZ.+'
+            find_section = re.match(myregex, line)
+
+            if find_section:
+
+                line = subpctreplace(line)
+                line = subreplace(line)
+
+                # csv header
+
+                # Extract header excluding data that always has Txxxx for timestamp reference
+                myregex = '(' + section + ')\,([^T].+)'
+                fullheader_match = re.search(myregex, line)
+
+                if fullheader_match:
+                    fullheader = fullheader_match.group(2)
+
+                    # Replace "." by "_" only for header
+                    fullheader = re.sub("\.", '_', fullheader)
+
+                    # Replace any blank space before comma only for header
+                    fullheader = re.sub(", ", ',', fullheader)
+
+                    header_match = re.match(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)', fullheader)
+
+                    if header_match:
+                        header = header_match.group(2)
+
+                        final_header = 'ZZZZ' + ',' + header + '\n'
+
+                        # increment
+                        count += 1
+
+                        # Number of separators in final header
+                        num_cols_header = final_header.count(',')
+
+                        # Write header
+                        membuffer.write(final_header),
+
+                # Extract timestamp
+
+                # Nmon V9 and prior do not have date in ZZZZ
+                # If unavailable, we'll use the global date (AAA,date)
+                ZZZZ_DATE = '-1'
+                ZZZZ_TIME = '-1'
+
+                # For Nmon V10 and more
+
+                timestamp_match = re.match(r'^ZZZZ,(.+),(.+),(.+)\n', line)
+                if timestamp_match:
+                    ZZZZ_TIME = timestamp_match.group(2)
+                    ZZZZ_DATE = timestamp_match.group(3)
+
+                    # Replace month names with numbers
+                    ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
+
+                    ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+
+                    if is_windows:
+                        ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                    else:
+                        ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                # For Nmon V9 and less
+
+                if ZZZZ_DATE == '-1':
+                    ZZZZ_DATE = DATE
+                    timestamp_match = re.match(r'^ZZZZ,(.+),(.+)\n', line)
+
+                    if timestamp_match:
+                        ZZZZ_TIME = timestamp_match.group(2)
+
+                        # Replace month names with numbers
+                        ZZZZ_DATE = monthtonumber(ZZZZ_DATE)
+
+                        ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
+
+                        if is_windows:
+                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                        else:
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                # Extract Data
+                myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
+                perfdata_match = re.match(myregex, line)
+                if perfdata_match:
+                    perfdata = perfdata_match.group(2)
+
+                    # final perfdata
+                    final_perfdata = ZZZZ_timestamp + ',' + perfdata + '\n'
+
+                    if realtime:
+
+                        if ZZZZ_epochtime > last_known_epochtime:
+
+                            # increment
+                            count += 1
+
+                            # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                            # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                            # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                            if count == 2:
+
+                                # Number of separators in final header
+                                num_cols_perfdata = final_perfdata.count(',')
+
+                                if num_cols_perfdata > num_cols_header:
+
+                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                        num_cols_perfdata) + ' fields in data, ' + str(
+                                        num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                    print(msg)
+                                    ref.write(msg + "\n")
+
+                                    # Affect a sanity check to 1, bad data
+                                    sanity_check = 1
+
+                                else:
+
+                                    # Affect a sanity check to 0, good data
+                                    sanity_check = 0
+
+                            # Write perf data
+                            membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
+
+                    elif colddata:
+
+                        # increment
+                        count += 1
+
+                        # Analyse the first line of data: Compare number of fields in data with number of fields in header
+                        # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
+                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
+                        # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                        if count == 2:
+
+                            # Number of separators in final header
+                            num_cols_perfdata = final_perfdata.count(',')
+
+                            if num_cols_perfdata > num_cols_header:
+
+                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
+                                    num_cols_perfdata) + ' fields in data, ' + str(
+                                    num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                print(msg)
+                                ref.write(msg + "\n")
+
+                                # Affect a sanity check to 1, bad data
+                                sanity_check = 1
+
+                            else:
+
+                                # Affect a sanity check to 0, good data
+                                sanity_check = 0
+
+                        # Write perf data
+                        membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
+
+        if sanity_check == 0:
+
+            # Reset counter
+            count = 0
+
+            # Open final for writing
+            with open(currsection_output, "wb") as currsection:
+
+                # Rewind temp
+                membuffer.seek(0)
+
+                writer = csv.writer(currsection)
+                writer.writerow(
+                    ['type', 'serialnum', 'hostname', 'logical_cpus', 'interval', 'snapshots', 'ZZZZ', 'device', 'value'])
+
+                # increment
+                count += 1
+
+                for d in csv.DictReader(membuffer):
+                    ZZZZ = d.pop('ZZZZ')
+                    for device, value in sorted(d.items()):
+                        # increment
+                        count += 1
+
+                        row = [section, SN, HOSTNAME, logical_cpus, INTERVAL, SNAPSHOTS, ZZZZ, device, value]
+                        writer.writerow(row)
+
+                        # End for
+
+            # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
+            # In any case, don't allow empty files to kept in repository
+            if count < 1:
+                if os.path.isfile(currsection_output):
+                    os.remove(currsection_output)
+            else:
+                # Show number of lines extracted
+                result = section + " section: Wrote" + " " + str(count) + " lines"
+                print(result)
+                ref.write(result + "\n")
+
+            # Discard memory membuffer
+            membuffer.close()
+
+        elif sanity_check == 0:
+
+            # Discard memory membuffer
+            membuffer.close()
+
+            # End for
+
+
 # Run
 if OStype in ("Solaris", "Unknown"):
 
     for section in solaris_WLM:
-        dynamic_section_fn(section)
+        solaris_wlm_section_fn(section)
 
     for section in solaris_VxVM:
         dynamic_section_fn(section)
