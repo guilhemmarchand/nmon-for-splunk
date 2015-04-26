@@ -45,8 +45,11 @@
 # Guilhem Marchand 17/04/2015, V1.2.4:
 #                                         - Number of maximum devices taken in charge increased to 3000 devices (20 x 150 devices per section)
 #                                         - Prevents in Real time mode a failing configuration extraction if the BBB configuration occurs lately, especially for large systems
+# Guilhem Marchand 24/04/2015, V1.2.5:
+#                                         - Code improvement, Analyse type of Operating System and prevent from search for not applicable sections
+#                                         - Solaris update, Added Solaris specific sections, specially for Zone analysis
 
-$version = "1.2.4";
+$version = "1.2.5";
 
 use Time::Local;
 use Time::HiRes;
@@ -61,10 +64,16 @@ use POSIX 'strftime';
 # Sections of Performance Monitors with standard dynamic header but no "device" notion that would require the data to be transposed
 # You can add or remove any section depending on your needs
 @static_vars = (
-    "LPAR",     "CPU_ALL",  "FILE",     "MEM", "PAGE",     "MEMNEW",
-    "MEMUSE",   "PROC",     "PROCSOL",  "VM",  "NFSSVRV2", "NFSSVRV3",
-    "NFSSVRV4", "NFSCLIV2", "NFSCLIV3", "NFSCLIV4"
+    "CPU_ALL",  "FILE", "MEM",      "PAGE",     "MEMNEW",   "MEMUSE",
+    "PROC",     "VM",   "NFSSVRV2", "NFSSVRV3", "NFSSVRV4", "NFSCLIV2",
+    "NFSCLIV3", "NFSCLIV4"
 );
+
+# Some specific sections per OS
+@Solaris_static_section = ("PROCSOL");
+
+# Some specific sections per OS
+@AIX_static_section = ("LPAR");
 
 # This is the TOP section which contains Performance data of top processes
 # It has a specific structure and requires specific treatment
@@ -74,46 +83,30 @@ use POSIX 'strftime';
 # It has a specific structure and requires specific treatment
 @uarg_vars = ("UARG");
 
-# Sections of Performance Monitors with Dynamic header, eg. device context
-@dynamic_vars = (
-    "DISKBSIZE",   "DISKBSIZE1",  "DISKBSIZE2",  "DISKBSIZE3",
-    "DISKBSIZE4",  "DISKBSIZE5",  "DISKBSIZE6",  "DISKBSIZE7",
-    "DISKBSIZE8",  "DISKBSIZE9",  "DISKBSIZE10", "DISKBSIZE11",
-    "DISKBSIZE12", "DISKBSIZE13", "DISKBSIZE14", "DISKBSIZE15",
-    "DISKBSIZE16", "DISKBSIZE17", "DISKBSIZE18", "DISKBSIZE19",
-    "DISKBUSY",    "DISKBUSY1",   "DISKBUSY2",   "DISKBUSY3",
-    "DISKBUSY4",   "DISKBUSY5",   "DISKBUSY6",   "DISKBUSY7",
-    "DISKBUSY8",   "DISKBUSY9",   "DISKBUSY10",  "DISKBUSY11",
-    "DISKBUSY12",  "DISKBUSY13",  "DISKBUSY14",  "DISKBUSY15",
-    "DISKBUSY16",  "DISKBUSY17",  "DISKBUSY18",  "DISKBUSY19",
-    "DISKREAD",    "DISKREAD1",   "DISKREAD2",   "DISKREAD3",
-    "DISKREAD4",   "DISKREAD5",   "DISKREAD6",   "DISKREAD7",
-    "DISKREAD8",   "DISKREAD9",   "DISKREAD10",  "DISKREAD11",
-    "DISKREAD12",  "DISKREAD13",  "DISKREAD14",  "DISKREAD15",
-    "DISKREAD16",  "DISKREAD17",  "DISKREAD18",  "DISKREAD19",
-    "DISKWRITE",   "DISKWRITE1",  "DISKWRITE2",  "DISKWRITE3",
-    "DISKWRITE4",  "DISKWRITE5",  "DISKWRITE6",  "DISKWRITE7",
-    "DISKWRITE8",  "DISKWRITE9",  "DISKWRITE10", "DISKWRITE11",
-    "DISKWRITE12", "DISKWRITE13", "DISKWRITE14", "DISKWRITE15",
-    "DISKWRITE16", "DISKWRITE17", "DISKWRITE18", "DISKWRITE19",
-    "DISKXFER",    "DISKXFER1",   "DISKXFER2",   "DISKXFER3",
-    "DISKXFER4",   "DISKXFER5",   "DISKXFER6",   "DISKXFER7",
-    "DISKXFER8",   "DISKXFER9",   "DISKXFER10",  "DISKXFER11",
-    "DISKXFER12",  "DISKXFER13",  "DISKXFER14",  "DISKXFER15",
-    "DISKXFER16",  "DISKXFER17",  "DISKXFER18",  "DISKXFER19",
-    "DISKRIO",     "DISKRIO1",    "DISKRIO2",    "DISKRIO3",
-    "DISKRIO4",    "DISKRIO5",    "DISKRIO6",    "DISKRIO7",
-    "DISKRIO8",    "DISKRIO9",    "DISKRIO10",   "DISKRIO11",
-    "DISKRIO12",   "DISKRIO13",   "DISKRIO14",   "DISKRIO15",
-    "DISKRIO16",   "DISKRIO17",   "DISKRIO18",   "DISKRIO19",
-    "DISKWIO",     "DISKWIO1",    "DISKWIO2",    "DISKWIO3",
-    "DISKWIO4",    "DISKWIO5",    "DISKWIO6",    "DISKWIO7",
-    "DISKWIO8",    "DISKWIO9",    "DISKWIO10",   "DISKWIO11",
-    "DISKWIO12",   "DISKWIO13",   "DISKWIO14",   "DISKWIO15",
-    "DISKWIO16",   "DISKWIO17",   "DISKWIO18",   "DISKWIO19",
-    "IOADAPT",     "NETERROR",    "NET",         "NETPACKET",
-    "JFSFILE",     "JFSINODE"
+# Sections of Performance Monitors with Dynamic header (eg. device context) and that can be incremented (DISKBUSY1...)
+@dynamic_vars1 = (
+    "DISKBSIZE", "DISKBUSY", "DISKREAD", "DISKWRITE",
+    "DISKXFER",  "DISKRIO",  "DISKWIO",  "IOADAPT"
 );
+
+# Sections that won't be incremented
+@dynamic_vars2 = ( "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE" );
+
+# Sections of Performance Monitors for Solaris
+
+# Zone, Project, Task... performance
+@solaris_WLM = (
+    "WLMPROJECTCPU", "WLMZONECPU", "WLMTASKCPU", "WLMUSERCPU",
+    "WLMPROJECTMEM", "WLMZONEMEM", "WLMTASKMEM", "WLMUSERMEM"
+);
+
+# Veritas Storage Manager
+@solaris_VxVM = (
+    "VxVMREAD", "VxVMWRITE", "VxVMXFER", "VxVMBSIZE",
+    "VxVMBUSY", "VxVMSVCTM", "VxVMWAITTM"
+);
+
+@solaris_dynamic_various = ( "DISKSVCTM", "DISKWAITTM" );
 
 #################################################
 ## 	Your Customizations Go Here
@@ -149,9 +142,9 @@ if ( not $SPLUNK_HOME ) {
 # Empty init APP
 my $APP = "";
 
-# Check if we are running nmon / TA-nmon-perl / PA-nmon
-if ( -d "$SPLUNK_HOME/etc/apps/TA-nmon-perl" ) {
-    $APP = "$SPLUNK_HOME/etc/apps/TA-nmon-perl";
+# Check if we are running nmon / TA-nmon / PA-nmon
+if ( -d "$SPLUNK_HOME/etc/apps/TA-nmon" ) {
+    $APP = "$SPLUNK_HOME/etc/apps/TA-nmon";
 }
 elsif ( -d "$SPLUNK_HOME/etc/slave-apps/PA-nmon" ) {
     $APP = "$SPLUNK_HOME/etc/slave-apps/PA-nmon";
@@ -163,7 +156,7 @@ else {
 # Verify existence of APP
 if ( !-d "$APP" ) {
     print(
-"\n$time ERROR: The Application root directory could not be found, is nmon / TA-nmon-perl / PA-nmon installed ?\n"
+"\n$time ERROR: The Application root directory could not be found, is nmon / TA-nmon / PA-nmon installed ?\n"
     );
     die;
 }
@@ -275,6 +268,8 @@ my $virtual_cpus = "-1";
 my $INTERVAL = "-1";
 my $SNAPSHOT = "-1";
 
+my $OStype = "Unknown";
+
 while ( defined( my $l = <FILE> ) ) {
     chomp $l;
 
@@ -369,6 +364,21 @@ while ( defined( my $l = <FILE> ) ) {
         $truncated_nmon = "-1";
     }
 
+    # Identify Linux hosts
+    if ( $l =~ m/AAA,OS,Linux/ ) {
+        $OStype = "Linux";
+    }
+
+    # Identify Solaris hosts
+    if ( $l =~ m/AAA,OS,Solaris,.+/ ) {
+        $OStype = "Solaris";
+    }
+
+    # Identify AIX hosts
+    if ( $l =~ m/^AAA,AIX,(.+)/ ) {
+        $OStype = "AIX";
+    }
+
 }
 
 # Process nmon file provided in argument
@@ -415,6 +425,9 @@ foreach $FILENAME (@nmon_files) {
 
     # Show OS guest
     print "Guest Operating System: $^O\n";
+
+    # Show NMON OS
+    print "NMON OStype: $OStype \n";
 
     # Show perl version
     print "Perl version: $] \n";
@@ -1035,6 +1048,36 @@ foreach $FILENAME (@nmon_files) {
 
     }    # end foreach
 
+    # AIX Specific
+    if ( $OStype eq "AIX" || $OStype eq "Unknown" ) {
+
+        foreach $key (@AIX_static_section) {
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+            &static_sections_insert($key);
+            $now = time();
+            $now = $now - $start;
+
+        }    # end foreach
+
+    }
+
+    # Solaris Specific
+    if ( $OStype eq "Solaris" || $OStype eq "Unknown" ) {
+
+        foreach $key (@Solaris_static_section) {
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+            &static_sections_insert($key);
+            $now = time();
+            $now = $now - $start;
+
+        }    # end foreach
+
+    }
+
 ####################################################################################################
 #############		NMON TOP Section						############
 ####################################################################################################
@@ -1240,6 +1283,9 @@ foreach $FILENAME (@nmon_files) {
 ####################################################################################################
 
     # UARG Section (specific)
+	 # Applicable for OStype AIX, Linux or Unknown
+
+	 if ( $OStype eq "AIX" || $OStype eq "Linux" || $OStype eq "Unknown" ) {
 
     my $sanity_check = 0;
 
@@ -1546,6 +1592,8 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
         }    # end find the section
 
     }    # end foreach
+    
+    }
 
 ###################################################""
 
@@ -1555,15 +1603,95 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
 
     ###################################################
 
-    # Dynamic Sections
+    # Dynamic Sections, manage up to 20 sections, 3000 devices
 
-    foreach $key (@dynamic_vars) {
+    foreach $key (@dynamic_vars1) {
+
+        # First pass with standard keys
         $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
 
         &variable_sections_insert($key);
         $now = time();
         $now = $now - $start;
+
+    }
+
+    foreach $mainkey (@dynamic_vars1) {
+
+        # Search for supplementary sections
+        $init = 0;
+
+        do {
+
+            $init = $init + 1;
+
+            $key = join '', $mainkey, $init;
+
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+            &variable_sections_insert($key);
+            $now = time();
+            $now = $now - $start;
+
+        } while ( $init < 20 );
+
+    }
+
+    # Dynamic Sections with no increment
+
+    foreach $key (@dynamic_vars2) {
+
+        # First pass with standard keys
+        $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+        &variable_sections_insert($key);
+        $now = time();
+        $now = $now - $start;
+
+    }
+
+    # Solaris Specific sections, run this for OStype Solaris or unknown
+
+    # WLM Stats
+
+    if ( $OStype eq "Solaris" || $OStype eq "Unknown" ) {
+
+        foreach $key (@solaris_WLM) {
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+            &solaris_wlm_section_fn($key);
+            $now = time();
+            $now = $now - $start;
+
+        }
+
+        # VxVM volumes
+
+        foreach $key (@solaris_VxVM) {
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+            &variable_sections_insert($key);
+            $now = time();
+            $now = $now - $start;
+
+        }
+
+        # Other dynamics
+
+        foreach $key (@solaris_dynamic_various) {
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+            &variable_sections_insert($key);
+            $now = time();
+            $now = $now - $start;
+
+        }
 
     }
 
@@ -1855,7 +1983,7 @@ sub variable_sections_insert {
             if ( $ZZZZ_epochtime > $last_known_epochtime ) {
 
                 print INSERT (
-qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[2]",$cols[2]|
+qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
                 );
 
                 $count++;
@@ -1866,7 +1994,7 @@ qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$d
         elsif ( $colddata eq "True" ) {
 
             print INSERT (
-qq|\n"$key","$SN","$HOSTNAME","$INTERVAL","$SNAPSHOTS","$DATETIME{$cols[1]}","$devices[2]",$cols[2]|
+qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
             );
 
             $count++;
@@ -1932,6 +2060,212 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$c
 
                     print INSERT (
 qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+                    );
+                    $count++;
+                }
+
+            }
+
+        }
+        if ( $i < $n ) { print INSERT (""); }
+    }
+    print INSERT (qq||);
+
+    # If sanity check has failed, remove data
+    if ( $sanity_check != 0 && $sanity_check_timestampfailure != 0 ) {
+
+        $msg =
+"ERROR: hostname: $HOSTNAME :$key section is not consistent: Detected anomalies in events timestamp, dropping this section to prevent data inconsistency \n";
+        print "$msg";
+        print ID_REF "$msg";
+
+        unlink $BASEFILENAME;
+    }
+
+    elsif ( $sanity_check != 0 ) {
+
+        unlink $BASEFILENAME
+
+    }
+
+    else {
+        if ( $count > 1 ) {
+            print "$key section: Wrote $count lines\n";
+            print ID_REF "$key section: Wrote $count lines\n";
+        }
+        else {
+            # Hey, only a header ! Don't keep empty files please
+            unlink $BASEFILENAME;
+        }
+    }
+
+}    # End Insert
+
+# Specific Solaris version, add logical_cpus values to allow easy WLM CPU conversion statistics
+
+sub solaris_wlm_section_fn {
+
+    my ($nmon_var) = @_;
+    my $table = lc($nmon_var);
+
+    my @rawdata;
+    my $x;
+    my $j;
+    my @cols;
+    my $comma;
+    my $TS;
+    my $n;
+    my @devices;
+    my $sanity_check                  = 0;
+    my $sanity_check_timestampfailure = 0;
+    $count = 0;
+
+    @rawdata = grep( /^$nmon_var,/, @nmon );
+
+    if ( @rawdata < 1 ) { return (1); }
+    else {
+
+        @rawdataheader = grep( /^$nmon_var,([^T].+),/, @nmon );
+        if ( @rawdataheader < 1 ) {
+            $msg =
+"ERROR: hostname: $HOSTNAME :$key section data is not consistent: the data header could not be identified, dropping the section to prevent data inconsistency \n";
+            print "$msg";
+            print ID_REF "$msg";
+
+        }
+
+        else {
+
+            unless ( open( INSERT, ">$BASEFILENAME" ) ) {
+                die("ERROR: Can not open /$BASEFILENAME\n");
+            }
+
+        }
+
+    }
+
+    @rawdata = sort(@rawdata);
+
+    $rawdata[0] =~ s/\%/_PCT/g;
+    $rawdata[0] =~ s/\(/_/g;
+    $rawdata[0] =~ s/\)/_/g;
+    $rawdata[0] =~ s/ /_/g;
+    $rawdata[0] =~ s/__/_/g;
+    $rawdata[0] =~ s/,_/,/g;
+
+    @devices = split( /,/, $rawdata[0] );
+
+    print INSERT (
+qq|type,serialnum,hostname,logical_cpus,interval,snapshots,ZZZZ,device,value|
+    );
+
+    # Count the number fields in header
+    my $header =
+"type,serialnum,hostname,logical_cpus,interval,snapshots,ZZZZ,device,value";
+    my @c = $header =~ /,/g;
+    my $fieldsheadercount = @c;
+
+    #print "\n COUNT IS $fieldsheadercount \n";
+
+    $n = @rawdata;
+    $n--;
+    for ( $i = 1 ; $i < @rawdata ; $i++ ) {
+
+        $TS = $UTC_START + $INTERVAL * ($i);
+        $rawdata[$i] =~ s/,$//;
+        @cols = split( /,/, $rawdata[$i] );
+
+        $timestamp = $DATETIME{ $cols[1] };
+
+     # Convert timestamp string to epoch time (from format: YYYY-MM-DD hh:mm:ss)
+        my ( $year, $month, $day, $hour, $min, $sec ) = split /\W+/, $timestamp;
+        my $ZZZZ_epochtime =
+          timelocal( $sec, $min, $hour, $day, $month - 1, $year );
+
+        # Write only new data if in realtime mode
+
+        if ( $realtime eq "True" ) {
+
+            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                print INSERT (
+qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
+                );
+
+                $count++;
+            }
+
+        }
+
+        elsif ( $colddata eq "True" ) {
+
+            print INSERT (
+qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
+            );
+
+            $count++;
+
+        }
+
+        for ( $j = 3 ; $j < @cols ; $j++ ) {
+
+            $finaldata =
+"$key,$SN,$HOSTNAME,$INTERVAL,$logical_cpus,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]";
+
+# If the timestamp could not be found, there is a data anomaly and the section is not consistent
+            if ( not $DATETIME{ $cols[1] } ) {
+
+                $sanity_check                  = "1";
+                $sanity_check_timestampfailure = "1";
+
+            }
+
+            # Count the number fields in data
+            my @c = $finaldata =~ /,/g;
+            my $fieldsrawcount = @c;
+
+            #print "\n COUNT IS $fieldsrawcount \n";
+
+            if ( $fieldsrawcount != $fieldsheadercount ) {
+
+                $msg =
+"ERROR: hostname: $HOSTNAME :$key section is not consistent: $fieldsrawcount fields in data, $fieldsheadercount fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency \n";
+                print "$msg";
+                print ID_REF "$msg";
+
+                $sanity_check = "1";
+
+            }
+
+            # If sanity check has not failed, write data
+            if ( $sanity_check != "1" ) {
+
+                $timestamp = $DATETIME{ $cols[1] };
+
+     # Convert timestamp string to epoch time (from format: YYYY-MM-DD hh:mm:ss)
+                my ( $year, $month, $day, $hour, $min, $sec ) = split /\W+/,
+                  $timestamp;
+                my $ZZZZ_epochtime =
+                  timelocal( $sec, $min, $hour, $day, $month - 1, $year );
+
+                # Write only new data if in realtime mode
+
+                if ( $realtime eq "True" ) {
+
+                    if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+
+                        print INSERT (
+qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+                        );
+                        $count++;
+                    }
+
+                }
+
+                elsif ( $colddata eq "True" ) {
+
+                    print INSERT (
+qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
                     );
                     $count++;
                 }
