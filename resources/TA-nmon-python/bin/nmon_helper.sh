@@ -14,7 +14,7 @@
 # Modified by Guilhem Marchand 20082014: Linux: Increased the number of disks to 1500 devices - AIX: Updated nmon command options
 # Modified by Guilhem Marchand 25082014: Avoid deleting existing nmon files in nmon_repository, this is now taken in charge by Splunk itself using batch mode instead monitor mode
 #													  This prevents from having local nmon data missing when indexing large volume of nmon files from central shares
-# Modified by Guilhem Marchand 26102014: Improved APP dir definition (are we running nmon / TA-nmon / PA-nmon)
+# Modified by Guilhem Marchand 26102014: Improved APP dir definition (are we running nmon / TA-nmon-python / PA-nmon)
 # Modified by Guilhem Marchand 22122014: Modification of default values for interval and snapshot, added override features by default and local nmon.conf, kill evolution for TA upgrade management
 # Modified by Guilhem Marchand 15012015: AIX compatibility fix
 # Modified by Guilhem Marchand 08022015: Improvements for Solaris (terminal detaching issue)
@@ -52,18 +52,18 @@ if [ -z "${SPL_HOME}" ]; then
 	exit 1
 fi
 
-# Defined which APP we are running from (nmon / TA-nmon / PA-nmon)
+# Defined which APP we are running from (nmon / TA-nmon-python / PA-nmon)
 if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
         APP=$SPLUNK_HOME/etc/apps/nmon
 
-elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon" ]; then
-        APP=$SPLUNK_HOME/etc/apps/TA-nmon
+elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon-python" ]; then
+        APP=$SPLUNK_HOME/etc/apps/TA-nmon-python
 
 elif [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
         APP=$SPLUNK_HOME/etc/slave-apps/PA-nmon
 
 else
-        echo "`date`, ERROR, the APP directory could not be defined, is nmon / TA-nmon / PA-nmon installed ?"
+        echo "`date`, ERROR, the APP directory could not be defined, is nmon / TA-nmon-python / PA-nmon installed ?"
         exit 1
 
 fi
@@ -253,12 +253,12 @@ done
 # Defaults values for interval and snapshot
 ############################################
 
-# In first option, search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon|PA-nmon/local
+# In first option, search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/local
 
 if [ -f $APP/local/nmon.conf ]; then
 	. $APP/local/nmon.conf
 
-# In second option, search for the main nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon|PA-nmon/default
+# In second option, search for the main nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/default
 
 elif [ -f $APP/default/nmon.conf ]; then
 	. $APP/default/nmon.conf

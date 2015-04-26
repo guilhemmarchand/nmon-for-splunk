@@ -142,9 +142,9 @@ if ( not $SPLUNK_HOME ) {
 # Empty init APP
 my $APP = "";
 
-# Check if we are running nmon / TA-nmon / PA-nmon
-if ( -d "$SPLUNK_HOME/etc/apps/TA-nmon" ) {
-    $APP = "$SPLUNK_HOME/etc/apps/TA-nmon";
+# Check if we are running nmon / TA-nmon-perl / PA-nmon
+if ( -d "$SPLUNK_HOME/etc/apps/TA-nmon-perl" ) {
+    $APP = "$SPLUNK_HOME/etc/apps/TA-nmon-perl";
 }
 elsif ( -d "$SPLUNK_HOME/etc/slave-apps/PA-nmon" ) {
     $APP = "$SPLUNK_HOME/etc/slave-apps/PA-nmon";
@@ -156,7 +156,7 @@ else {
 # Verify existence of APP
 if ( !-d "$APP" ) {
     print(
-"\n$time ERROR: The Application root directory could not be found, is nmon / TA-nmon / PA-nmon installed ?\n"
+"\n$time ERROR: The Application root directory could not be found, is nmon / TA-nmon-perl / PA-nmon installed ?\n"
     );
     die;
 }

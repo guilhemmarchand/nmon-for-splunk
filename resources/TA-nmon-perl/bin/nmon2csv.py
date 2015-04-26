@@ -184,16 +184,16 @@ python_version = platform.python_version()
 # SPLUNK_HOME environment variable
 SPLUNK_HOME = os.environ['SPLUNK_HOME']
 
-# APP Directories for standard nmon, TA-nmon, PA-nmon
+# APP Directories for standard nmon, TA-nmon-perl, PA-nmon
 if is_windows:
     NMON_APP = SPLUNK_HOME + '\\etc\\apps\\nmon'
 else:
     NMON_APP = SPLUNK_HOME + '/etc/apps/nmon'
 
 if is_windows:
-    TA_NMON_APP = SPLUNK_HOME + '\\etc\\apps\\TA-nmon'
+    TA_NMON_APP = SPLUNK_HOME + '\\etc\\apps\\TA-nmon-perl'
 else:
-    TA_NMON_APP = SPLUNK_HOME + '/etc/apps/TA-nmon'
+    TA_NMON_APP = SPLUNK_HOME + '/etc/apps/TA-nmon-perl'
 
 if is_windows:
     PA_NMON_APP = SPLUNK_HOME + '\\etc\\slave-apps\\PA-nmon'
@@ -211,7 +211,7 @@ elif os.path.exists(TA_NMON_APP):
 elif os.path.exists(PA_NMON_APP):
     APP = PA_NMON_APP
 else:
-    msg = 'The Application root directory could not be found, is nmon / TA-nmon / PA-nmon installed ? We tried: ' + str(
+    msg = 'The Application root directory could not be found, is nmon / TA-nmon-perl / PA-nmon installed ? We tried: ' + str(
         NMON_APP) + ' ' + str(TA_NMON_APP) + ' ' + str(PA_NMON_APP)
     logging.error(msg)
     sys.exit(1)
