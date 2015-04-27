@@ -1016,6 +1016,9 @@ def standard_section_fn(section):
     # counter
     count = 0
 
+    # sanity_check
+    sanity_check = 1
+
     # Initialize num_cols_header to 0 (see sanity_check)
     num_cols_header = 0
 
@@ -1683,6 +1686,9 @@ def dynamic_section_fn(section):
     # counter
     count = 0
 
+    # sanity_check
+    sanity_check = 1
+
     # Initialize num_cols_header to 0 (see sanity_check)
     num_cols_header = 0
 
@@ -1960,6 +1966,9 @@ def solaris_wlm_section_fn(section):
     # counter
     count = 0
 
+    # sanity_check
+    sanity_check = 1
+    
     # Initialize num_cols_header to 0 (see sanity_check)
     num_cols_header = 0
 
