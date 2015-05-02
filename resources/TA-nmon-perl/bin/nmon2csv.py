@@ -64,6 +64,8 @@
 # - 04/23/2015, V1.1.5: Guilhem Marchand:
 #                                         - Code improvement, Analyse type of Operating System and prevent from search for not applicable sections
 #                                         - Solaris update, Added Solaris specific sections, specially for Zone analysis
+# - 05/01/2015, V1.1.6: Guilhem Marchand:
+#                                         - Added support for FC* sections (Fiber Channel)
 
 # Load libs
 
@@ -81,7 +83,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.5'
+nmon2csv_version = '1.1.6'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -120,7 +122,7 @@ uarg_section = ["UARG"]
 dynamic_section1 = ["DISKBUSY", "DISKBSIZE", "DISKREAD", "DISKWRITE", "DISKXFER", "DISKRIO", "DISKWIO"]
 
 # Sections of Performance Monitors with "device" notion, data needs to be transposed by time to be fully exploitable
-dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE"]
+dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE", "FCREAD", "FCWRITE", "FCXFERIN", "FCXFEROUT"]
 
 # Sections of Performance Monitors for Solaris
 
@@ -184,16 +186,16 @@ python_version = platform.python_version()
 # SPLUNK_HOME environment variable
 SPLUNK_HOME = os.environ['SPLUNK_HOME']
 
-# APP Directories for standard nmon, TA-nmon-perl-perl, PA-nmon
+# APP Directories for standard nmon, TA-nmon-perl, PA-nmon
 if is_windows:
     NMON_APP = SPLUNK_HOME + '\\etc\\apps\\nmon'
 else:
     NMON_APP = SPLUNK_HOME + '/etc/apps/nmon'
 
 if is_windows:
-    TA_NMON_APP = SPLUNK_HOME + '\\etc\\apps\\TA-nmon-perl-perl'
+    TA_NMON_APP = SPLUNK_HOME + '\\etc\\apps\\TA-nmon-perl'
 else:
-    TA_NMON_APP = SPLUNK_HOME + '/etc/apps/TA-nmon-perl-perl'
+    TA_NMON_APP = SPLUNK_HOME + '/etc/apps/TA-nmon-perl'
 
 if is_windows:
     PA_NMON_APP = SPLUNK_HOME + '\\etc\\slave-apps\\PA-nmon'
@@ -211,7 +213,7 @@ elif os.path.exists(TA_NMON_APP):
 elif os.path.exists(PA_NMON_APP):
     APP = PA_NMON_APP
 else:
-    msg = 'The Application root directory could not be found, is nmon / TA-nmon-perl-perl / PA-nmon installed ? We tried: ' + str(
+    msg = 'The Application root directory could not be found, is nmon / TA-nmon-perl / PA-nmon installed ? We tried: ' + str(
         NMON_APP) + ' ' + str(TA_NMON_APP) + ' ' + str(PA_NMON_APP)
     logging.error(msg)
     sys.exit(1)
