@@ -64,6 +64,8 @@
 # - 04/23/2015, V1.1.5: Guilhem Marchand:
 #                                         - Code improvement, Analyse type of Operating System and prevent from search for not applicable sections
 #                                         - Solaris update, Added Solaris specific sections, specially for Zone analysis
+# - 05/01/2015, V1.1.6: Guilhem Marchand:
+#                                         - Added support for FC* sections (Fiber Channel)
 
 # Load libs
 
@@ -81,7 +83,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.5'
+nmon2csv_version = '1.1.6'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -120,7 +122,7 @@ uarg_section = ["UARG"]
 dynamic_section1 = ["DISKBUSY", "DISKBSIZE", "DISKREAD", "DISKWRITE", "DISKXFER", "DISKRIO", "DISKWIO"]
 
 # Sections of Performance Monitors with "device" notion, data needs to be transposed by time to be fully exploitable
-dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE"]
+dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE", "FCREAD", "FCWRITE", "FCXFERIN", "FCXFEROUT"]
 
 # Sections of Performance Monitors for Solaris
 

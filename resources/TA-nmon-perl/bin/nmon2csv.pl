@@ -48,8 +48,11 @@
 # Guilhem Marchand 24/04/2015, V1.2.5:
 #                                         - Code improvement, Analyse type of Operating System and prevent from search for not applicable sections
 #                                         - Solaris update, Added Solaris specific sections, specially for Zone analysis
+# Guilhem Marchand 01/05/2015, V1.2.6:
+#                                         - Added support for FC* sections (Fiber Channel)
 
-$version = "1.2.5";
+
+$version = "1.2.6";
 
 use Time::Local;
 use Time::HiRes;
@@ -86,11 +89,11 @@ use POSIX 'strftime';
 # Sections of Performance Monitors with Dynamic header (eg. device context) and that can be incremented (DISKBUSY1...)
 @dynamic_vars1 = (
     "DISKBSIZE", "DISKBUSY", "DISKREAD", "DISKWRITE",
-    "DISKXFER",  "DISKRIO",  "DISKWIO",  "IOADAPT"
+    "DISKXFER",  "DISKRIO",  "DISKWIO"
 );
 
 # Sections that won't be incremented
-@dynamic_vars2 = ( "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE" );
+@dynamic_vars2 = ("IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE", "FCREAD", "FCWRITE", "FCXFERIN", "FCXFEROUT");
 
 # Sections of Performance Monitors for Solaris
 
