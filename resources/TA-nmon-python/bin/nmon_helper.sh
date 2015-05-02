@@ -27,8 +27,9 @@
 #													  - Moving pid file to $SPLUNK_HOME/var/run/nmon
 # Modified by Guilhem Marchand 17042015: Linux maximum number of devices is now overcharged by nmon.conf 
 # Modified by Guilhem Marchand 24042015: Solaris update, activate VxVM volumes statistics by nmon.conf, deactivate by default CPUnn statistics (useless in the App context)
+# Modified by Guilhem Marchand 01052015: Prevents from trying to verify a non existing process by first checking proc fs
 
-# Version 1.2.08
+# Version 1.2.09
 
 # For AIX / Linux / Solaris
 
@@ -199,34 +200,44 @@ esac
 
 verify_pid() {
 
-	givenpid=$1
-	
-	case $UNAME in
-	
-		AIX )
-			procfiles -n $givenpid ;;
-			
-		Linux )
+	givenpid=$1	
 
-			if [ -x /usr/bin/lsof ]; then
+	# Verify proc fs before checking PID
+	if [ -d /proc/${p} ]; then
+	
+		case $UNAME in
+	
+			AIX )
+				procfiles -n $givenpid ;;
 			
-				LSOF="/usr/bin/lsof"
+			Linux )
+
+				if [ -x /usr/bin/lsof ]; then
 			
-			elif [ -x /sbin/lsof ]; then
+					LSOF="/usr/bin/lsof"
 			
-				LSOF="/sbin/lsof"
+				elif [ -x /sbin/lsof ]; then
+			
+					LSOF="/sbin/lsof"
 				
-			else
+				else
 			
-				LSOF=`which lsof 2>&1`
+					LSOF=`which lsof 2>&1`
 				
-			fi
-			$LSOF -p $givenpid ;;
+				fi
+				$LSOF -p $givenpid ;;
 		
-		SunOS )
-			/usr/proc/bin/pfiles $givenpid ;;
+			SunOS )
+				/usr/proc/bin/pfiles $givenpid ;;
 			
-	esac
+		esac
+		
+	else
+	
+		# Just return nothing		
+		echo ""
+		
+	fi
 
 }
 
@@ -446,7 +457,8 @@ case ${PIDs} in
 						# Set the nmon status (start)
 						nmon_isstarted=1
 						
-					fi		
+					fi	
+
 				done			
 			
 			;;
