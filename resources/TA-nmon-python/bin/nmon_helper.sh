@@ -28,8 +28,9 @@
 # Modified by Guilhem Marchand 17042015: Linux maximum number of devices is now overcharged by nmon.conf 
 # Modified by Guilhem Marchand 24042015: Solaris update, activate VxVM volumes statistics by nmon.conf, deactivate by default CPUnn statistics (useless in the App context)
 # Modified by Guilhem Marchand 01052015: Prevents from trying to verify a non existing process by first checking proc fs
+# Modified by Guilhem Marchand 05052015: Solaris hotfix
 
-# Version 1.2.09
+# Version 1.2.10
 
 # For AIX / Linux / Solaris
 
@@ -74,6 +75,32 @@ APP_VAR=$SPLUNK_HOME/var/run/nmon
 
 # Which type of OS are we running
 UNAME=`uname`
+
+# source nmon.conf, or set defaults values for interval and snapshot
+
+# In first option, search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/local
+
+if [ -f $APP/local/nmon.conf ]; then
+	. $APP/local/nmon.conf
+
+# In second option, search for the main nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/default
+
+elif [ -f $APP/default/nmon.conf ]; then
+	. $APP/default/nmon.conf
+
+else
+
+	# if none of above options worked for some unexpected reasons, use these values
+
+	# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
+	# Default to 240 seconds
+	interval="240"
+	
+	# Number of Data refresh snapshots, Nmon will refresh data X times
+	# Default to 340 snapshots to provide a full day data measure
+	snapshot="340"
+
+fi
 
 # Nmon Binary
 case $UNAME in
@@ -263,30 +290,6 @@ done
 ############################################
 # Defaults values for interval and snapshot
 ############################################
-
-# In first option, search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/local
-
-if [ -f $APP/local/nmon.conf ]; then
-	. $APP/local/nmon.conf
-
-# In second option, search for the main nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/default
-
-elif [ -f $APP/default/nmon.conf ]; then
-	. $APP/default/nmon.conf
-
-else
-
-	# if none of above options worked for some unexpected reasons, use these values
-
-	# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
-	# Default to 240 seconds
-	interval="240"
-	
-	# Number of Data refresh snapshots, Nmon will refresh data X times
-	# Default to 340 snapshots to provide a full day data measure
-	snapshot="340"
-
-fi
 
 # Set interval and snapshot values depending on mode of collect
 
