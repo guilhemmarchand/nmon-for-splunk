@@ -210,10 +210,14 @@ case $UNAME in
 		NMONEXCLUDECPUN=1 # Do not generate CPUnn data, this reduces Nmon volume of data and isn't used in the App
 		export NMONEXCLUDECPUN
 
-		# Manage VxVM volume statistics activation
-		if [ ${Solaris_VxVM} -eq 1 ]; then
+		# Manage VxVM volume statistics activation, default is off (0)
+		if [ ! -z ${Solaris_VxVM} ]; then
+		
+			if [ ${Solaris_VxVM} -eq 1 ]; then
 			NMONVXVM=1
 			export NMONVXVM
+			fi
+			
 		fi
 
 		${nmon_command} >/dev/null 2>&1 &
