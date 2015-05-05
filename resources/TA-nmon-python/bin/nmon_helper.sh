@@ -76,30 +76,27 @@ APP_VAR=$SPLUNK_HOME/var/run/nmon
 # Which type of OS are we running
 UNAME=`uname`
 
-# source nmon.conf, or set defaults values for interval and snapshot
+# set defaults values for interval and snapshot and source nmon.conf 
+
+# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
+# Default to 240 seconds
+interval="240"
+	
+# Number of Data refresh snapshots, Nmon will refresh data X times
+# Default to 340 snapshots to provide a full day data measure
+snapshot="340"
+
+# source default nmon.conf
+if [ -f $APP/default/nmon.conf ]; then
+	. $APP/default/nmon.conf
+fi
+
+# source local nmon.conf, if any
 
 # In first option, search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/local
 
 if [ -f $APP/local/nmon.conf ]; then
 	. $APP/local/nmon.conf
-
-# In second option, search for the main nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-python|PA-nmon/default
-
-elif [ -f $APP/default/nmon.conf ]; then
-	. $APP/default/nmon.conf
-
-else
-
-	# if none of above options worked for some unexpected reasons, use these values
-
-	# Refresh interval in seconds, Nmon will this value to refresh data each X seconds
-	# Default to 240 seconds
-	interval="240"
-	
-	# Number of Data refresh snapshots, Nmon will refresh data X times
-	# Default to 340 snapshots to provide a full day data measure
-	snapshot="340"
-
 fi
 
 # Nmon Binary
@@ -211,9 +208,10 @@ case $UNAME in
 		export NMONEXCLUDECPUN
 
 		# Manage VxVM volume statistics activation, default is off (0)
-		if [ ! -z ${Solaris_VxVM} ]; then
+		NMONVXVM_VALUE=${Solaris_VxVM}
+		if [ ! -z ${NMONVXVM_VALUE} ]; then
 		
-			if [ ${Solaris_VxVM} -eq 1 ]; then
+			if [ ${NMONVXVM_VALUE} -eq 1 ]; then
 			NMONVXVM=1
 			export NMONVXVM
 			fi
