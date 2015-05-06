@@ -29,7 +29,7 @@
 # Modified by Guilhem Marchand 24042015: Solaris update, activate VxVM volumes statistics by nmon.conf, deactivate by default CPUnn statistics (useless in the App context)
 # Modified by Guilhem Marchand 01052015: Prevents from trying to verify a non existing process by first checking proc fs
 # Modified by Guilhem Marchand 05052015: Solaris hotfix
-# Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances
+# Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances (all OS), migrating from pfiles to pwdx for better chances to identify dupp processes
 
 # Version 1.2.11
 
@@ -258,7 +258,7 @@ verify_pid() {
 				$LSOF -p $givenpid ;;
 		
 			SunOS )
-				/usr/proc/bin/pfiles $givenpid ;;
+				pwdx $givenpid ;;
 			
 		esac
 		
@@ -367,7 +367,7 @@ esac
 # -T	as -t plus saves command line arguments in UARG section
 # -d <disks>    to increase the number of disks [default 256]
 
-case `uname` in
+case $UNAME in
 
 AIX )
 
@@ -398,9 +398,6 @@ esac
 
 # Initialize PID variable
 PIDs="" 
-
-# who am I
-MYUSER=`whoami`
 
 # Initialize nmon status
 nmon_isstarted=0
@@ -445,8 +442,15 @@ case ${PIDs} in
 
 				for p in ${SAVED_PID}; do
 			
-					# Verify resources opened by the process
-					verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+					case $UNAME in
+
+					AIX|Linux)
+						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
+
+					SunOS)
+						verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+
+					esac
 
 					if [ $? -eq 0 ]; then
 						echo "`date`, Nmon is running (PID ${p})"
@@ -508,8 +512,16 @@ case ${PIDs} in
 
 					echo "`date`, Found Nmon instance running with PID ${p}, will verify if it is App related"
 
-                                	# Verify resources opened by the process
-                                        verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+               # Verify resources opened by the process
+					case $UNAME in
+
+					AIX|Linux)
+						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
+
+					SunOS)
+						verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+
+					esac
 				
 					if [ $? -eq 0 ]; then
 
@@ -521,7 +533,7 @@ case ${PIDs} in
 					else
 
 						# CASE 2.1.1.2: Process is not ours, don't touch it
-						echo "`date`, Nmon PID (${p} is not App related, the process has not been touched"
+						echo "`date`, Nmon PID (${p}) is not App related, the process has not been touched"
 
 					fi
 
@@ -552,7 +564,15 @@ case ${PIDs} in
 
 						echo "`date`, Found Nmon instance running with PID ${p}, will verify if it is App related"
 
-						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+						case $UNAME in
+
+						AIX|Linux)
+							verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
+
+						SunOS)
+							verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+
+						esac
 
 						if [ $? -eq 0 ]; then
 
@@ -588,7 +608,15 @@ case ${PIDs} in
 			for p in ${PIDs}; do
 		
 				# Verify resources open by the process, if it matches the App directory kill it, else don't touch the process
-				verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+				case $UNAME in
+
+				AIX|Linux)
+					verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
+
+				SunOS)
+					verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+
+				esac
 					
 				if [ $? -eq 0 ]; then
 	
