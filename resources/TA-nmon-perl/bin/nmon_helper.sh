@@ -29,8 +29,9 @@
 # Modified by Guilhem Marchand 24042015: Solaris update, activate VxVM volumes statistics by nmon.conf, deactivate by default CPUnn statistics (useless in the App context)
 # Modified by Guilhem Marchand 01052015: Prevents from trying to verify a non existing process by first checking proc fs
 # Modified by Guilhem Marchand 05052015: Solaris hotfix
+# Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances
 
-# Version 1.2.10
+# Version 1.2.11
 
 # For AIX / Linux / Solaris
 
@@ -504,16 +505,26 @@ case ${PIDs} in
 				echo "`date`, removing stale pid file"
 			
 				for p in ${PIDs}; do
-				
+
 					echo "`date`, Found Nmon instance running with PID ${p}, will verify if it is App related"
 
+                                	# Verify resources opened by the process
+                                        verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+				
 					if [ $? -eq 0 ]; then
 
-							# CASE 2.1.1.1: Process is ours, running but orphan, kill it and save this information
+						# CASE 2.1.1.1: Process is ours, running but orphan, kill it and save this information
 					
-							kill $p
-							echo "`date`, Nmon PID (${p}) related to Nmon App did not matched pid file, instance with PID ${p} were softly killed"
+						kill $p
+						echo "`date`, Nmon PID (${p}) related to Nmon App did not matched pid file, instance with PID ${p} were softly killed"
+
+					else
+
+						# CASE 2.1.1.2: Process is not ours, don't touch it
+						echo "`date`, Nmon PID (${p} is not App related, the process has not been touched"
+
 					fi
+
 				done
 			
 			;;
@@ -525,7 +536,7 @@ case ${PIDs} in
 				# for each process running, check if it matches the saved pid, if not, verify it matches an App related nmon instance and kill it
 			
 				for p in ${PIDs}; do
-			
+
 					if [ $p -eq ${SAVED_PID} ]; then
 				
 						# CASE 2.1.2.1, OK: Found an App related process AND it matches the PID file, save this information and set the Nmon status				
@@ -539,9 +550,9 @@ case ${PIDs} in
 				
 						# CASE 2.1.2.2, KO: Found a running Process that does not match the pid file, verify if it is App related, kill it if it does, don't touch if if doesn't
 
-						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
-
 						echo "`date`, Found Nmon instance running with PID ${p}, will verify if it is App related"
+
+						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
 
 						if [ $? -eq 0 ]; then
 
@@ -549,6 +560,12 @@ case ${PIDs} in
 					
 							kill $p
 							echo "`date`, Nmon PID (${p}) related to Nmon App did not matched pid file, instance with PID ${p} were softly killed"
+
+						else
+
+							# CASE 2.1.2.2.2: Process is not ours, don't touch it
+                                                	echo "`date`, Nmon PID (${p} is not App related, the process has not been touched"
+
 						fi
 										
 					fi
