@@ -29,7 +29,7 @@
 # Modified by Guilhem Marchand 24042015: Solaris update, activate VxVM volumes statistics by nmon.conf, deactivate by default CPUnn statistics (useless in the App context)
 # Modified by Guilhem Marchand 01052015: Prevents from trying to verify a non existing process by first checking proc fs
 # Modified by Guilhem Marchand 05052015: Solaris hotfix
-# Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances (all OS), migrating from pfiles to pwdx for better chances to identify dupp processes
+# Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances (all OS), Solaris migrating from pfiles to pwdx for better chances to identify dupp processes
 
 # Version 1.2.11
 
@@ -258,7 +258,7 @@ verify_pid() {
 				$LSOF -p $givenpid ;;
 		
 			SunOS )
-				pwdx $givenpid ;;
+				/usr/bin/pwdx $givenpid ;;
 			
 		esac
 		
@@ -584,7 +584,7 @@ case ${PIDs} in
 						else
 
 							# CASE 2.1.2.2.2: Process is not ours, don't touch it
-                                                	echo "`date`, Nmon PID (${p} is not App related, the process has not been touched"
+							echo "`date`, Nmon PID (${p}) is not App related, the process has not been touched"
 
 						fi
 										
