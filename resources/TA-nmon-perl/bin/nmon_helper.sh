@@ -32,7 +32,7 @@
 # Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances (all OS), Solaris migrating from pfiles to pwdx for better chances to identify dupp processes
 # Modified by Guilhem Marchand 08052015: hotfix for AIX, prevents from generating multiple nmon instance being less restrictive while search for nmon instances
 
-# Version 1.2.12
+# Version 1.2.13
 
 # For AIX / Linux / Solaris
 
@@ -276,7 +276,7 @@ verify_pid() {
 write_pid() {
 
 PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-echo $p > ${PIDFILE}
+echo ${PIDs} > ${PIDFILE}
 
 }
 
