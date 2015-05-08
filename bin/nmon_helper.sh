@@ -30,9 +30,9 @@
 # Modified by Guilhem Marchand 01052015: Prevents from trying to verify a non existing process by first checking proc fs
 # Modified by Guilhem Marchand 05052015: Solaris hotfix
 # Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances (all OS), Solaris migrating from pfiles to pwdx for better chances to identify dupp processes
-# Modified by Guilhem Marchand 08052015: hotfix for AIX, prevents from generating multiple nmon instance being less restrictive while search for nmon instances
+# Modified by Guilhem Marchand 08052015: hotfix, correcting stale pid file removing, migrating AIX from procfiles to procwdx
 
-# Version 1.2.13
+# Version 1.2.14
 
 # For AIX / Linux / Solaris
 
@@ -239,7 +239,7 @@ verify_pid() {
 		case $UNAME in
 	
 			AIX )
-				procfiles -n $givenpid ;;
+				procwdx $givenpid ;;
 			
 			Linux )
 
@@ -426,6 +426,7 @@ case ${PIDs} in
 				nmon_isstarted=1
 				
 				echo "`date`, removing stale pid file"
+				rm -f ${SAVED_PID}
 			;;
 			* )
 
@@ -435,10 +436,10 @@ case ${PIDs} in
 			
 					case $UNAME in
 
-					AIX|Linux)
+					Linux)
 						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
 
-					SunOS)
+					AIX|SunOS)
 						verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
 
 					esac
@@ -457,6 +458,9 @@ case ${PIDs} in
 
 						# Set the nmon status (start)
 						nmon_isstarted=1
+
+						echo "`date`, removing stale pid file"
+						rm -f ${SAVED_PID}
 						
 					fi	
 
@@ -473,6 +477,7 @@ case ${PIDs} in
 			nmon_isstarted=1
 			
 			echo "`date`, removing stale pid file"
+			rm -f ${SAVED_PID}
 			
 		fi			
 
@@ -498,6 +503,7 @@ case ${PIDs} in
 				nmon_isstarted=1
 			
 				echo "`date`, removing stale pid file"
+				rm -f ${SAVED_PID}
 			
 				for p in ${PIDs}; do
 
@@ -506,10 +512,10 @@ case ${PIDs} in
                # Verify resources opened by the process
 					case $UNAME in
 
-					AIX|Linux)
+					Linux)
 						verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
 
-					SunOS)
+					AIX|SunOS)
 						verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
 
 					esac
@@ -557,10 +563,10 @@ case ${PIDs} in
 
 						case $UNAME in
 
-						AIX|Linux)
+						Linux)
 							verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
 
-						SunOS)
+						AIX|SunOS)
 							verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
 
 						esac
@@ -601,10 +607,10 @@ case ${PIDs} in
 				# Verify resources open by the process, if it matches the App directory kill it, else don't touch the process
 				case $UNAME in
 
-				AIX|Linux)
+				Linux)
 					verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null ;;
 
-				SunOS)
+				AIX|SunOS)
 					verify_pid $p | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
 
 				esac
