@@ -30,8 +30,9 @@
 # Modified by Guilhem Marchand 01052015: Prevents from trying to verify a non existing process by first checking proc fs
 # Modified by Guilhem Marchand 05052015: Solaris hotfix
 # Modified by Guilhem Marchand 06052015: hotfix, errors in script leading to kill non App related nmon instances (all OS), Solaris migrating from pfiles to pwdx for better chances to identify dupp processes
+# Modified by Guilhem Marchand 08052015: hotfix for AIX, prevents from generating multiple nmon instance being less restrictive while search for nmon instances
 
-# Version 1.2.11
+# Version 1.2.12
 
 # For AIX / Linux / Solaris
 
@@ -275,17 +276,7 @@ verify_pid() {
 write_pid() {
 
 PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-
-for p in ${PIDs}; do
-			
-	# Verify resources open by the process, if it matches the App directory kill it, else don't touch the process
-	verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
-					
-	if [ $? -eq 0 ]; then
-		echo $p > ${PIDFILE}
-	fi					
-
-done
+echo $p > ${PIDFILE}
 
 }
 

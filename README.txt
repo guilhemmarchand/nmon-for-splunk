@@ -16,7 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-nmon release 1.5.20
+nmon release 1.5.21
 
 See Releases Notes
 
