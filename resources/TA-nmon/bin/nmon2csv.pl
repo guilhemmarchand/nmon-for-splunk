@@ -50,9 +50,11 @@
 #                                         - Solaris update, Added Solaris specific sections, specially for Zone analysis
 # Guilhem Marchand 01/05/2015, V1.2.6:
 #                                         - Added support for FC* sections (Fiber Channel)
+# Guilhem Marchand 09/05/2015, V1.2.7:
+#                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
 
 
-$version = "1.2.6";
+$version = "1.2.7";
 
 use Time::Local;
 use Time::HiRes;
@@ -110,6 +112,9 @@ use POSIX 'strftime';
 );
 
 @solaris_dynamic_various = ( "DISKSVCTM", "DISKWAITTM" );
+
+# AIX only dynamic sections
+@AIX_dynamic_various = ( "SEA", "SEAPACKET", "SEACHPHY" );
 
 #################################################
 ## 	Your Customizations Go Here
@@ -1654,6 +1659,22 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
         $now = time();
         $now = $now - $start;
 
+    }
+
+    # AIX Specific sections, run this for OStype AIX or unknown
+
+    if ( $OStype eq "AIX" || $OStype eq "Unknown" ) {
+
+        foreach $key (@AIX_dynamic_various) {
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+
+            &variable_sections_insert($key);
+            $now = time();
+            $now = $now - $start;
+
+        }
+        
     }
 
     # Solaris Specific sections, run this for OStype Solaris or unknown

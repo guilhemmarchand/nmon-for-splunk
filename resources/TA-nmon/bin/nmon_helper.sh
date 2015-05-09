@@ -9,8 +9,9 @@
 # Date - June 2014
 
 # 2015/05/09, Guilhem Marchand: Rewrite of main program to fix main common troubles with nmon_helper.sh, be simple, effective
+# 2015/05/10, Guilhem Marchand: Improved AIX options management (AIX options can now fully be managed by nmon.conf, corrected NFS V4 options which was incorrectly verified)
 
-# Version 1.3.0
+# Version 1.3.1
 
 # For AIX / Linux / Solaris
 
@@ -68,6 +69,9 @@ interval="240"
 # Number of Data refresh snapshots, Nmon will refresh data X times
 # Default to 340 snapshots to provide a full day data measure
 snapshot="340"
+
+# AIX common options default, will be overwritten by nmon.conf (unless the file would not be available)
+AIX_options="-f -T -A -d -K -L -M -P -^"
 
 # source default nmon.conf
 if [ -f $APP/default/nmon.conf ]; then
@@ -299,11 +303,11 @@ case $UNAME in
 AIX )
 
 	if [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -N -s ${interval} -c ${snapshot}"
-	elif [ ${AIX_NFS23} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -NN -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} ${AIX_options} -N -s ${interval} -c ${snapshot}"
+	elif [ ${AIX_NFS4} -eq 1 ]; then
+		nmon_command="${NMON} ${AIX_options} -NN -s ${interval} -c ${snapshot}"
 	else
-		nmon_command="${NMON} -f -T -A -d -K -L -M -P -^ -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} ${AIX_options} -s ${interval} -c ${snapshot}"
 	fi
 	;;
 

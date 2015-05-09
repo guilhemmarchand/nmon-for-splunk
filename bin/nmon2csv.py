@@ -66,6 +66,8 @@
 #                                         - Solaris update, Added Solaris specific sections, specially for Zone analysis
 # - 05/01/2015, V1.1.6: Guilhem Marchand:
 #                                         - Added support for FC* sections (Fiber Channel)
+# - 05/09/2015, V1.1.7: Guilhem Marchand:
+#                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
 
 # Load libs
 
@@ -83,7 +85,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.6'
+nmon2csv_version = '1.1.7'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -133,6 +135,9 @@ solaris_WLM = ["WLMPROJECTCPU", "WLMZONECPU", "WLMTASKCPU", "WLMUSERCPU", "WLMPR
 solaris_VxVM = ["VxVMREAD", "VxVMWRITE", "VxVMXFER", "VxVMBSIZE", "VxVMBUSY", "VxVMSVCTM", "VxVMWAITTM"]
 
 solaris_dynamic_various = ["DISKSVCTM", "DISKWAITTM"]
+
+# AIX only dynamic sections
+AIX_dynamic_various = ["SEA", "SEAPACKET", "SEACHPHY"]
 
 #################################################
 ##      Variables
@@ -1950,7 +1955,18 @@ for section in dynamic_section2:
     dynamic_section_fn(section)
 
 ###################
-# Solaris secton : data requires to be transposed to be exploitable within Splunk
+# AIX Only Dynamic Sections : data requires to be transposed to be exploitable within Splunk
+###################
+
+# Run
+if OStype in ("AIX", "Unknown"):
+
+    for section in AIX_dynamic_various:
+
+        dynamic_section_fn(section)
+
+###################
+# Solaris Sections : data requires to be transposed to be exploitable within Splunk
 ###################
 
 # Specially for WLM Solaris section, we will add the number of logical CPUs to allow evaluation of % CPU
