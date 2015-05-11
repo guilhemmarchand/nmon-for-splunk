@@ -218,7 +218,7 @@ verify_pid() {
 	givenpid=$1	
 
 	# Verify proc fs before checking PID
-	if [ -d /proc/${p} ]; then
+	if [ -d /proc/${givenpid} ]; then
 	
 		case $UNAME in
 	
