@@ -39,18 +39,18 @@ if [ -z "${SPL_HOME}" ]; then
 	exit 1
 fi
 
-# Defined which APP we are running from (nmon / TA-nmon / PA-nmon)
+# Defined which APP we are running from (nmon / TA-nmon-perl / PA-nmon)
 if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
         APP=$SPLUNK_HOME/etc/apps/nmon
 
-elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon" ]; then
-        APP=$SPLUNK_HOME/etc/apps/TA-nmon
+elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon-perl" ]; then
+        APP=$SPLUNK_HOME/etc/apps/TA-nmon-perl
 
 elif [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
         APP=$SPLUNK_HOME/etc/slave-apps/PA-nmon
 
 else
-        echo "`date`, ${HOST} ERROR, the APP directory could not be defined, is nmon / TA-nmon / PA-nmon installed ?"
+        echo "`date`, ${HOST} ERROR, the APP directory could not be defined, is nmon / TA-nmon-perl / PA-nmon installed ?"
         exit 1
 
 fi
@@ -81,7 +81,7 @@ fi
 
 # source local nmon.conf, if any
 
-# Search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon|PA-nmon/local
+# Search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon-perl|PA-nmon/local
 
 if [ -f $APP/local/nmon.conf ]; then
 	. $APP/local/nmon.conf
