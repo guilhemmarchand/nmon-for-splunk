@@ -9,12 +9,13 @@
 # Date - June 2014
 
 # 2015/05/09, Guilhem Marchand: Rewrite of main program to fix main common troubles with nmon_helper.sh, be simple, effective
-# 2015/05/10, Guilhem Marchand: Improved AIX options management (AIX options can now fully be managed by nmon.conf, corrected NFS V4 options which was incorrectly verified)
+# 2015/05/11, Guilhem Marchand: 
+#										- Hotfix, improved process identification (All OS)
+#										- Improved AIX options management (AIX options can now fully be managed by nmon.conf, corrected NFS V4 options which was incorrectly verified)
 
-# Version 1.3.1
+# Version 1.3.01
 
 # For AIX / Linux / Solaris
-
 
 #################################################
 ## 	Your Customizations Go Here            ##
@@ -80,7 +81,7 @@ fi
 
 # source local nmon.conf, if any
 
-# In first option, search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon|PA-nmon/local
+# Search for a local nmon.conf file located in $SPLUNK_HOME/etc/apps/nmon|TA-nmon|PA-nmon/local
 
 if [ -f $APP/local/nmon.conf ]; then
 	. $APP/local/nmon.conf
@@ -212,12 +213,83 @@ esac
 
 }
 
+verify_pid() {
+
+	givenpid=$1	
+
+	# Verify proc fs before checking PID
+	if [ -d /proc/${p} ]; then
+	
+		case $UNAME in
+	
+			AIX )
+			
+				ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep $givenpid ;;
+		
+			Linux )
+
+				if [ -x /usr/bin/lsof ]; then
+			
+					LSOF="/usr/bin/lsof"
+			
+				elif [ -x /sbin/lsof ]; then
+			
+					LSOF="/sbin/lsof"
+				
+				else
+			
+					LSOF=`which lsof 2>&1`
+				
+				fi
+
+				$LSOF -p $givenpid ;;
+		
+			SunOS )
+				/usr/bin/pwdx $givenpid ;;
+			
+		esac
+		
+	else
+	
+		# Just return nothing		
+		echo ""
+		
+	fi
+
+}
+
 # Search for running process and write PID file
 write_pid() {
 
-PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-echo ${PIDs} > ${PIDFILE}
+case $UNAME in 
 
+	Linux|SunOS)
+
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+
+		for p in ${PIDs}; do
+
+			verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+
+			if [ $? -eq 0 ]; then
+				echo ${PIDs} > ${PIDFILE}
+			fi
+
+		done
+	;;	
+		
+	AIX)
+	
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}'`
+		
+		if [ $? -eq 0 ]; then
+			echo ${PIDs} > ${PIDFILE}
+		fi
+
+	;;
+			
+	esac
+			
 }
 
 
@@ -281,6 +353,8 @@ esac
 # - AIX: Add the "-N" option for NFS V2/V3, "-NN" for NFS V4
 
 # For AIX, the default command options line "-f -T -A -d -K -L -M -P -^" includes: (see http://www-01.ibm.com/support/knowledgecenter/ssw_aix_61/com.ibm.aix.cmds4/nmon.htm)
+
+# AIX options can be managed using local/nmon.conf, do not modify options here
 
 # -A	Includes the Asynchronous I/O section in the view.
 # -d	Includes the Disk Service Time section in the view.
@@ -379,15 +453,25 @@ else
 
 	*)
 	
-	ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}' | grep "${SAVED_PID}" >/dev/null
+	case $UNAME in
+
+	Linux)
+		verify_pid ${SAVED_PID} | grep -v grep | grep ${APP_VAR} >/dev/null ;;
+
+	SunOS)
+		verify_pid ${SAVED_PID} | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+		
+	AIX)
+		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
+
+	esac	
 	
 	if [ $? -eq 0 ]; then
-
 		# Process found	
 		echo "`date`, ${HOST} INFO: found Nmon running with PID ${SAVED_PID}"
 		exit 0
 	
-	else
+	else	
 	
 		# Process not found, Nmon has terminated or is not yet started
 		
