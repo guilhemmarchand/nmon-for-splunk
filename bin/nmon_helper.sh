@@ -12,8 +12,11 @@
 # 2015/05/11, Guilhem Marchand: 
 #										- Hotfix, improved process identification (All OS)
 #										- Improved AIX options management (AIX options can now fully be managed by nmon.conf, corrected NFS V4 options which was incorrectly verified)
+# 2015/05/14, Guilhem Marchand: Linux and Solaris corrections and improvements
+#										- Linux max default devices missing (in case of nmon.conf not being sourced)
+#										- Use a splunktag for process identification for Linux and Solaris hosts
 
-# Version 1.3.01
+# Version 1.3.02
 
 # For AIX / Linux / Solaris
 
@@ -64,15 +67,18 @@ UNAME=`uname`
 # set defaults values for interval and snapshot and source nmon.conf 
 
 # Refresh interval in seconds, Nmon will this value to refresh data each X seconds
-# Default to 240 seconds
-interval="240"
+# Default to 60 seconds
+interval="60"
 	
 # Number of Data refresh snapshots, Nmon will refresh data X times
-# Default to 340 snapshots to provide a full day data measure
-snapshot="340"
+# Default to 120 snapshots
+snapshot="120"
 
 # AIX common options default, will be overwritten by nmon.conf (unless the file would not be available)
 AIX_options="-f -T -A -d -K -L -M -P -^"
+
+# Linux max devices (-d option), default to 1500
+Linux_devices="1500"
 
 # source default nmon.conf
 if [ -f $APP/default/nmon.conf ]; then
@@ -226,27 +232,10 @@ verify_pid() {
 			
 				ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep $givenpid ;;
 		
-			Linux )
+			Linux|SunOS )
 
-				if [ -x /usr/bin/lsof ]; then
-			
-					LSOF="/usr/bin/lsof"
-			
-				elif [ -x /sbin/lsof ]; then
-			
-					LSOF="/sbin/lsof"
-				
-				else
-			
-					LSOF=`which lsof 2>&1`
-				
-				fi
-
-				$LSOF -p $givenpid ;;
-		
-			SunOS )
-				/usr/bin/pwdx $givenpid ;;
-			
+				ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep $givenpid ;;
+							
 		esac
 		
 	else
@@ -265,17 +254,12 @@ case $UNAME in
 
 	Linux|SunOS)
 
-		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
+		
+		if [ $? -eq 0 ]; then
+			echo ${PIDs} > ${PIDFILE}
+		fi
 
-		for p in ${PIDs}; do
-
-			verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
-
-			if [ $? -eq 0 ]; then
-				echo ${PIDs} > ${PIDFILE}
-			fi
-
-		done
 	;;	
 		
 	AIX)
@@ -386,15 +370,15 @@ AIX )
 	;;
 
 SunOS )
-	nmon_command="${NMON} ${interval} ${snapshot}"
+	nmon_command="${NMON} ${interval} ${snapshot} splunktag"
 	;;
 
 Linux )
 
 	if [ ${Linux_NFS} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -d ${Linux_devices} -N -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -d ${Linux_devices} -N -s ${interval} -c ${snapshot} splunktag"
 	else
-		nmon_command="${NMON} -f -T -d ${Linux_devices} -s ${interval} -c ${snapshot}"
+		nmon_command="${NMON} -f -T -d ${Linux_devices} -s ${interval} -c ${snapshot} splunktag"
 	fi
 	;;
 
@@ -456,10 +440,10 @@ else
 	case $UNAME in
 
 	Linux)
-		verify_pid ${SAVED_PID} | grep -v grep | grep ${APP_VAR} >/dev/null ;;
+		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
 
 	SunOS)
-		verify_pid ${SAVED_PID} | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
 		
 	AIX)
 		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
