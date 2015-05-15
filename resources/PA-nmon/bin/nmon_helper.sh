@@ -232,9 +232,13 @@ verify_pid() {
 			
 				ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep $givenpid ;;
 		
-			Linux|SunOS )
+			Linux )
 
 				ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep $givenpid ;;
+				
+			SunOS )
+			
+				/usr/bin/pwdx $givenpid ;;
 							
 		esac
 		
@@ -252,7 +256,7 @@ write_pid() {
 
 case $UNAME in 
 
-	Linux|SunOS)
+	Linux)
 
 		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
 		
@@ -260,7 +264,22 @@ case $UNAME in
 			echo ${PIDs} > ${PIDFILE}
 		fi
 
-	;;	
+	;;
+	
+	SunOS)
+
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+
+		for p in ${PIDs}; do
+
+			verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+
+			if [ $? -eq 0 ]; then
+				echo ${PIDs} > ${PIDFILE}
+			fi
+
+		done
+	;;		
 		
 	AIX)
 	
@@ -370,7 +389,7 @@ AIX )
 	;;
 
 SunOS )
-	nmon_command="${NMON} ${interval} ${snapshot} splunktag"
+	nmon_command="${NMON} ${interval} ${snapshot}"
 	;;
 
 Linux )
@@ -443,8 +462,8 @@ else
 		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
 
 	SunOS)
-		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
-		
+		verify_pid ${SAVED_PID} | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+				
 	AIX)
 		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
 
