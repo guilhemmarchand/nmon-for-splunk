@@ -37,101 +37,59 @@
     
     {% endblock heading %}
     
-    
-   
+
     {% block usage%}
 
-        <table class="table table-striped table-bordered">
-          <tr>
-          
-            <td>
+        <div class="input input-timerangepicker" id="timerange">
+            <label>Time Range:</label>
+    			{% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}
+        </div>
 
-              <h3>Time Range:</h3>
-
-    			  {% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}                
-
-            </td>
-
-            <td>
-				
-              <h3>Time Filtering:</h3>
-
+        <div class="input input-dropdown">
+            <label>Time Filtering:</label>
 				  {% dropdown id="filtertime-dropdown" default="No_Filter" value="$timefilter$"|token_safe %}
+        </div>
 
-            </td>
-
-            <td>
-
-              <h3>Filter OS Type:</h3>
-
+        <div class="input input-dropdown" id="osfilter-dropdown">
+            <label>Time Filtering:</label>
               {% dropdown id="osfilter-dropdown" default="AIX" value="$OStype$"|token_safe%}
+        </div>
 
-            </td>
+        <div class="input input-dropdown" id="frameid-dropdown">
+            <label>frameID:</label>
+					{% dropdown id="frameid-dropdown" managerid="frameid-populate" valueField="TOP_AIX.frameID" default="*" value="$frameID$"|token_safe %}
+        </div>
 
-            <td>
+        <div class="input input-text" id="hosts-textinput">
+            <label>Optional: Filter hosts populating</label>
+					{% textinput id="hosts-textinput" value="$hostname-filter$"|token_safe default="*" %}
+        </div>
 
-				   <h3>Frame IDs:</h3>					
-					{% dropdown id="frameid-dropdown" managerid="frameid-populate" valueField="TOP_AIX.frameID" default="*" value="$frameID$"|token_safe %}						
-
-            </td>
-
-            <td>
-
-				   <h3>Hosts Filtering:</h3>					
-					
-					{% textinput id="hosts-textinput" value="$hostname-filter$"|token_safe default="*" %}	
-
-            </td>
-
-            <td>
-
-				   <h3>Host Selection:</h3>					
-					
+        <div class="input input-dropdown" id="hosts-dropdown">
+            <label>Host Selection:</label>
 					{% dropdown id="hosts-dropdown" managerid="hostname-populate" valueField="TOP_AIX.hostname" value="$hostname$"|token_safe %}	
+        </div>
 
-            </td>
-
-          </tr>
-        </table>
-
-        <table class="table table-striped table-bordered">
-          <tr>
-
-				<td>
-				
-					<h3>Filter Command(s):</h3>
-					
+        <div class="input input-text" id="command-textinput">
+            <label>Optional: Filter Commands</label>
 					{% textinput id="command-textinput" value="$Command$"|token_safe default="*" %}
-				
-				</td>
+        </div>
 
-				<td>
-				
-					<h3>Filter PID(s):</h3>
-					
+        <div class="input input-text" id="pid-textinput">
+            <label>Optional: Filter PIDs</label>
 					{% textinput id="pid-textinput" value="$PID$"|token_safe default="*" %}
-				
-				</td>
+        </div>
 
-				<td>
-				
-					<h3>Increase factor CPU load by SMT mode:</h3>
-					
+        <div class="input input-dropdown" id="increase-dropdown">
+            <label>Increase factor CPU load by SMT mode:</label>
 					{% dropdown id="increase-dropdown" default='eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)' value="$valuesincrease$"|token_safe %}
-				
-				</td>
+        </div>
 
-            <td>
+        <div class="input input-dropdown" id="stats-dropdown">
+            <label>frameID:</label>
+					{% dropdown id="stats-dropdown" width="250" default="avg" value="$statsmode$"|token_safe %}
+        </div>
 
-					<h3>Stats Mode:</h3>
-
-					{% dropdown id="stats-dropdown" width="250" default="avg" value="$statsmode$"|token_safe %}	
-
-            </td>
-
-          </tr>
-        </table>
-        
     {% endblock usage%}
 
 <!-- ##################################################################################### Single Core CPU Usage per Command Invocation ##################################################################################### -->
