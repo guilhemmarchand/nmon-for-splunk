@@ -44,67 +44,40 @@
     
     {% block usage%}
 
+        <div class="input input-timerangepicker" id="timerange">
+            <label>Time Range:</label>
+    			  {% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}
+        </div>
 
-        <table class="table table-striped table-bordered">
-          <tr>
-          
-            <td>
-
-              <h3>Time Range:</h3>
-
-    			  {% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}                
-
-            </td>
-
-            <td>
-				
-              <h3>Time Filtering:</h3>
-
+        <div class="input input-dropdown" id="filtertime-dropdown">
+            <label>Time Filtering:</label>
 				  {% dropdown id="filtertime-dropdown" default="No_Filter" value="$timefilter$"|token_safe %}
+        </div>
 
-            </td>
-
-            <td>
-
-              <h3>Filter OS Type:</h3>
-
+        <div class="input input-dropdown" id="osfilter-dropdown">
+            <label>Filter OS Type:</label>
               {% dropdown id="osfilter-dropdown" default="AIX" value="$OStype$"|token_safe%}
+        </div>
 
-            </td>
+        <div class="input input-dropdown" id="frameid-dropdown">
+            <label>Frame IDs:</label>
+					{% dropdown id="frameid-dropdown" managerid="frameid-populate" valueField="CPU.frameID" default="*" value="$frameID$"|token_safe %}
+        </div>
 
-            <td>
+        <div class="input input-text" id="hosts-textinput">
+            <label>Optional: Filter hosts populating</label>
+					{% textinput id="hosts-textinput" value="$hostname$"|token_safe default="*" %}
+        </div>
 
-				   <h3>Frame IDs:</h3>					
-					{% dropdown id="frameid-dropdown" managerid="frameid-populate" valueField="CPU.frameID" default="*" value="$frameID$"|token_safe %}						
+        <div class="input input-dropdown" id="monitor">
+            <label>Monitor Information:</label>
+					{% dropdown id="monitor-dropdown" default="LPAR_usage" value="$monitor$"|token_safe %}	
+        </div>
 
-            </td>
-
-            <td>
-
-				   <h3>Hosts Filtering:</h3>					
-					
-					{% textinput id="hosts-textinput" value="$hostname$"|token_safe default="*" %}	
-
-            </td>
-
-            <td>
-
-					<h3>Monitors Information:</h3>
-
-					{% dropdown id="monitor-dropdown" width="250" value="$monitor$"|token_safe %}	
-
-            </td>
-
-            <td>
-
-					<h3>Stats Mode:</h3>
-
-					{% dropdown id="stats-dropdown" width="250" default="avg" value="$statsmode$"|token_safe %}	
-
-            </td>
-
-          </tr>
-        </table>
+        <div class="input input-dropdown" id="stats-dropdown">
+            <label>Stats mode:</label>
+					{% dropdown id="stats-dropdown" default="avg" value="$statsmode$"|token_safe %}
+        </div>
 		
     {% endblock usage%}
 
@@ -229,7 +202,7 @@
 	{% postprocessmanager 
 	id="search-table-cpu" 
 	managerid="search-cpu" 
-	search="| sort - usage" %}
+	search="| sort - usage | eval usage=round(usage,3) | eval usage_PCT=round(usage_PCT, 3)" %}
 	
 <!-- MEMORY Usage -->
     
