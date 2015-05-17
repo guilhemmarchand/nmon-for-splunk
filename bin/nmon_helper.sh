@@ -139,7 +139,7 @@ case $Linux_embedded_nmon_priority in
 	# give priority to any nmon binary found in local PATH
 
 	# Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
-	`which nmon 2>&1`
+	which nmon >/dev/null 2>&1
 
 	if [ $? -eq 0 ]; then
 
@@ -315,7 +315,7 @@ if [ ! -x "$NMON" ];then
 	"")
 	
 		# Look for local binary in PATH
-		which nmon 2>&1
+		which nmon >/dev/null 2>&1
 		
 		if [ $? -eq 0 ]; then
 		
