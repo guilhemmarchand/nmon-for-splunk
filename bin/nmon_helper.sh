@@ -168,8 +168,17 @@ if [ ! -x "$NMON" ];then
 
 	# No nmon found in env, so using prepackaged version
 
-	# First, define the processor architecture
-	ARCH=`arch`
+	# First, define the processor architecture, use the arch command in priority, fall back to uname -m if not available
+	which arch >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+
+			ARCH=`arch`
+			
+	else
+	
+			ARCH=`uname -m`	
+	
+	fi
 	
 	# Let's convert some of architecture names to more conventional names, specially used by the nmon community to name binaries (not that ppc32 is more or less clear than power_32...)
 
