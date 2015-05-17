@@ -80,6 +80,11 @@ AIX_options="-f -T -A -d -K -L -M -P -^"
 # Linux max devices (-d option), default to 1500
 Linux_devices="1500"
 
+# Change the priority applied while looking at nmon binary
+# by default, the nmon_helper.sh script will use any nmon binary found in PATH
+# Set to "1" to give the priority to embedded nmon binaries
+Linux_embedded_nmon_priority="0"
+
 # source default nmon.conf
 if [ -f $APP/default/nmon.conf ]; then
 	. $APP/default/nmon.conf
@@ -95,6 +100,10 @@ fi
 
 # Nmon Binary
 case $UNAME in
+
+##########
+#	AIX	#
+##########
 
 AIX )
 
@@ -114,23 +123,218 @@ fi
 
 ;;
 
+##########
+#	Linux	#
+##########
+
+# Nmon App comes with most of nmon versions available from http://nmon.sourceforge.net/pmwiki.php?n=Site.Download
+
 Linux )
 
-# Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
-NMON=`which nmon 2>&1`
+case $Linux_embedded_nmon_priority in
+
+0)
+
+	# give priority to any nmon binary found in local PATH
+
+	# Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
+	NMON=`which nmon 2>&1`
+
+;;
+
+1)
+
+	# give priority to embedded binaries
+	# if none of embedded binaries can suit the local system, we will switch to local nmon binary, if it's available
+
+	NMON=""
+
+;;
+
+esac
+
 if [ ! -x "$NMON" ];then
+
 	# No nmon found in env, so using prepackaged version
-	case `uname` in 
-		Linux)
-			NMON="$APP/bin/nmon_`arch`_`uname|tr '[:upper:]' '[:lower:]'`"
-			;;
-		*)
-			echo "`date`, ${HOST} ERROR, No nmon installed here"
-			;;	
+
+	# First, define the processor architecture
+	ARCH=`arch`
+	
+	# Let's convert some of architecture names to more conventional names, specially used by the nmon community to name binaries (not that ppc32 is more or less clear than power_32...)
+
+	case $ARCH in
+	
+	i686 )
+	
+		ARCH_NAME="x86" ;; # x86 32 bits
+		
+	x86_64 )
+	
+		ARCH_NAME="x86_64" ;; # x86 64 bits
+		
+	ia64 )
+	
+		ARCH_NAME="ia64" ;; # Itanium 64 bits	
+	
+	ppp32 )
+	
+		ARCH_NAME="power_32" ;; # powerpc 32 bits
+		
+	ppp64 )
+	
+		ARCH_NAME="power_64" ;; # powerpc 64 bits	
+
+	ppp64le )
+	
+		ARCH_NAME="power_64le" ;; # powerpc 64 bits little endian	
+
+	ppp64be )
+	
+		ARCH_NAME="power_64be" ;; # powerpc 64 bits big endian
+
+	s390 )
+	
+		ARCH_NAME="mainframe_32" ;; # s390 32 bits mainframe	
+
+	s390x )
+	
+		ARCH_NAME="mainframe_64" ;; # s390x 64 bits mainframe	
+	
 	esac
+
+	# Initialize linux_vendor
+	linux_vendor=""
+	linux_mainversion=""
+	linux_subversion=""
+	linux_fullversion=""
+	
+	# Try to find the better embedded binary depending on Linux version
+	
+	# Most modern Linux comes with an /etc/os-release, this is (from far) the better scenario for system identification
+	
+	OSRELEASE="/etc/os-release"	
+	
+	if [ -f $OSRELEASE ]; then
+
+		# Great, let's try to find the better binary for that system
+	
+		linux_vendor=`grep '^ID=' $OSRELEASE | awk -F= '{print $2}'`	# The Linux distribution
+		linux_mainversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | awk -F'.' '{print $1}'`	# The main release (eg. rhel 7) 	
+		linux_subversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | awk -F'.' '{print $2}'`	# The sub level release (eg. "1" from rhel 7.1)
+		linux_fullversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | sed 's/\.//g'`	# Concatenated version of the release (eg. 71 for rhel 7.1)	
+	
+		# Try the most accurate
+		
+		if [ -f $APP/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion} ]; then
+		
+			NMON="$APP/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}"
+			
+		# try the mainversion
+		
+		elif [ -f ${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion} ]; then
+		
+			NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+		
+		fi
+		
+	# So bad, no os-release, probably old linux, things becomes a bit harder
+	
+	# rhel, starting rhel 6, the /etc/os-release should be available but we will check for older version to newer
+	# This shall not be updated in the future as the /etc/os-release is now available by default
+	elif [ -f /etc/redhat-release ]; then
+
+		for version in 4 5 6 7; do
+	
+			# search for rhel		
+			if grep "Red Hat Enterprise Linux Server release $version" /etc/redhat-release >/dev/null; then
+		
+				linux_vendor="rhel"
+				linux_mainversion="$version"
+				NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"					
+				
+			fi
+			
+		done
+
+	# Second chance for sles and opensuse, /etc/SuSE-release is depracated and should be removed in future version
+	elif [ -f /etc/SuSE-release ]; then
+	
+		# sles
+		
+		if grep "SUSE Linux Entreprise Server" /etc/SuSE-release >/dev/null; then
+		
+			linux_vendor="sles"
+			# Get the main version only
+			linux_mainversion=`grep 'VERSION =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
+			NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+		
+		elif 	grep "openSUSE" /etc/SuSE-release >/dev/null; then
+		
+			linux_vendor="opensuse"
+			# Get the main version only
+			linux_mainversion=`grep 'VERSION =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
+			NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+					
+		fi
+	
+	elif [ -f /etc/issue ]; then
+
+		# search for debian (note: starting debian 7, the /etc/os-release should be available)
+		# This shall not be updated in the future as the /etc/os-release is now available by default
+
+		for version in 5 6 7; do
+	
+		
+			if grep "Debian GNU/Linux $version" /etc/issue >/dev/null; then
+		
+				linux_vendor="debian"
+				linux_mainversion="$version"
+				NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+
+			fi
+		
+		done
+		
+	fi
+
+	# Verify NMON is set and exists, if not, try falling back to generic builds
+
+	case $NMON in
+	
+	"")
+	
+		# Look for local binary in PATH
+		which nmon 2>&1
+		
+		if [ $? -eq 0 ]; then
+		
+			NMON=`which nmon 2>&1`
+		
+		else
+		
+			# Try switching to embedded generic
+			NMON="${APP}/bin/linux/generic/nmon_linux_${ARCH}"
+	
+		fi	
+	
+	esac
+
+	# Finally verify we have a binary that exists and is executable
+	
+	if [ ! -x ${NMON} ]; then
+	
+		echo "`date`, ${HOST} ERROR, could not find an nmon binary suitable for this system, please install nmon manually and set it available in the user PATH"
+		exit 1
+	
+	fi
+
 fi
 
 ;;
+
+##########
+#	SunOS	#
+##########
 
 SunOS )
 
