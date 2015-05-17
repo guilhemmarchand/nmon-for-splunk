@@ -15,6 +15,7 @@
 # 2015/05/14, Guilhem Marchand: Linux and Solaris corrections and improvements
 #										- Linux max default devices missing (in case of nmon.conf not being sourced)
 #										- Use a splunktag for process identification for Linux and Solaris hosts
+#										- New Linux system identification to be used with embedded nmon binaries
 
 # Version 1.3.02
 
@@ -138,7 +139,17 @@ case $Linux_embedded_nmon_priority in
 	# give priority to any nmon binary found in local PATH
 
 	# Nmon BIN full path (including bin name), please update this value to reflect your Nmon installation
-	NMON=`which nmon 2>&1`
+	`which nmon 2>&1`
+
+	if [ $? -eq 0 ]; then
+
+		NMON=`which nmon`
+
+	else
+
+		NMON=""
+
+	fi
 
 ;;
 
@@ -218,7 +229,7 @@ if [ ! -x "$NMON" ];then
 
 		# Great, let's try to find the better binary for that system
 	
-		linux_vendor=`grep '^ID=' $OSRELEASE | awk -F= '{print $2}'`	# The Linux distribution
+		linux_vendor=`grep '^ID=' $OSRELEASE | awk -F= '{print $2}' | sed 's/\"//g'`	# The Linux distribution
 		linux_mainversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | awk -F'.' '{print $1}'`	# The main release (eg. rhel 7) 	
 		linux_subversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | awk -F'.' '{print $2}'`	# The sub level release (eg. "1" from rhel 7.1)
 		linux_fullversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | sed 's/\.//g'`	# Concatenated version of the release (eg. 71 for rhel 7.1)	
