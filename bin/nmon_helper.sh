@@ -342,9 +342,18 @@ if [ ! -x "$NMON" ];then
 	# Finally verify we have a binary that exists and is executable
 	
 	if [ ! -x ${NMON} ]; then
-	
-		echo "`date`, ${HOST} ERROR, could not find an nmon binary suitable for this system, please install nmon manually and set it available in the user PATH"
-		exit 1
+
+		if [ -x ${APP}/bin/linux/generic/nmon_linux_${ARCH} ]; then
+		
+			# Try switching to embedded generic
+			NMON="${APP}/bin/linux/generic/nmon_linux_${ARCH}"
+
+		else
+			
+			echo "`date`, ${HOST} ERROR, could not find an nmon binary suitable for this system, please install nmon manually and set it available in the user PATH"
+			exit 1
+			
+		fi	
 	
 	fi
 
