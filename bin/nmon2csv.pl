@@ -53,12 +53,26 @@
 # Guilhem Marchand 09/05/2015, V1.2.7:
 #                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
 
-
 $version = "1.2.7";
 
 use Time::Local;
 use Time::HiRes;
+use Getopt::Long;
 use POSIX 'strftime';
+
+#################################################
+##      Args
+#################################################
+
+# Default values
+
+my $OPMODE = "";
+
+$result = GetOptions(
+    "mode=s"  => \$OPMODE,     # string
+    "version" => \$VERSION,    # flag
+    "help"    => \$help        # flag
+);
 
 #################################################
 ##      Parameters
@@ -95,7 +109,10 @@ use POSIX 'strftime';
 );
 
 # Sections that won't be incremented
-@dynamic_vars2 = ("IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE", "FCREAD", "FCWRITE", "FCXFERIN", "FCXFEROUT");
+@dynamic_vars2 = (
+    "IOADAPT", "NETERROR", "NET",      "NETPACKET", "JFSFILE", "JFSINODE",
+    "FCREAD",  "FCWRITE",  "FCXFERIN", "FCXFEROUT"
+);
 
 # Sections of Performance Monitors for Solaris
 
@@ -599,7 +616,26 @@ foreach $FILENAME (@nmon_files) {
     $ending_epochtime = $ZZZZ_epochtime;
 
     # Evaluate if we are dealing with real time data or cold data
-    if ( ( ($time_epoch) - ( 4 * $INTERVAL ) ) > $ending_epochtime ) {
+
+    if ( $OPMODE eq "colddata" ) {
+
+        $colddata = True;
+        print "ANALYSIS: Enforcing colddata mode using --mode option \n";
+
+    }
+
+    elsif ( $OPMODE eq "realtime" ) {
+
+        $realtime = True;
+        print("ANALYSIS: Enforcing realtime mode using --mode option \n");
+
+        # Override ID_REF & CONFIG_REF
+        $ID_REF     = "$APP_VAR/id_reference_realtime.txt";
+        $CONFIG_REF = "$APP_VAR/config_reference_realtime.txt";
+
+    }
+
+    elsif ( ( ($time_epoch) - ( 4 * $INTERVAL ) ) > $ending_epochtime ) {
 
         $colddata = True;
         print "ANALYSIS: Assuming Nmon cold data \n";
@@ -754,285 +790,109 @@ foreach $FILENAME (@nmon_files) {
         # default is extract
         my $config_run = 0;
 
-        # Search in ID_REF for a last matching execution
-        if ( -e $CONFIG_REF ) {
+# If the BBB_FLAG is found and we are in real time, the last configuration extraction did not extracted BBB section, proceed any way
 
-            open( CONFIG_REF, "< $CONFIG_REF" )
-              or die "ERROR: Can't open $CONFIG_REF : $!";
-            chomp $CONFIG_REF;
+        if ( -e $BBB_FLAG ) {
 
-            # Only proceed if hostname has the same value
-            if ( <CONFIG_REF> =~ m/$HOSTNAME:\s(\d+)/ ) {
+            if ( $realtime eq "True" ) {
 
-                $config_lastepoch = $1;
+                print
+"CONFIG section: BBB flag found (BBB sections could not yet be extracted), enforcing configuration extraction \n";
+                print ID_REF
+"CONFIG section: BBB flag found (BBB sections could not yet be extracted), enforcing configuration extraction \n";
+
+                # run sub routine
+                &config_extract
 
             }
 
-            # Evaluate the delta
-            $time_delta = ( $time_epoch - $config_lastepoch );
+# remove the flag, if the BBB extraction fails again, it will be created again (in real mode)
+            unlink $BBB_FLAG;
 
-            # Only generate data once per hour
-            if ( $time_delta < 3600 ) {
+        }
 
-                # Don't extract only if BBB_FLAG does not exist
-                if ( -e $BBB_FLAG ) {
+        else {
 
-                    $config_run = "0";
+            # Search in ID_REF for a last matching execution
+            if ( -e $CONFIG_REF ) {
+
+                open( CONFIG_REF, "< $CONFIG_REF" )
+                  or die "ERROR: Can't open $CONFIG_REF : $!";
+                chomp $CONFIG_REF;
+
+                # Only proceed if hostname has the same value
+                if ( <CONFIG_REF> =~ m/$HOSTNAME:\s(\d+)/ ) {
+
+                    $config_lastepoch = $1;
 
                 }
 
-                else {
+                # Evaluate the delta
+                $time_delta = ( $time_epoch - $config_lastepoch );
+
+                # Only generate data once per hour
+                if ( $time_delta < 3600 ) {
 
                     $config_run = "1";
 
                 }
 
-            }
+                elsif ( $time_delta > 3600 ) {
 
-            elsif ( $time_delta > 3600 ) {
-
-                $config_run = "0";
-
-            }
-
-        }
-
-        if ( $config_run eq "0" ) {
-
-            if ( $realtime eq "True" ) {
-
-                $limit = ( ($starting_epochtime) + ( 4 * $INTERVAL ) );
-
-                print "last known epoch is $last_known_epochtime \n";
-
-                if ( $last_known_epochtime < $limit ) {
-
-                    print "CONFIG section will be extracted \n";
-
-                    unless ( open( INSERT, ">$BASEFILENAME" ) ) {
-                        die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
-                    }
-
-                    # Initialize variables
-                    my $section      = "CONFIG";
-                    my $time         = "";
-                    my $date         = "";
-                    my $hostnameT    = "Unknown";
-                    my $SerialNumber = "Unknown";
-                    $count     = 0;
-                    $BBB_count = 0;
-
-            # Get nmon/server settings (search string, return column, delimiter)
-                    $AIXVER   = &get_setting( "AIX",      2, "," );
-                    $HOSTNAME = &get_setting( "host",     2, "," );
-                    $DATE     = &get_setting( "AAA,date", 2, "," );
-                    $TIME     = &get_setting( "AAA,time", 2, "," );
-
-                    if ( $AIXVER eq "-1" ) {
-                        $SN = $HOSTNAME;    # Probably a Linux host
-                    }
-                    else {
-                        $SN = &get_setting( "systemid", 4, "," );
-                        $SN =
-                          ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
-                    }
-
-                    # write event header
-
-                    my $write =
-                        $section . ","
-                      . $DATE . ":"
-                      . $TIME . ","
-                      . $SN . ","
-                      . $HOSTNAME;
-                    print( INSERT "$write\n" );
-                    $count++;
-
-                    # Open NMON file for reading
-                    if ( !open( FIC, $file ) ) {
-                        die(    "ERROR: while trying to open NMON Source file '"
-                              . $file
-                              . "'" );
-                    }
-
-                    while ( defined( my $l = <FIC> ) ) {
-                        chomp $l;
-
-                        # CONFIG Section"
-
-                        if ( $l =~ /^AAA/ ) {
-
-                            my $x = $l;
-
-                            # Manage some fields we statically set
-                            $x =~ s/CONFIG,//g;
-                            $x =~ s/Time,//g;
-
-                            my $write = $x;
-
-                            print( INSERT "$write\n" );
-                            $count++;
-
-                        }
-
-                        if ( $l =~ /^BBB/ ) {
-
-                            my $x = $l;
-
-                            # Manage some fields we statically set
-                            $x =~ s/CONFIG,//g;
-                            $x =~ s/Time,//g;
-
-                            my $write = $x;
-
-                            print( INSERT "$write\n" );
-                            $count++;
-                            $BBB_count++;
-
-                        }
-
-                    }
-
-# If we extracted at least 10 lines of BBB data, estimate we successfully extracted it
-                    if ( $BBB_count > 10 ) {
-
-                        if ( -e $BBB_FLAG ) {
-
-                            unlink $BBB_FLAG;
-
-                        }
-
-                    }
-
-                    else {
-
-                        open( BBB_FLAG, ">$BBB_FLAG" );
-                        print BBB_FLAG "BBB_status KO";
-
-                    }
-
-                    print "$key section: Wrote $count lines\n";
-                    print ID_REF "$key section: Wrote $count lines\n";
-
-                    # Open CONFIG_REF for writing in create mode
-                    open( CONFIG_REF, ">$CONFIG_REF" );
-
-                    # save configuration extraction
-                    print CONFIG_REF "$HOSTNAME: $time_epoch \n";
+                    $config_run = "0";
 
                 }
 
-                else {
+            }
 
-                    print
+            if ( $config_run eq "0" ) {
+
+# Real time restricts configuration extraction once per hour, with the exception of the BBB extraction failure
+                if ( $realtime eq "True" ) {
+
+                    $limit = ( ($starting_epochtime) + ( 4 * $INTERVAL ) );
+
+                    print "last known epoch is $last_known_epochtime \n";
+
+                    if ( $last_known_epochtime < $limit ) {
+
+                        print "CONFIG section will be extracted \n";
+
+                        # run sub routine
+                        &config_extract
+
+                    }
+
+                    else {
+
+                        print
 "CONFIG section: Assuming we already extracted for this file \n";
 
-                }
-
-            }
-
-            elsif ( $colddata eq "True" ) {
-
-                unless ( open( INSERT, ">$BASEFILENAME" ) ) {
-                    die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
-                }
-
-                # Initialize variables
-                my $section      = "CONFIG";
-                my $time         = "";
-                my $date         = "";
-                my $hostnameT    = "Unknown";
-                my $SerialNumber = "Unknown";
-                $count = 0;
-
-            # Get nmon/server settings (search string, return column, delimiter)
-                $AIXVER   = &get_setting( "AIX",      2, "," );
-                $HOSTNAME = &get_setting( "host",     2, "," );
-                $DATE     = &get_setting( "AAA,date", 2, "," );
-                $TIME     = &get_setting( "AAA,time", 2, "," );
-
-                if ( $AIXVER eq "-1" ) {
-                    $SN = $HOSTNAME;    # Probably a Linux host
-                }
-                else {
-                    $SN = &get_setting( "systemid", 4, "," );
-                    $SN = ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
-                }
-
-                # write event header
-
-                my $write =
-                    $section . ","
-                  . $DATE . ":"
-                  . $TIME . ","
-                  . $SN . ","
-                  . $HOSTNAME;
-                print( INSERT "$write\n" );
-                $count++;
-
-                # Open NMON file for reading
-                if ( !open( FIC, $file ) ) {
-                    die(    "ERROR: while trying to open NMON Source file '"
-                          . $file
-                          . "'" );
-                }
-
-                while ( defined( my $l = <FIC> ) ) {
-                    chomp $l;
-
-                    # CONFIG Section"
-
-                    if ( $l =~ /^AAA/ ) {
-
-                        my $x = $l;
-
-                        # Manage some fields we statically set
-                        $x =~ s/CONFIG,//g;
-                        $x =~ s/Time,//g;
-
-                        my $write = $x;
-
-                        print( INSERT "$write\n" );
-                        $count++;
-
-                    }
-
-                    if ( $l =~ /^BBB/ ) {
-
-                        my $x = $l;
-
-                        # Manage some fields we statically set
-                        $x =~ s/CONFIG,//g;
-                        $x =~ s/Time,//g;
-
-                        my $write = $x;
-
-                        print( INSERT "$write\n" );
-                        $count++;
+                        print ID_REF
+"CONFIG section: Assuming we already extracted for this file \n";
 
                     }
 
                 }
 
-                print "$key section: Wrote $count lines\n";
-                print ID_REF "$key section: Wrote $count lines\n";
+                # cold data mode implies to always extract config
+                elsif ( $colddata eq "True" ) {
 
-                # Open CONFIG_REF for writing in create mode
-                open( CONFIG_REF, ">$CONFIG_REF" );
+                    # run sub routine
+                    &config_extract
 
-                # save configuration extraction
-                print CONFIG_REF "$HOSTNAME: $time_epoch \n";
+                }
 
             }
 
-        }
+            elsif ( $config_run eq "1" ) {
 
-        elsif ( $config_run eq "1" ) {
+                print
+"CONFIG section: will not be extracted (time delta of $time_delta seconds is inferior to 1 hour) \n";
+                print ID_REF
+"CONFIG section: will not be extracted (time delta of $time_delta seconds is inferior to 1 hour) \n";
 
-            print
-"CONFIG section: will not be extracted (time delta of $time_delta seconds is inferior to 1 hour) \n";
-            print ID_REF
-"CONFIG section: will not be extracted (time delta of $time_delta seconds is inferior to 1 hour) \n";
+            }
 
         }
 
@@ -1291,43 +1151,15 @@ foreach $FILENAME (@nmon_files) {
 ####################################################################################################
 
     # UARG Section (specific)
-	 # Applicable for OStype AIX, Linux or Unknown
+    # Applicable for OStype AIX, Linux or Unknown
 
-	 if ( $OStype eq "AIX" || $OStype eq "Linux" || $OStype eq "Unknown" ) {
+    if ( $OStype eq "AIX" || $OStype eq "Linux" || $OStype eq "Unknown" ) {
 
-    my $sanity_check = 0;
+        my $sanity_check = 0;
 
-    foreach $key (@uarg_vars) {
-        $BASEFILENAME =
+        foreach $key (@uarg_vars) {
+            $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-
-        # Open NMON file for reading
-        if ( !open( FIC, $file ) ) {
-            die(
-                "Error while trying to open NMON Source file '" . $file . "'" );
-        }
-
-        # If we find the section, enter the process
-        if ( grep { /UARG,T/ } <FIC> ) {
-
-            @rawdataheader = grep( /^UARG,\+Time,/, @nmon );
-            if ( @rawdataheader < 1 ) {
-                $msg =
-"ERROR: hostname: $HOSTNAME :$key section data is not consistent: the data header could not be identified, dropping the section to prevent data inconsistency \n";
-                print "$msg";
-                print ID_REF "$msg";
-
-                $sanity_check = "1";
-
-            }
-
-            else {
-
-                unless ( open( INSERT, ">$BASEFILENAME" ) ) {
-                    die("ERROR: Can not open /$BASEFILENAME\n");
-                }
-
-            }
 
             # Open NMON file for reading
             if ( !open( FIC, $file ) ) {
@@ -1336,271 +1168,301 @@ foreach $FILENAME (@nmon_files) {
                       . "'" );
             }
 
-            # Initialize variables
-            my $section   = "";
-            my $timestamp = "";
-            $count = 0;
+            # If we find the section, enter the process
+            if ( grep { /UARG,T/ } <FIC> ) {
 
-            while ( defined( my $l = <FIC> ) ) {
-                chomp $l;
+                @rawdataheader = grep( /^UARG,\+Time,/, @nmon );
+                if ( @rawdataheader < 1 ) {
+                    $msg =
+"ERROR: hostname: $HOSTNAME :$key section data is not consistent: the data header could not be identified, dropping the section to prevent data inconsistency \n";
+                    print "$msg";
+                    print ID_REF "$msg";
 
-                # Get timestamp"
-                if ( ( rindex $l, "ZZZZ," ) > -1 ) {
-                    ( my $t1, my $t2, my $timestamptmp1, my $timestamptmp2 ) =
-                      split( ",", $l );
-                    $timestamp = $timestamptmp2 . " " . $timestamptmp1;
+                    $sanity_check = "1";
+
                 }
 
-                # UARG Section"
+                else {
 
-                # Get and write csv header
+                    unless ( open( INSERT, ">$BASEFILENAME" ) ) {
+                        die("ERROR: Can not open /$BASEFILENAME\n");
+                    }
 
-                if ( $l =~ /^UARG,\+Time,/ ) {
+                }
 
-                    my $x = $l;
+                # Open NMON file for reading
+                if ( !open( FIC, $file ) ) {
+                    die(    "Error while trying to open NMON Source file '"
+                          . $file
+                          . "'" );
+                }
 
-                    # convert unwanted characters
-                    $x =~ s/\%/pct_/g;
+                # Initialize variables
+                my $section   = "";
+                my $timestamp = "";
+                $count = 0;
 
-                    # $x =~ s/\W*//g;
-                    $x =~ s/\/s/ps/g;      # /s  - ps
-                    $x =~ s/\//s/g;        # / - s
-                    $x =~ s/\(/_/g;
-                    $x =~ s/\)/_/g;
-                    $x =~ s/ /_/g;
-                    $x =~ s/-/_/g;
-                    $x =~ s/_KBps//g;
-                    $x =~ s/_tps//g;
-                    $x =~ s/[:,]*\s*$//;
+                while ( defined( my $l = <FIC> ) ) {
+                    chomp $l;
 
-                    $x =~ s/\+//g;
-                    $x =~ s/\=0//g;
+                    # Get timestamp"
+                    if ( ( rindex $l, "ZZZZ," ) > -1 ) {
+                        ( my $t1, my $t2, my $timestamptmp1, my $timestamptmp2 )
+                          = split( ",", $l );
+                        $timestamp = $timestamptmp2 . " " . $timestamptmp1;
+                    }
 
-                    $x =~ s/\+Time/Time/g;
+                    # UARG Section"
 
-                    # Manage some fields we statically set
-                    $x =~ s/UARG,//g;
-                    $x =~ s/Time,//g;
+                    # Get and write csv header
 
-                    # Specifically for UARG, set OS type based on header fields
+                    if ( $l =~ /^UARG,\+Time,/ ) {
 
-                    if ( $l =~
+                        my $x = $l;
+
+                        # convert unwanted characters
+                        $x =~ s/\%/pct_/g;
+
+                        # $x =~ s/\W*//g;
+                        $x =~ s/\/s/ps/g;      # /s  - ps
+                        $x =~ s/\//s/g;        # / - s
+                        $x =~ s/\(/_/g;
+                        $x =~ s/\)/_/g;
+                        $x =~ s/ /_/g;
+                        $x =~ s/-/_/g;
+                        $x =~ s/_KBps//g;
+                        $x =~ s/_tps//g;
+                        $x =~ s/[:,]*\s*$//;
+
+                        $x =~ s/\+//g;
+                        $x =~ s/\=0//g;
+
+                        $x =~ s/\+Time/Time/g;
+
+                        # Manage some fields we statically set
+                        $x =~ s/UARG,//g;
+                        $x =~ s/Time,//g;
+
+                     # Specifically for UARG, set OS type based on header fields
+
+                        if ( $l =~
 /^UARG,\+Time,PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand/
-                      )
+                          )
+                        {
+
+                            my $write =
+                                type . ","
+                              . serialnum . ","
+                              . hostname . ","
+                              . ZZZZ . ","
+                              . logical_cpus . ","
+                              . virtual_cpus . ","
+                              . interval . ","
+                              . snapshots . ","
+                              . PID . ","
+                              . PPID . ","
+                              . COMM . ","
+                              . THCOUNT . ","
+                              . USER . ","
+                              . GROUP . ","
+                              . FullCommand;
+
+                            print( INSERT "$write\n" );
+                            $count++;
+
+                        }
+
+                        elsif ( $l =~ /^UARG,\+Time,PID,ProgName,FullCommand/ )
+                        {
+
+                            my $write =
+                                type . ","
+                              . serialnum . ","
+                              . hostname . ","
+                              . ZZZZ . ","
+                              . logical_cpus . ","
+                              . virtual_cpus . ","
+                              . interval . ","
+                              . snapshots . ","
+                              . PID . ","
+                              . ProgName . ","
+                              . FullCommand;
+
+                            print( INSERT "$write\n" );
+                            $count++;
+
+                        }
+
+                    }
+
+                    # Get and write NMON section
+                    if (   ( ( rindex $l, "UARG," ) > -1 )
+                        && ( length($timestamp) > 0 ) )
                     {
 
-                        my $write =
-                            type . ","
-                          . serialnum . ","
-                          . hostname . ","
-                          . ZZZZ . ","
-                          . logical_cpus . ","
-                          . virtual_cpus . ","
-                          . interval . ","
-                          . snapshots . ","
-                          . PID . ","
-                          . PPID . ","
-                          . COMM . ","
-                          . THCOUNT . ","
-                          . USER . ","
-                          . GROUP . ","
-                          . FullCommand;
+                        ( my @line ) = split( ",", $l );
+                        my $section = "UARG";
 
-                        print( INSERT "$write\n" );
-                        $count++;
+                        # Convert month pattern to month numbers (eg. %b to %m)
+                        $timestamp =~ s/JAN/01/g;
+                        $timestamp =~ s/FEB/02/g;
+                        $timestamp =~ s/MAR/03/g;
+                        $timestamp =~ s/APR/04/g;
+                        $timestamp =~ s/MAY/05/g;
+                        $timestamp =~ s/JUN/06/g;
+                        $timestamp =~ s/JUL/07/g;
+                        $timestamp =~ s/AUG/08/g;
+                        $timestamp =~ s/SEP/09/g;
+                        $timestamp =~ s/OCT/10/g;
+                        $timestamp =~ s/NOV/11/g;
+                        $timestamp =~ s/DEC/12/g;
 
-                    }
-
-                    elsif ( $l =~ /^UARG,\+Time,PID,ProgName,FullCommand/ ) {
-
-                        my $write =
-                            type . ","
-                          . serialnum . ","
-                          . hostname . ","
-                          . ZZZZ . ","
-                          . logical_cpus . ","
-                          . virtual_cpus . ","
-                          . interval . ","
-                          . snapshots . ","
-                          . PID . ","
-                          . ProgName . ","
-                          . FullCommand;
-
-                        print( INSERT "$write\n" );
-                        $count++;
-
-                    }
-
-                }
-
-                # Get and write NMON section
-                if (   ( ( rindex $l, "UARG," ) > -1 )
-                    && ( length($timestamp) > 0 ) )
-                {
-
-                    ( my @line ) = split( ",", $l );
-                    my $section = "UARG";
-
-                    # Convert month pattern to month numbers (eg. %b to %m)
-                    $timestamp =~ s/JAN/01/g;
-                    $timestamp =~ s/FEB/02/g;
-                    $timestamp =~ s/MAR/03/g;
-                    $timestamp =~ s/APR/04/g;
-                    $timestamp =~ s/MAY/05/g;
-                    $timestamp =~ s/JUN/06/g;
-                    $timestamp =~ s/JUL/07/g;
-                    $timestamp =~ s/AUG/08/g;
-                    $timestamp =~ s/SEP/09/g;
-                    $timestamp =~ s/OCT/10/g;
-                    $timestamp =~ s/NOV/11/g;
-                    $timestamp =~ s/DEC/12/g;
-
-                    # For AIX
+                        # For AIX
 
 # In this section, we statically expect 7 fields: PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand
 # The FullCommand may be very problematic as it may almost contain any kind of char, comma included
 # This field will have " separator added
 
-                    if ( $l =~
+                        if ( $l =~
 m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*\s*)\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,(.+)/
-                      )
-                    {
+                          )
+                        {
 
-                        $PID         = $1;
-                        $PPID        = $2;
-                        $COMM        = $3;
-                        $THCOUNT     = $4;
-                        $USER        = $5;
-                        $GROUP       = $6;
-                        $FullCommand = $7;
+                            $PID         = $1;
+                            $PPID        = $2;
+                            $COMM        = $3;
+                            $THCOUNT     = $4;
+                            $USER        = $5;
+                            $GROUP       = $6;
+                            $FullCommand = $7;
 
-                        $x = '"'
-                          . $PID . '","'
-                          . $PPID . '","'
-                          . $COMM . '","'
-                          . $THCOUNT . '","'
-                          . $USER . '","'
-                          . $GROUP . '","'
-                          . $FullCommand . '"';
+                            $x = '"'
+                              . $PID . '","'
+                              . $PPID . '","'
+                              . $COMM . '","'
+                              . $THCOUNT . '","'
+                              . $USER . '","'
+                              . $GROUP . '","'
+                              . $FullCommand . '"';
 
-                        my $write =
-                            $section . ","
-                          . $SN . ","
-                          . $HOSTNAME . ","
-                          . $timestamp . ","
-                          . $logical_cpus . ","
-                          . $virtual_cpus . ","
-                          . $INTERVAL . ","
-                          . $SNAPSHOTS . ","
-                          . $x;
+                            my $write =
+                                $section . ","
+                              . $SN . ","
+                              . $HOSTNAME . ","
+                              . $timestamp . ","
+                              . $logical_cpus . ","
+                              . $virtual_cpus . ","
+                              . $INTERVAL . ","
+                              . $SNAPSHOTS . ","
+                              . $x;
 
   # If in realtime mode, only extract events newer than the last known epochtime
-                        if ( $realtime eq "True" ) {
+                            if ( $realtime eq "True" ) {
 
      # Convert timestamp string to epoch time (from format: DD-MM-YYYY hh:mm:ss)
-                            my ( $day, $month, $year, $hour, $min, $sec ) =
-                              split /\W+/, $timestamp;
-                            my $ZZZZ_epochtime =
-                              timelocal( $sec, $min, $hour, $day, $month - 1,
-                                $year );
+                                my ( $day, $month, $year, $hour, $min, $sec ) =
+                                  split /\W+/, $timestamp;
+                                my $ZZZZ_epochtime =
+                                  timelocal( $sec, $min, $hour, $day,
+                                    $month - 1, $year );
 
-                            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+                                if ( $ZZZZ_epochtime > $last_known_epochtime ) {
 
+                                    print( INSERT $write . "\n" );
+                                    $count++;
+                                }
+                            }
+                            elsif ( $colddata eq "True" ) {
                                 print( INSERT $write . "\n" );
                                 $count++;
                             }
-                        }
-                        elsif ( $colddata eq "True" ) {
-                            print( INSERT $write . "\n" );
-                            $count++;
+
                         }
 
-                    }
-
-                    # For Linux
+                        # For Linux
 
 # In this section, we statically expect 3 fields: PID,ProgName,FullCommand
 # The FullCommand may be very problematic as it may almost contain any kind of char, comma included
 # Let's separate groups and insert " delimiter
 
-                    if ( $l =~
-                        m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
-                      )
-                    {
+                        if ( $l =~
+m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
+                          )
+                        {
 
-                        $PID         = $1;
-                        $ProgName    = $2;
-                        $FullCommand = $3;
+                            $PID         = $1;
+                            $ProgName    = $2;
+                            $FullCommand = $3;
 
-                        $x = '"'
-                          . $PID . '","'
-                          . $ProgName . '","'
-                          . $FullCommand . '"';
+                            $x = '"'
+                              . $PID . '","'
+                              . $ProgName . '","'
+                              . $FullCommand . '"';
 
-                        my $write =
-                            $section . ","
-                          . $SN . ","
-                          . $HOSTNAME . ","
-                          . $timestamp . ","
-                          . $logical_cpus . ","
-                          . $virtual_cpus . ","
-                          . $INTERVAL . ","
-                          . $SNAPSHOTS . ","
-                          . $x;
+                            my $write =
+                                $section . ","
+                              . $SN . ","
+                              . $HOSTNAME . ","
+                              . $timestamp . ","
+                              . $logical_cpus . ","
+                              . $virtual_cpus . ","
+                              . $INTERVAL . ","
+                              . $SNAPSHOTS . ","
+                              . $x;
 
   # If in realtime mode, only extract events newer than the last known epochtime
-                        if ( $realtime eq "True" ) {
+                            if ( $realtime eq "True" ) {
 
      # Convert timestamp string to epoch time (from format: DD-MM-YYYY hh:mm:ss)
-                            my ( $day, $month, $year, $hour, $min, $sec ) =
-                              split /\W+/, $timestamp;
-                            my $ZZZZ_epochtime =
-                              timelocal( $sec, $min, $hour, $day, $month - 1,
-                                $year );
+                                my ( $day, $month, $year, $hour, $min, $sec ) =
+                                  split /\W+/, $timestamp;
+                                my $ZZZZ_epochtime =
+                                  timelocal( $sec, $min, $hour, $day,
+                                    $month - 1, $year );
 
-                            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+                                if ( $ZZZZ_epochtime > $last_known_epochtime ) {
 
+                                    print( INSERT $write . "\n" );
+                                    $count++;
+                                }
+                            }
+                            elsif ( $colddata eq "True" ) {
                                 print( INSERT $write . "\n" );
                                 $count++;
                             }
-                        }
-                        elsif ( $colddata eq "True" ) {
-                            print( INSERT $write . "\n" );
-                            $count++;
+
                         }
 
                     }
 
                 }
 
-            }
+                # If we wrote more than the header
+                if ( $count > 1 ) {
 
-            # If we wrote more than the header
-            if ( $count > 1 ) {
+                    if ( $sanity_check == 0 ) {
 
-                if ( $sanity_check == 0 ) {
+                        print "$key section: Wrote $count lines\n";
+                        print ID_REF "$key section: Wrote $count lines\n";
 
-                    print "$key section: Wrote $count lines\n";
-                    print ID_REF "$key section: Wrote $count lines\n";
+                    }
+
+                    else {
+                        # Something happened, don't let bad file in place
+                        unlink $BASEFILENAME;
+                    }
 
                 }
 
+                # Else remove the file without more explanations
                 else {
-                    # Something happened, don't let bad file in place
                     unlink $BASEFILENAME;
                 }
 
-            }
+            }    # end find the section
 
-            # Else remove the file without more explanations
-            else {
-                unlink $BASEFILENAME;
-            }
+        }    # end foreach
 
-        }    # end find the section
-
-    }    # end foreach
-    
     }
 
 ###################################################""
@@ -1674,7 +1536,7 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
             $now = $now - $start;
 
         }
-        
+
     }
 
     # Solaris Specific sections, run this for OStype Solaris or unknown
@@ -1744,6 +1606,123 @@ exit(0);
 ############################################
 #############  Subroutines 	############
 ############################################
+
+##################################################################
+## Configuration Extraction
+##################################################################
+
+sub config_extract {
+
+    unless ( open( INSERT, ">$BASEFILENAME" ) ) {
+        die("ERROR: ERROR: Can not open /$BASEFILENAME\n");
+    }
+
+    # Initialize variables
+    my $section      = "CONFIG";
+    my $time         = "";
+    my $date         = "";
+    my $hostnameT    = "Unknown";
+    my $SerialNumber = "Unknown";
+    $count     = 0;
+    $BBB_count = 0;
+
+    # Get nmon/server settings (search string, return column, delimiter)
+    $AIXVER   = &get_setting( "AIX",      2, "," );
+    $HOSTNAME = &get_setting( "host",     2, "," );
+    $DATE     = &get_setting( "AAA,date", 2, "," );
+    $TIME     = &get_setting( "AAA,time", 2, "," );
+
+    if ( $AIXVER eq "-1" ) {
+        $SN = $HOSTNAME;    # Probably a Linux host
+    }
+    else {
+        $SN = &get_setting( "systemid", 4, "," );
+        $SN = ( split( /\s+/, $SN ) )[0];    # "systemid IBM,SN ..."
+    }
+
+    # write event header
+
+    my $write =
+      $section . "," . $DATE . ":" . $TIME . "," . $SN . "," . $HOSTNAME;
+    print( INSERT "$write\n" );
+    $count++;
+
+    # Open NMON file for reading
+    if ( !open( FIC, $file ) ) {
+        die( "ERROR: while trying to open NMON Source file '" . $file . "'" );
+    }
+
+    while ( defined( my $l = <FIC> ) ) {
+        chomp $l;
+
+        # CONFIG Section"
+
+        if ( $l =~ /^AAA/ ) {
+
+            my $x = $l;
+
+            # Manage some fields we statically set
+            $x =~ s/CONFIG,//g;
+            $x =~ s/Time,//g;
+
+            my $write = $x;
+
+            print( INSERT "$write\n" );
+            $count++;
+
+        }
+
+        if ( $l =~ /^BBB/ ) {
+
+            my $x = $l;
+
+            # Manage some fields we statically set
+            $x =~ s/CONFIG,//g;
+            $x =~ s/Time,//g;
+
+            my $write = $x;
+
+            print( INSERT "$write\n" );
+            $count++;
+            $BBB_count++;
+
+        }
+
+    }
+
+# If we extracted at least 10 lines of BBB data, estimate we successfully extracted it
+    if ( $BBB_count > 10 ) {
+
+        if ( -e $BBB_FLAG ) {
+
+            unlink $BBB_FLAG;
+
+        }
+
+    }
+
+    else {
+
+        open( BBB_FLAG, ">$BBB_FLAG" );
+        print BBB_FLAG "BBB_status KO";
+
+        print "CONFIG section: BBB section not extracted (no data yet) \n";
+
+        print ID_REF
+          "CONFIG section: BBB section not extracted (no data yet) \n";
+
+    }
+
+    print "$key section: Wrote $count lines\n";
+    print ID_REF "$key section: Wrote $count lines\n";
+
+    # Open CONFIG_REF for writing in create mode
+    open( CONFIG_REF, ">$CONFIG_REF" );
+
+    # save configuration extraction
+    print CONFIG_REF "$HOSTNAME: $time_epoch \n";
+
+}
 
 ##################################################################
 ## Extract data for Static fields
