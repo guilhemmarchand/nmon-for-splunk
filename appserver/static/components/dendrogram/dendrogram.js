@@ -13,10 +13,10 @@ define(function(require, exports, module) {
             "data": "preview",
             "root_label": "root_label not set",
             "height": "auto",
-            "node_outline_color": "#d62728",
+            "node_outline_color": "#509DDD",
             "node_close_color": "#e7969c",
             "node_open_color": "#ffffff",
-            "label_size_color": "#d62728",
+            "label_size_color": "#509DDD",
             "label_count_color": "#1f77b4",
             "has_size": true,
             "initial_open_level": 1,
@@ -26,7 +26,8 @@ define(function(require, exports, module) {
         output_mode: "json_rows",
         initialize: function() {
             _(this.options).extend({
-                "height_px": 500
+                "height_px": 500,
+                "width_px": 2000
             });
 
             SimpleSplunkView.prototype.initialize.apply(this, arguments);
@@ -47,6 +48,8 @@ define(function(require, exports, module) {
         formatData: function(data) {
             var height     = this.settings.get("height");
             var height_px  = this.settings.get("height_px");
+            var width     = this.settings.get("width");
+            var width_px  = this.settings.get("width_px");
             var root_label = this.settings.get("root_label");
             var has_size   = this.settings.get("has_size");
 
@@ -123,7 +126,7 @@ define(function(require, exports, module) {
             var label_size_color   = this.settings.get("label_size_color");
             var label_count_color  = this.settings.get("label_count_color");
 
-            var width  = this.$el.width();
+            var width  = this.settings.get("width_px");
             var height = this.settings.get("height_px");
 
             var m = [20, this.settings.get("margin_right"), 20, this.settings.get("margin_left")],
