@@ -68,6 +68,8 @@
 #                                         - Added support for FC* sections (Fiber Channel)
 # - 05/09/2015, V1.1.7: Guilhem Marchand:
 #                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
+# - 05/21/2015, V1.1.8: Guilhem Marchand:
+#                                         - Windows hotfix: corrected broken directory creation
 
 # Load libs
 
@@ -85,7 +87,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.7'
+nmon2csv_version = '1.1.8'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -225,8 +227,8 @@ else:
 
 # APP_VAR directory
 if is_windows:
-    APP_MAINVAR = SPLUNK_HOME + 'var\\run\\nmon'
-    APP_VAR = SPLUNK_HOME + 'var\\run\\nmon\\var'
+    APP_MAINVAR = SPLUNK_HOME + '\\var\\run\\nmon'
+    APP_VAR = SPLUNK_HOME + '\\var\\run\\nmon\\var'
 else:
     APP_MAINVAR = SPLUNK_HOME + '/var/run/nmon'
     APP_VAR = SPLUNK_HOME + '/var/run/nmon/var'
