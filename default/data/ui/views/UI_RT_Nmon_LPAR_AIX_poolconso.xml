@@ -82,6 +82,13 @@
       <fieldForValue>hostname</fieldForValue>
     </input>
 
+    <input type="dropdown" token="monitor" searchWhenChanged="true">
+      <label>Show CPU load by:</label>
+      <default>Pool_usage</default>
+      <choice value="Pool_usage">VP Usage</choice>
+      <choice value="Pool_PCT_usage">VP Usage (% usage of capacity)</choice>
+    </input>
+
     <input type="dropdown" token="statsmode" searchWhenChanged="true">
       <label>Stats mode:</label>
       <default>max</default>
@@ -98,7 +105,7 @@
   <!-- Global Search -->
   
         <search id="Global">
-          <query>| pivot NMON_Data_CPU LPAR_Pool max(poolCPUs) AS "CPUs in Pool" max(Pool_usage) AS "max_usage" avg(Pool_usage) AS "avg_usage" min(Pool_usage) AS "min_usage" 
+          <query>| pivot NMON_Data_CPU LPAR_Pool max(poolCPUs) AS "CPUs in Pool" max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" 
 SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Pool_id FILTER $appfilter$ FILTER $Pool_id$ FILTER $frameID$ FILTER hostname is $hostname-prefilter$ FILTER $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
@@ -133,7 +140,7 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Po
     
       <table>
         <search base="Global">
-          <query>fields hostname,frameID,"Pool_ID","CPUs in Pool",max_usage,avg_usage,min_usage</query>
+          <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | fields hostname,frameID,"Pool_ID","CPUs in Pool",max_usage,avg_usage,min_usage</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -210,7 +217,7 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Po
     <panel>
       <chart>
   			<search id="timechart">
-    		  <query>| pivot NMON_Data_CPU LPAR_Pool $statsmode$(Pool_usage) AS Pool_usage $addindicator$ 
+    		  <query>| pivot NMON_Data_CPU LPAR_Pool $statsmode$($monitor$) AS $monitor$ $addindicator$ 
 SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $appfilter$ FILTER $Pool_id$ FILTER $frameID$ FILTER hostname is $hostname-prefilter$ FILTER $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  

@@ -96,12 +96,12 @@
     <input type="dropdown" token="aggregate" searchWhenChanged="true">
       <label>Aggregate:</label>
       <choice value="fields *">Single Series</choice>
-      <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(CPU.LPAR.Pool_usage) AS CPU.LPAR.Pool_usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
-      <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(CPU.LPAR.Pool_usage) AS CPU.LPAR.Pool_usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Average by Time interval,frameID</choice>
-      <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(CPU.LPAR.Pool_usage) AS CPU.LPAR.Pool_usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
-      <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(CPU.LPAR.Pool_usage) AS CPU.LPAR.Pool_usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Max by Time interval,frameID</choice>
-      <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(CPU.LPAR.Pool_usage) AS CPU.LPAR.Pool_usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>      
-      <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(CPU.LPAR.Pool_usage) AS CPU.LPAR.Pool_usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Sum by Time interval,frameID</choice>
+      <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
+      <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(usage) AS usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Average by Time interval,frameID</choice>
+      <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
+      <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(usage) AS usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Max by Time interval,frameID</choice>
+      <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>      
+      <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(usage) AS usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Sum by Time interval,frameID</choice>
       <default>fields *</default>
     </input>
 
@@ -116,13 +116,11 @@
       <choice value="range">Range</choice>
     </input>
 
-    <input type="dropdown" token="indicator" searchWhenChanged="true">
+    <input type="dropdown" token="monitor" searchWhenChanged="true">
       <label>Show CPU load by:</label>
-      <default>rename CPU.LPAR.Pool_usage AS usage</default>
-      <choice value="rename CPU.LPAR.Pool_usage AS usage">VP Usage</choice>
-      <choice value="rename CPU.LPAR.lpar_vp_PCT_usage AS usage">Usage vs VirtualCPUs % Usage</choice>
-      <choice value="rename CPU.LPAR.lpar_ec_usage AS usage">Usage vs Entitled</choice>
-      <choice value="rename CPU.LPAR.lpar_ec_Pct_usage AS usage">Usage vs Entitled % usage</choice>
+      <default>CPU.LPAR.Pool_usage</default>
+      <choice value="CPU.LPAR.Pool_usage">VP Usage</choice>
+      <choice value="CPU.LPAR.Pool_PCT_usage">VP Usage (% usage of capacity)</choice>
     </input>
 
     <input type="checkbox" token="charting" searchWhenChanged="true">
@@ -136,9 +134,9 @@
   <!-- Global Search -->
   
         <search id="Global">
-          <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS "CPU.LPAR.Pool_usage" values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) 
+          <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) 
 (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", "CPU.hostname" prestats=true `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
-| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS "CPU.LPAR.Pool_usage" values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
+| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
 | $aggregate$
 | sort limit=0 _time
 | rename CPU.LPAR.Pool_usage AS usage
@@ -269,10 +267,10 @@
     <panel>
       <chart>
   			<search id="timechart">
-    		  <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS "CPU.LPAR.Pool_usage" values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) 
+    		  <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) 
 (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` 
 groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS "CPU.LPAR.Pool_usage" values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
+| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
 | sort limit=0 _time
 | $aggregate$
 | rename CPU.LPAR.Pool_usage AS usage
