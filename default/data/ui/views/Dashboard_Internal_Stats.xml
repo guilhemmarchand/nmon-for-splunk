@@ -1,0 +1,653 @@
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON Application Statistics</label>
+  <description/>
+
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" token="timerange" searchWhenChanged="true">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+   
+  </fieldset>
+
+  <!-- Search based for post processing -->
+
+  <!-- Nmon Processing statistics -->	
+
+	<search id="nmon_processing">          
+		<query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+	<search id="nmon_processing_countnmon">          
+		<query>| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+	<search id="nmon_processing_elapsed_bytime">          
+		<query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+	<search id="nmon_processing_errors">          
+		<query>| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+	<search id="nmon_collect_errors">          
+		<query>index="nmon" sourcetype="nmon_collect" error | stats count As nbr_errors</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+   <!-- Event Count -->	
+
+	<search id="eventcount_search">          
+		<query>| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+   <!-- Metadata --> 
+
+	<search id="metadata_search">          
+		<query>| `indexes_datestats`</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+   <!-- Metric -->
+
+	<search id="metric_search_per_hour">          
+		<query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1h sum(MB) As "Total_per_hour_MB" | where isnotnull(Total_per_hour_MB) | sort - _time</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+	<search id="metric_search_per_day">          
+		<query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1d sum(MB) As "Total_per_day_MB" | where isnotnull(Total_per_day_MB) | sort - _time</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+	<search id="metric_rate_search">          
+		<query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | stats avg(kbps) As avg_kbps, max(kbps) As max_kbps | eval avg_kbps=round(avg_kbps,2) | eval max_kbps=round(max_kbps,2)</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+   <!-- Application Activity -->
+
+   <!-- Hits per page -->
+
+	<search id="hitsperpage_search">          
+		<query>index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home* AND file!=report</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+   <!-- Scheduler Activity for the Application -->
+
+	<search id="scheduler_chart_search">          
+		<query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app</query>
+	<earliest>$timerange.earliest$</earliest>
+	<latest>$timerange.latest$</latest>
+	</search>        
+
+   <row>
+     <panel>
+       <html>
+     
+			<div class="custom">
+			
+			<h1>Nmon Processing statistics</h1>
+			
+			</div>     
+     
+     	 </html>
+     </panel>
+   </row>
+
+   <row>
+     <panel>
+
+      <single>
+        <search base="nmon_processing">
+          <query>fields avg_nbr_lines</query>
+        </search>
+        <option name="underLabel">Avg nbr of lines per nmon file</option>
+        <option name="afterLabel">lines</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="nmon_processing">
+          <query>fields sum_nbr_lines_in_millions</query>
+        </search>
+        <option name="underLabel">Number of lines proceeded</option>
+        <option name="afterLabel">Millions</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="nmon_processing">
+          <query>fields sum_size_GB</query>
+        </search>
+        <option name="underLabel">Total nmon raw data converted</option>
+        <option name="afterLabel">GB</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="nmon_processing_countnmon">
+          <query>fields count</query>
+        </search>
+        <option name="underLabel">Number of nmon files proceeded</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</option>
+        <option name="linkFields">result</option>        
+      </single>
+
+      <single>
+        <search base="nmon_processing_errors">
+          <query></query>
+        </search>
+        <option name="underLabel">Errors found in Data Processing</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</option>
+        <option name="linkFields">result</option>        
+      </single>
+
+      <single>
+        <search base="nmon_collect_errors">
+          <query></query>
+        </search>
+        <option name="underLabel">Errors found in Data Collect</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">index="nmon" sourcetype="nmon_collect" error | stats count As nbr_errors</option>
+        <option name="linkFields">result</option>
+      </single>
+
+     </panel>
+   </row>
+
+   <row>
+     <panel>
+     <title>Nmon Raw Data conversion: Volumes proceeded over time (MB)</title>
+
+      <single>
+        <search base="nmon_processing">
+          <query>fields avg_size_MB</query>
+        </search>
+        <option name="underLabel">Avg size of Nmon files</option>
+        <option name="afterLabel">MB</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="nmon_processing">
+          <query>fields max_size_MB</query>
+        </search>
+        <option name="underLabel">Max size of Nmon files</option>
+        <option name="afterLabel">MB</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</option>
+        <option name="linkFields">result</option>
+      </single>
+
+     
+      <chart>
+			<search>          
+				<query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_bytes) AS "sum_size_MB" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval sum_size_MB=round((sum_size_MB/1000/1000),2)</query>
+				<earliest>$timerange.earliest$</earliest>
+				<latest>$timerange.latest$</latest>
+			</search>        
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">400px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Volume (MB)</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+
+     </panel>   
+
+     <panel>
+     <title>Nmon Raw Data conversion: Average elapsed time per Nmon file (seconds)</title>
+     
+      <single>
+        <search base="nmon_processing">
+          <query>fields avg_elapsed_in_seconds</query>
+        </search>
+        <option name="underLabel">Avg Time required to convert an Nmon File</option>
+        <option name="afterLabel">seconds</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="nmon_processing">
+          <query>fields sum_elapsed</query>
+        </search>
+        <option name="underLabel">Total Time Spent in converting Nmon Data</option>
+        <option name="afterLabel">Time (HH:MM:SS...)</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</option>
+        <option name="linkFields">result</option>
+      </single>
+     
+     
+      <chart>
+			<search>          
+				<query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)</query>
+				<earliest>$timerange.earliest$</earliest>
+				<latest>$timerange.latest$</latest>
+			</search>        
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">400px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Seconds</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+
+     </panel>   
+
+   </row>
+
+   <row>
+     <panel>
+       <html>
+         <div class="custom">
+           <h1>Application Indexes statistics</h1>
+         </div>
+       </html>
+     </panel>
+   </row>
+
+   <row>
+     <panel>
+     <title>Eventcount Statistics: Number of Events and Index Sizes</title>
+
+      <single>
+        <search base="eventcount_search">
+          <query>sort - "Size (MB)" | head 1 | fields "Size (MB)"</query>
+        </search>
+        <option name="underLabel">NMON INDEX SIZE</option>
+        <option name="afterLabel">MB</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="eventcount_search">
+          <query>sort - "Size (MB)" | head 1 | fields "Millions of Events"</query>
+        </search>
+        <option name="underLabel">NMON EVENTS COUNT</option>
+        <option name="afterLabel">Millions</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <table>
+		  <search base="eventcount_search">          
+		    <query></query>
+			 <earliest>$timerange.earliest$</earliest>
+			 <latest>$timerange.latest$</latest>
+		  </search>       
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+        <format type="sparkline" field="spk_readch">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_writech">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+
+     </panel>
+
+	  <panel>
+	  <title>Metadata Statistics: Indexes first and last event dates</title>
+
+      <single>
+        <search base="metadata_search">
+          <query>fields "First Event"</query>
+        </search>
+        <option name="underLabel">DATA FIRST EVENT</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| `indexes_datestats`</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="metadata_search">
+          <query>fields "Last Event"</query>
+        </search>
+        <option name="underLabel">DATA LAST EVENT</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">| `indexes_datestats`</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <table>
+		  <search base="metadata_search">          
+		    <query></query>
+			 <earliest>$timerange.earliest$</earliest>
+			 <latest>$timerange.latest$</latest>
+		  </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+        <format type="sparkline" field="spk_readch">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_writech">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+
+	  </panel>
+	</row>
+	
+   <row>
+     <panel>
+       <html>
+         <div class="custom">
+           <h1>Application Activity (requires admin rights or access to internal indexes)</h1>
+         </div>
+       </html>
+     </panel>
+   </row>
+	
+   <row>
+     <panel>
+     <title>Metric Statistics: Indexing volumes (MB) and rates (kbps)</title>
+
+      <single>
+        <search base="metric_search_per_hour">
+          <query>stats avg(Total_per_hour_MB) As average_per_hour | eval average_per_hour=round(average_per_hour,2)</query>
+        </search>
+        <option name="underLabel">AVG VOLUME OF DATA INDEXED PER HOUR</option>
+        <option name="afterLabel">MB</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1h sum(MB) As "Total_per_hour_MB" | where isnotnull(Total_per_hour_MB) | sort - _time</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="metric_search_per_day">
+          <query>stats avg(Total_per_day_MB) As average_per_day | eval average_per_day=round(average_per_day,2)</query>
+        </search>
+        <option name="underLabel">AVG VOLUME OF DATA INDEXED PER DAY</option>
+        <option name="afterLabel">MB</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1d sum(MB) As "Total_per_day_MB" | where isnotnull(Total_per_day_MB) | sort - _time</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="metric_search_per_day">
+          <query>stats sum(Total_per_day_MB) As total_MB</query>
+        </search>
+        <option name="underLabel">TOTAL VOLUME OF DATA INDEXED IN PERIOD</option>
+        <option name="afterLabel">MB</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1d sum(MB) As "Total_per_day_MB" | where isnotnull(Total_per_day_MB) | sort - _time</option>
+        <option name="linkFields">result</option>
+      </single>
+
+      <single>
+        <search base="metric_rate_search">
+          <query></query>
+        </search>
+        <option name="underLabel">AVG INDEXING RATE</option>
+        <option name="afterLabel">kbps</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">index=_internal source=*metrics.log group=per_index_thruput series="nmon" | stats avg(kbps) As avg_kbps, max(kbps) As max_kbps | eval avg_kbps=round(avg_kbps,2) | eval max_kbps=round(max_kbps,2)</option>
+        <option name="linkFields">result</option>
+      </single>
+	
+      <chart>
+      <title>Indexing volumes over time (MB)</title>
+		  <search id="metric_timechartsearch">          
+		    <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart limit=0 useother=f sum(MB) by series | fillnull value=0</query>
+		    <earliest>$timerange.earliest$</earliest>
+		    <latest>$timerange.latest$</latest>
+		  </search>        
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">400px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Seconds</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+
+      <chart>
+      <title>Indexing Speed Rate over time (kbps)</title>
+	     <search id="metric_rate_timechartsearch">          
+		    <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | timechart limit=0 useother=f avg(kbps) As Avg_kbps | fillnull value=0</query>
+		    <earliest>$timerange.earliest$</earliest>
+		    <latest>$timerange.latest$</latest>
+		  </search>        
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">400px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Seconds</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+
+	  </panel>
+	</row>			
+
+   <row>
+     <panel>
+
+      <chart>
+      <title>Number of hits per page:</title>
+	     <search>          
+		    <query>index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home* AND file!=report
+| timechart limit=45 useother=f count by file</query>
+		    <earliest>$timerange.earliest$</earliest>
+		    <latest>$timerange.latest$</latest>
+		  </search>        
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">400px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Seconds</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+
+      <chart>
+      <title>Scheduler Activity: Number of jobs over time:</title>
+	     <search>          
+		    <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app</query>
+		    <earliest>$timerange.earliest$</earliest>
+		    <latest>$timerange.latest$</latest>
+		  </search>        
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">400px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Seconds</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+      </chart>
+
+
+
+
+     </panel>
+   </row>
+
+
+
+
+</form>
