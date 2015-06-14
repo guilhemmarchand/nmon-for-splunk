@@ -198,6 +198,27 @@ where (nodename = NET_Data_types.NETERROR) (NET_Data_types.hostname=$hostname-pr
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+      <input type="dropdown" token="span" searchWhenChanged="true">
+        <label>Span:</label>
+        <default>`inline_customspan`</default>
+        <choice value="`inline_customspan`">auto</choice>
+		  <choice value="span=1m">1 minute</choice>
+		  <choice value="span=2m">2 minutes</choice>
+		  <choice value="span=3m">3 minutes</choice>
+		  <choice value="span=4m">4 minutes</choice>
+		  <choice value="span=5m">5 minutes</choice>
+		  <choice value="span=10m">10 minutes</choice>
+		  <choice value="span=15m">15 minutes</choice>
+		  <choice value="span=30m">30 minutes</choice>
+		  <choice value="span=1h">1 hour</choice>
+		  <choice value="span=2h">2 hours</choice>
+		  <choice value="span=12h">12 hours</choice>
+		  <choice value="span=4h">4 hours</choice>
+		  <choice value="span=1d">1 day</choice>
+		  <choice value="span=2d">2 days</choice>
+		  <choice value="span=1w">7 days</choice>
+		  <choice value="span=1mon">1 month</choice>
+      </input>      
     </panel>
   </row>
 
@@ -212,7 +233,7 @@ groupby _time, "NET_Data_types.hostname", "NET_Data_types.device" prestats=true 
 | $aggregate$
 | $charting$
 | rename NET_Data_types.hostname AS hostname, NET_Data_types.device AS device, NET_Data_types.value AS value
-| bucket _time `inline_customspan(type=NETERROR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+| bucket _time $span$
 | stats $statsmode$(value) As value by _time,hostname,device
 | eval s1="value"
 | makemv s1 
@@ -220,7 +241,7 @@ groupby _time, "NET_Data_types.hostname", "NET_Data_types.device" prestats=true 
 | eval yval=case(s1=="value",value)
 | eval series=hostname+":"+device
 | xyseries _time,series,yval
-| makecontinuous _time `inline_customspan(type=NETERROR,earliest=$timerange.earliest$,latest=$timerange.latest$)`</query>
+| makecontinuous _time $span$</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>
 		  </search>

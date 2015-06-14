@@ -135,7 +135,7 @@
   
         <search id="Global">
           <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) 
-(CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", "CPU.hostname" prestats=true `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)`
+(CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", "CPU.hostname" prestats=true `inline_customspan`
 | stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
 | $aggregate$
 | sort limit=0 _time
@@ -181,6 +181,7 @@
         </search>
         <option name="underLabel">Maximum Load</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
       </single>
 
       <single>
@@ -189,6 +190,7 @@
         </search>
         <option name="underLabel">Average Load</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
       </single>
 
       <single>
@@ -197,11 +199,12 @@
         </search>
         <option name="underLabel">Minimal Load</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
       </single>    
     
       <table>
         <search base="Global">
-          <query>fields hostname,frameID,"Pool ID","CPUs in Pool",max_usage,avg_usage,min_usage,sparkline</query>
+          <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | fields hostname,frameID,"Pool ID","CPUs in Pool",max_usage,avg_usage,min_usage,sparkline</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -260,6 +263,27 @@
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+      <input type="dropdown" token="span" searchWhenChanged="true">
+        <label>Span:</label>
+        <default>`inline_customspan`</default>
+        <choice value="`inline_customspan`">auto</choice>
+		  <choice value="span=1m">1 minute</choice>
+		  <choice value="span=2m">2 minutes</choice>
+		  <choice value="span=3m">3 minutes</choice>
+		  <choice value="span=4m">4 minutes</choice>
+		  <choice value="span=5m">5 minutes</choice>
+		  <choice value="span=10m">10 minutes</choice>
+		  <choice value="span=15m">15 minutes</choice>
+		  <choice value="span=30m">30 minutes</choice>
+		  <choice value="span=1h">1 hour</choice>
+		  <choice value="span=2h">2 hours</choice>
+		  <choice value="span=12h">12 hours</choice>
+		  <choice value="span=4h">4 hours</choice>
+		  <choice value="span=1d">1 day</choice>
+		  <choice value="span=2d">2 days</choice>
+		  <choice value="span=1w">7 days</choice>
+		  <choice value="span=1mon">1 month</choice>
+      </input>      
     </panel>
   </row>
   
@@ -275,7 +299,7 @@ groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
 | $aggregate$
 | rename CPU.LPAR.Pool_usage AS usage
 | $charting$
-| timechart `inline_customspan(type=LPAR,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 
+| timechart $span$ useother=f limit=0 
 $statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  

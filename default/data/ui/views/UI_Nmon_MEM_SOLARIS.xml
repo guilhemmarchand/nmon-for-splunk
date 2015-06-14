@@ -234,6 +234,27 @@ by frameID, hostname | sort limit=0 frameID,hostname
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+      <input type="dropdown" token="span" searchWhenChanged="true">
+        <label>Span:</label>
+        <default>`inline_customspan`</default>
+        <choice value="`inline_customspan`">auto</choice>
+		  <choice value="span=1m">1 minute</choice>
+		  <choice value="span=2m">2 minutes</choice>
+		  <choice value="span=3m">3 minutes</choice>
+		  <choice value="span=4m">4 minutes</choice>
+		  <choice value="span=5m">5 minutes</choice>
+		  <choice value="span=10m">10 minutes</choice>
+		  <choice value="span=15m">15 minutes</choice>
+		  <choice value="span=30m">30 minutes</choice>
+		  <choice value="span=1h">1 hour</choice>
+		  <choice value="span=2h">2 hours</choice>
+		  <choice value="span=12h">12 hours</choice>
+		  <choice value="span=4h">4 hours</choice>
+		  <choice value="span=1d">1 day</choice>
+		  <choice value="span=2d">2 days</choice>
+		  <choice value="span=1w">7 days</choice>
+		  <choice value="span=1mon">1 month</choice>
+      </input>      
     </panel>
   </row>  
   
@@ -258,7 +279,7 @@ max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.
 max("MEM.memtotal") AS memtotal_MB 
 by _time, "MEM.frameID", "MEM.hostname"
 | $charting$
-| timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
+| timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT 
 $statsmode$("memtotal_MB") AS memtotal_MB by "MEM.hostname" | $memmode$</query>
     		<earliest>$timerange.earliest$</earliest>
@@ -296,7 +317,7 @@ max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB 
 by _time, "MEM.frameID", "MEM.hostname"
 | $charting$
-| timechart `inline_customspan(type=MEM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 dedup_splitvals=t
+| timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB 
 $statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB by "MEM.hostname" | $memmode$</query>
     		<earliest>$timerange.earliest$</earliest>

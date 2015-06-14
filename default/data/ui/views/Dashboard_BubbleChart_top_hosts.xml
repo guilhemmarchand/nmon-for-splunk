@@ -92,7 +92,7 @@
 
 	<search id="baseSearch">          
 		<query>| tstats max(CPU.cpu_PCT) AS cpu_PCT from datamodel=NMON_Data_CPU
-where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, CPU.frameID, CPU.hostname prestats=true
+where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, CPU.frameID, CPU.hostname prestats=true span=1m
 | stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, CPU.hostname
 | stats $statsmode$(cpu_PCT) AS usage by CPU.frameID, CPU.hostname | rename CPU.frameID AS frameID CPU.hostname AS hostname
 | fields frameID,hostname,usage,*</query>
@@ -111,7 +111,7 @@ where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) (
                     "search": {
 								"type": "token_safe",
                     		"value": "| tstats max(CPU.cpu_PCT) AS cpu_PCT from datamodel=NMON_Data_CPU
-where (nodename = CPU.CPU_ALL) (CPU.hostname=$$hostname-prefilter$$) ($$frameID$$) ($$osfilter$$) ($$hostname$$) `$$timefilter$$(CPU)` groupby _time, CPU.frameID, CPU.hostname prestats=true
+where (nodename = CPU.CPU_ALL) (CPU.hostname=$$hostname-prefilter$$) ($$frameID$$) ($$osfilter$$) ($$hostname$$) `$$timefilter$$(CPU)` groupby _time, CPU.frameID, CPU.hostname prestats=true span=1m
 | stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, CPU.hostname
 | stats $$statsmode$$(cpu_PCT) AS usage by CPU.frameID, CPU.hostname | rename CPU.frameID AS frameID CPU.hostname AS hostname | sort - usage | head 100"
 						  },

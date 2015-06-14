@@ -61,6 +61,28 @@ groupby "CPU.hostname" prestats=true
       <suffix>"</suffix>
     </input>
 
+      <input type="dropdown" token="span" searchWhenChanged="true">
+        <label>Span:</label>
+        <default>`inline_customspan`</default>
+        <choice value="`inline_customspan`">auto</choice>
+		  <choice value="span=1m">1 minute</choice>
+		  <choice value="span=2m">2 minutes</choice>
+		  <choice value="span=3m">3 minutes</choice>
+		  <choice value="span=4m">4 minutes</choice>
+		  <choice value="span=5m">5 minutes</choice>
+		  <choice value="span=10m">10 minutes</choice>
+		  <choice value="span=15m">15 minutes</choice>
+		  <choice value="span=30m">30 minutes</choice>
+		  <choice value="span=1h">1 hour</choice>
+		  <choice value="span=2h">2 hours</choice>
+		  <choice value="span=12h">12 hours</choice>
+		  <choice value="span=4h">4 hours</choice>
+		  <choice value="span=1d">1 day</choice>
+		  <choice value="span=2d">2 days</choice>
+		  <choice value="span=1w">7 days</choice>
+		  <choice value="span=1mon">1 month</choice>
+      </input>
+
   </fieldset>
   
   <!-- Information panel -->
@@ -175,7 +197,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby _ti
 | stats dedup_splitvals=t
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
 | eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
-| timechart `inline_customspan(type=CPU_ALL OR type=LPAR,$hostname$)` $statsmode$(usage) AS $statsmode$_cpu_usage</query>
+| timechart $span$ $statsmode$(usage) AS $statsmode$_cpu_usage</query>
       	<earliest>$timerange.earliest$</earliest>
       	<latest>$timerange.latest$</latest>		
 		</search>      
@@ -228,7 +250,7 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | rename DISKXFER.hostname AS hostname, DISKXFER.device AS device, DISKXFER.value AS value
 | stats sum(value) As value by _time
-| timechart `inline_customspan(type=DISKXFER,$hostname$)` $statsmode$(value) AS $statsmode$_iops_usage</query>
+| timechart $span$ $statsmode$(value) AS $statsmode$_iops_usage</query>
       	<earliest>$timerange.earliest$</earliest>
       	<latest>$timerange.latest$</latest>
       </search>
@@ -278,7 +300,7 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 			<query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$)
  groupby _time, "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
-| timechart `inline_customspan(type=CPU_ALL,$hostname$)`
+| timechart $span$
 avg("CPU.Idle_PCT") AS "Idle %",
 avg("CPU.Sys_PCT") AS "Sys %",
 avg("CPU.User_PCT") AS "User %",
@@ -398,7 +420,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As usage_per_core by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(usage_per_core) as "CPU Usage per core" by Command</query>
+| timechart $span$ useother=f limit=0 max(usage_per_core) as "CPU Usage per core" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
         </search>
@@ -441,7 +463,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(Used_Mem_MB) as "Used_Memory" by Command</query>
+| timechart $span$ useother=f limit=0 max(Used_Mem_MB) as "Used_Memory" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
 		  </search>
@@ -482,7 +504,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(Size) As Size by _time,Command
 | eval Virtual_Mem_MB=round((Size/1024),2)
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command</query>
+| timechart $span$ useother=f limit=0 max(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
 		  </search>
@@ -522,7 +544,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | stats dedup_splitvals=t max("TOP_Linux.MinorFault") AS MinorFault by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(MinorFault) As MinorFault by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(MinorFault) as "MinorFault" by Command</query>
+| timechart $span$ useother=f limit=0 max(MinorFault) as "MinorFault" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
 		  </search>
@@ -561,7 +583,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | stats dedup_splitvals=t max("TOP_Linux.MajorFault") AS MajorFault by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" 
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(MajorFault) As MajorFault by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(MajorFault) as "MajorFault" by Command</query>
+| timechart $span$ useother=f limit=0 max(MajorFault) as "MajorFault" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
 		  </search>
@@ -600,7 +622,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | stats dedup_splitvals=t max("TOP_Linux.ShdLib") AS ShdLib by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" 
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(ShdLib) As ShdLib by _time,Command
-| timechart `inline_customspan(type=TOP,$hostname$)` useother=f limit=0 max(ShdLib) as "ShdLib" by Command</query>
+| timechart $span$ useother=f limit=0 max(ShdLib) as "ShdLib" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
 		  </search>
@@ -638,8 +660,8 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
   	<query>| tstats max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in
 max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
 max("PROC.fork") AS fork max("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC)
-(PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true `inline_customspan(type=PROC,$hostname$)`
-| timechart `inline_customspan(type=PROC,$hostname$)` max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in
+(PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true $span$
+| timechart $span$ max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in
 max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
 max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
    <earliest>$timerange.earliest$</earliest>
@@ -747,8 +769,8 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
   
   <search id="VM">
     <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$)
-groupby _time, "Linux.hostname" prestats=true `inline_customspan(type=VM,$hostname$)`
-| timechart `inline_customspan(type=VM,$hostname$)` `VM_Linux(max)` | rename Linux.* AS *</query>
+groupby _time, "Linux.hostname" prestats=true $span$
+| timechart $span$ `VM_Linux(max)` | rename Linux.* AS *</query>
     <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>  
   </search>
@@ -1158,8 +1180,8 @@ max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.
 max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB 
 max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
 max("MEM.inactive_PCT") AS inactive_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$)
-groupby _time, "MEM.hostname" prestats=true `inline_customspan(type=MEM,$hostname$)`
-| timechart dedup_splitvals=t `inline_customspan(type=MEM,$hostname$)`
+groupby _time, "MEM.hostname" prestats=true $span$
+| timechart dedup_splitvals=t $span$
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT 
 max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB 
 max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB 
@@ -1172,8 +1194,8 @@ max("MEM.inactive_PCT") AS inactive_PCT</query>
 		<query>| tstats
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT 
-from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby _time, "MEM.hostname" prestats=true `inline_customspan(type=MEM,$hostname$)`
-| timechart dedup_splitvals=t `inline_customspan(type=MEM,$hostname$)`
+from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby _time, "MEM.hostname" prestats=true $span$
+| timechart dedup_splitvals=t $span$
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB 
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT</query>
 		<earliest>$timerange.earliest$</earliest>
@@ -1361,7 +1383,7 @@ where (nodename = DISKBSIZE) (DISKBSIZE.$hostname$) groupby _time, "DISKBSIZE.ho
 | stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "DISKBSIZE.hostname", "DISKBSIZE.device"
 | rename DISKBSIZE.hostname AS hostname, DISKBSIZE.device AS device, DISKBSIZE.value AS value
 | stats sum(value) As avg_transfer_size by _time,hostname
-| timechart `inline_customspan(type=DISKBSIZE,$hostname$)` max(avg_transfer_size) AS avg_transfer_size</query>
+| timechart $span$ max(avg_transfer_size) AS avg_transfer_size</query>
     	  <earliest>$timerange.earliest$</earliest>
     	  <latest>$timerange.latest$</latest>
 		</search>
@@ -1401,7 +1423,7 @@ where (nodename = DISKBUSY) (DISKBUSY.$hostname$) groupby _time, "DISKBUSY.hostn
 | stats dedup_splitvals=t max("DISKBUSY.value") AS value by _time, "DISKBUSY.hostname", "DISKBUSY.device"
 | rename DISKBUSY.hostname AS hostname, DISKBUSY.device AS device, DISKBUSY.value AS value
 | stats avg(value) As value by _time,hostname
-| timechart `inline_customspan(type=DISKBUSY,$hostname$)` max(value) AS avg_busy_disk</query>
+| timechart $span$ max(value) AS avg_busy_disk</query>
     	  <earliest>$timerange.earliest$</earliest>
     	  <latest>$timerange.latest$</latest>
 		</search>
@@ -1441,7 +1463,7 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
 | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | rename DISKREADWRITE.hostname AS hostname, DISKREADWRITE.device AS device, DISKREADWRITE.value AS value
 | stats sum(value) As value by _time,hostname,device
-| timechart `inline_customspan(type=DISKREAD,$hostname$)` max(value) AS disk_read</query>
+| timechart $span$ max(value) AS disk_read</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>
 		</search>
@@ -1469,7 +1491,7 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
 | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | rename DISKREADWRITE.hostname AS hostname, DISKREADWRITE.device AS device, DISKREADWRITE.value AS value
 | stats sum(value) As value by _time,hostname,device
-| timechart `inline_customspan(type=DISKREAD,$hostname$)` max(value) AS disk_read</link>
+| timechart $span$ max(value) AS disk_read</link>
       </drilldown>
     </chart>
 
@@ -1482,7 +1504,7 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
 | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | rename DISKREADWRITE.hostname AS hostname, DISKREADWRITE.device AS device, DISKREADWRITE.value AS value
 | stats sum(value) As value by _time,hostname
-| timechart `inline_customspan(type=DISKWRITE,$hostname$)` max(value) AS disk_write</query>
+| timechart $span$ max(value) AS disk_write</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>
 		  </search>      
@@ -1522,7 +1544,7 @@ where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostn
 | stats dedup_splitvals=t max("DISKXFER.value") AS value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | rename DISKXFER.hostname AS hostname, DISKXFER.device AS device, DISKXFER.value AS value
 | stats sum(value) As value by _time
-| timechart `inline_customspan(type=DISKXFER,$hostname$)` max(value) AS IOPS</query>
+| timechart $span$ max(value) AS IOPS</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>
 		</search>
@@ -1569,8 +1591,8 @@ where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostn
       <title>JFSFILE, Percentage Usage of File-systems</title>
   		<search>
           <query>| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" prestats=true `inline_customspan(type=JFSFILE,$hostname$)`
-| timechart `inline_customspan(type=JFSFILE,$hostname$)` limit=0 useother=f max("JFS.value") AS value by "JFS.device"</query>
+where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" prestats=true $span$
+| timechart $span$ limit=0 useother=f max("JFS.value") AS value by "JFS.device"</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>
 		</search>
@@ -1627,9 +1649,9 @@ where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" pres
   		<search>
           <query>| tstats max("NET_Data_types.NET.value_MBps") AS value from datamodel=NMON_Data_NET
 where (nodename = NET_Data_types.NET) (NET_Data_types.$hostname$) 
-groupby _time, "NET_Data_types.device" prestats=true `inline_customspan(type=NET,$hostname$)`
+groupby _time, "NET_Data_types.device" prestats=true $span$
 | rex mode=sed field="NET_Data_types.device" "s/KB/MB/"
-| timechart `inline_customspan(type=NET,$hostname$)` limit=0 useother=f max("NET_Data_types.NET.value_MBps") AS value by "NET_Data_types.device"</query>
+| timechart $span$ limit=0 useother=f max("NET_Data_types.NET.value_MBps") AS value by "NET_Data_types.device"</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>
 		  </search>
@@ -1663,8 +1685,8 @@ groupby _time, "NET_Data_types.device" prestats=true span=1m
       <title>NETPACKET - Number of read/write packets</title>
   		<search>
           <query>| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET 
-where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby _time, "NET_Data_types.device" prestats=true `inline_customspan(type=NET,$hostname$)`
-| timechart `inline_customspan(type=NET,$hostname$)` limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device"</query>
+where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby _time, "NET_Data_types.device" prestats=true $span$
+| timechart $span$ limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device"</query>
     		<earliest>$timerange.earliest$</earliest>
     		<latest>$timerange.latest$</latest>
 		</search>
@@ -1708,11 +1730,11 @@ where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby 
         <title>NFS Server V4</title>
 		  <search>        
           <query>| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS 
-where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats=true `inline_customspan(type=NFSSVRV4,$hostname$)`
+where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSSVRV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 `inline_customspan(type=NFSSVRV4,$hostname$)` max(value) AS value by monitor</query>
+| timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
 		  </search>
@@ -1747,11 +1769,11 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats
         <title>NFS Server V3</title>
         <search>
           <query>| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS 
-where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats=true `inline_customspan(type=NFSSVRV3,$hostname$)`
+where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSSVRV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 `inline_customspan(type=NFSSVRV3,$hostname$)` max(value) AS value by monitor</query>
+| timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
 		  </search>
@@ -1786,11 +1808,11 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats
         <title>NFS Server V2</title>
         <search>
           <query>| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS 
-where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats=true `inline_customspan(type=NFSSVRV2,$hostname$)`
+where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSSVRV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 `inline_customspan(type=NFSSVRV2,$hostname$)` max(value) AS value by monitor</query>
+| timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
 		  </search>
@@ -1837,11 +1859,11 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats
         <title>NFS Client V4</title>
 		  <search>        
           <query>| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS 
-where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time prestats=true `inline_customspan(type=NFSCLIV4,$hostname$)`
+where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSCLIV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 `inline_customspan(type=NFSCLIV4,$hostname$)` max(value) AS value by monitor</query>
+| timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
 		  </search>
@@ -1876,11 +1898,11 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time presta
         <title>NFS Client V3</title>
 		  <search>        
           <query>| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS 
-where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time prestats=true `inline_customspan(type=NFSCLIV3,$hostname$)`
+where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSCLIV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 `inline_customspan(type=NFSCLIV3,$hostname$)` max(value) AS value by monitor</query>
+| timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
 		  </search>
@@ -1915,11 +1937,11 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time presta
         <title>NFS Client V2</title>
 		  <search>        
           <query>| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS 
-where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time prestats=true `inline_customspan(type=NFSCLIV2,$hostname$)`
+where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSCLIV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 `inline_customspan(type=NFSCLIV2,$hostname$)` max(value) AS value by monitor</query>
+| timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
 		  </search>

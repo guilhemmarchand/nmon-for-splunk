@@ -58,6 +58,28 @@
       <fieldForLabel>hostname</fieldForLabel>
       <fieldForValue>hostname</fieldForValue>
     </input>
+    
+      <input type="dropdown" token="span" searchWhenChanged="true">
+        <label>Span:</label>
+        <default>`inline_customspan`</default>
+        <choice value="`inline_customspan`">auto</choice>
+		  <choice value="span=1m">1 minute</choice>
+		  <choice value="span=2m">2 minutes</choice>
+		  <choice value="span=3m">3 minutes</choice>
+		  <choice value="span=4m">4 minutes</choice>
+		  <choice value="span=5m">5 minutes</choice>
+		  <choice value="span=10m">10 minutes</choice>
+		  <choice value="span=15m">15 minutes</choice>
+		  <choice value="span=30m">30 minutes</choice>
+		  <choice value="span=1h">1 hour</choice>
+		  <choice value="span=2h">2 hours</choice>
+		  <choice value="span=12h">12 hours</choice>
+		  <choice value="span=4h">4 hours</choice>
+		  <choice value="span=1d">1 day</choice>
+		  <choice value="span=2d">2 days</choice>
+		  <choice value="span=1w">7 days</choice>
+		  <choice value="span=1mon">1 month</choice>
+      </input>     
 
   </fieldset>
   
@@ -130,8 +152,6 @@ avg("CPU.cpu_PCT") AS avg_pct_usage max("CPU.cpu_PCT") AS max_pct_usage by "CPU.
    <latest>$timerange.latest$</latest>
   </search>
 
-  <!-- For now, TOP section can be satisfied using Data Model -->
-  
   <search id="TOPSearch">
   	<query>| tstats 
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
@@ -352,6 +372,7 @@ max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
         </search>
         <option name="drilldown">none</option>
         <option name="underLabel">CPU datasource</option>
+        <option name="numberPrecision">0.0</option>
         <option name="linkView">search</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby "CPU.hostname", "CPU.type" prestats=true
@@ -373,6 +394,7 @@ max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
         <option name="drilldown">none</option>
         <option name="underLabel">Average CPU Usage</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.0</option>
         <option name="afterLabel">% or VP</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats
@@ -397,6 +419,7 @@ avg("CPU.cpu_PCT") AS avg_pct_usage max("CPU.cpu_PCT") AS max_pct_usage by "CPU.
         <option name="drilldown">none</option>
         <option name="underLabel">Max CPU Usage</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.0</option>
         <option name="afterLabel">% or VP</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats
@@ -423,7 +446,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) gr
 | stats dedup_splitvals=t
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
 | eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
-| timechart `inline_customspan(type=CPU_ALL OR type=LPAR,hostname=$hostname$)` max(usage) AS "Max CPU usage" avg(usage) AS "Avg CPU usage"</query>
+| timechart $span$ max(usage) AS "Max CPU usage" avg(usage) AS "Avg CPU usage"</query>
          <earliest>$timerange.earliest$</earliest>
          <latest>$timerange.latest$</latest>
 		  </search>
@@ -492,7 +515,7 @@ groupby _time, "DISKXFER.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
 | fields _time, hostname, iops
-| timechart `inline_customspan(type=DISKXFER,hostname=$hostname$)` max(iops) As "Total I/O"</query>
+| timechart $span$ max(iops) As "Total I/O"</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
         </search>  
@@ -527,6 +550,7 @@ groupby _time, "DISKXFER.hostname" prestats=true span=1m
         <option name="drilldown">none</option>
         <option name="underLabel">Average RealMem Usage</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.0</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
@@ -558,6 +582,7 @@ max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
         <option name="drilldown">none</option>
         <option name="underLabel">Max RealMem Usage</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.0</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
@@ -589,6 +614,7 @@ max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
         <option name="drilldown">none</option>
         <option name="underLabel">Average Virtual Mem Usage</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.0</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
@@ -620,6 +646,7 @@ max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB by "MEM.hostname"
         <option name="drilldown">none</option>
         <option name="underLabel">Max Virtual Mem Usage</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.0</option>
         <option name="afterLabel">%</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats avg("MEM.allOS_Real_used_PCT") AS avg_Real_used_PCT
@@ -652,7 +679,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$) gr
 | stats dedup_splitvals=t
 max("MEM.allOS_Real_used_PCT") AS Real_used_PCT
 max("MEM.allOS_Virtual_used_PCT") AS Virtual_used_PCT by _time, "MEM.hostname"
-| timechart `inline_customspan(type=MEM,hostname=$hostname$)` max(Real_used_PCT) As "Real Used %", max(Virtual_used_PCT) As "Virtual Used %"</query>
+| timechart $span$ max(Real_used_PCT) As "Real Used %", max(Virtual_used_PCT) As "Virtual Used %"</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
 		  </search>
@@ -688,6 +715,7 @@ max("MEM.allOS_Virtual_used_PCT") AS Virtual_used_PCT by _time, "MEM.hostname"
         <option name="drilldown">none</option>
         <option name="underLabel">TOP Process</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
         <option name="beforeLabel">Command</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats 
@@ -718,6 +746,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
         <option name="drilldown">none</option>
         <option name="underLabel">Average Conso for this Command</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
         <option name="beforeLabel">core conso</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats 
@@ -748,6 +777,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
         <option name="drilldown">none</option>
         <option name="underLabel">Max Conso for this Command</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
         <option name="beforeLabel">core conso</option>
         <option name="linkFields">result</option>
         <option name="linkSearch">| tstats 
@@ -787,7 +817,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU) 
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command 
 | eval usage_per_core=(pct_CPU/100) | stats sum(usage_per_core) As usage_per_core by _time,Command 
-| timechart `inline_customspan(type=TOP,hostname=$hostname$)` useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
+| timechart $span$ useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
           <earliest>$timerange.earliest$</earliest>
           <latest>$timerange.latest$</latest>
 		  </search>

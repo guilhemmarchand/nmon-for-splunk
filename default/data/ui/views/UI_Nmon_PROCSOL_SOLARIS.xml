@@ -236,6 +236,27 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
+      <input type="dropdown" token="span" searchWhenChanged="true">
+        <label>Span:</label>
+        <default>`inline_customspan`</default>
+        <choice value="`inline_customspan`">auto</choice>
+		  <choice value="span=1m">1 minute</choice>
+		  <choice value="span=2m">2 minutes</choice>
+		  <choice value="span=3m">3 minutes</choice>
+		  <choice value="span=4m">4 minutes</choice>
+		  <choice value="span=5m">5 minutes</choice>
+		  <choice value="span=10m">10 minutes</choice>
+		  <choice value="span=15m">15 minutes</choice>
+		  <choice value="span=30m">30 minutes</choice>
+		  <choice value="span=1h">1 hour</choice>
+		  <choice value="span=2h">2 hours</choice>
+		  <choice value="span=12h">12 hours</choice>
+		  <choice value="span=4h">4 hours</choice>
+		  <choice value="span=1d">1 day</choice>
+		  <choice value="span=2d">2 days</choice>
+		  <choice value="span=1w">7 days</choice>
+		  <choice value="span=1mon">1 month</choice>
+      </input>      
     </panel>
   </row>
   
@@ -251,7 +272,7 @@ from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (PROCSOL.hostname=$h
 groupby _time, "PROCSOL.frameID", "PROCSOL.hostname" prestats=true 
 | stats dedup_splitvals=t max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL 
 max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, "PROCSOL.hostname"
-| timechart `inline_customspan(type=PROC,earliest=$timerange.earliest$,latest=$timerange.latest$)` limit=0 useother=f 
+| timechart $span$ limit=0 useother=f 
 $statsmode$(USR) As "USR (%time in User Mode)", $statsmode$(SYS) As "SYS (%time in System Mode)", $statsmode$(TRP) As "TRP (%time Processing system traps)",
 $statsmode$(TFL) As "TFL (%time Processing text page faults)", $statsmode$(DFL) As "DFL (%time Processing data page faults)",
 $statsmode$(LAT) As "LAT (%time Waiting for CPU)" by PROCSOL.hostname</query>        

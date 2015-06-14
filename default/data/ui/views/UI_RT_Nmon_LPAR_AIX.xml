@@ -86,6 +86,7 @@ SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $fr
         </search>
         <option name="underLabel">Maximum Load</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
       </single>
 
       <single>
@@ -94,6 +95,7 @@ SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $fr
         </search>
         <option name="underLabel">Average Load</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
       </single>
 
       <single>
@@ -102,11 +104,12 @@ SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $fr
         </search>
         <option name="underLabel">Minimal Load</option>
         <option name="linkView">search</option>
+        <option name="numberPrecision">0.00</option>
       </single>
 
       <table>
         <search base="Global">
-          <query>fields hostname,frameID,max_usage,avg_usage,min_usage,entitled,virtualCPUs</query>
+          <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | fields hostname,frameID,max_usage,avg_usage,min_usage,entitled,virtualCPUs</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>

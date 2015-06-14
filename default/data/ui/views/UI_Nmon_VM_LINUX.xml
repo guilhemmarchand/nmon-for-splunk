@@ -91,7 +91,7 @@
 groupby _time, "Linux.frameID", "Linux.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.frameID", "Linux.hostname"
-| timechart `inline_customspan(type=VM,earliest=$timerange.earliest$,latest=$timerange.latest$)` useother=f limit=0 `VM_Linux($statsmode$)` by Linux.hostname
+| timechart $span$ useother=f limit=0 `VM_Linux($statsmode$)` by Linux.hostname
 | rename Linux.* AS *</query>
     <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>  
