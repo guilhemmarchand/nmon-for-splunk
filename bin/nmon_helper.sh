@@ -19,8 +19,10 @@
 # 2015/05/14, Guilhem Marchand: 
 #										- AIX improvements: If not running topas-nmon, identification may fail, use the splunktag for non topas-nmon instance 
 #										- Linux Ubuntu update: added binaries support for older releases
+# 2015/06/24, Guilhem Marchand:
+#										- All OS: Code improvements to prevent launching multiple nmon instances
 
-# Version 1.3.03
+# Version 1.3.04
 
 # For AIX / Linux / Solaris
 
@@ -561,6 +563,47 @@ case $UNAME in
 			
 }
 
+# Just Search for running process
+search_nmon_instances() {
+
+case $UNAME in 
+
+	Linux)
+
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
+		
+	;;
+	
+	SunOS)
+
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+
+		for p in ${PIDs}; do
+
+			verify_pid $p | grep -v grep | grep ${APP_VAR} >/dev/null
+
+		done
+	;;		
+		
+	AIX)
+
+		case ${AIX_topas_nmon} in
+	
+		true )	
+			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}'`
+		;;
+		
+		false)
+			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
+		;;
+		
+		esac
+
+	;;
+			
+	esac
+			
+}
 
 ############################################
 # Defaults values for interval and snapshot
@@ -711,18 +754,38 @@ cd ${NMON_REPOSITORY}
 # Check PID file, if no PID file is found, start nmon
 if [ ! -f ${PIDFILE} ]; then
 
+	# PID file not found
+
 	echo "`date`, ${HOST} INFO: Removing staled pid file"
 	rm -f ${PIDFILE}
 	
-	echo "`date`, ${HOST} INFO: starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-	start_nmon
-	sleep 5 # Let nmon time to start
-	write_pid
-	exit 0
+	# search for any App related instances
+	search_nmon_instances
+
+	case ${PIDs} in
+	
+	"")
+	
+		echo "`date`, ${HOST} INFO: starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+		start_nmon
+		sleep 5 # Let nmon time to start
+		write_pid
+		exit 0
+	;;
+	
+	*)
+
+		echo "`date`, ${HOST} INFO: found Nmon running with PID ${PIDs}"
+		# Retry to write pid file
+		write_pid
+		exit 0
+	;;
+	
+	esac
 
 else
 
-	# No PID file
+	# PID file found
 
 	SAVED_PID=`cat ${PIDFILE} | awk '{print $1}'`
 
@@ -731,15 +794,33 @@ else
 	# PID file is empty
 	"")
 
-	echo "`date`, ${HOST} INFO: Removing staled pid file"
-	rm -f ${PIDFILE}
+		echo "`date`, ${HOST} INFO: Removing staled pid file"
+		rm -f ${PIDFILE}
 
-	echo "`date`, ${HOST} INFO: starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
-	start_nmon
-	sleep 5 # Let nmon time to start
-	write_pid
-	exit 0
+		# search for any App related instances
+		search_nmon_instances
+
+		case ${PIDs} in
 	
+		"")
+
+			echo "`date`, ${HOST} INFO: starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
+			start_nmon
+			sleep 5 # Let nmon time to start
+			write_pid
+			exit 0
+		;;
+	
+		*)
+
+			echo "`date`, ${HOST} INFO: found Nmon running with PID ${PIDs}"
+			# Retry to write pid file
+			write_pid
+			exit 0
+		;;
+	
+		esac
+
 	;;
 
 	*)
