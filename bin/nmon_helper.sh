@@ -21,8 +21,11 @@
 #										- Linux Ubuntu update: added binaries support for older releases
 # 2015/06/24, Guilhem Marchand:
 #										- All OS: Code improvements to prevent launching multiple nmon instances
+# 2015/06/28, Guilhem Marchand:
+#										- hotfix for nmon instances dupplication: To prevent trouble at Splunk startup at boot time, the nmon_helper.sh uses now the -p option for nmon (AIX, Linux)
+#										to retrieve the pid of the launched nmon instance
 
-# Version 1.3.04
+# Version 1.3.05
 
 # For AIX / Linux / Solaris
 
@@ -81,7 +84,7 @@ interval="60"
 snapshot="120"
 
 # AIX common options default, will be overwritten by nmon.conf (unless the file would not be available)
-AIX_options="-f -T -A -d -K -L -M -P -^"
+AIX_options="-f -T -A -d -K -L -M -P -^ -p"
 
 # Linux max devices (-d option), default to 1500
 Linux_devices="1500"
@@ -438,16 +441,18 @@ PIDFILE=${APP_VAR}/nmon.pid
 # functions
 ############################################
 
+# For AIX / Linux, the -p option when launching nmon will output the instance pid in stdout
+
 start_nmon () {
 
 case $UNAME in
 
 	AIX )
-		${nmon_command} >/dev/null 2>&1
+		${nmon_command} > ${PIDFILE}
 	;;
 
 	Linux )
-		${nmon_command}		
+		${nmon_command} > ${PIDFILE}
 		if [ $? -ne 0 ]; then
 			echo "`date`, ${HOST} ERROR, nmon binary returned a non 0 code while trying to start, please verify error traces in splunkd log (missing shared libraries?)"
 		fi
@@ -512,11 +517,14 @@ verify_pid() {
 # Search for running process and write PID file
 write_pid() {
 
+# Only SunOS will look for running processes to identify nmon instances
+# AIX and Linux will save the pid at launch time
+
 case $UNAME in 
 
 	Linux)
 
-		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 		
 		if [ $? -eq 0 ]; then
 			echo ${PIDs} > ${PIDFILE}
@@ -548,7 +556,7 @@ case $UNAME in
 		;;
 		
 		false)
-			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
+			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 		;;
 		
 		esac
@@ -570,7 +578,7 @@ case $UNAME in
 
 	Linux)
 
-		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
+		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 		
 	;;
 	
@@ -594,7 +602,7 @@ case $UNAME in
 		;;
 		
 		false)
-			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}'`
+			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
 		;;
 		
 		esac
@@ -677,20 +685,26 @@ esac
 # -P	Includes the Paging Space section in the recording file.
 # -T	Includes the top processes in the output and saves the command-line arguments into the UARG section. You cannot specify the -t, -T, or -Y flags with each other.
 # -^	Includes the Fiber Channel (FC) sections.
+# -p  print pid in stdout
 
 # For Linux, the default command options line "-f -T -d 1500" includes:
 
 # -t	include top processes in the output
 # -T	as -t plus saves command line arguments in UARG section
 # -d <disks>    to increase the number of disks [default 256]
+# -p  print pid in stdout
 
 case $UNAME in
 
 AIX )
 
-	# Don't use splunktag with topas-nmon, use this to identify nmon instances only with non topas-nmon
-	# Additional note: topas-nmon always add the output directory in the process line
+	# -p option is mandatory to get the pid of the launched instances, ensure it has been set
 	
+	echo ${AIX_options} | grep '-p' >/dev/null
+	if [ $? -ne 0 ]; then
+		AIX_options="${AIX_options} -p"
+	fi
+
 	case ${AIX_topas_nmon} in
 	
 	true )
@@ -707,11 +721,11 @@ AIX )
 	false )
 	
 		if [ ${AIX_NFS23} -eq 1 ]; then
-			nmon_command="${NMON} ${AIX_options} -N -s ${interval} -c ${snapshot} splunktag"
+			nmon_command="${NMON} ${AIX_options} -N -s ${interval} -c ${snapshot}"
 		elif [ ${AIX_NFS4} -eq 1 ]; then
-			nmon_command="${NMON} ${AIX_options} -NN -s ${interval} -c ${snapshot} splunktag"
+			nmon_command="${NMON} ${AIX_options} -NN -s ${interval} -c ${snapshot}"
 		else
-			nmon_command="${NMON} ${AIX_options} -s ${interval} -c ${snapshot} splunktag"
+			nmon_command="${NMON} ${AIX_options} -s ${interval} -c ${snapshot}"
 		fi
 	;;	
 	
@@ -726,9 +740,9 @@ SunOS )
 Linux )
 
 	if [ ${Linux_NFS} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -d ${Linux_devices} -N -s ${interval} -c ${snapshot} splunktag"
+		nmon_command="${NMON} -f -T -d ${Linux_devices} -N -s ${interval} -c ${snapshot} -p"
 	else
-		nmon_command="${NMON} -f -T -d ${Linux_devices} -s ${interval} -c ${snapshot} splunktag"
+		nmon_command="${NMON} -f -T -d ${Linux_devices} -s ${interval} -c ${snapshot} -p"
 	fi
 ;;
 
@@ -828,7 +842,7 @@ else
 	case $UNAME in
 
 	Linux)
-		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
+		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
 
 	SunOS)
 		verify_pid ${SAVED_PID} | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
@@ -839,7 +853,7 @@ else
 		true )	
 			ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
 		false )
-			ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep splunktag | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;		
+			ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;		
 		esac
 
 		;;		
