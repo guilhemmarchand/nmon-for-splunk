@@ -22,10 +22,13 @@
 # 2015/06/24, Guilhem Marchand:
 #										- All OS: Code improvements to prevent launching multiple nmon instances
 # 2015/06/28, Guilhem Marchand:
-#										- hotfix for nmon instances dupplication: To prevent trouble at Splunk startup at boot time, the nmon_helper.sh uses now the -p option for nmon (AIX, Linux)
+#										- hotfix for nmon instances duplication: To prevent trouble at Splunk startup at boot time, the nmon_helper.sh uses now the -p option for nmon (AIX, Linux)
 #										to retrieve the pid of the launched nmon instance
+# 2015/07/08, Guilhem Marchand:
+#										- hotfix for nmon instances duplication: Some cases may still lead to multiplicative processes, code improvements will prevent this
+#										- hotfix for SUSE Linux: typo error leads to fail identifying best binaries for SUSE clients
 
-# Version 1.3.05
+# Version 1.3.06
 
 # For AIX / Linux / Solaris
 
@@ -522,16 +525,6 @@ write_pid() {
 
 case $UNAME in 
 
-	Linux)
-
-		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-		
-		if [ $? -eq 0 ]; then
-			echo ${PIDs} > ${PIDFILE}
-		fi
-
-	;;
-	
 	SunOS)
 
 		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
@@ -547,26 +540,6 @@ case $UNAME in
 		done
 	;;		
 		
-	AIX)
-
-		case ${AIX_topas_nmon} in
-	
-		true )	
-			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}'`
-		;;
-		
-		false)
-			PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
-		;;
-		
-		esac
-		
-		if [ $? -eq 0 ]; then
-			echo ${PIDs} > ${PIDFILE}
-		fi
-
-	;;
-			
 	esac
 			
 }
@@ -821,6 +794,7 @@ else
 			echo "`date`, ${HOST} INFO: starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 			start_nmon
 			sleep 5 # Let nmon time to start
+			# Relevant for Solaris Only
 			write_pid
 			exit 0
 		;;
@@ -828,7 +802,7 @@ else
 		*)
 
 			echo "`date`, ${HOST} INFO: found Nmon running with PID ${PIDs}"
-			# Retry to write pid file
+			# Relevant for Solaris Only
 			write_pid
 			exit 0
 		;;
@@ -837,48 +811,63 @@ else
 
 	;;
 
+	# PID file is not empty
 	*)
 	
 	case $UNAME in
 
 	Linux)
-		ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
+		if [ -d /proc/${SAVED_PID} ]; then
+			istarted="true"
+		else
+			istarted="false"
+		fi
+		;;
 
 	SunOS)
-		verify_pid ${SAVED_PID} | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null ;;
+		verify_pid ${SAVED_PID} | grep -v grep | grep ${NMON_REPOSITORY} >/dev/null
+		if [ $? -eq 0 ]; then
+			istarted="true"
+		else
+			istarted="false"
+		fi
+		;;
 				
 	AIX)
 	
-		case ${AIX_topas_nmon} in
-		true )	
-			ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | grep ${NMON_REPOSITORY} | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;
-		false )
-			ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}' | grep ${SAVED_PID} >/dev/null ;;		
-		esac
-
+		if [ -d /proc/${SAVED_PID} ]; then
+			istarted="true"
+		else
+			istarted="false"
+		fi
 		;;		
 		
 	esac	
+
+	case $istarted in
 	
-	if [ $? -eq 0 ]; then
+	"true")
+	
 		# Process found	
 		echo "`date`, ${HOST} INFO: found Nmon running with PID ${SAVED_PID}"
 		exit 0
-	
-	else	
-	
-		# Process not found, Nmon has terminated or is not yet started
+		;;
 		
+	"false")
+	
+		# Process not found, Nmon has terminated or is not yet started		
 		echo "`date`, ${HOST} INFO: Removing staled pid file"
 		rm -f ${PIDFILE}
 
 		echo "`date`, ${HOST} INFO: starting nmon : ${nmon_command} in ${NMON_REPOSITORY}"
 		start_nmon
 		sleep 5 # Let nmon time to start
+		# Relevant for Solaris Only		
 		write_pid
 		exit 0
+		;;
 	
-	fi	
+	esac
 	
 	;;
 	
