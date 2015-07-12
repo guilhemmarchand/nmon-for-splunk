@@ -23,15 +23,14 @@ if [ -z "${SPLUNK_HOME}" ]; then
 	exit 1
 fi
 
-# tmp directory for data storing
-TMP_VAR=${SPLUNK_HOME}/var/run/nmon/tmp
-
-if [ ! -d ${TMP_VAR} ]; then
-	mkdir -p ${TMP_VAR}
+# Use /tmp for stdin storing, verify it is writable
+if [ ! -w /tmp ]; then
+	echo "`date`, ERROR, /tmp is not writable, write permission is required"
+	exit 1
 fi
 
 # silently remove tmp file (testing exists before rm seems to cause trouble on some old OS)
-rm -f ${TMP_VAR}/stdin.nmon
+rm -f /tmp/nmon2csv.temp.*
 
 # Defined which APP we are running from (nmon / TA-nmon / PA-nmon)
 if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
@@ -55,7 +54,7 @@ fi
 
 # Store stdin
 while read line ; do
-	echo "$line" >> ${TMP_VAR}/stdin.nmon
+	echo "$line" >> /tmp/nmon2csv.temp.$$
 done
 
 # Python is the default choice, if it is not available launch the Perl version
@@ -69,20 +68,20 @@ if [ $? -eq 0 ]; then
 	case $python_subversion in
 	
 	*" 2.6.6"* | *" 2.6.7"* | *" 2.6.8"* | *" 2.6.9"* | *" 2.7"*)
-		cat ${TMP_VAR}/stdin.nmon | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.py ;;
+		cat /tmp/nmon2csv.temp.$$ | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.py ;;
 		
 	*)
-		cat ${TMP_VAR}/stdin.nmon | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl	
+		cat /tmp/nmon2csv.temp.$$ | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl	
 	
 	esac
 
 else
 
-	cat ${TMP_VAR}/stdin.nmon | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl
+	cat /tmp/nmon2csv.temp.$$ | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl
 
 fi
 
-# Empty file
-> ${TMP_VAR}/stdin.nmon
+# Remove temp
+rm -f /tmp/nmon2csv.temp.$$
 
 exit 0
