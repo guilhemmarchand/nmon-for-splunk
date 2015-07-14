@@ -5,105 +5,96 @@
   <!-- Global Search -->
 
   <search id="Global">
-    <query>| `indexes_datestats` | where (sourcetype == "nmon_data")</query>
+    <query>| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary='First Event' + " - " + 'Last Event'</query>
   </search>
 
   <row>
+  
     <panel>
       <html>
+		  <div style="text-align: center;">
+			<a class="button glow" href="Home_AIX">AIX SYSTEM</a>
+		  </div>
+     </html>
+    </panel>
 
-		<div class="round-button">
-			<a href="Help">
-			<img src="../../static/app/nmon/icons/Help_Icon.svg" alt="Help"/>
-			</a>
-		</div>
+    <panel>
+      <html>
+		  <div style="text-align: center;">
+			<a class="button glow" href="Home_LINUX">LINUX SYSTEM</a>
+		  </div>
+     </html>
+    </panel>
 
-		<div class="custom">
-		  <h1>Filter interfaces by Operating Systems</h1>
-		</div>
-		
-		<div style="text-align: center;">
-		  
-			<a class="button glow" href="Home_AIX">  AIX SYSTEM  </a>
-		  
-		  	<img src="../../static/app/nmon/various/transparent_48px.png" alt="None"/>
-
-			<a class="button glow" href="Home_LINUX"> LINUX SYSTEM </a>
-			
-		  	<img src="../../static/app/nmon/various/transparent_48px.png" alt="None"/>
-		  
+    <panel>
+      <html>
+		  <div style="text-align: center;">
 			<a class="button glow" href="Home_SOLARIS">SOLARIS SYSTEM</a>
-
-        <br />
-        
-        <br />
-        
-		</div>
-
-		<div class="custom">
-          <h1>Quick System Analysis - Full System Analysis</h1>
-		</div>
-        
-		<div style="text-align: center;">
-		  
-			<a class="button2 glow" target="_blank" href="Nmon_Summary">NMON SUMMARY</a>
-		  
-		  	<img src="../../static/app/nmon/various/transparent_48px.png" alt="None"/>
-
-			<a class="button2 glow" target="_blank" href="Home_NMON_Analyser">NMON ANALYSER</a>
-			
-        <br />
-        
-        <br />
-        
-		</div>
-		
-		<br />
-		 
-    </html>
+		  </div>
+     </html>
     </panel>
 
   </row>
 
   <row>
+  
     <panel>
       <html>
-      <div class="customleft">
-        <h1>APPLICATION INFORMATION:</h1>
-        <h4><i>Index name: <a href="search?q=search%20index%3Dnmon" target="_blank">nmon</a>
+		  <div style="text-align: center;">
+			<a class="button2 glow" target="_blank" href="Nmon_Summary">NMON SUMMARY</a>
+		  </div>
+     </html>
+    </panel>
+
+    <panel>
+      <html>
+		  <div style="text-align: center;">
+			<a class="button2 glow" target="_blank" href="Home_NMON_Analyser">NMON ANALYSER</a>
+		  </div>
+     </html>
+    </panel>
+
+  </row>
+
+
+  <row>
+    <panel>
+      <html>
+
+      <div class="imgheader">
+        	<img src="../../static/app/nmon/icons/color_theme/info2.png" alt="info"/>
+			<h1>APPLICATION INFORMATION:</h1>		
 			<br />
-         Main sourcetypes: <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data" target="_blank">nmon_data</a> (Performance data), 
-         <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_config" target="_blank">nmon_config</a> (Configuration data), 
-         <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_collect" target="_blank">nmon_collect</a> (Nmon Collect), 
-         <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_processing" target="_blank">nmon_processing</a> (Nmon Processing)
-         </i></h4>
+		</div>      
+
+      <div class="imgminiheader">
+        <h4>
+        <i>        
+        <img src="../../static/app/nmon/icons/grey_theme/minidatabase.png" alt="minihelp"/>&#160;&#160;&#160;        
+        Index name: <a href="search?q=search%20index%3Dnmon" target="_blank">nmon</a> / 
+        Main sourcetypes: <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data" target="_blank">nmon_data</a> (Performance data), 
+        <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_config" target="_blank">nmon_config</a> (Configuration data), 
+        <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_collect" target="_blank">nmon_collect</a> (Nmon Collect), 
+        <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_processing" target="_blank">nmon_processing</a> (Nmon Processing)
+        &#160;&#160;&#160;-&#160;&#160;&#160;<img src="../../static/app/nmon/icons/grey_theme/minihelp.png" alt="minihelp"/>
+        &#160;&#160;&#160;Enter <a href="Help" target="_blank">HELP PAGE</a>
+        </i>
+        </h4>
       </div>
 
 	
      </html>
       <single>
         <search base="Global">
-	       <query>fields First*</query>
+	       <query>fields summary</query>
 	     </search>
         <option name="linkView">search</option>
-        <option name="underLabel">DATE OF FIRST EVENT</option>
+        <option name="underLabel">DATE OF FIRST AND LAST PERF EVENT</option>
         <option name="drilldown">none</option>
-        <option name="refresh.auto.interval">30</option>
+        <option name="refresh.auto.interval">60</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
-        <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
-      </single>
-      <single>
-        <search>
-	       <query>| `indexes_datestats` | where (sourcetype == "nmon_data") | fields Last*</query>
-	     </search>
-        <option name="linkView">search</option>
-        <option name="underLabel">DATE OF LAST EVENT</option>
-        <option name="drilldown">none</option>
-        <option name="refresh.auto.interval">30</option>
-        <option name="drilldown">all</option>
-        <option name="linkFields">result</option>
-        <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data")</option>
+        <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary="Starts at:" + 'First Event' + " # " + "Ends at:" + 'Last Event'</option>
       </single>
       <single>
         <search ref="Hosts with data within last 7 days"></search>
@@ -111,7 +102,7 @@
         <option name="beforeLabel">There have been</option>
         <option name="afterLabel">Host(s) with activity</option>
         <option name="underLabel">IN THE LAST 7 DAYS</option>
-        <option name="refresh.auto.interval">300</option>
+        <option name="refresh.auto.interval">60</option>
         <option name="field">count</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
@@ -124,7 +115,7 @@
         <option name="beforeLabel">There have been</option>
         <option name="afterLabel">MB Indexed</option>
         <option name="underLabel">TODAY / EVOLUTION VS YESTERDAY</option>
-        <option name="refresh.auto.interval">130</option>
+        <option name="refresh.auto.interval">60</option>
         <option name="field">value</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
@@ -135,7 +126,7 @@
         <option name="linkView">search</option>
         <option name="afterLabel">Errors Reported</option>
         <option name="underLabel">PROCESSING/COLLECT LAST 24 HOURS</option>
-        <option name="refresh.auto.interval">130</option>
+        <option name="refresh.auto.interval">60</option>
         <option name="field">value</option>
         <option name="drilldown">all</option>
         <option name="linkFields">result</option>
@@ -143,11 +134,72 @@
       </single>
     </panel>
   </row>
+  
   <row>
     <panel>
       <html>
-      <div class="custom">
-        <h1>INTERFACES PER CATEGORY</h1>
+
+      <div class="imgheader">
+        	<img src="../../static/app/nmon/icons/color_theme/redcross.png" alt="redcross"/>
+			<h1>SAFE CENTER: Triggered Alerts within last 24 hours</h1>
+			<br />		
+		</div>      
+      
+      <div class="customleft">
+
+        <h4><i>
+        Enter <a href="../../alerts/nmon" target="_blank">Splunk Triggered Alerts for Nmon App</a> - 
+		  Enter <a href="UI_Safe_Center" target="_blank">Nmon SAFE CENTER dashboard</a>
+		  </i></h4>        
+        
+      </div>
+
+     </html>
+     
+      <single>
+        <search ref="SAFE CENTER - Number of hosts with potential CPU issue"></search>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_cpu_usage(*,*,90,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>        
+      </single>
+      <single>
+        <search ref="SAFE CENTER - Number of hosts with potential Real Memory issue"></search>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_realmemory_usage(*,*,90,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>
+      </single>
+      <single>
+        <search ref="SAFE CENTER - Number of hosts with potential Virtual Memory issue"></search>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_virtualmemory_usage(*,*,40,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>
+      </single>
+      <single>
+        <search ref="SAFE CENTER - Number of hosts with FS issue"></search>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_filesystem_usage(*,*,90,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>
+      </single>
+
+    </panel>
+
+  </row>
+  
+  
+  
+  <row>
+    <panel>
+      <html>
+      <div class="customleft">
+        <h1>INTERFACES PER CATEGORY:</h1>
       </div>
     </html>
     </panel>
