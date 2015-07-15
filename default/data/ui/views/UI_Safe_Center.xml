@@ -20,6 +20,10 @@
 
   <search id="RealMem_Global" ref="SAFE CENTER - Real Memory issues"></search>
 
+  <search id="VirtualMem_Global" ref="SAFE CENTER - Virtual Memory issues"></search>
+  
+  <search id="FileSystem_Global" ref="SAFE CENTER - FS issues"></search>
+
   <!-- -->
 
   <search id="tagcloud_cpu">
@@ -51,11 +55,20 @@
         <option name="linkSearch">`alerting_cpu_usage(*,*,90,300,5m)`</option>
         <option name="refresh.auto.interval">60</option>
       </single>
-      <html>           
+      <html>
         <h2>TagCloud: Main hosts in Alerts</h2>
-          <div id="tagcloud1" class="splunk-view" data-require="app/simple_xml_examples/components/tagcloud/tagcloud" data-options="{           &quot;minFontSize&quot;: 14,           &quot;maxFontSize&quot;: 55,           &quot;managerid&quot;: &quot;tagcloud_cpu&quot;,           &quot;valueField&quot;: &quot;count&quot;,           &quot;labelField&quot;: &quot;hostname&quot;           }">
-        </div>
-      </html>
+          <div id="tagcloud1"
+            class="splunk-view"
+            data-require="app/nmon/components/tagcloud/tagcloud"
+            data-options='{
+            "minFontSize": 14,
+            "maxFontSize": 55,
+            "managerid": "tagcloud_cpu",
+            "valueField": "count",
+            "labelField": "hostname"
+            }'>
+          </div>
+       </html>
     </panel>
     <panel>
       <html>
@@ -201,7 +214,7 @@
       </table>
     </panel>
   </row>
-  <!-- Search Base for post processing -->
+
   <search id="tagcloud_realmem">
     <query>`alerting_realmemory_usage(*,*,90,300,5m)` | stats count AS count by hostname</query>
     <earliest>-24h@h</earliest>
@@ -231,11 +244,20 @@
         <option name="linkSearch">`alerting_realmemory_usage(*,*,90,300,5m)`</option>
         <option name="refresh.auto.interval">60</option>
       </single>
-      <html>           
+      <html>
         <h2>TagCloud: Main hosts in Alerts</h2>
-          <div id="tagcloud1" class="splunk-view" data-require="app/simple_xml_examples/components/tagcloud/tagcloud" data-options="{           &quot;minFontSize&quot;: 14,           &quot;maxFontSize&quot;: 55,           &quot;managerid&quot;: &quot;tagcloud_realmem&quot;,           &quot;valueField&quot;: &quot;count&quot;,           &quot;labelField&quot;: &quot;hostname&quot;           }">
-        </div>
-      </html>
+          <div id="tagcloud2"
+            class="splunk-view"
+            data-require="app/nmon/components/tagcloud/tagcloud"
+            data-options='{
+            "minFontSize": 14,
+            "maxFontSize": 55,
+            "managerid": "tagcloud_realmem",
+            "valueField": "count",
+            "labelField": "hostname"
+            }'>
+          </div>
+       </html>
     </panel>
     <panel>
       <html>
@@ -381,4 +403,385 @@
       </table>    
     </panel>
   </row>
+
+  <search id="tagcloud_virtualmem">
+    <query>`alerting_virtualmemory_usage(*,*,40,300,5m)` | stats count AS count by hostname</query>
+    <earliest>-24h@h</earliest>
+    <latest>now</latest>
+  </search>
+  <row>
+    <panel>
+      <single>
+        <search base="VirtualMem_Global">
+          <query>stats dc(hostname) AS dcount | rangemap field=dcount low=0-0 default=high</query>
+        </search>
+        <option name="classField">range</option>
+        <option name="underLabel">HOSTS WITH VIRTUAL MEMORY ALERTS</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_cpu_usage(*,*,90,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>
+      </single>
+      <single>
+        <search base="VirtualMem_Global">
+          <query>stats count AS count | rangemap field=count low=0-0 default=high</query>
+        </search>
+        <option name="classField">range</option>
+        <option name="underLabel">NUMBER OF TOTAL VIRTUAL MEMORY ALERTS</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_cpu_usage(*,*,90,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>
+      </single>
+      <html>
+        <h2>TagCloud: Main hosts in Alerts</h2>
+          <div id="tagcloud3"
+            class="splunk-view"
+            data-require="app/nmon/components/tagcloud/tagcloud"
+            data-options='{
+            "minFontSize": 14,
+            "maxFontSize": 55,
+            "managerid": "tagcloud_virtualmem",
+            "valueField": "count",
+            "labelField": "hostname"
+            }'>
+          </div>
+       </html>
+    </panel>
+    <panel>
+      <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="linkC1,linkC2,linkC3,linkC4,linkC5,linkC6">Select a view:<!--Links go here-->
+      </div>
+	   </html>
+      <chart id="linkC1">
+        <title>Chart over time</title>
+        <search base="VirtualMem_Global">
+          <query>timechart span=5m useother=t limit=40 count by hostname</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Alerts count by host</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">top</option>
+      </chart>
+      <table id="linkC2">
+        <title>Events</title>
+		  <search base="VirtualMem_Global">
+          <query></query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">table</option>
+        <option name="drilldown">cell</option>
+      </table>
+      <chart id="linkC3">
+        <title>TOP chart count</title>
+        <search base="VirtualMem_Global">
+          <query>top hostname</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+      <table id="linkC4">
+        <title>TOP Stats count</title>
+        <search base="VirtualMem_Global">
+          <query>top hostname</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">table</option>
+        <option name="drilldown">cell</option>
+      </table>
+      <chart id="linkC5">
+        <title>TOP chart value</title>
+        <search base="VirtualMem_Global">
+          <query>stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+      <table id="linkC6">
+        <title>TOP Stats value</title>
+        <search base="VirtualMem_Global">
+          <query>stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">table</option>
+        <option name="drilldown">cell</option>
+      </table>
+    </panel>
+  </row>
+
+  <search id="tagcloud_filesystem">
+    <query>`alerting_filesystem_usage(*,*,90,300,5m)` | stats count AS count by hostname</query>
+    <earliest>-24h@h</earliest>
+    <latest>now</latest>
+  </search>
+  <row>
+    <panel>
+      <single>
+        <search base="FileSystem_Global">
+          <query>stats dc(hostname) AS dcount | rangemap field=dcount low=0-0 default=high</query>
+        </search>
+        <option name="classField">range</option>
+        <option name="underLabel">HOSTS WITH FILESYSTEM SATURATION ALERTS</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_cpu_usage(*,*,90,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>
+      </single>
+      <single>
+        <search base="FileSystem_Global">
+          <query>stats count AS count | rangemap field=count low=0-0 default=high</query>
+        </search>
+        <option name="classField">range</option>
+        <option name="underLabel">NUMBER OF TOTAL FILESYSTEM SATURATION ALERTS</option>
+        <option name="linkFields">result</option>
+        <option name="linkView">search</option>
+        <option name="linkSearch">`alerting_cpu_usage(*,*,90,300,5m)`</option>
+        <option name="refresh.auto.interval">60</option>
+      </single>
+      <html>
+        <h2>TagCloud: Main hosts in Alerts</h2>
+          <div id="tagcloud4"
+            class="splunk-view"
+            data-require="app/nmon/components/tagcloud/tagcloud"
+            data-options='{
+            "minFontSize": 14,
+            "maxFontSize": 55,
+            "managerid": "tagcloud_filesystem",
+            "valueField": "count",
+            "labelField": "hostname"
+            }'>
+          </div>
+       </html>
+    </panel>
+    <panel>
+      <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="linkD1,linkD2,linkD3,linkD4,linkD5,linkD6">Select a view:<!--Links go here-->
+      </div>
+	   </html>
+      <chart id="linkD1">
+        <title>Chart over time</title>
+        <search base="FileSystem_Global">
+          <query>timechart span=5m useother=t limit=40 count by hostname</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Alerts count by host</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">top</option>
+      </chart>
+      <table id="linkD2">
+        <title>Events</title>
+		  <search base="FileSystem_Global">
+          <query></query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">table</option>
+        <option name="drilldown">cell</option>
+      </table>
+      <chart id="linkD3">
+        <title>TOP chart count</title>
+        <search base="FileSystem_Global">
+          <query>top hostname</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+      <table id="linkD4">
+        <title>TOP Stats count</title>
+        <search base="FileSystem_Global">
+          <query>top hostname</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">table</option>
+        <option name="drilldown">cell</option>
+      </table>
+      <chart id="linkD5">
+        <title>TOP chart value</title>
+        <search base="FileSystem_Global">
+          <query>stats max("% usage") AS "% usage" by hostname | sort - "% usage"</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+      <table id="linkD6">
+        <title>TOP Stats value</title>
+        <search base="FileSystem_Global">
+          <query>stats max("% usage") AS "% usage" by hostname,device | sort - "% usage"</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="list.drilldown">full</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.wrap">1</option>
+        <option name="type">table</option>
+        <option name="drilldown">cell</option>
+      </table>
+    </panel>
+  </row>
+
+
+
 </form>
