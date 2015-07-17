@@ -7,8 +7,8 @@
   <search id="Global_clients" ref="Universal Forwarders Configuration Report"></search>
 
   <search id="Global_interpreter">
-    <query>| pivot NMON_Processing_Data_Collect NMON_Processing last(converter_inuse) AS converter_inuse last(interpreter_version) AS interpreter_version SPLITROW hostname AS hostname
-SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <query>| pivot NMON_Processing_Data_Collect NMON_Processing last(converter_inuse) AS converter_inuse last(interpreter_version) AS interpreter_version SPLITROW _time AS _time PERIOD minute SPLITROW hostname AS hostname SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| dedup hostname converter_inuse interpreter_version | fields - _time</query>
     <earliest>-30d@d</earliest>
     <latest>now</latest>
   </search>
@@ -250,19 +250,19 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
       </html>
 
       <single>
-        <search base="Python_interpreter">
-          <query>stats dc(hostname) AS dcount</query>
+        <search base="Global_interpreter">
+          <query>search converter_inuse="Python" | stats dc(hostname) AS dcount</query>
         </search>
         <option name="drilldown">none</option>
-        <option name="underLabel">HOSTS USING PYTHON</option>
+        <option name="underLabel">HOSTS HAVE USED PYTHON</option>
         <option name="linkView">search</option>
       </single>
       <single>
-        <search base="Perl_interpreter">
-          <query>stats dc(hostname) AS dcount</query>
+        <search base="Global_interpreter">
+          <query>search converter_inuse="Perl" | stats dc(hostname) AS dcount</query>
         </search>
         <option name="drilldown">none</option>
-        <option name="underLabel">HOSTS USING PERL</option>
+        <option name="underLabel">HOSTS HAVE USED PERL</option>
         <option name="linkView">search</option>
       </single>
 
