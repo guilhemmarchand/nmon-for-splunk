@@ -11,8 +11,31 @@
 		</div>
 		
 	   </html>
+
     </panel>
   </row>
+
+  <row>
+    <panel>
+    <title>Search:</title>
+
+      <input type="text" token="frameID" searchWhenChanged="true">
+        <label>Search for frame(s):</label>
+        <default>*</default>
+        <prefix>frameID="</prefix>
+        <suffix>"</suffix>
+      </input>     
+
+      <input type="text" token="hostname" searchWhenChanged="true">
+        <label>Search for host(s):</label>
+        <default>*</default>
+        <prefix>hostname="</prefix>
+        <suffix>"</suffix>
+      </input>     
+
+    </panel>
+  </row>
+
   
   <!-- Search Base for post processing -->
 
@@ -27,7 +50,7 @@
   <!-- -->
 
   <search id="tagcloud_cpu">
-    <query>`alerting_cpu_usage(*,*,90,300,5m)` | stats count AS count by hostname</query>
+    <query>`alerting_cpu_usage(*,*,90,300,5m)` | top limit=10 hostname</query>
     <earliest>-24h@h</earliest>
     <latest>now</latest>
   </search>
@@ -65,7 +88,7 @@
         <option name="refresh.auto.interval">60</option>
       </single>
       <html>
-        <h2>TagCloud: Main hosts in Alerts</h2>
+        <h2>TagCloud: TOP 10 hosts in Alerts</h2>
           <div id="tagcloud1"
             class="splunk-view"
             data-require="app/nmon/components/tagcloud/tagcloud"
@@ -81,15 +104,16 @@
     </panel>
     <panel>
       <title>Last 24 hours summary</title>
+
       <html>
       <!-- Placeholder/container for the link switcher to appear -->
       <div class="link-switcher" data-items="linkA1,linkA2,linkA3,linkA4,linkA5,linkA6">Select a view:<!--Links go here-->
       </div>
 	   </html>
       <chart id="linkA1">
-        <title>Chart over time</title>
+        <title>Chart over time (top 10)</title>
         <search base="CPU_Global">
-          <query>timechart span=5m useother=t limit=40 count by hostname</query>
+          <query>search $frameID$ $hostname$ | timechart span=5m useother=t limit=10 count by hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -117,7 +141,7 @@
       <table id="linkA2">
         <title>Events</title>
 		  <search base="CPU_Global">
-          <query></query>
+          <query>search $frameID$ $hostname$</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -135,7 +159,7 @@
       <chart id="linkA3">
         <title>TOP chart count</title>
         <search base="CPU_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -162,7 +186,7 @@
       <table id="linkA4">
         <title>TOP Stats count</title>
         <search base="CPU_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -180,7 +204,7 @@
       <chart id="linkA5">
         <title>TOP chart value</title>
         <search base="CPU_Global">
-          <query>stats max(cpu_PCT) AS cpu_PCT by hostname | sort - cpu_PCT</query>
+          <query>search $frameID$ $hostname$ | stats max(cpu_PCT) AS cpu_PCT by hostname | sort - cpu_PCT</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -207,7 +231,7 @@
       <table id="linkA6">
         <title>TOP Stats value</title>
         <search base="CPU_Global">
-          <query>stats max(cpu_PCT) AS cpu_PCT by hostname | sort - cpu_PCT</query>
+          <query>search $frameID$ $hostname$ | stats max(cpu_PCT) AS cpu_PCT by hostname | sort - cpu_PCT</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -226,7 +250,7 @@
   </row>
 
   <search id="tagcloud_realmem">
-    <query>`alerting_realmemory_usage(*,*,90,300,5m)` | stats count AS count by hostname</query>
+    <query>`alerting_realmemory_usage(*,*,90,300,5m)` | top limit=10 hostname</query>
     <earliest>-24h@h</earliest>
     <latest>now</latest>
   </search>
@@ -264,7 +288,7 @@
         <option name="refresh.auto.interval">60</option>
       </single>
       <html>
-        <h2>TagCloud: Main hosts in Alerts</h2>
+        <h2>TagCloud: TOP 10 hosts in Alerts</h2>
           <div id="tagcloud2"
             class="splunk-view"
             data-require="app/nmon/components/tagcloud/tagcloud"
@@ -286,9 +310,9 @@
       </div>
 	   </html>
       <chart id="linkB1">
-        <title>Chart over time</title>
+        <title>Chart over time (top 10)</title>
         <search base="RealMem_Global">
-          <query>timechart span=5m useother=t limit=40 count by hostname</query>
+          <query>search $frameID$ $hostname$ | timechart span=5m useother=t limit=10 count by hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -316,7 +340,7 @@
       <table id="linkB2">
         <title>Events</title>
         <search base="RealMem_Global">
-          <query></query>
+          <query>search $frameID$ $hostname$</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -334,7 +358,7 @@
       <chart id="linkB3">
         <title>TOP chart count</title>
         <search base="RealMem_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -361,7 +385,7 @@
       <table id="linkB4">
         <title>TOP Stats count</title>
         <search base="RealMem_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -379,7 +403,7 @@
       <chart id="linkB5">
         <title>TOP chart value</title>
         <search base="RealMem_Global">
-          <query>stats max("real_memory_usage (%)") AS "real_memory_usage (%)" by hostname | sort - "real_memory_usage (%)"</query>
+          <query>search $frameID$ $hostname$ | stats max("real_memory_usage (%)") AS "real_memory_usage (%)" by hostname | sort - "real_memory_usage (%)"</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -406,7 +430,7 @@
       <table id="linkB6">
         <title>TOP Stats value</title>
         <search base="RealMem_Global">
-          <query>stats max("real_memory_usage (%)") AS "real_memory_usage (%)" by hostname | sort - "real_memory_usage (%)"</query>
+          <query>search $frameID$ $hostname$ | stats max("real_memory_usage (%)") AS "real_memory_usage (%)" by hostname | sort - "real_memory_usage (%)"</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -425,7 +449,7 @@
   </row>
 
   <search id="tagcloud_virtualmem">
-    <query>`alerting_virtualmemory_usage(*,*,40,300,5m)` | stats count AS count by hostname</query>
+    <query>`alerting_virtualmemory_usage(*,*,40,300,5m)` | top limit=10 hostname</query>
     <earliest>-24h@h</earliest>
     <latest>now</latest>
   </search>
@@ -463,7 +487,7 @@
         <option name="refresh.auto.interval">60</option>
       </single>
       <html>
-        <h2>TagCloud: Main hosts in Alerts</h2>
+        <h2>TagCloud: TOP 10 hosts in Alerts</h2>
           <div id="tagcloud3"
             class="splunk-view"
             data-require="app/nmon/components/tagcloud/tagcloud"
@@ -485,9 +509,9 @@
       </div>
 	   </html>
       <chart id="linkC1">
-        <title>Chart over time</title>
+        <title>Chart over time (top 10)</title>
         <search base="VirtualMem_Global">
-          <query>timechart span=5m useother=t limit=40 count by hostname</query>
+          <query>search $frameID$ $hostname$ | timechart span=5m useother=t limit=10 count by hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -515,7 +539,7 @@
       <table id="linkC2">
         <title>Events</title>
 		  <search base="VirtualMem_Global">
-          <query></query>
+          <query>search $frameID$ $hostname$</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -533,7 +557,7 @@
       <chart id="linkC3">
         <title>TOP chart count</title>
         <search base="VirtualMem_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -560,7 +584,7 @@
       <table id="linkC4">
         <title>TOP Stats count</title>
         <search base="VirtualMem_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -578,7 +602,7 @@
       <chart id="linkC5">
         <title>TOP chart value</title>
         <search base="VirtualMem_Global">
-          <query>stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
+          <query>search $frameID$ $hostname$ | stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -605,7 +629,7 @@
       <table id="linkC6">
         <title>TOP Stats value</title>
         <search base="VirtualMem_Global">
-          <query>stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
+          <query>search $frameID$ $hostname$ | stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -624,7 +648,7 @@
   </row>
 
   <search id="tagcloud_filesystem">
-    <query>`alerting_filesystem_usage(*,*,90,300,5m)` | stats count AS count by hostname</query>
+    <query>`alerting_filesystem_usage(*,*,90,300,5m)` | top limit=10 hostname</query>
     <earliest>-24h@h</earliest>
     <latest>now</latest>
   </search>
@@ -662,7 +686,7 @@
         <option name="refresh.auto.interval">60</option>
       </single>
       <html>
-        <h2>TagCloud: Main hosts in Alerts</h2>
+        <h2>TagCloud: TOP 10 hosts in Alerts</h2>
           <div id="tagcloud4"
             class="splunk-view"
             data-require="app/nmon/components/tagcloud/tagcloud"
@@ -684,9 +708,9 @@
       </div>
 	   </html>
       <chart id="linkD1">
-        <title>Chart over time</title>
+        <title>Chart over time (top 10)</title>
         <search base="FileSystem_Global">
-          <query>timechart span=5m useother=t limit=40 count by hostname</query>
+          <query>search $frameID$ $hostname$ | timechart span=5m useother=t limit=40 count by hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -714,7 +738,7 @@
       <table id="linkD2">
         <title>Events</title>
 		  <search base="FileSystem_Global">
-          <query></query>
+          <query>search $frameID$ $hostname$ | </query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -732,7 +756,7 @@
       <chart id="linkD3">
         <title>TOP chart count</title>
         <search base="FileSystem_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -759,7 +783,7 @@
       <table id="linkD4">
         <title>TOP Stats count</title>
         <search base="FileSystem_Global">
-          <query>top hostname</query>
+          <query>search $frameID$ $hostname$ | top hostname</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -777,7 +801,7 @@
       <chart id="linkD5">
         <title>TOP chart value</title>
         <search base="FileSystem_Global">
-          <query>stats max("% usage") AS "% usage" by hostname | sort - "% usage"</query>
+          <query>search $frameID$ $hostname$ | stats max("% usage") AS "% usage" by hostname | sort - "% usage"</query>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -804,7 +828,7 @@
       <table id="linkD6">
         <title>TOP Stats value</title>
         <search base="FileSystem_Global">
-          <query>stats max("% usage") AS "% usage" by hostname,device | sort - "% usage"</query>
+          <query>search $frameID$ $hostname$ | stats max("% usage") AS "% usage" by hostname,device | sort - "% usage"</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
