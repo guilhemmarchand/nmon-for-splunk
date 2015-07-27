@@ -52,8 +52,10 @@
 #                                         - Added support for FC* sections (Fiber Channel)
 # Guilhem Marchand 09/05/2015, V1.2.7:
 #                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
+# Guilhem Marchand 27/07/2015, V1.2.8:
+#                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
 
-$version = "1.2.7";
+$version = "1.2.8";
 
 use Time::Local;
 use Time::HiRes;
@@ -173,6 +175,9 @@ if ( -d "$SPLUNK_HOME/etc/apps/TA-nmon" ) {
 }
 elsif ( -d "$SPLUNK_HOME/etc/slave-apps/PA-nmon" ) {
     $APP = "$SPLUNK_HOME/etc/slave-apps/PA-nmon";
+}
+elsif ( -d "$SPLUNK_HOME/etc/apps/PA-nmon" ) {
+    $APP = "$SPLUNK_HOME/etc/apps/PA-nmon";
 }
 else {
     $APP = "$SPLUNK_HOME/etc/apps/nmon";

@@ -11,8 +11,9 @@
 # - December 2014, V1.0.0: Guilhem Marchand, Initial version
 # - 28/12/2014, V1.1.0: Guilhem Marchand, rewritten version for Nmon Splunk App V1.5.0
 # - 11/03/2015, V1.1.1: Guilhem Marchand, migration of var directory
+# - 2015/07/27, V1.1.2: Guilhem Marchand, hotfix for using the PA-nmon to generate Performance data in standalone indexers
 
-$version = "1.1.1";
+$version = "1.1.2";
 
 use Time::Local;
 use Time::HiRes;
@@ -125,6 +126,9 @@ if ( length($APP) == 0 ) {
     }
     elsif ( -d "$SPLUNK_HOME/etc/slave-apps/PA-nmon" ) {
         $APP = "$SPLUNK_HOME/etc/slave-apps/PA-nmon";
+    }
+    elsif ( -d "$SPLUNK_HOME/etc/apps/PA-nmon" ) {
+        $APP = "$SPLUNK_HOME/etc/apps/PA-nmon";
     }
     else {
         $APP = "$SPLUNK_HOME/etc/apps/nmon";

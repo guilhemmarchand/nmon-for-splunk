@@ -12,6 +12,7 @@
 # - 12/28/2014, V1.1.0: Guilhem Marchand, Rewritten version for Nmon Splunk App V1.5.0
 # - 11/03/2015, V1.1.1: Guilhem Marchand, migration of var directory
 # - 20/03/2015, V1.1.11: Guilhem Marchand, shebang correction
+# - 2015/07/27, V1.1.12: Guilhem Marchand, hotfix for using the PA-nmon to generate Performance data in standalone indexers
 
 # Load libs
 
@@ -27,7 +28,7 @@ import re
 import argparse
 
 # Converter version
-version = '1.1.11'
+version = '1.1.12'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -168,16 +169,27 @@ if not APP:
     else:
         PA_NMON_APP = SPLUNK_HOME + '/etc/slave-apps/PA-nmon'
 
+    if is_windows:
+        PA_NMON_APP_STANDALONE = SPLUNK_HOME + '\\etc\\apps\\PA-nmon'
+    else:
+        PA_NMON_APP_STANDALONE = SPLUNK_HOME + '/etc/apps/PA-nmon'
+
     # Verify APP exist
     if os.path.exists(NMON_APP):
         APP = NMON_APP
+        
     elif os.path.exists(TA_NMON_APP):
         APP = TA_NMON_APP
+        
     elif os.path.exists(PA_NMON_APP):
         APP = PA_NMON_APP
+        
+    elif os.path.exists(PA_NMON_APP_STANDALONE):
+        APP = PA_NMON_APP_STANDALONE
+        
     else:
         msg = 'The Application root directory could not be found, is nmon / TA-nmon / PA-nmon installed ? We tried: '\
-              + str(NMON_APP) + ' ' + str(TA_NMON_APP) + ' ' + str(PA_NMON_APP)
+              + str(NMON_APP) + ' ' + str(TA_NMON_APP) + ' ' + str(PA_NMON_APP) + ' ' + str(PA_NMON_APP_STANDALONE)
         logging.error(msg)
         sys.exit(1)
 

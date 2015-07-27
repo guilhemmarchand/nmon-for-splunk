@@ -27,8 +27,11 @@
 # 2015/07/08, Guilhem Marchand:
 #										- hotfix for nmon instances duplication: Some cases may still lead to multiplicative processes, code improvements will prevent this
 #										- hotfix for SUSE Linux: typo error leads to fail identifying best binaries for SUSE clients
+# 2015/07/27, Guilhem Marchand:
+#										- hotfix for using the PA-nmon to generate Performance data in standalone indexers
 
-# Version 1.3.06
+
+# Version 1.3.07
 
 # For AIX / Linux / Solaris
 
@@ -60,6 +63,9 @@ if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
 
 elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon" ]; then
         APP=$SPLUNK_HOME/etc/apps/TA-nmon
+
+elif [ -d "$SPLUNK_HOME/etc/apps/PA-nmon" ];then
+        APP=$SPLUNK_HOME/etc/apps/PA-nmon
 
 elif [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
         APP=$SPLUNK_HOME/etc/slave-apps/PA-nmon

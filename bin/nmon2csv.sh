@@ -9,8 +9,10 @@
 # Disclaimer:  this provided "as is".  
 # Date - February 2015
 # Guilhem Marchand 2015/07/07, initial version
+# - 07/27/2015, V1.0.01: Guilhem Marchand:
+#                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
 
-# Version 1.0.0
+# Version 1.0.01
 
 # For AIX / Linux / Solaris
 
@@ -38,6 +40,9 @@ if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
 
 elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon" ]; then
         APP=$SPLUNK_HOME/etc/apps/TA-nmon
+
+elif [ -d "$SPLUNK_HOME/etc/apps/PA-nmon" ];then
+        APP=$SPLUNK_HOME/etc/apps/PA-nmon
 
 elif [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
         APP=$SPLUNK_HOME/etc/slave-apps/PA-nmon

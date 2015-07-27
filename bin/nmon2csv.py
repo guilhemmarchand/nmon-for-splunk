@@ -70,6 +70,8 @@
 #                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
 # - 05/21/2015, V1.1.8: Guilhem Marchand:
 #                                         - Windows hotfix: corrected broken directory creation
+# - 07/27/2015, V1.1.9: Guilhem Marchand:
+#                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
 
 # Load libs
 
@@ -87,7 +89,7 @@ import platform
 import optparse
 
 # Converter version
-nmon2csv_version = '1.1.8'
+nmon2csv_version = '1.1.9'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -209,6 +211,11 @@ if is_windows:
 else:
     PA_NMON_APP = SPLUNK_HOME + '/etc/slave-apps/PA-nmon'
 
+if is_windows:
+    PA_NMON_APP_STANDALONE = SPLUNK_HOME + '\\etc\\apps\\PA-nmon'
+else:
+    PA_NMON_APP_STANDALONE = SPLUNK_HOME + '/etc/apps/PA-nmon'
+
 # Empty APP
 APP = ''
 
@@ -219,6 +226,8 @@ elif os.path.exists(TA_NMON_APP):
     APP = TA_NMON_APP
 elif os.path.exists(PA_NMON_APP):
     APP = PA_NMON_APP
+elif os.path.exists(PA_NMON_APP_STANDALONE):
+    APP = PA_NMON_APP_STANDALONE
 else:
     msg = 'The Application root directory could not be found, is nmon / TA-nmon / PA-nmon installed ? We tried: ' + str(
         NMON_APP) + ' ' + str(TA_NMON_APP) + ' ' + str(PA_NMON_APP)

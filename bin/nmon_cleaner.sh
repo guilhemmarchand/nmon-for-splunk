@@ -13,8 +13,9 @@
 # Guilhem Marchand 2015/03/10, Added Python 2.7.x version check before executing py script
 # Guilhem Marchand 2015/03/11, /dev/null redirection for python version check step
 # Guilhem Marchand 2015/03/20, python subversion check correction
+# Guilhem Marchand 2015/07/27, hotfix for using the PA-nmon to generate Performance data in standalone indexers
 
-# Version 1.0.05
+# Version 1.0.06
 
 # For AIX / Linux / Solaris
 
@@ -33,6 +34,9 @@ if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
 
 elif [ -d "$SPLUNK_HOME/etc/apps/TA-nmon" ]; then
         APP=$SPLUNK_HOME/etc/apps/TA-nmon
+
+elif [ -d "$SPLUNK_HOME/etc/apps/PA-nmon" ];then
+        APP=$SPLUNK_HOME/etc/apps/PA-nmon
 
 elif [ -d "$SPLUNK_HOME/etc/slave-apps/_cluster" ];then
         APP=$SPLUNK_HOME/etc/slave-apps/PA-nmon
