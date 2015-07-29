@@ -29,9 +29,10 @@
 #										- hotfix for SUSE Linux: typo error leads to fail identifying best binaries for SUSE clients
 # 2015/07/27, Guilhem Marchand:
 #										- hotfix for using the PA-nmon to generate Performance data in standalone indexers
+# 2015/07/29, Guilhem Marchand:
+#										- hotfix for AIX, non protected grep generates -p option to be duplicated and error message in splunkd
 
-
-# Version 1.3.07
+# Version 1.3.08
 
 # For AIX / Linux / Solaris
 
@@ -679,7 +680,7 @@ AIX )
 
 	# -p option is mandatory to get the pid of the launched instances, ensure it has been set
 	
-	echo ${AIX_options} | grep '-p' >/dev/null
+	echo ${AIX_options} | grep '\-p' >/dev/null
 	if [ $? -ne 0 ]; then
 		AIX_options="${AIX_options} -p"
 	fi
