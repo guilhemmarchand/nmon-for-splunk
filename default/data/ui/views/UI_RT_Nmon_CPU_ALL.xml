@@ -24,12 +24,10 @@
     <input type="dropdown" token="frameID" searchWhenChanged="true">
       <label>Frame IDs:</label>
       <!-- Populating Data Model Search -->
-      <search id="frameIDSearch">
-        <query>| pivot NMON_Data_CPU CPU_ALL count(CPU_ALL) AS "count" SPLITROW frameID AS frameID SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
+      <search base="populate">
+        <query>stats count by frameID | sort frameID | dedup frameID</query>
       </search>
-      <prefix>frameID is "</prefix>
+      <prefix>"</prefix>
       <suffix>"</suffix>
       <choice value="*">Any</choice>
       <default>*</default>
@@ -45,55 +43,43 @@
     <input type="dropdown" token="hostname" searchWhenChanged="true">
       <label>Host Selection:</label>
       <!-- Populating Data Model Search -->
-      <search id="hostsSearch">
-        <query>| pivot NMON_Data_CPU CPU_ALL count(CPU_ALL) AS "count" SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER $frameID$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
+      <search base="populate">
+        <query>search $frameID$ | stats count by hostname | dedup hostname</query>
       </search>
-      <prefix>hostname is "</prefix>
+      <prefix>"</prefix>
       <suffix>"</suffix>
       <choice value="*">ALL Hosts</choice>
       <fieldForLabel>hostname</fieldForLabel>
       <fieldForValue>hostname</fieldForValue>
     </input>
 
-    <input type="dropdown" token="statsmode" searchWhenChanged="true">
-      <label>Stats mode:</label>
-      <default>avg</default>
-      <choice value="max">Max</choice>
-      <choice value="avg">Avg</choice>
-      <choice value="min">Min</choice>
-      <choice value="median">Median</choice>
-      <choice value="mode">Mode</choice>
-      <choice value="range">Range</choice>
-    </input>
-
   </fieldset>
 
 <!-- Base Searches for PostProcessing -->
-  
-  <search id="tablestats">
-    <query>| pivot NMON_Data_CPU CPU_ALL $statsmode$(cpu_PCT) AS "CPU %" $statsmode$(Idle_PCT) AS "Idle %" $statsmode$(Sys_PCT) AS "Sys %" $statsmode$(User_PCT) AS "User %" $statsmode$(Wait_PCT) AS "Wait %" 
-SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER $frameID$ FILTER $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-    <earliest>$timerange.earliest$</earliest>
-    <latest>$timerange.latest$</latest>  
-  </search>
-  
-  <search id="gaugestats">
-    <query>| pivot NMON_Data_CPU CPU_ALL max(cpu_PCT) AS max avg(cpu_PCT) AS avg min(cpu_PCT) AS min
-SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER $frameID$ FILTER $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-    <earliest>$timerange.earliest$</earliest>
-    <latest>$timerange.latest$</latest>  
-  </search>
 
+<!-- Populating frameID and hostname using real time windows has poor user interest at an high cost in real time interfaces -->
+
+  <search id="populate">
+    <query>| pivot NMON_Data_CPU CPU_ALL count(CPU_ALL) AS "count" SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+     
+  <search id="tablestats">
+    <query>| pivot NMON_Data_CPU CPU_ALL max(cpu_PCT) AS "Max CPU %" avg(cpu_PCT) AS "Avg CPU %" min(cpu_PCT) AS "Min CPU %" avg(Idle_PCT) AS "Avg Idle %" avg(Sys_PCT) AS "Avg Sys %" avg(User_PCT) AS "Avg User %" avg(Wait_PCT) AS "Avg Wait %" 
+SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+  
 <!-- ################################ -->  
 
   <row>
     <panel>
       <chart>
         <title>Higher load</title>
-        <search base="gaugestats">
-          <query>stats max(max) AS max | eval max=round(max,2) | gauge max</query>
+        <search base="tablestats">
+          <query>fields "Max CPU %" | rename "Max CPU %" AS value | eval value=round(value,2) | gauge value</query>
         </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
@@ -115,8 +101,8 @@ SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-pre
     <panel>
       <chart>
         <title>Average load</title>
-        <search base="gaugestats">
-          <query>stats avg(avg) AS avg | eval avg=round(avg,2) | gauge avg</query>
+        <search base="tablestats">
+          <query>fields "Avg CPU %" | rename "Avg CPU %" AS value | eval value=round(value,2) | gauge value</query>
         </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
@@ -138,8 +124,8 @@ SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-pre
     <panel>
       <chart>
 		  <title>Minimal load</title>
-        <search base="gaugestats">
-          <query>stats min(min) AS min | eval min=round(min,2) | gauge min</query>
+        <search base="tablestats">
+          <query>fields "Min CPU %" | rename "Min CPU %" AS value | eval value=round(value,2) | gauge value</query>
         </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
@@ -243,7 +229,7 @@ SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-pre
       <chart>
   			<search id="timechart">
     		  <query>| pivot NMON_Data_CPU CPU_ALL $cpumode$ 
-SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER $frameID$ FILTER $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
   		  </search>  
