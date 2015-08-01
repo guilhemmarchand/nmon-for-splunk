@@ -1,5 +1,6 @@
 <form stylesheet="singlevalue.css,ui_simple.css">
   <label>NMON - CONFIG, Show Host Configuration</label>
+  <description>Extraction of AAA and BBB* configuration sections from Nmon raw data</description>
   <fieldset autoRun="false" submitButton="false">
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>TimeRange:</label>
@@ -8,8 +9,8 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-    <input type="radio" token="osfilter" searchWhenChanged="true">
-      <label>Type of OS filter:</label>
+    <input type="dropdown" token="osfilter" searchWhenChanged="true">
+      <label>Type of OS:</label>
       <default></default>
       <choice value="">Any OS</choice>
       <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
@@ -25,10 +26,14 @@
     <input type="dropdown" token="hostname" searchWhenChanged="true">
       <label>Host Selection:</label>
       <prefix>hostname="</prefix>
-      <suffix>"</suffix>
-      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">
-        <![CDATA[index=nmon sourcetype=nmon_config $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$]]>
-      </populatingSearch>
+      <suffix>"</suffix>     
+      <search>
+        <query>index=nmon sourcetype=nmon_config $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+      </search>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
     </input>
   </fieldset>
   <row>
