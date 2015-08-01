@@ -44,7 +44,7 @@
       <label>Host Selection:</label>
       <!-- Populating Data Model Search -->
       <search base="populate">
-        <query>search $frameID$ hostname="$hostname-prefilter$" | stats count by hostname | dedup hostname</query>
+        <query>search frameID=$frameID$ hostname="$hostname-prefilter$" | stats count by hostname | dedup hostname</query>
       </search>
       <prefix>"</prefix>
       <suffix>"</suffix>
@@ -65,7 +65,7 @@
      
   <search id="tablestats">
     <query>| pivot NMON_Data_CPU CPU_ALL max(cpu_PCT) AS "Max CPU %" avg(cpu_PCT) AS "Avg CPU %" min(cpu_PCT) AS "Min CPU %" avg(Idle_PCT) AS "Avg Idle %" avg(Sys_PCT) AS "Avg Sys %" avg(User_PCT) AS "Avg User %" avg(Wait_PCT) AS "Avg Wait %" 
-SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>  
   </search>
@@ -153,14 +153,15 @@ SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ FILT
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
+        <option name="drilldown">row</option>
         <option name="count">10</option>
-        <format type="sparkline" field="sparkline">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
+		  <drilldown target="search">
+			<link>
+			<![CDATA[
+/app/nmon/search?earliest=$timerange.earliest$&latest=$timerange.latest$&q=| pivot NMON_Data_CPU CPU_ALL max(cpu_PCT) AS max_cpu_PCT avg(cpu_PCT) AS avg_cpu_PCT min(cpu_PCT) AS min_cpu_PCT avg(Idle_PCT) AS avg_Idle_PCT avg(Sys_PCT) AS avg_Sys_PCT avg(User_PCT) AS avg_User_PCT avg(Wait_PCT) AS avg_Wait_PCT 
+SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $click.value$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+			]]></link>
+        </drilldown>
       </table>
     </panel>
   </row>
@@ -254,6 +255,13 @@ SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $osfilter$ FILT
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisY2.enabled">false</option>
         <option name="charting.axisY2.scale">inherit</option>
+		  <drilldown target="search">
+			<link>
+			<![CDATA[
+/app/nmon/search?earliest=$earliest$&latest=$latest$&q=| pivot NMON_Data_CPU CPU_ALL $cpumode$ 
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
+			]]></link>
+        </drilldown>
       </chart>
     </panel>
   </row>

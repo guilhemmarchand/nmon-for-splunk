@@ -6,8 +6,8 @@
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
-        <earliestTime>-24h</earliestTime>
-        <latestTime>now</latestTime>
+        <earliestTime>rt-4h</earliestTime>
+        <latestTime>rtnow</latestTime>
       </default>
 
     </input>
@@ -33,12 +33,10 @@
     <input type="dropdown" token="Pool_id" searchWhenChanged="true">
       <label>Pool IDs: (0 for DefaultPool)</label>
       <!-- Populating Data Model Search -->
-      <search id="PoolidSearch">
-        <query>| pivot NMON_Data_CPU LPAR_Pool count(LPAR_Pool) AS "count" SPLITROW Pool_id AS Pool_id FILTER $appfilter$ SORT 0 Pool_id ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
+      <search base="populate">
+        <query>stats count by Pool_id | sort Pool_id | dedup Pool_id</query>
       </search>
-      <prefix>Pool_id is "</prefix>
+      <prefix>"</prefix>
       <suffix>"</suffix>
       <choice value="*">Any</choice>
       <default>*</default>
@@ -49,12 +47,10 @@
     <input type="multiselect" token="frameID" searchWhenChanged="true">
       <label>Frame IDs:</label>
       <!-- Populating Data Model Search -->
-      <search id="frameIDSearch">
-        <query>| pivot NMON_Data_CPU LPAR_Pool count(LPAR_Pool) AS "count" SPLITROW frameID AS frameID FILTER $appfilter$ FILTER $Pool_id$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
+      <search base="populate">
+        <query>search Pool_id=$Pool_id$ | stats count by frameID | sort frameID | dedup frameID</query>
       </search>
-      <prefix>frameID is "</prefix>
+      <prefix>"</prefix>
       <suffix>"</suffix>
       <choice value="*">Any</choice>
       <default>*</default>
@@ -70,12 +66,10 @@
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
       <!-- Populating Data Model Search -->
-      <search id="baseSearch">
-        <query>| pivot NMON_Data_CPU LPAR_Pool count(LPAR_Pool) AS "count" SPLITROW hostname AS hostname FILTER $appfilter$ FILTER $Pool_id$ FILTER $frameID$ FILTER hostname is $hostname-prefilter$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
+      <search base="populate">
+        <query>search Pool_id=$Pool_id$ frameID=$frameID$ hostname="$hostname-prefilter$" | stats count by hostname | sort hostname | dedup hostname</query>
       </search>
-      <prefix>hostname is "</prefix>
+      <prefix>"</prefix>
       <suffix>"</suffix>
       <choice value="*">ALL Hosts</choice>
       <fieldForLabel>hostname</fieldForLabel>
@@ -102,14 +96,20 @@
     
   </fieldset>
 
-  <!-- Global Search -->
+  <!-- Base Searches for PostProcessing -->
+
+  <search id="populate">
+    <query>| pivot NMON_Data_CPU LPAR_Pool count(LPAR_Pool) AS "count" SPLITROW frameID AS frameID SPLITROW hostname AS hostname SPLITROW Pool_id AS Pool_id FILTER $appfilter$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
   
-        <search id="Global">
-          <query>| pivot NMON_Data_CPU LPAR_Pool max(poolCPUs) AS "CPUs in Pool" max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" 
-SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Pool_id FILTER $appfilter$ FILTER $Pool_id$ FILTER $frameID$ FILTER hostname is $hostname-prefilter$ FILTER $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-          <earliest>$timerange.earliest$</earliest>
-          <latest>$timerange.latest$</latest>
-        </search>
+  <search id="Global">
+    <query>| pivot NMON_Data_CPU LPAR_Pool max(poolCPUs) AS "CPUs in Pool" max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" 
+SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Pool_id FILTER $appfilter$ FILTER Pool_id is $Pool_id$ FILTER frameID is $frameID$ FILTER hostname is $hostname-prefilter$ FILTER hostname is $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>
+  </search>
 
   <row>
     <panel>
@@ -143,19 +143,20 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Po
     
       <table>
         <search base="Global">
-          <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | fields hostname,frameID,"Pool_ID","CPUs in Pool",max_usage,avg_usage,min_usage</query>
+          <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | fields hostname,frameID,Pool_id,"CPUs in Pool",max_usage,avg_usage,min_usage</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
+        <option name="drilldown">row</option>
         <option name="count">10</option>
-        <format type="sparkline" field="sparkline">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
+		  <drilldown target="search">
+			<link>
+			<![CDATA[
+/app/nmon/search?earliest=$timerange.earliest$&latest=$timerange.latest$&q=| pivot NMON_Data_CPU LPAR_Pool max(poolCPUs) AS "CPUs in Pool" max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" 
+SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Pool_id FILTER $appfilter$ FILTER Pool_id is $Pool_id$ FILTER frameID is $frameID$ FILTER hostname is $hostname-prefilter$ FILTER hostname is $click.value$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
+			]]></link>
+        </drilldown>
       </table>
 
     </panel>
@@ -221,7 +222,7 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW Pool_id AS Po
       <chart>
   			<search id="timechart">
     		  <query>| pivot NMON_Data_CPU LPAR_Pool $statsmode$($monitor$) AS $monitor$ $addindicator$ 
-SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $appfilter$ FILTER $Pool_id$ FILTER $frameID$ FILTER hostname is $hostname-prefilter$ FILTER $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $appfilter$ FILTER Pool_id is $Pool_id$ FILTER frameID is $frameID$ FILTER hostname is $hostname-prefilter$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
   		  </search>  
@@ -247,6 +248,13 @@ SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $appfilter$ FIL
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisY2.enabled">false</option>
         <option name="charting.axisY2.scale">inherit</option>
+		  <drilldown target="search">
+			<link>
+			<![CDATA[
+/app/nmon/search?earliest=$earliest$&latest=$latest$&q=| pivot NMON_Data_CPU LPAR_Pool $statsmode$($monitor$) AS $monitor$ $addindicator$ 
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $appfilter$ FILTER Pool_id is $Pool_id$ FILTER frameID is $frameID$ FILTER hostname is $hostname-prefilter$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
+			]]></link>
+        </drilldown>        
       </chart>
     </panel>
   </row>

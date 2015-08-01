@@ -35,7 +35,7 @@
       <label>Host Selection:</label>
       <search base="populate">
       <!-- Populating Data Model Search -->
-        <query>search $frameID$ hostname="$hostname-prefilter$" | stats count by hostname | sort hostname | dedup hostname</query>
+        <query>search frameID=$frameID$ hostname="$hostname-prefilter$" | stats count by hostname | sort hostname | dedup hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
@@ -78,7 +78,7 @@
 
   <search id="Global">
     <query>| pivot NMON_Data_CPU LPAR max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs" 
-SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>
   </search>
@@ -120,14 +120,15 @@ SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER hostname is $ho
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
+        <option name="drilldown">row</option>
         <option name="count">10</option>
-        <format type="sparkline" field="sparkline">
-          <option name="lineColor">#5379af</option>
-          <option name="fillColor">#CCDDFF</option>
-          <option name="lineWidth">1</option>
-          <option name="height">25px</option>
-        </format>
+		  <drilldown target="search">
+			<link>
+			<![CDATA[
+/app/nmon/search?earliest=$timerange.earliest$&latest=$timerange.latest$&q=| pivot NMON_Data_CPU LPAR max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs" 
+SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $click.value$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
+			]]></link>
+        </drilldown>        
       </table>
       
     </panel>
@@ -195,7 +196,7 @@ SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER hostname is $ho
       <chart>
   			<search id="timechart">
     		  <query>| pivot NMON_Data_CPU LPAR $statsmode$($monitor$) $addmonitor$ 
-SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
   		  </search> 
@@ -221,6 +222,13 @@ SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $ho
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisY2.enabled">false</option>
         <option name="charting.axisY2.scale">inherit</option>
+		  <drilldown target="search">
+			<link>
+			<![CDATA[
+/app/nmon/search?earliest=$earliest$&latest=$latest$&q=| pivot NMON_Data_CPU LPAR $statsmode$($monitor$) $addmonitor$ 
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
+			]]></link>
+        </drilldown>			        
       </chart>
     </panel>
   </row>
