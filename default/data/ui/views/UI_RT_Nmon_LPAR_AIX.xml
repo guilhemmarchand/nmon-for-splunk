@@ -13,12 +13,12 @@
     <input type="dropdown" token="frameID" searchWhenChanged="true">
       <label>Frame IDs:</label>
       <!-- Populating Data Model Search -->
-      <search id="frameIDSearch">
-        <query>| pivot NMON_Data_CPU LPAR count(LPAR) AS "count" SPLITROW frameID AS frameID SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+      <search base="populate">
+        <query>stats count by frameID | sort frameID | dedup frameID</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <prefix>frameID is "</prefix>
+      <prefix>"</prefix>
       <suffix>"</suffix>
       <choice value="*">Any</choice>
       <default>*</default>
@@ -33,13 +33,13 @@
 
     <input type="dropdown" token="hostname" searchWhenChanged="true">
       <label>Host Selection:</label>
+      <search base="populate">
       <!-- Populating Data Model Search -->
-      <search id="hostsSearch">
-        <query>| pivot NMON_Data_CPU LPAR count(LPAR) AS "count" SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $frameID$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <query>search $frameID$ hostname="$hostname-prefilter$" | stats count by hostname | sort hostname | dedup hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
-      <prefix>hostname is "</prefix>
+      <prefix>"</prefix>
       <suffix>"</suffix>
       <choice value="*">ALL Hosts</choice>
       <fieldForLabel>hostname</fieldForLabel>
@@ -57,7 +57,7 @@
       <choice value="range">Range</choice>
     </input>
 
-    <input type="dropdown" token="indicator" searchWhenChanged="true">
+    <input type="dropdown" token="monitor" searchWhenChanged="true">
       <label>Show CPU load by:</label>
       <default>lpar_vp_usage</default>
       <choice value="lpar_vp_usage">Usage vs VirtualCPUs</choice>
@@ -68,14 +68,20 @@
 
   </fieldset>
   
-  <!-- Global Search -->
-  
-        <search id="Global">
-          <query>| pivot NMON_Data_CPU LPAR max($indicator$) AS "max_usage" avg(lpar_vp_PCT_usage) AS "avg_usage" min(lpar_vp_PCT_usage) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs" 
-SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $frameID$ FILTER $hostname$ frameID AS "frameID" SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
-          <earliest>$timerange.earliest$</earliest>
-          <latest>$timerange.latest$</latest>
-        </search>
+  <!-- Base Searches for PostProcessing -->
+
+  <search id="populate">
+    <query>| pivot NMON_Data_CPU LPAR count(LPAR) AS "count" SPLITROW frameID AS frameID SPLITROW hostname AS hostname SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>  
+  </search>
+
+  <search id="Global">
+    <query>| pivot NMON_Data_CPU LPAR max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs" 
+SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>
+  </search>
       
   <row>
     <panel>
@@ -141,7 +147,7 @@ SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $fr
 		  <choice value="month">Months</choice>
 		  <choice value="year">Years</choice>
 		</input>      
-      <input type="dropdown" token="addindicator" searchWhenChanged="true">
+      <input type="dropdown" token="addmonitor" searchWhenChanged="true">
         <label>LPAR additional Series:</label>
         <default>none</default>
         <choice value="">none</choice>
@@ -188,8 +194,8 @@ SPLITROW hostname AS hostname FILTER hostname is $hostname-prefilter$ FILTER $fr
     <panel>
       <chart>
   			<search id="timechart">
-    		  <query>| pivot NMON_Data_CPU LPAR $statsmode$($indicator$) $addindicator$ 
-SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER $frameID$ FILTER $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    		  <query>| pivot NMON_Data_CPU LPAR $statsmode$($monitor$) $addmonitor$ 
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     		  <earliest>$timerange.earliest$</earliest>
     		  <latest>$timerange.latest$</latest>  
   		  </search> 
