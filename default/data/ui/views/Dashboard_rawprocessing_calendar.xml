@@ -1,0 +1,165 @@
+<form script="autodiscover.js,viz_calendarheatmap.js,custom_layout.js" stylesheet="ui_simple.css">
+  <label>Dashboard Processing Analysis, Processing of Raw Nmon data</label>
+  <description>This dashboard provides analysis of the nmon_processing sourcetype, which contains output of nmon raw data decoding steps done by nmon2csv converters</description>  
+  
+  <fieldset autoRun="false" submitButton="false">
+
+    <input type="time" token="timerange" searchWhenChanged="true">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>-30d@d</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+
+  </fieldset>
+  
+  <!-- BaseSearch for post processing -->
+    
+  <search id="volume_perday">
+    <query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_MB) AS sum_size_MB SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>
+  </search>
+  
+  <search id="error_perday">
+    <query>| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS error_count SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>
+  </search>
+
+  <search id="elapsed_perday">
+    <query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(elapsed_in_seconds) AS sum_elapsed SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
+    <earliest>$timerange.earliest$</earliest>
+    <latest>$timerange.latest$</latest>
+  </search>
+  
+  
+  <row>
+
+    <panel id="panela1_setWidth_50">
+    <title>Volume of Raw Data Proceeded (in MB)</title>
+    
+      <single>
+        <search base="volume_perday">
+		    <query>stats max(sum_size_MB) AS value | eval value=round(value,0)</query>      
+        </search>
+        <option name="afterLabel">MB</option>
+        <option name="underLabel">Max Volume per day</option>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView"><![CDATA[/app/nmon/search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_MB) AS sum_size_MB SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0 | stats max(sum_size_MB) AS max_volume_per_day, avg(sum_size_MB) AS avg_volume_per_day, min(sum_size_MB) AS min_volume_per_day&earliest=$timerange.earliest$&latest=$timerange.latest$]]></option>
+      </single>
+    
+      <single>
+        <search base="volume_perday">
+		    <query>stats avg(sum_size_MB) AS value | eval value=round(value,0)</query>      
+        </search>
+        <option name="afterLabel">MB</option>
+        <option name="underLabel">Avg Volume per day</option>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView"><![CDATA[/app/nmon/search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_MB) AS sum_size_MB SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0&earliest=$timerange.earliest$&latest=$timerange.latest$]]></option>
+      </single>
+
+      <single>
+        <search base="volume_perday">
+		    <query>stats min(sum_size_MB) AS value | eval value=round(value,0)</query>      
+        </search>
+        <option name="afterLabel">MB</option>
+        <option name="underLabel">Min Volume per day</option>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView"><![CDATA[/app/nmon/search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_MB) AS sum_size_MB SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0&earliest=$timerange.earliest$&latest=$timerange.latest$]]></option>
+      </single>
+        
+      <html>
+        <div id="calendarheatmap" class="splunk-view" data-require="app/nmon/components/calendarheatmap/calendarheatmap" data-options='{
+          "managerid": "volume_perday",
+          "domain": "month",
+          "subDomain": "x_day",
+          "subDomainTextFormat": "%d",
+          "cellRadius": "5"
+        }'>
+        </div>
+      </html>
+    </panel>
+
+    <panel id="panela2_setWidth_50">
+    <title>Errors in Data Processing (Count of)</title>
+
+      <single>
+        <search base="error_perday">
+		    <query>stats max(error_count) AS value | eval value=round(value,0)</query>      
+        </search>
+        <option name="underLabel">Max nbr of errors per day</option>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView"><![CDATA[/app/nmon/search?q=| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS error_count SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0 | stats max(error_count) AS max_errors_per_day, avg(error_count) AS avg_errors_per_day&earliest=$timerange.earliest$&latest=$timerange.latest$]]></option>
+      </single>
+    
+      <single>
+        <search base="error_perday">
+		    <query>stats avg(error_count) AS value | eval value=round(value,0)</query>      
+        </search>
+        <option name="underLabel">Avg nbr of errors per day</option>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView"><![CDATA[/app/nmon/search?q=| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS error_count SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0 | stats max(error_count) AS max_errors_per_day, avg(error_count) AS avg_errors_per_day&earliest=$timerange.earliest$&latest=$timerange.latest$]]></option>
+      </single>
+
+      <html>
+        <div id="calendarheatmap2" class="splunk-view" data-require="app/nmon/components/calendarheatmap/calendarheatmap" data-options='{
+          "managerid": "error_perday",
+          "domain": "month",
+          "subDomain": "x_day",
+          "subDomainTextFormat": "%d",
+          "cellRadius": "5"
+        }'>
+        </div>
+      </html>
+    </panel>
+    
+  </row>
+
+  <row>
+
+    <panel id="panelb1_setWidth_50">
+    <title>Time Spent in Data Processing (in Seconds, conversion of NMON files)</title>
+
+      <single>
+        <search base="elapsed_perday">
+		    <query>stats max(sum_elapsed) AS max | eval value=tostring(max,"duration") | fields value</query>      
+        </search>
+        <option name="underLabel">Max elapsed per day (HH:MM:SS)</option>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView"><![CDATA[/app/nmon/search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(elapsed_in_seconds) AS sum_elapsed SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0 | stats max(sum_elapsed) AS max_elapsed, avg(sum_elapsed) AS avg_elapsed | eval max_elapsed=tostring(max_elapsed,"duration") | eval avg_elapsed=tostring(avg_elapsed,"duration")&earliest=$timerange.earliest$&latest=$timerange.latest$]]></option>
+      </single>
+    
+      <single>
+        <search base="elapsed_perday">
+		    <query>stats avg(sum_elapsed) AS avg | eval value=tostring(avg,"duration") | fields value</query>      
+        </search>
+        <option name="underLabel">Avg elapsed per day (HH:MM:SS)</option>
+        <option name="classField">range</option>
+        <option name="linkFields">result</option>
+        <option name="linkView"><![CDATA[/app/nmon/search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(elapsed_in_seconds) AS sum_elapsed SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0 | stats max(sum_elapsed) AS max_elapsed, avg(sum_elapsed) AS avg_elapsed | eval max_elapsed=tostring(max_elapsed,"duration") | eval avg_elapsed=tostring(avg_elapsed,"duration")&earliest=$timerange.earliest$&latest=$timerange.latest$]]></option>
+      </single>
+
+      <html>
+        <div id="calendarheatmap3" class="splunk-view" data-require="app/nmon/components/calendarheatmap/calendarheatmap" data-options='{
+          "managerid": "elapsed_perday",
+          "domain": "month",
+          "subDomain": "x_day",
+          "subDomainTextFormat": "%d",
+          "cellRadius": "5"
+        }'>
+        </div>
+      </html>
+    </panel>
+
+  </row>
+
+
+</form>
