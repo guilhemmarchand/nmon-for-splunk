@@ -72,6 +72,9 @@
 #                                         - Windows hotfix: corrected broken directory creation
 # - 07/27/2015, V1.1.9: Guilhem Marchand:
 #                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
+# - 08/05/2015, V1.1.10: Guilhem Marchand:
+#                                         - hotfix: In Splunk 6.2.4, instance crash may happen if we delete an empty file while Splunk is watching for it
+#                                           The script uses now an intermediate directory for Perf csv data creation
 
 # Load libs
 
@@ -87,9 +90,10 @@ import logging
 import cStringIO
 import platform
 import optparse
+import glob
 
 # Converter version
-nmon2csv_version = '1.1.9'
+nmon2csv_version = '1.1.10'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -270,9 +274,17 @@ else:
 
 # CSV Perf data repository
 if is_windows:
-    DATA_DIR = APP_VAR + '\\csv_repository\\'
+    DATA_DIR = APP_VAR + '\\csv_workingdir\\'
 else:
-    DATA_DIR = APP_VAR + '/csv_repository/'
+    DATA_DIR = APP_VAR + '/csv_workingdir/'
+if not os.path.exists(DATA_DIR):
+    os.mkdir(DATA_DIR)
+
+# CSV Perf data working directory (files are moved at the end from DATA_DIR to DATAWORKING_DIR)
+if is_windows:
+    DATAFINAL_DIR = APP_VAR + '\\csv_repository\\'
+else:
+    DATAFINAL_DIR = APP_VAR + '/csv_repository/'
 if not os.path.exists(DATA_DIR):
     os.mkdir(DATA_DIR)
 
@@ -325,6 +337,13 @@ if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
     except Exception as ex:
         logging.error("Unable to create data output directory '%s': %s" % (DATA_DIR, ex))
+        sys.exit(1)
+
+if not os.path.exists(DATAFINAL_DIR):
+    try:
+        os.makedirs(DATAFINAL_DIR)
+    except Exception as ex:
+        logging.error("Unable to create data output directory '%s': %s" % (DATAFINAL_DIR, ex))
         sys.exit(1)
 
 if not os.path.exists(CONFIG_DIR):
@@ -2241,6 +2260,19 @@ if OStype in ("Solaris", "Unknown"):
 
     for section in solaris_dynamic_various:
         dynamic_section_fn(section)
+
+##########################
+# Move final Perf csv data
+##########################
+
+# cd to directory
+os.chdir(DATA_DIR)
+
+# Move csv final perf data
+for xfile in glob.glob('*.csv'):
+    src = DATA_DIR + xfile
+    dst = DATAFINAL_DIR + xfile
+    os.rename(src,dst)
 
 ###################
 # End

@@ -54,13 +54,17 @@
 #                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
 # Guilhem Marchand 27/07/2015, V1.2.8:
 #                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
+# Guilhem Marchand 08/05/2015, V1.2.9: 
+#                                         - hotfix: In Splunk 6.2.4, instance crash may happen if we delete an empty file while Splunk is watching for it
+#                                           The script uses now an intermediate directory for Perf csv data creation
 
-$version = "1.2.8";
+$version = "1.2.9";
 
 use Time::Local;
 use Time::HiRes;
 use Getopt::Long;
 use POSIX 'strftime';
+use File::Copy;
 
 #################################################
 ##      Args
@@ -204,9 +208,14 @@ my $SPOOL_DIR = "$APP_VAR/spool";
 if ( !-d "$SPOOL_DIR" ) { mkdir "$SPOOL_DIR"; }
 
 #  Output directory of csv files to be managed by Splunk
-my $OUTPUT_DIR = "$APP_VAR/csv_repository";
+my $OUTPUT_DIR = "$APP_VAR/csv_workingdir";
 if ( !-d "$OUTPUT_DIR" ) { mkdir "$OUTPUT_DIR"; }
 
+# CSV Perf data working directory (files are moved at the end from DATA_DIR to DATAWORKING_DIR)
+my $OUTPUTFINAL_DIR = "$APP_VAR/csv_repository";
+if ( !-d "$OUTPUTFINAL_DIR" ) { mkdir "$OUTPUTFINAL_DIR"; }
+
+# Config csv data
 my $OUTPUTCONF_DIR = "$APP_VAR/config_repository";
 if ( !-d "$OUTPUTCONF_DIR" ) { mkdir "$OUTPUTCONF_DIR"; }
 
@@ -1585,6 +1594,28 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         }
 
     }
+
+##########################
+# Move final Perf csv data
+##########################
+
+# Move final files Performance data files
+@move =
+      ( "$OUTPUT_DIR/*.csv" );
+
+    # Enter loop
+    foreach $key (@move) {
+
+        @files = glob($key);
+
+        foreach $file (@files) {
+            if ( -f $file ) {
+
+				move($file,"$OUTPUTFINAL_DIR/");
+
+                }
+            }
+        }
 
 #############################################
 #############  Main Program End 	############
