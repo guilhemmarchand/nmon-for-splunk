@@ -54,11 +54,13 @@
 #                                         - Added support for SEA* sections (Shared Ethernet Adapters for AIX Vios)
 # Guilhem Marchand 27/07/2015, V1.2.8:
 #                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
-# Guilhem Marchand 08/05/2015, V1.2.9: 
+# Guilhem Marchand 08/05/2015, V1.2.9:
 #                                         - hotfix: In Splunk 6.2.4, instance crash may happen if we delete an empty file while Splunk is watching for it
 #                                           The script uses now an intermediate directory for Perf csv data creation
+# Guilhem Marchand 08/07/2015, V1.2.10:
+#                                         - hotfix for real time data management: Use epoch time identification per section instead of globally yo solve gaps in data
 
-$version = "1.2.9";
+$version = "1.2.10";
 
 use Time::Local;
 use Time::HiRes;
@@ -77,7 +79,8 @@ my $OPMODE = "";
 $result = GetOptions(
     "mode=s"  => \$OPMODE,     # string
     "version" => \$VERSION,    # flag
-    "help"    => \$help        # flag
+    "help"    => \$help,       # flag
+    "debug"   => \$DEBUG,      # flag
 );
 
 #################################################
@@ -1005,6 +1008,67 @@ foreach $FILENAME (@nmon_files) {
             my $timestamp = "";
             $count = 0;
 
+            # Store last epochtime if in real time mode
+            $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+
+            if ( $realtime eq "True" ) {
+
+                if ( -e $keyref ) {
+
+                    open( keyref, "< $keyref" )
+                      or die "ERROR: Can't open $keyref : $!";
+                    while ( defined( my $l = <keyref> ) ) {
+                        chomp $l;
+
+                        # Get epoch time
+                        if ( ( rindex $l, "last_epoch" ) > -1 ) {
+                            ( my $t1, my $t2 ) =
+                              split( ": ", $l );
+                            $last_epoch_persection = $t2;
+
+                            if ($DEBUG) {
+                                print
+"DEBUG, Last known timestamp for $key section is: $last_epoch_persection \n";
+                            }
+                        }
+
+                    }
+
+                }
+
+                else {
+
+                    if ($DEBUG) {
+                        print
+"DEBUG, no keyref for file for this $key section (searched for $keyref), no data or first execution \n";
+                    }
+
+                }
+
+                # Define if we use global last epoch or per section last epoch
+                if ( not $last_epoch_persection ) {
+
+                    if ($DEBUG) {
+                        print
+"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur) \n";
+                    }
+
+                    $last_epoch_filter = $last_known_epochtime;
+
+                }
+                else {
+
+                    if ($DEBUG) {
+                        print
+"DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur) \n";
+                    }
+
+                    $last_epoch_filter = $last_epoch_persection;
+
+                }
+
+            }
+
             # Open NMON file for reading
             if ( !open( FIC, $file ) ) {
                 die(    "Error while trying to open NMON Source file '"
@@ -1117,11 +1181,21 @@ foreach $FILENAME (@nmon_files) {
                           timelocal( $sec, $min, $hour, $day, $month - 1,
                             $year );
 
-                        if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+                        if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                             print( INSERT $write . "\n" );
                             $count++;
                         }
+
+                        else {
+
+                            if ($DEBUG) {
+                                print
+"DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+                            }
+
+                        }
+
                     }
                     elsif ( $colddata eq "True" ) {
                         print( INSERT $write . "\n" );
@@ -1139,6 +1213,18 @@ foreach $FILENAME (@nmon_files) {
 
                     print "$key section: Wrote $count lines\n";
                     print ID_REF "$key section: Wrote $count lines\n";
+
+                    if ( $realtime eq "True" ) {
+
+                        print "Last epochtime is $ZZZZ_epochtime \n";
+
+                        # Open keyref for writing in create mode
+                        open( f, ">$keyref" );
+
+                        # save configuration extraction
+                        print f "last_epoch: $ZZZZ_epochtime \n";
+
+                    }
 
                 }
 
@@ -1215,6 +1301,67 @@ foreach $FILENAME (@nmon_files) {
                 my $section   = "";
                 my $timestamp = "";
                 $count = 0;
+
+                # Store last epochtime if in real time mode
+                $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+
+                if ( $realtime eq "True" ) {
+
+                    if ( -e $keyref ) {
+
+                        open( keyref, "< $keyref" )
+                          or die "ERROR: Can't open $keyref : $!";
+                        while ( defined( my $l = <keyref> ) ) {
+                            chomp $l;
+
+                            # Get epoch time
+                            if ( ( rindex $l, "last_epoch" ) > -1 ) {
+                                ( my $t1, my $t2 ) =
+                                  split( ": ", $l );
+                                $last_epoch_persection = $t2;
+
+                                if ($DEBUG) {
+                                    print
+"DEBUG, Last known timestamp for $key section is: $last_epoch_persection \n";
+                                }
+                            }
+
+                        }
+
+                    }
+
+                    else {
+
+                        if ($DEBUG) {
+                            print
+"DEBUG, no keyref for file for this $key section (searched for $keyref), no data or first execution \n";
+                        }
+
+                    }
+
+                  # Define if we use global last epoch or per section last epoch
+                    if ( not $last_epoch_persection ) {
+
+                        if ($DEBUG) {
+                            print
+"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first we run) \n";
+                        }
+
+                        $last_epoch_filter = $last_known_epochtime;
+
+                    }
+                    else {
+
+                        if ($DEBUG) {
+                            print
+"DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur) \n";
+                        }
+
+                        $last_epoch_filter = $last_epoch_persection;
+
+                    }
+
+                }
 
                 while ( defined( my $l = <FIC> ) ) {
                     chomp $l;
@@ -1380,10 +1527,20 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
                                   timelocal( $sec, $min, $hour, $day,
                                     $month - 1, $year );
 
-                                if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+                                if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                                     print( INSERT $write . "\n" );
                                     $count++;
+
+                                }
+
+                                else {
+
+                                    if ($DEBUG) {
+                                        print
+"DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+                                    }
+
                                 }
                             }
                             elsif ( $colddata eq "True" ) {
@@ -1458,6 +1615,18 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
 
                         print "$key section: Wrote $count lines\n";
                         print ID_REF "$key section: Wrote $count lines\n";
+
+                        if ( $realtime eq "True" ) {
+
+                            print "Last epochtime is $ZZZZ_epochtime \n";
+
+                            # Open keyref for writing in create mode
+                            open( f, ">$keyref" );
+
+                            # save configuration extraction
+                            print f "last_epoch: $ZZZZ_epochtime \n";
+
+                        }
 
                     }
 
@@ -1596,12 +1765,11 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
     }
 
 ##########################
-# Move final Perf csv data
+    # Move final Perf csv data
 ##########################
 
-# Move final files Performance data files
-@move =
-      ( "$OUTPUT_DIR/*.csv" );
+    # Move final files Performance data files
+    @move = ("$OUTPUT_DIR/*.csv");
 
     # Enter loop
     foreach $key (@move) {
@@ -1611,11 +1779,11 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $file (@files) {
             if ( -f $file ) {
 
-				move($file,"$OUTPUTFINAL_DIR/");
+                move( $file, "$OUTPUTFINAL_DIR/" );
 
-                }
             }
         }
+    }
 
 #############################################
 #############  Main Program End 	############
@@ -1779,6 +1947,67 @@ sub static_sections_insert {
     my $sanity_check_timestampfailure = 0;
     $count = 0;
 
+    # Store last epochtime if in real time mode
+    $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+
+    if ( $realtime eq "True" ) {
+
+        if ( -e $keyref ) {
+
+            open( keyref, "< $keyref" )
+              or die "ERROR: Can't open $keyref : $!";
+            while ( defined( my $l = <keyref> ) ) {
+                chomp $l;
+
+                # Get epoch time
+                if ( ( rindex $l, "last_epoch" ) > -1 ) {
+                    ( my $t1, my $t2 ) =
+                      split( ": ", $l );
+                    $last_epoch_persection = $t2;
+
+                    if ($DEBUG) {
+                        print
+"DEBUG, Last known timestamp for $key section is: $last_epoch_persection \n";
+                    }
+                }
+
+            }
+
+        }
+
+        else {
+
+            if ($DEBUG) {
+                print
+"DEBUG, no keyref for file for this $key section (searched for $keyref), no data or first execution \n";
+            }
+
+        }
+
+        # Define if we use global last epoch or per section last epoch
+        if ( not $last_epoch_persection ) {
+
+            if ($DEBUG) {
+                print
+"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur) \n";
+            }
+
+            $last_epoch_filter = $last_known_epochtime;
+
+        }
+        else {
+
+            if ($DEBUG) {
+                print
+"DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur) \n";
+            }
+
+            $last_epoch_filter = $last_epoch_persection;
+
+        }
+
+    }
+
     @rawdata = grep( /^$nmon_var,/, @nmon );
 
     if ( @rawdata < 1 ) { return (1); }
@@ -1877,7 +2106,7 @@ qq|type,serialnum,hostname,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\
 
             if ( $realtime eq "True" ) {
 
-                if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+                if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                     print INSERT (
 qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
@@ -1886,6 +2115,16 @@ qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@co
 
                     $comma = "\n";
                 }
+
+                else {
+
+                    if ($DEBUG) {
+                        print
+                          "DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+                    }
+
+                }
+
             }
 
             elsif ( $colddata eq "True" ) {
@@ -1925,7 +2164,21 @@ qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@co
         if ( $count > 1 ) {
             print "$key section: Wrote $count lines\n";
             print ID_REF "$key section: Wrote $count lines\n";
+
+            if ( $realtime eq "True" ) {
+
+                print "Last epochtime is $ZZZZ_epochtime \n";
+
+                # Open keyref for writing in create mode
+                open( f, ">$keyref" );
+
+                # save configuration extraction
+                print f "last_epoch: $ZZZZ_epochtime \n";
+
+            }
+
         }
+
         else {
             # Hey, only a header ! Don't keep empty files please
             unlink $BASEFILENAME;
@@ -1954,6 +2207,67 @@ sub variable_sections_insert {
     my $sanity_check                  = 0;
     my $sanity_check_timestampfailure = 0;
     $count = 0;
+
+    # Store last epochtime if in real time mode
+    $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+
+    if ( $realtime eq "True" ) {
+
+        if ( -e $keyref ) {
+
+            open( keyref, "< $keyref" )
+              or die "ERROR: Can't open $keyref : $!";
+            while ( defined( my $l = <keyref> ) ) {
+                chomp $l;
+
+                # Get epoch time
+                if ( ( rindex $l, "last_epoch" ) > -1 ) {
+                    ( my $t1, my $t2 ) =
+                      split( ": ", $l );
+                    $last_epoch_persection = $t2;
+
+                    if ($DEBUG) {
+                        print
+"DEBUG, Last known timestamp for $key section is: $last_epoch_persection \n";
+                    }
+                }
+
+            }
+
+        }
+
+        else {
+
+            if ($DEBUG) {
+                print
+"DEBUG, no keyref for file for this $key section (searched for $keyref), no data or first execution \n";
+            }
+
+        }
+
+        # Define if we use global last epoch or per section last epoch
+        if ( not $last_epoch_persection ) {
+
+            if ($DEBUG) {
+                print
+"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first we run) \n";
+            }
+
+            $last_epoch_filter = $last_known_epochtime;
+
+        }
+        else {
+
+            if ($DEBUG) {
+                print
+"DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur) \n";
+            }
+
+            $last_epoch_filter = $last_epoch_persection;
+
+        }
+
+    }
 
     @rawdata = grep( /^$nmon_var,/, @nmon );
 
@@ -2019,13 +2333,22 @@ sub variable_sections_insert {
 
         if ( $realtime eq "True" ) {
 
-            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+            if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                 print INSERT (
 qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
                 );
 
                 $count++;
+
+            }
+
+            else {
+
+                if ($DEBUG) {
+                    print "DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+                }
+
             }
 
         }
@@ -2085,7 +2408,7 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$co
 
                 if ( $realtime eq "True" ) {
 
-                    if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+                    if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                         print INSERT (
 qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
@@ -2131,6 +2454,19 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$c
         if ( $count > 1 ) {
             print "$key section: Wrote $count lines\n";
             print ID_REF "$key section: Wrote $count lines\n";
+
+            if ( $realtime eq "True" ) {
+
+                print "Last epochtime is $ZZZZ_epochtime \n";
+
+                # Open keyref for writing in create mode
+                open( f, ">$keyref" );
+
+                # save configuration extraction
+                print f "last_epoch: $ZZZZ_epochtime \n";
+
+            }
+
         }
         else {
             # Hey, only a header ! Don't keep empty files please
@@ -2140,7 +2476,9 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$c
 
 }    # End Insert
 
-# Specific Solaris version, add logical_cpus values to allow easy WLM CPU conversion statistics
+#################################################################################################
+# Specific Solaris version, add logical_cpus values to allow easy WLM CPU conversion statistics #
+#################################################################################################
 
 sub solaris_wlm_section_fn {
 
@@ -2158,6 +2496,67 @@ sub solaris_wlm_section_fn {
     my $sanity_check                  = 0;
     my $sanity_check_timestampfailure = 0;
     $count = 0;
+
+    # Store last epochtime if in real time mode
+    $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+
+    if ( $realtime eq "True" ) {
+
+        if ( -e $keyref ) {
+
+            open( keyref, "< $keyref" )
+              or die "ERROR: Can't open $keyref : $!";
+            while ( defined( my $l = <keyref> ) ) {
+                chomp $l;
+
+                # Get epoch time
+                if ( ( rindex $l, "last_epoch" ) > -1 ) {
+                    ( my $t1, my $t2 ) =
+                      split( ": ", $l );
+                    $last_epoch_persection = $t2;
+
+                    if ($DEBUG) {
+                        print
+"DEBUG, Last known timestamp for $key section is: $last_epoch_persection \n";
+                    }
+                }
+
+            }
+
+        }
+
+        else {
+
+            if ($DEBUG) {
+                print
+"DEBUG, no keyref for file for this $key section (searched for $keyref), no data or first execution \n";
+            }
+
+        }
+
+        # Define if we use global last epoch or per section last epoch
+        if ( not $last_epoch_persection ) {
+
+            if ($DEBUG) {
+                print
+"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first we run) \n";
+            }
+
+            $last_epoch_filter = $last_known_epochtime;
+
+        }
+        else {
+
+            if ($DEBUG) {
+                print
+"DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur) \n";
+            }
+
+            $last_epoch_filter = $last_epoch_persection;
+
+        }
+
+    }
 
     @rawdata = grep( /^$nmon_var,/, @nmon );
 
@@ -2225,13 +2624,22 @@ qq|type,serialnum,hostname,logical_cpus,interval,snapshots,ZZZZ,device,value|
 
         if ( $realtime eq "True" ) {
 
-            if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+            if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                 print INSERT (
 qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
                 );
 
                 $count++;
+
+            }
+
+            else {
+
+                if ($DEBUG) {
+                    print "DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+                }
+
             }
 
         }
@@ -2291,7 +2699,7 @@ qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$
 
                 if ( $realtime eq "True" ) {
 
-                    if ( $ZZZZ_epochtime > $last_known_epochtime ) {
+                    if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                         print INSERT (
 qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
@@ -2337,6 +2745,19 @@ qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$
         if ( $count > 1 ) {
             print "$key section: Wrote $count lines\n";
             print ID_REF "$key section: Wrote $count lines\n";
+
+            if ( $realtime eq "True" ) {
+
+                print "Last epochtime is $ZZZZ_epochtime \n";
+
+                # Open keyref for writing in create mode
+                open( f, ">$keyref" );
+
+                # save configuration extraction
+                print f "last_epoch: $ZZZZ_epochtime \n";
+
+            }
+
         }
         else {
             # Hey, only a header ! Don't keep empty files please
