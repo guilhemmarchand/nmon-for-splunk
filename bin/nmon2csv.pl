@@ -59,6 +59,8 @@
 #                                           The script uses now an intermediate directory for Perf csv data creation
 # Guilhem Marchand 08/07/2015, V1.2.10:
 #                                         - hotfix for real time data management: Use epoch time identification per section instead of globally yo solve gaps in data
+#														- Corrected and improved optional arguments and help script
+#														- Added support for DISKREADSERV and DISKWRITESERV
 
 $version = "1.2.10";
 
@@ -82,6 +84,37 @@ $result = GetOptions(
     "help"    => \$help,       # flag
     "debug"   => \$DEBUG,      # flag
 );
+
+# Show version
+if ($VERSION) {
+    print("nmon2csv.pl version $version \n");
+
+    exit 0;
+}
+
+# Show help
+if ($help) {
+
+    print( "
+
+Help for nmon2csv.pl:
+
+Perl nmon2csv converter is usually automatically called by Splunk to process Nmon raw data.
+Splunk reads the nmon file content and will stream it to nmon2csv.pl in stdout. (eg. cat <my file> | ./nmon2csv.pl)
+
+For testing or debugging purposes, you can run the script out of Splunk.
+Please visit: http://nmonsplunk.wikidot.com/documentation:userguide:troubleshoot:nmon2csv-debug
+       	
+Available options are:
+	
+--mode <realtime | colddata> :Force the script to consider the data as cold data (nmon process has over) or real time data (nmon is running)
+--debug :Activate debugging mode for testing purposes
+--version :Show current program version \n
+"
+    );
+
+    exit 0;
+}
 
 #################################################
 ##      Parameters
@@ -114,7 +147,7 @@ $result = GetOptions(
 # Sections of Performance Monitors with Dynamic header (eg. device context) and that can be incremented (DISKBUSY1...)
 @dynamic_vars1 = (
     "DISKBSIZE", "DISKBUSY", "DISKREAD", "DISKWRITE",
-    "DISKXFER",  "DISKRIO",  "DISKWIO"
+    "DISKXFER",  "DISKRIO",  "DISKWIO", "DISKREADSERV", "DISKWRITESERV"
 );
 
 # Sections that won't be incremented
@@ -1050,7 +1083,7 @@ foreach $FILENAME (@nmon_files) {
 
                     if ($DEBUG) {
                         print
-"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur) \n";
+"DEBUG: no last epoch information were found for $key section, using global last epoch time \n";
                     }
 
                     $last_epoch_filter = $last_known_epochtime;
@@ -1191,7 +1224,7 @@ foreach $FILENAME (@nmon_files) {
 
                             if ($DEBUG) {
                                 print
-"DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+"DEBUG, $key ignoring event $timestamp ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";
                             }
 
                         }
@@ -1344,7 +1377,7 @@ foreach $FILENAME (@nmon_files) {
 
                         if ($DEBUG) {
                             print
-"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first we run) \n";
+"DEBUG: no last epoch information were found for $key section, using global last epoch time \n";
                         }
 
                         $last_epoch_filter = $last_known_epochtime;
@@ -1538,7 +1571,7 @@ m/^UARG\,T\d+\,\s*([0-9]*)\s*\,\s*([0-9]*)\s*\,\s*([a-zA-Z\-\/\_\:\.0-9]*)\s*\,\
 
                                     if ($DEBUG) {
                                         print
-"DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+"DEBUG, $key ignoring event $timestamp ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";
                                     }
 
                                 }
@@ -1989,7 +2022,7 @@ sub static_sections_insert {
 
             if ($DEBUG) {
                 print
-"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur) \n";
+"DEBUG: no last epoch information were found for $key section, using global last epoch time \n";
             }
 
             $last_epoch_filter = $last_known_epochtime;
@@ -2120,7 +2153,7 @@ qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@co
 
                     if ($DEBUG) {
                         print
-                          "DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+"DEBUG, $key ignoring event $DATETIME{@cols[1]} ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";                          
                     }
 
                 }
@@ -2250,7 +2283,7 @@ sub variable_sections_insert {
 
             if ($DEBUG) {
                 print
-"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first we run) \n";
+"DEBUG: no last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first time we run) \n";
             }
 
             $last_epoch_filter = $last_known_epochtime;
@@ -2346,7 +2379,7 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$co
             else {
 
                 if ($DEBUG) {
-                    print "DEBUG, $key ignoring event $DATETIME{@cols[1]} \n";
+"DEBUG, $key ignoring event $DATETIME{@cols[1]} ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";                                              
                 }
 
             }
@@ -2539,7 +2572,7 @@ sub solaris_wlm_section_fn {
 
             if ($DEBUG) {
                 print
-"DEBUG: NO last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first we run) \n";
+"DEBUG: no last epoch information were found for $key section, using global last epoch time (gaps in data may occur if not the first time we run) \n";
             }
 
             $last_epoch_filter = $last_known_epochtime;

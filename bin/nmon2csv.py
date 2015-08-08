@@ -75,6 +75,10 @@
 # - 08/05/2015, V1.1.10: Guilhem Marchand:
 #                                         - hotfix: In Splunk 6.2.4, instance crash may happen if we delete an empty file while Splunk is watching for it
 #                                           The script uses now an intermediate directory for Perf csv data creation
+# - 08/05/2015, V1.1.11: Guilhem Marchand:
+#                                         - hotfix for real time data management: Use epoch time identification per section instead of globally yo solve gaps in data
+#										  - Corrected and improved optional arguments and help script
+#										  - Added support for DISKREADSERV and DISKWRITESERV
 
 # Load libs
 
@@ -93,7 +97,7 @@ import optparse
 import glob
 
 # Converter version
-nmon2csv_version = '1.1.10'
+nmon2csv_version = '1.1.11'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -129,15 +133,18 @@ uarg_section = ["UARG"]
 # This particular section will check for up to 10 subsection per Performance Monitor
 # By default, Nmon create a new subsection (add an increment from 1 to x) per step of 150 devices
 # 1500 devices (disks) will be taken in charge in default configuration
-dynamic_section1 = ["DISKBUSY", "DISKBSIZE", "DISKREAD", "DISKWRITE", "DISKXFER", "DISKRIO", "DISKWIO"]
+dynamic_section1 = ["DISKBUSY", "DISKBSIZE", "DISKREAD", "DISKWRITE", "DISKXFER", "DISKRIO", "DISKWIO", "DISKREADSERV",
+                    "DISKWRITESERV"]
 
 # Sections of Performance Monitors with "device" notion, data needs to be transposed by time to be fully exploitable
-dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE", "FCREAD", "FCWRITE", "FCXFERIN", "FCXFEROUT"]
+dynamic_section2 = ["IOADAPT", "NETERROR", "NET", "NETPACKET", "JFSFILE", "JFSINODE", "FCREAD", "FCWRITE", "FCXFERIN",
+                    "FCXFEROUT"]
 
 # Sections of Performance Monitors for Solaris
 
 # Zone, Project, Task... performance
-solaris_WLM = ["WLMPROJECTCPU", "WLMZONECPU", "WLMTASKCPU", "WLMUSERCPU", "WLMPROJECTMEM", "WLMZONEMEM", "WLMTASKMEM", "WLMUSERMEM"]
+solaris_WLM = ["WLMPROJECTCPU", "WLMZONECPU", "WLMTASKCPU", "WLMUSERCPU", "WLMPROJECTMEM", "WLMZONEMEM", "WLMTASKMEM",
+               "WLMUSERMEM"]
 
 # Veritas Storage Manager
 solaris_VxVM = ["VxVMREAD", "VxVMWRITE", "VxVMXFER", "VxVMBSIZE", "VxVMBUSY", "VxVMSVCTM", "VxVMWAITTM"]
@@ -321,6 +328,7 @@ parser.add_option('-c', '--configdir', action='store', type='string', dest='conf
 opmodes = ['auto', 'realtime', 'colddata']
 parser.add_option('-m', '--mode', action='store', type='choice', dest='mode', choices=opmodes, help='sets the operation mode (Default: %default); supported modes: ' + ', '.join(opmodes))
 parser.add_option('--dumpargs', action='store_true', dest='dumpargs', help='only dump the passed arguments and exit (for debugging purposes only)')
+parser.add_option('--debug', action='store_true', dest='debug', help='Activate debug for testing purposes')
 
 (options, args) = parser.parse_args()
 
@@ -328,6 +336,11 @@ if options.dumpargs:
     print("options: ", options)
     print("args: ", args)
     sys.exit(0)
+
+if options.debug:
+    debug = True
+else:
+    debug = False
 
 DATA_DIR = options.datadir
 CONFIG_DIR = options.configdir
@@ -1050,6 +1063,41 @@ def standard_section_fn(section):
     currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
         bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
+    # Store last epochtime if in real time mode
+    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+
+    if realtime:
+        if not os.path.exists(keyref):
+            if debug:
+                print ("DEBUG, no keyref file for this " + section  +
+                       " section (searched for " + keyref + "), no data or first execution")
+        else:
+            with open(keyref, "r") as f:
+                for line in f:
+                    myregex = 'last_epoch:\s(\d+)'
+                    myregex_match = re.search(myregex, line)
+
+                    # Standard header extraction
+                    if myregex_match:
+                        last_epoch_persection = myregex_match.group(1)
+
+                        if debug:
+                            print("DEBUG, Last known timestamp for " + section +
+                                  " section is " + last_epoch_persection)
+
+        # In realtime mode, in case no per section information is available, let's use global epoch time
+        try:
+          last_epoch_persection
+        except NameError:
+            if debug:
+                print ("DEBUG: no last epoch information were found for " + section
+                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+            last_epoch_filter = last_known_epochtime
+        else:
+            if debug:
+                print ("DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur)")
+            last_epoch_filter = last_epoch_persection
+
     # counter
     count = 0
 
@@ -1207,7 +1255,7 @@ def standard_section_fn(section):
 
                         if realtime:
 
-                            if ZZZZ_epochtime > last_known_epochtime:
+                            if ZZZZ_epochtime > last_epoch_filter:
 
                                 # increment
                                 count += 1
@@ -1242,6 +1290,11 @@ def standard_section_fn(section):
 
                                 # Write perf data
                                 currsection.write(final_perfdata)
+                            else:
+                                if debug:
+                                    print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
+                                    " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
+                                                            "for this section " + last_epoch_filter + " )")
 
                         elif colddata:
 
@@ -1295,6 +1348,11 @@ def standard_section_fn(section):
             print(result)
             ref.write(result + "\n")
 
+        # In realtime, Store last epoch time for this section
+        if realtime:
+            with open(keyref, "wb") as f:
+                f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+
 # End for
 
 
@@ -1322,6 +1380,41 @@ def top_section_fn(section):
     # Set output file
     currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
         bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+
+    # Store last epochtime if in real time mode
+    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+
+    if realtime:
+        if not os.path.exists(keyref):
+            if debug:
+                print ("DEBUG, no keyref file for this " + section  +
+                       " section (searched for " + keyref + "), no data or first execution")
+        else:
+            with open(keyref, "r") as f:
+                for line in f:
+                    myregex = 'last_epoch:\s(\d+)'
+                    myregex_match = re.search(myregex, line)
+
+                    # Standard header extraction
+                    if myregex_match:
+                        last_epoch_persection = myregex_match.group(1)
+
+                        if debug:
+                            print("DEBUG, Last known timestamp for " + section +
+                                  " section is " + last_epoch_persection)
+
+        # In realtime mode, in case no per section information is available, let's use global epoch time
+        try:
+          last_epoch_persection
+        except NameError:
+            if debug:
+                print ("DEBUG: no last epoch information were found for " + section
+                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+            last_epoch_filter = last_known_epochtime
+        else:
+            if debug:
+                print ("DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur)")
+            last_epoch_filter = last_epoch_persection
 
     # counter
     count = 0
@@ -1436,7 +1529,7 @@ def top_section_fn(section):
 
                     if realtime:
 
-                        if ZZZZ_epochtime > last_known_epochtime:
+                        if ZZZZ_epochtime > last_epoch_filter:
 
                             # increment
                             count += 1
@@ -1444,6 +1537,11 @@ def top_section_fn(section):
                             # Write perf data
                             currsection.write(
                                 section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                        else:
+                            if debug:
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
+                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
+                                                        "for this section " + last_epoch_filter + " )")
 
                     elif colddata:
 
@@ -1464,6 +1562,11 @@ def top_section_fn(section):
             result = section + " section: Wrote" + " " + str(count) + " lines"
             print(result)
             ref.write(result + "\n")
+
+            # In realtime, Store last epoch time for this section
+            if realtime:
+                with open(keyref, "wb") as f:
+                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
 
 # End for
 
@@ -1486,6 +1589,41 @@ def uarg_section_fn(section):
     # Set output file
     currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
         bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+
+    # Store last epochtime if in real time mode
+    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+
+    if realtime:
+        if not os.path.exists(keyref):
+            if debug:
+                print ("DEBUG, no keyref file for this " + section  +
+                       " section (searched for " + keyref + "), no data or first execution")
+        else:
+            with open(keyref, "r") as f:
+                for line in f:
+                    myregex = 'last_epoch:\s(\d+)'
+                    myregex_match = re.search(myregex, line)
+
+                    # Standard header extraction
+                    if myregex_match:
+                        last_epoch_persection = myregex_match.group(1)
+
+                        if debug:
+                            print("DEBUG, Last known timestamp for " + section +
+                                  " section is " + last_epoch_persection)
+
+        # In realtime mode, in case no per section information is available, let's use global epoch time
+        try:
+          last_epoch_persection
+        except NameError:
+            if debug:
+                print ("DEBUG: no last epoch information were found for " + section
+                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+            last_epoch_filter = last_known_epochtime
+        else:
+            if debug:
+                print ("DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur)")
+            last_epoch_filter = last_epoch_persection
 
     # counter
     count = 0
@@ -1661,7 +1799,7 @@ def uarg_section_fn(section):
 
                     if realtime:
 
-                        if ZZZZ_epochtime > last_known_epochtime:
+                        if ZZZZ_epochtime > last_epoch_filter:
 
                             # increment
                             count += 1
@@ -1669,6 +1807,11 @@ def uarg_section_fn(section):
                             # Write perf data
                             membuffer.write(
                                 section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                        else:
+                            if debug:
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
+                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
+                                                        "for this section " + last_epoch_filter + " )")
 
                     elif colddata:
 
@@ -1687,6 +1830,11 @@ def uarg_section_fn(section):
             result = section + " section: Wrote" + " " + str(count) + " lines"
             print(result)
             ref.write(result + "\n")
+
+            # In realtime, Store last epoch time for this section
+            if realtime:
+                with open(keyref, "wb") as f:
+                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
 
             # Open output for writing
             with open(currsection_output, "wb") as currsection:
@@ -1719,6 +1867,41 @@ def dynamic_section_fn(section):
 
     # Sequence to search for
     seq = str(section) + ',' + 'T'
+
+    # Store last epochtime if in real time mode
+    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+
+    if realtime:
+        if not os.path.exists(keyref):
+            if debug:
+                print ("DEBUG, no keyref file for this " + section  +
+                       " section (searched for " + keyref + "), no data or first execution")
+        else:
+            with open(keyref, "r") as f:
+                for line in f:
+                    myregex = 'last_epoch:\s(\d+)'
+                    myregex_match = re.search(myregex, line)
+
+                    # Standard header extraction
+                    if myregex_match:
+                        last_epoch_persection = myregex_match.group(1)
+
+                        if debug:
+                            print("DEBUG, Last known timestamp for " + section +
+                                  " section is " + last_epoch_persection)
+
+        # In realtime mode, in case no per section information is available, let's use global epoch time
+        try:
+          last_epoch_persection
+        except NameError:
+            if debug:
+                print ("DEBUG: no last epoch information were found for " + section
+                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+            last_epoch_filter = last_known_epochtime
+        else:
+            if debug:
+                print ("DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur)")
+            last_epoch_filter = last_epoch_persection
 
     # counter
     count = 0
@@ -1841,7 +2024,7 @@ def dynamic_section_fn(section):
 
                     if realtime:
 
-                        if ZZZZ_epochtime > last_known_epochtime:
+                        if ZZZZ_epochtime > last_epoch_filter:
 
                             # increment
                             count += 1
@@ -1873,6 +2056,11 @@ def dynamic_section_fn(section):
 
                             # Write perf data
                             membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
+                        else:
+                            if debug:
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
+                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
+                                                        "for this section " + last_epoch_filter + " )")
 
                     elif colddata:
 
@@ -1947,6 +2135,11 @@ def dynamic_section_fn(section):
                 print(result)
                 ref.write(result + "\n")
 
+            # In realtime, Store last epoch time for this section
+            if realtime:
+                with open(keyref, "wb") as f:
+                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+
             # Discard memory membuffer
             membuffer.close()
 
@@ -2010,6 +2203,41 @@ def solaris_wlm_section_fn(section):
 
     # Sequence to search for
     seq = str(section) + ',' + 'T'
+
+    # Store last epochtime if in real time mode
+    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+
+    if realtime:
+        if not os.path.exists(keyref):
+            if debug:
+                print ("DEBUG, no keyref file for this " + section  +
+                       " section (searched for " + keyref + "), no data or first execution")
+        else:
+            with open(keyref, "r") as f:
+                for line in f:
+                    myregex = 'last_epoch:\s(\d+)'
+                    myregex_match = re.search(myregex, line)
+
+                    # Standard header extraction
+                    if myregex_match:
+                        last_epoch_persection = myregex_match.group(1)
+
+                        if debug:
+                            print("DEBUG, Last known timestamp for " + section +
+                                  " section is " + last_epoch_persection)
+
+        # In realtime mode, in case no per section information is available, let's use global epoch time
+        try:
+          last_epoch_persection
+        except NameError:
+            if debug:
+                print ("DEBUG: no last epoch information were found for " + section
+                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+            last_epoch_filter = last_known_epochtime
+        else:
+            if debug:
+                print ("DEBUG: Using per section last epoch time for event filtering (no gaps in data should occur)")
+            last_epoch_filter = last_epoch_persection
 
     # counter
     count = 0
@@ -2132,7 +2360,7 @@ def solaris_wlm_section_fn(section):
 
                     if realtime:
 
-                        if ZZZZ_epochtime > last_known_epochtime:
+                        if ZZZZ_epochtime > last_epoch_filter:
 
                             # increment
                             count += 1
@@ -2164,6 +2392,12 @@ def solaris_wlm_section_fn(section):
 
                             # Write perf data
                             membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
+
+                        else:
+                            if debug:
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
+                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
+                                                        "for this section " + last_epoch_filter + " )")
 
                     elif colddata:
 
@@ -2238,6 +2472,11 @@ def solaris_wlm_section_fn(section):
                 print(result)
                 ref.write(result + "\n")
 
+            # In realtime, Store last epoch time for this section
+            if realtime:
+                with open(keyref, "wb") as f:
+                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+
             # Discard memory membuffer
             membuffer.close()
 
@@ -2247,7 +2486,6 @@ def solaris_wlm_section_fn(section):
             membuffer.close()
 
             # End for
-
 
 # Run
 if OStype in ("Solaris", "Unknown"):
