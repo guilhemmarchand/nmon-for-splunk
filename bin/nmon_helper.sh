@@ -31,8 +31,12 @@
 #										- hotfix for using the PA-nmon to generate Performance data in standalone indexers
 # 2015/07/29, Guilhem Marchand:
 #										- hotfix for AIX, non protected grep generates -p option to be duplicated and error message in splunkd
+# 2015/08/09, Guilhem Marchand: Manage gaps in data due to the time required for nmon to collect data when the current iterations ends:
+#										- Estimate time in epoch when the current iteration will end
+#										- Start a new nmon process 4 minutes before the current ends to let the new process time to start collecting
+#										- Duplicated events management is operated by nmon2csv converters
 
-# Version 1.3.08
+# Version 1.3.09
 
 # For AIX / Linux / Solaris
 
@@ -103,6 +107,11 @@ Linux_devices="1500"
 # by default, the nmon_helper.sh script will use any nmon binary found in PATH
 # Set to "1" to give the priority to embedded nmon binaries
 Linux_embedded_nmon_priority="0"
+
+# endtime_margin defines the time in seconds before a new nmon process will be started
+# in default configuration, a new process will be spawned 240 seconds before the current process ends
+# see nmon.conf (this value will be overwritten by nmon.conf)
+endtime_margin="240"
 
 # source default nmon.conf
 if [ -f $APP/default/nmon.conf ]; then
@@ -782,6 +791,21 @@ else
 	# PID file found
 
 	SAVED_PID=`cat ${PIDFILE} | awk '{print $1}'`
+	
+	# Initialize PIDAGE to 01 Jan 2000 00:00:00 GMT for later failure verification
+	EPOCHTEST="946684800"
+	PIDAGE=$EPOCHTEST
+
+	# Use perl to get PID file age in seconds (perl will be portable to every system)
+	perl -e "\$mtime=(stat(\"$PIDFILE\"))[9]; \$cur_time=time();  print \$cur_time - \$mtime;" >/tmp/nmon_helper.sh.tmp.$$	
+	
+	PIDAGE=`cat /tmp/nmon_helper.sh.tmp.$$`
+	rm /tmp/nmon_helper.sh.tmp.$$
+
+	# Estimate the end time of current Nmon binary less 4 minutes (enough time for new nmon process to start collecting)
+	# Use expr for portability with sh
+	endtime=`expr ${interval} \* ${snapshot}`
+	endtime=`expr ${endtime} - ${endtime_margin}`
 
 	case ${SAVED_PID} in
 	
@@ -854,8 +878,35 @@ else
 	case $istarted in
 	
 	"true")
-	
+
+		# If the current age of the Nmon process requires starting a new one to prevent data gaps between collections
+		# Note that the pidfile will be overwritten, for a few minutes 2 Nmon binaries are running in the same time
+		# Data duplication will be managed by nmon2csv files	
+		
+		# Prevent any failure in determining nmon process age
+		if [ $PIDAGE -gt $EPOCHTEST ]; then
+			echo "`date`, ${HOST} ERROR: Failed to determine age in seconds of current Nmon process, gaps may occur between Nmon collections"
+		
+		else		
+			case $PIDAGE in
+			
+			"")
+				echo "`date`, ${HOST} ERROR: Failed to determine age in seconds of current Nmon process, gaps may occur between Nmon collections"
+			;;
+			*)
+				if [ $PIDAGE -gt $endtime ]; then
+					echo "`date`, ${HOST} INFO: To prevent data gaps between 2 Nmon collections, a new process will be started, its PID will be available on next execution"
+					start_nmon
+					sleep 5 # Let nmon time to start
+					# Relevant for Solaris Only		
+					write_pid
+				fi
+			;;
+			esac
+		fi
+
 		# Process found	
+		echo "`date`, ${HOST} INFO: Nmon process is $PIDAGE sec old, a new process will be spawned when this value will be greater than estimated end in seconds ($endtime sec based on parameters)"
 		echo "`date`, ${HOST} INFO: found Nmon running with PID ${SAVED_PID}"
 		exit 0
 		;;
