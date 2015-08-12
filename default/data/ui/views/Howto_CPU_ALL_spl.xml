@@ -1,0 +1,217 @@
+<form stylesheet="howto.css,ui_simple.css" hideEdit="True">
+  <label>HOWTO CPU_ALL: Generate stats and charts with Splunk Processing Language (SPL)</label>
+  <description>This Howto will help you in generating your own reports, dashboards and alerts for Nmon Performance data using the native Splunk Processing Language (SPL)</description>
+
+  <row>
+    <panel>
+    
+      <html>
+
+      <div class="imgheader">
+        	<img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
+			<h2><a href="UI_data_dictionary?form.osfilter=AIX%3Dtrue&amp;form.osfilter=Linux%3Dtrue&amp;form.osfilter=Solaris%3Dtrue&amp;form.itemfilter=CPU%20USAGE%20STATISTICS" target="_blank">CPU Usage Statistics</a></h2>		
+		</div>
+      
+      <br />
+      <br />
+      
+      </html>
+      
+   </panel>
+  </row>
+  
+  <row>
+    <panel>
+    <title>Charting Statistics of Performance data:</title>      
+
+	   <html>
+
+		<div style="text-align: left;">
+		  <br />
+		  <img src="../../static/app/nmon/various/mini/minichart.png" alt="minichart"/>
+		  <br />
+		  <br />
+		</div>
+
+		<div>
+		  <h2>Average CPU Usage in Percentage over last 24 hours with a static span of 5 minutes, in a line chart by server names</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS cpu_PCT by hostname</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20span%3D5m%20avg(cpu_PCT)%20AS%20cpu_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+		<div>
+		  <h2>Average CPU Usage in Percentage over last 24 hours using the custom span macro, in a line chart by server names (auto span definition to best accurate value possible)</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart `inline_customspan` avg(cpu_PCT) AS cpu_PCT by hostname</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20`inline_customspan`%20avg(cpu_PCT)%20AS%20cpu_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>
+
+		<div>
+		  <h2>Average Sys / User / Wait /Idle CPU Usage in a 100% stack area chart of a specific server over last 24 hours with a static span of 5 minutes</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | timechart span=5m avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20timechart%20span%3D5m%20avg(Sys_PCT)%20AS%20Sys_PCT%2C%20avg(User_PCT)%20AS%20User_PCT%2C%20avg(Wait_PCT)%20AS%20Wait_PCT%2C%20avg(Idle_PCT)%20AS%20Idle_PCT&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.chart.stackMode=stacked100" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+		<div>
+		  <h2>Compare Average CPU usage of yesterday versus today in a line chart of a specific server with a static span of 5 minutes (time reference of yesterday)</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS usage_yesterday
+| appendcols [ search index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* earliest="@d" latest="+1d@d" | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS usage_today | fields - _time ]</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20span%3D5m%20avg(cpu_PCT)%20AS%20usage_yesterday%0A%7C%20appendcols%20%5B%20search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20earliest%3D&quot;%40d&quot;%20latest%3D&quot;%2B1d%40d&quot;%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20span%3D5m%20avg(cpu_PCT)%20AS%20usage_today%20%7C%20fields%20-%20_time%20%5D&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-1d%40d&amp;latest=%40d" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+
+
+
+
+
+    </html>
+    
+    
+    
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+    <title>Table Statistics of Performance data:</title>      
+
+	   <html>
+
+		<div style="text-align: left;">
+		  <br />
+		  <img src="../../static/app/nmon/various/mini/minitable.png" alt="minitable"/>
+		  <br />
+		  <br />
+		</div>
+
+		<div>
+		  <h2>Min / Average / Max CPU Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostnames</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) 
+| stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%0A%7C%20stats%20min(cpu_PCT)%20AS%20&quot;Min%20%25%20CPU%20usage&quot;%2C%20avg(cpu_PCT)%20AS%20&quot;Avg%20%25%20CPU%20usage&quot;%2C%20max(cpu_PCT)%20AS%20&quot;Max%20%25%20CPU%20usage&quot;%20by%20frameID%2Chostname%20%7C%20eval%20&quot;Avg%20%25%20CPU%20usage&quot;%3Dround(%27Avg%20%25%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+		<div>
+		  <h2>Min / Average / Max and Average sparkline of CPU Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostnames</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) 
+| stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%0A%7C%20stats%20min(cpu_PCT)%20AS%20&quot;Min%20%25%20CPU%20usage&quot;%2C%20avg(cpu_PCT)%20AS%20&quot;Avg%20%25%20CPU%20usage&quot;%2C%20max(cpu_PCT)%20AS%20&quot;Max%20%25%20CPU%20usage&quot;%2C%20sparkline(avg(cpu_PCT))%20As%20sparkline%20by%20frameID%2Chostname%20%7C%20eval%20&quot;Avg%20%25%20CPU%20usage&quot;%3Dround(%27Avg%20%25%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+		<div>
+		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Business days only (monday to friday, 24hrs / 24hrs) ordered and sorted by frame ID, hostnames</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
+| eval date_wday=lower(strftime('_time', %A)) | search (date_wday!="sunday" date_wday!="saturday") 
+| stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20%0A%7C%20stats%20min(cpu_PCT)%20AS%20&quot;Min%20%25%20CPU%20usage&quot;%2C%20avg(cpu_PCT)%20AS%20&quot;Avg%20%25%20CPU%20usage&quot;%2C%20max(cpu_PCT)%20AS%20&quot;Max%20%25%20CPU%20usage&quot;%20by%20frameID%2Chostname%20%7C%20eval%20&quot;Avg%20%25%20CPU%20usage&quot;%3Dround(%27Avg%20%25%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+		<div>
+		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) ordered and sorted by frame ID, hostnames</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
+| eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
+| search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
+| stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20stats%20min(cpu_PCT)%20AS%20&quot;Min%20%25%20CPU%20usage&quot;%2C%20avg(cpu_PCT)%20AS%20&quot;Avg%20%25%20CPU%20usage&quot;%2C%20max(cpu_PCT)%20AS%20&quot;Max%20%25%20CPU%20usage&quot;%20by%20frameID%2Chostname%20%7C%20eval%20&quot;Avg%20%25%20CPU%20usage&quot;%3Dround(%27Avg%20%25%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+		<div>
+		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for non Working hours Business days only (monday to friday, 19h to 08h) ordered and sorted by frame ID, hostnames</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL hostname=* | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
+| eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
+| search (local_time&gt;="1900" AND local_time&lt;="2359") OR (local_time&gt;="0000" AND local_time&lt;="0800") AND (date_wday!="sunday" date_wday!="saturday")
+| stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20hostname%3D*%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(local_time&gt;%3D&quot;1900&quot;%20AND%20local_time&lt;%3D&quot;2359&quot;)%20OR%20(local_time&gt;%3D&quot;0000&quot;%20AND%20local_time&lt;%3D&quot;0800&quot;)%20AND%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%0A%7C%20stats%20min(cpu_PCT)%20AS%20&quot;Min%20%25%20CPU%20usage&quot;%2C%20avg(cpu_PCT)%20AS%20&quot;Avg%20%25%20CPU%20usage&quot;%2C%20max(cpu_PCT)%20AS%20&quot;Max%20%25%20CPU%20usage&quot;%20by%20frameID%2Chostname%20%7C%20eval%20&quot;Avg%20%25%20CPU%20usage&quot;%3Dround(%27Avg%20%25%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>		
+
+
+     </html>
+
+    </panel>
+  </row>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</form>
