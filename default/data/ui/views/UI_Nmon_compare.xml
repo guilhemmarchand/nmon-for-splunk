@@ -132,11 +132,11 @@
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period1*
-| join hostname type=outer
+| append
 [ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$` 
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
-| fields hostname,usage_period2* ] 
+| fields hostname,usage_period2* ] | stats values(*) AS * by hostname 
 | `eval_compare` 
 | stats avg(usage_period1) As trend1, avg(usage_period2) As trend2 | eval trend1=round(trend1,2) | eval trend2=round(trend2,2) 
 | transpose | sort - column | fields row* | rename "row 1" As value</query>
@@ -158,11 +158,11 @@
 | `$TimeFilter$` 
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname 
 | fields hostname,usage_period1* 
-| join hostname type=outer
+| append
 [ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$` 
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
-| fields hostname,usage_period2* ] 
+| fields hostname,usage_period2* ] | stats values(*) AS * by hostname
 | `eval_compare`</query>
           <earliest>$TimeRange1.earliest$</earliest>
         	 <latest>$TimeRange1.latest$</latest>		  
