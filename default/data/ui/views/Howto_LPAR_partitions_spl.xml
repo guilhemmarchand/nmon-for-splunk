@@ -229,6 +229,29 @@
          <br />
 		</div>
 
+		<div style="text-align: left;">
+		  <img src="../../static/app/nmon/various/mini/minicolumn.png" alt="minicolumn"/>
+		  <br />
+		  <br />
+		</div>
+
+		<div>
+		  <h2>Column chart of TOP 10 average CPU Percentage Usage (Percentage evaluated over VP usage and capacity) over last 24 hours</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=LPAR frameID=$frameID$ hostname=$hostname$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
+| stats avg(vp_Pct_usage) AS vp_Pct_usage by hostname | sort - vp_Pct_usage | head 10
+| eval xlabel=""
+| chart useother=f limit=0 values(vp_Pct_usage) AS "Avg CPU %" by xlabel,hostname | rename xlabel AS "TOP 10 CPU % usage"</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DLPAR%20frameID%3D*%20hostname%3D*%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20stats%20avg(vp_Pct_usage)%20AS%20vp_Pct_usage%20by%20hostname%20%7C%20sort%20-%20vp_Pct_usage%20%7C%20head%2010%0A%7C%20eval%20xlabel%3D&quot;&quot;%0A%7C%20chart%20useother%3Df%20limit%3D0%20values(vp_Pct_usage)%20AS%20&quot;Avg%20CPU%20%25&quot;%20by%20xlabel%2Chostname%20%7C%20rename%20xlabel%20AS%20&quot;TOP%2010%20CPU%20%25%20usage&quot;&amp;earliest=-24h%40h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.axisY.maximumNumber=" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>
+
     </html>
     
     </panel>
@@ -367,18 +390,18 @@
 		<div>
 		  <h2>Use transaction to find servers having an average CPU usage higher than 90% for a minimal contiguous period of 5 minutes</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=LPAR frameID=$frameID$ hostname=$hostname$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
 | eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
-| eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
-| where cpu_PCT>90
-| transaction hostname cpu_PCT maxpause=5m | where duration&gt;300
-| fields _time,hostname,duration,cpu_PCT,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT | stats values(*) AS * by _time,hostname
+| where vp_Pct_usage>90
+| transaction hostname vp_Pct_usage maxpause=5m | where duration&gt;300
+| fields _time,frameID,hostname,duration,vp_Pct_usage,vp_usage,entitled,virtualCPUs | stats values(*) AS * by _time,hostname
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
-| fields _time,hostname,duration*,cpu_PCT,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT</pre>
+| fields _time,frameID,hostname,duration*,vp_Pct_usage,vp_usage,entitled,virtualCPUs</pre>
 		</div>		
             
 		<div>
 				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%0A%7C%20where%20cpu_PCT&gt;90%0A%7C%20transaction%20hostname%20cpu_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2Chostname%2Cduration%2Ccpu_PCT%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2Chostname%2Cduration*%2Ccpu_PCT%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DLPAR%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20where%20vp_Pct_usage&gt;90%0A%7C%20transaction%20hostname%20vp_Pct_usage%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
 				  </a>
 				</div>
          <br />
@@ -387,19 +410,20 @@
 		<div>
 		  <h2>Use transaction to find servers having an average CPU usage higher than 90% for a minimal contiguous period of 5 minutes, restricted to Open hours and Business days (monday to friday, 08h to 19h)</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=LPAR frameID=$frameID$ hostname=$hostname$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
 | eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
-| where cpu_PCT>90
-| transaction hostname cpu_PCT maxpause=5m | where duration&gt;300
-| fields _time,hostname,duration,cpu_PCT,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT | stats values(*) AS * by _time,hostname
+| where vp_Pct_usage>90
+| transaction hostname vp_Pct_usage maxpause=5m | where duration&gt;300
+| fields _time,frameID,hostname,duration,vp_Pct_usage,vp_usage,entitled,virtualCPUs | stats values(*) AS * by _time,hostname
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
-| fields _time,hostname,duration*,cpu_PCT,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT</pre>
+| fields _time,frameID,hostname,duration*,vp_Pct_usage,vp_usage,entitled,virtualCPUs</pre>
 		</div>		
             
 		<div>
 				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20cpu_PCT&gt;90%0A%7C%20transaction%20hostname%20cpu_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2Chostname%2Cduration%2Ccpu_PCT%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2Chostname%2Cduration*%2Ccpu_PCT%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h%40h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DLPAR%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20vp_Pct_usage&gt;90%0A%7C%20transaction%20hostname%20vp_Pct_usage%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h%40h&amp;latest=now" class="tryitbtn-blue">Open in search »
 				  </a>
 				</div>
          <br />
