@@ -1,0 +1,26 @@
+<panel>
+  <title>NET: single Inbound/Outbound Network traffic (KBps)</title>
+  <input type="text" token="frameID" searchWhenChanged="true">
+    <label>frameID:</label>
+    <default>*</default>
+    <prefix>frameID="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="hostname" searchWhenChanged="true">
+    <label>hostname:</label>
+    <default>*</default>
+    <prefix>hostname="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <single>
+    <search>
+      <query>index=nmon sourcetype=nmon_data type=NET $frameID$ $hostname$ device!=*lo*
+| eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
+| chart avg(value) AS value by traffic_type | eval value=round(value, 2) | eval value=traffic_type + " " + value + " KBps" | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value</query>
+      <earliest>rt-5m</earliest>
+      <latest>rt</latest>
+    </search>
+    <option name="afterLabel">KBps</option>
+    <option name="underLabel">NETWORK AVERAGE TRAFFIC</option>
+  </single>  
+</panel>

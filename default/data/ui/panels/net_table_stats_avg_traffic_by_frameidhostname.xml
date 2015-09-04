@@ -1,0 +1,35 @@
+<panel>
+  <title>NET: Table traffic by frameID,hostname</title>
+  <input type="text" token="frameID" searchWhenChanged="true">
+    <label>frameID:</label>
+    <default>*</default>
+    <prefix>frameID="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="hostname" searchWhenChanged="true">
+    <label>hostname:</label>
+    <default>*</default>
+    <prefix>hostname="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <table>
+    <search>
+      <query>index=nmon sourcetype=nmon_data type=NET $frameID$ $hostname$
+| stats min(value) AS "Min KBps Traffic", avg(value) AS "Avg KBps Traffic", max(value) AS "Max KBps Traffic", sparkline(avg(value)) As sparkline by frameID,hostname,device
+| eval "Avg KBps Traffic"=round('Avg KBps Traffic',2) | rename device AS interface</query>
+      <earliest>-24h</earliest>
+      <latest>now</latest>
+    </search>
+    <option name="wrap">true</option>
+    <option name="rowNumbers">false</option>
+    <option name="dataOverlayMode">none</option>
+    <option name="drilldown">cell</option>
+    <option name="count">20</option>
+    <format type="sparkline" field="sparkline">
+      <option name="lineColor">#5379af</option>
+      <option name="fillColor">#CCDDFF</option>
+      <option name="lineWidth">1</option>
+      <option name="height">25px</option>
+    </format>    
+  </table>
+</panel>
