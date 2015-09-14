@@ -55,73 +55,85 @@
 		</div>
 				
 		<div>
-		  <h2>Average CPU Usage in Percentage over last 24 hours with a static span of 5 minutes, in a line chart by server names</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS cpu_PCT by hostname</pre>
+		  <h2>By Server / Program Analysis: Core CPU usage of main processes (consuming more than 0.01 logical core on the host) in multi-series hosts represented by a stacked area chart</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=TOP frameID=* hostname=*guil* Command=*
+| bucket _time span=1m
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,frameID,hostname,Command,PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| where value&gt;0.01
+| bucket _time `inline_customspan`
+| stats max(value) As value by _time,hostname,Command
+| eval s1="value" | makemv s1  | mvexpand s1 | eval yval=case(s1=="value",value)
+| eval series=hostname+":"+Command | xyseries _time,series,yval | makecontinuous _time `inline_customspan`</pre>
 		</div>		
             
 		<div>
 				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20span%3D5m%20avg(cpu_PCT)%20AS%20cpu_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DTOP%20frameID%3D*%20hostname%3D*guil*%20Command%3D*%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20bucket%20_time%20%60inline_customspan%60%0A%7C%20stats%20max(value)%20As%20value%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20s1%3D&quot;value&quot;%20%7C%20makemv%20s1%20%20%7C%20mvexpand%20s1%20%7C%20eval%20yval%3Dcase(s1%3D%3D&quot;value&quot;%2Cvalue)%0A%7C%20eval%20series%3Dhostname%2B&quot;%3A&quot;%2BCommand%20%7C%20xyseries%20_time%2Cseries%2Cyval%20%7C%20makecontinuous%20_time%20%60inline_customspan%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage" class="tryitbtn-blue">Open in search »
 				  </a>
 				</div>
          <br />
 		</div>		
 
 		<div>
-		  <h2>Average CPU Usage in Percentage over last 24 hours using the custom span macro, in a line chart by server names (auto span definition to best accurate value possible)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart `inline_customspan` avg(cpu_PCT) AS cpu_PCT by hostname</pre>
+		  <h2>By Program Analysis: Aggregation of Core CPU usage of main processes (consuming more than 0.01 logical core on the host) by command invocation represented by a stacked area chart</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=TOP frameID=* hostname=*guil* Command=*
+| bucket _time span=1m
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,frameID,hostname,Command,PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| where value&gt;0.01
+| bucket _time `inline_customspan`
+| stats max(value) As value by _time,hostname,Command
+| stats sum(value) AS value by _time,Command
+| timechart `inline_customspan` useother=f max(value) AS value by Command</pre>
 		</div>		
             
 		<div>
 				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20`inline_customspan`%20avg(cpu_PCT)%20AS%20cpu_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DTOP%20frameID%3D*%20hostname%3D*guil*%20Command%3D*%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20bucket%20_time%20%60inline_customspan%60%0A%7C%20stats%20max(value)%20As%20value%20by%20_time%2Chostname%2CCommand%0A%7C%20stats%20sum(value)%20AS%20value%20by%20_time%2CCommand%0A%7C%20timechart%20%60inline_customspan%60%20useother%3Df%20max(value)%20AS%20value%20by%20Command&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage" class="tryitbtn-blue">Open in search »
 				  </a>
 				</div>
          <br />
-		</div>
+		</div>	
 
 		<div>
-		  <h2>Average Sys / User / Wait /Idle CPU Usage in a 100% stack area chart of a specific server over last 24 hours with a static span of 5 minutes</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | timechart span=5m avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT</pre>
+		  <h2>By Server / Program Analysis with limit serie of available core (will be agregated if multiple hosts are concerned by the search): Core CPU usage of main processes (consuming more than 0.01 logical core on the host) in multi-series hosts represented by a stacked area chart</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=TOP frameID=* hostname=*guil* Command=*
+| bucket _time span=1m
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,frameID,hostname,Command,PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| where value&gt;0.01
+| bucket _time `inline_customspan`
+| stats max(value) As value by _time,hostname,Command
+| stats sum(value) AS value by _time,Command
+| timechart `inline_customspan` useother=f max(value) AS value by Command
+| appendcols [ search index=nmon sourcetype=nmon_data type=TOP frameID=* hostname=*guil*
+| bucket _time span=1m
+| stats max(logical_cpus) AS logical_cpus by _time,hostname
+| stats sum(logical_cpus) AS logical_cpus by _time
+| timechart `inline_customspan` max(logical_cpus) AS logical_cpus ] | fields _time,*,logical_cpus</pre>
 		</div>		
             
 		<div>
 				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%20%7C%20timechart%20span%3D5m%20avg(Sys_PCT)%20AS%20Sys_PCT%2C%20avg(User_PCT)%20AS%20User_PCT%2C%20avg(Wait_PCT)%20AS%20Wait_PCT%2C%20avg(Idle_PCT)%20AS%20Idle_PCT&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.chart.stackMode=stacked100" class="tryitbtn-blue">Open in search »
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DTOP%20frameID%3D*%20hostname%3D*guil*%20Command%3D*%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20bucket%20_time%20%60inline_customspan%60%0A%7C%20stats%20max(value)%20As%20value%20by%20_time%2Chostname%2CCommand%0A%7C%20stats%20sum(value)%20AS%20value%20by%20_time%2CCommand%0A%7C%20timechart%20%60inline_customspan%60%20useother%3Df%20max(value)%20AS%20value%20by%20Command%0A%7C%20appendcols%20%5B%20search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DTOP%20frameID%3D*%20hostname%3D*guil*%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2Chostname%0A%7C%20stats%20sum(logical_cpus)%20AS%20logical_cpus%20by%20_time%0A%7C%20timechart%20%60inline_customspan%60%20max(logical_cpus)%20AS%20logical_cpus%20%5D%20%7C%20fields%20_time%2C*%2Clogical_cpus&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage&amp;display.visualizations.charting.chart.overlayFields=logical_cpus" class="tryitbtn-blue">Open in search »
 				  </a>
 				</div>
          <br />
 		</div>		
 
-		<div>
-		  <h2>Average CPU Usage in Percentage over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) with auto span (custom macro span definition) in a line chart by server names</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
-| eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
-| search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
-| timechart `inline_customspan` avg(cpu_PCT) AS cpu_PCT by hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20timechart%20%60inline_customspan%60%20avg(cpu_PCT)%20AS%20cpu_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
-				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Compare Average CPU usage of yesterday versus today in a line chart of a specific server with a static span of 5 minutes (time reference of yesterday)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS usage_yesterday
-| appendcols [ search index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ earliest="@d" latest="+1d@d" | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS usage_today | fields - _time ]</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20span%3D5m%20avg(cpu_PCT)%20AS%20usage_yesterday%0A%7C%20appendcols%20%5B%20search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%20earliest%3D&quot;%40d&quot;%20latest%3D&quot;%2B1d%40d&quot;%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20timechart%20span%3D5m%20avg(cpu_PCT)%20AS%20usage_today%20%7C%20fields%20-%20_time%20%5D&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-1d%40d&amp;latest=%40d" class="tryitbtn-blue">Open in search »
-				  </a>
-				</div>
-         <br />
-		</div>		
+
+
+
+
+
 
 		<div>
 		  <h2>Stats oriented Charts:</h2>
@@ -130,23 +142,55 @@
 
 		<div style="text-align: left;">
 		  <br />
-		  <img src="../../static/app/nmon/various/mini/minigauge.png" alt="minichart"/>
+		  <img src="../../static/app/nmon/various/mini/minisingle.png" alt="minichart"/>
 		  <br />
 		  <br />
 		</div>
 
 		<div>
-		  <h2>Gauge chart of average CPU Usage in Percentage over last 24 hours</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | stats avg(cpu_PCT) AS avg | eval avg=round(avg, 2)</pre>
+		  <h2>Single TOP Command Average Logical Core usage over last 24 hours</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=TOP frameID=* hostname=*guil* Command=*
+| bucket _time span=1m
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,frameID,hostname,Command,PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| where value&gt;0.01
+| stats avg(value) AS logical_core_usage by hostname,Command
+| stats (logical_core_usage) AS logical_core_usage by Command
+| sort - logical_core_usage | eval logical_core_usage=round(logical_core_usage, 3) | head 1 | eval stat=Command + " / " + logical_core_usage + " Avg CPU logical core usage" | fields stat</pre>
 		</div>		
             
 		<div>
 				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DCPU_ALL%20frameID%3D$frameID$%20hostname%3D$hostname$%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%7C%20stats%20avg(cpu_PCT)%20AS%20avg%20%7C%20eval%20avg%3Dround(avg%2C%202)&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations" class="tryitbtn-blue">Open in search »
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DTOP%20frameID%3D*%20hostname%3D*guil*%20Command%3D*%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20stats%20avg(value)%20AS%20logical_core_usage%20by%20hostname%2CCommand%0A%7C%20stats%20sum(logical_core_usage)%20AS%20logical_core_usage%20by%20Command%0A%7C%20sort%20-%20logical_core_usage%20%7C%20eval%20logical_core_usage%3Dround(logical_core_usage%2C%203)%20%7C%20head%201%20%7C%20eval%20stat%3DCommand%20%2B%20&quot;%20%2F%20&quot;%20%2B%20logical_core_usage%20%2B%20&quot;%20Avg%20CPU%20logical%20core%20usage&quot;%20%7C%20fields%20stat&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage&amp;display.visualizations.charting.chart.overlayFields=logical_cpus&amp;display.visualizations.type=singlevalue&amp;display.visualizations.singlevalue.underLabel=TOP%20COMMAND%20AVERAGE%20LOGICAL%20CORE%20CPU%20USAGE" class="tryitbtn-blue">Open in search »
 				  </a>
 				</div>
          <br />
 		</div>
+
+		<div>
+		  <h2>Single TOP Command Max Logical Core usage over last 24 hours</h2>			
+		  <pre>index=nmon sourcetype=nmon_data type=TOP frameID=* hostname=*guil* Command=*
+| bucket _time span=1m
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,frameID,hostname,Command,PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| where value>0.01
+| stats max(value) AS logical_core_usage by hostname,Command
+| stats sum(logical_core_usage) AS logical_core_usage by Command
+| sort - logical_core_usage | eval logical_core_usage=round(logical_core_usage, 3) | head 1 | eval stat=Command + " / " + logical_core_usage + " Max CPU logical core usage" | fields stat</pre>
+		</div>		
+            
+		<div>
+				<div class="cat_title">				
+				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DTOP%20frameID%3D*%20hostname%3D*guil*%20Command%3D*%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20stats%20max(value)%20AS%20logical_core_usage%20by%20hostname%2CCommand%0A%7C%20stats%20sum(logical_core_usage)%20AS%20logical_core_usage%20by%20Command%0A%7C%20sort%20-%20logical_core_usage%20%7C%20eval%20logical_core_usage%3Dround(logical_core_usage%2C%203)%20%7C%20head%201%20%7C%20eval%20stat%3DCommand%20%2B%20&quot;%20%2F%20&quot;%20%2B%20logical_core_usage%20%2B%20&quot;%20Max%20CPU%20logical%20core%20usage&quot;%20%7C%20fields%20stat&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage&amp;display.visualizations.charting.chart.overlayFields=logical_cpus&amp;display.visualizations.type=singlevalue&amp;display.visualizations.singlevalue.underLabel=TOP%20COMMAND%20MAX%20LOGICAL%20CORE%20CPU%20USAGE" class="tryitbtn-blue">Open in search »
+				  </a>
+				</div>
+         <br />
+		</div>
+
 
 		<div style="text-align: left;">
 		  <img src="../../static/app/nmon/various/mini/minicolumn.png" alt="minicolumn"/>
