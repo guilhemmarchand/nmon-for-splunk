@@ -4,7 +4,8 @@
 # Compatibility: Python 2x
 # Purpose - convert nmon files into csv data for Splunk Nmon App, see https://apps.splunk.com/app/1753
 # Author - Guilhem Marchand
-# Disclaimer: This script has been designed to be used by the Splunk Archive Processor in the context of the Nmon Splunk App, see above
+# Disclaimer: This script has been designed to be used by the Splunk Archive Processor in the context of the
+# Nmon Splunk App, see above
 # Date of first publication - July 2014
 
 # Licence:
@@ -26,43 +27,63 @@
 # Releases Notes:
 
 # - July 2014, V1.0.0: Guilhem Marchand, Initial version
-# - 08/04/2014, V1.0.1: Guilhem Marchand, Added the nmon2csv converter version in output processing, minor regex optimizations
+# - 08/04/2014, V1.0.1: Guilhem Marchand, Added the nmon2csv converter version in output processing,
+# minor regex optimizations
 # - 08/08/2014, V1.0.2: Guilhem Marchand, Code cleaning
-# - 08/10/2014, V1.0.3: Guilhem Marchand, Added Windows Compatibility, Added Guest OS and Python version in output processing
-# - 08/12/2014, V1.0.4: Guilhem Marchand, Added SNAPSHOTS and INTERVAL fields in csv creation to allow a more accurate autospan feature within Splunk
+# - 08/10/2014, V1.0.3: Guilhem Marchand, Added Windows Compatibility, Added Guest OS and Python version in
+# output processing
+# - 08/12/2014, V1.0.4: Guilhem Marchand, Added SNAPSHOTS and INTERVAL fields in csv creation to allow a more accurate
+# autospan feature within Splunk
 # - 08/14/2014, V1.0.5: Guilhem Marchand:
-# - Changed Open file mode for writing from text to binary mode to avoid blank line creation under Windows OS (does not affect other OS)
-# - Added a supplementary data sanity check for static sections to avoid creating csv fields with extra fields if data is inconsistent (more fields in data than header)
-# - Added NFS Statistics extraction if any: Sections NFSSVRV2 / NFSSVRV3 / NFSSVRV4 for NFS server, NFSCLIV2 / NFSCLIV3 / NFSCLIV4 for NFS client
+# - Changed Open file mode for writing from text to binary mode to avoid blank line creation under Windows OS
+# (does not affect other OS)
+# - Added a supplementary data sanity check for static sections to avoid creating csv fields with extra fields if data
+# is inconsistent (more fields in data than header)
+# - Added NFS Statistics extraction if any: Sections NFSSVRV2 / NFSSVRV3 / NFSSVRV4 for NFS server,
+# NFSCLIV2 / NFSCLIV3 / NFSCLIV4 for NFS client
 # - Added UARG data extraction if any
 # - 08/26/2014, V1.0.6: Guilhem Marchand:
 #                       - UARG section correction for AIX systems
-#                       - Inconsistency data prevention for static and dynamic sections by comparing headers fields vs data fields
-#                       - Logging improvements (some functional errors we logged in Splunk logged instead of nmon_processing, other messages improvements)
+#                       - Inconsistency data prevention for static and dynamic sections by comparing headers fields vs
+# data fields
+#                       - Logging improvements (some functional errors we logged in Splunk logged instead of
+# nmon_processing, other messages improvements)
 # - 09/04/2014, V1.0.7: Guilhem Marchand:
 #								- Re-indent according to PEP-8 compliance, various PEP-8 compliance corrections
 #                               - Added the Parameters section to facilitate customization of what is being extracted
-# - 09/17/2014, V1.0.8: Guilhem Marchand: Improved compliance with Splunk Python events logging, portable shebang correction
-# - 09/27/2014, V1.0.9: Guilhem Marchand: Added the file size in bytes to the Nmon ID and csv filenames to prevent log detected as truncated
+# - 09/17/2014, V1.0.8: Guilhem Marchand: Improved compliance with Splunk Python events logging, portable
+# shebang correction
+# - 09/27/2014, V1.0.9: Guilhem Marchand: Added the file size in bytes to the Nmon ID and csv filename to prevent log
+# detected as truncated
 # - 10/16/2014, V1.0.10: Guilhem Marchand:
-#                               - Corrected bad header identification than could happen due to unexpected blank space before comma in header data
-#                               - Corrected % string replacement that could lead to unwanted replacement when part of a word at end of header line (ex: LPAR section when no pool)
+#                               - Corrected bad header identification than could happen due to unexpected blank space
+# before comma in header data
+#                               - Corrected % string replacement that could lead to unwanted replacement when part of
+# a word at end of header line (ex: LPAR section when no pool)
 # - 10/29/2014, V1.0.11: Guilhem Marchand:
-#                               - Fix compatibility issue with old Nmon Linux release (example with 11f), sometimes the csv header will contain the first timestamp reference (T0001)
-#                               which was leading to header identification failure, applicant only for static standard sections (VM,CPu_ALL...)
+#                               - Fix compatibility issue with old Nmon Linux release (example with 11f), sometimes
+# the csv header will contain the first timestamp reference (T0001)
+#                               which was leading to header identification failure, applicant only for static standard
+# sections (VM,CPu_ALL...)
 #                               - Code cleaning: Removing redundant escaped characters
 # - 12/26/2014, V1.1.0: Guilhem Marchand: Major release
-#                               - This is a major release of the nmon2csv converter that introduces real time capacity, the converter will now identify if it is
+#                               - This is a major release of the nmon2csv converter that introduces real time capacity,
+# the converter will now identify if it is
 #											dealing with real time or coldata
-#										  - If real time is detected, only newer events that the last run will be proceeded such that the converter can manage a running nmon file all along its runtime
-# - 02/08/2015, V1.1.1: Guilhem Marchand: Arguments options to overwrite mode detection, DATA and CONFIG DIR, correction of sections data availability detection (count => 1)
+#										  - If real time is detected, only newer events that the last run will be
+# proceeded such that the converter can manage a running nmon file all along its runtime
+# - 02/08/2015, V1.1.1: Guilhem Marchand: Arguments options to overwrite mode detection, DATA and CONFIG DIR, correction
+#  of sections data availability detection (count => 1)
 # - 02/10/2015, V1.1.2: Guilhem Marchand: Hotfix for Windows, string to epoch time conversion (%s) failing issue
 # - 11/10/2015, V1.1.3: Guilhem Marchand: Migration of var nmon directory
 # - 04/17/2015, V1.1.4: Guilhem Marchand:
-#                                         - Number of maximum devices taken in charge increased to 3000 devices (20 x 150 devices per section)
-#                                         - Prevents in Real time mode a failing configuration extraction if the BBB configuration occurs lately, especially for large systems
+#                                         - Number of maximum devices taken in charge increased to 3000 devices
+# (20 x 150 devices per section)
+#                                         - Prevents in Real time mode a failing configuration extraction if the
+# BBB configuration occurs lately, especially for large systems
 # - 04/23/2015, V1.1.5: Guilhem Marchand:
-#                                         - Code improvement, Analyse type of Operating System and prevent from search for not applicable sections
+#                                         - Code improvement, Analyse type of Operating System and prevent from search
+# for not applicable sections
 #                                         - Solaris update, Added Solaris specific sections, specially for Zone analysis
 # - 05/01/2015, V1.1.6: Guilhem Marchand:
 #                                         - Added support for FC* sections (Fiber Channel)
@@ -71,14 +92,25 @@
 # - 05/21/2015, V1.1.8: Guilhem Marchand:
 #                                         - Windows hotfix: corrected broken directory creation
 # - 07/27/2015, V1.1.9: Guilhem Marchand:
-#                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
+#                                         - hotfix for using the PA-nmon to generate Performance data in
+# standalone indexers
 # - 08/05/2015, V1.1.10: Guilhem Marchand:
-#                                         - hotfix: In Splunk 6.2.4, instance crash may happen if we delete an empty file while Splunk is watching for it
+#                                         - hotfix: In Splunk 6.2.4, instance crash may happen if we delete an empty
+# file while Splunk is watching for it
 #                                           The script uses now an intermediate directory for Perf csv data creation
 # - 08/05/2015, V1.1.11: Guilhem Marchand:
-#                                         - hotfix for real time data management: Use epoch time identification per section instead of globally yo solve gaps in data
+#                                         - hotfix for real time data management: Use epoch time identification
+# per section instead of globally yo solve gaps in data
 #										  - Corrected and improved optional arguments and help script
 #										  - Added support for DISKREADSERV and DISKWRITESERV
+# - 09/12/2015, V1.1.12: Guilhem Marchand:
+#                                         - Per section status are now stored per hostname, section, this allows
+# managing realtime data from central shares (eg. Nmon data stored in a central place and periodically updated by a
+# third party software such as rsync
+#                                         - Introduced the use of Multi Processing capacities to improve time required
+# to process large volume of Nmon data from central shares
+#										  - Manage ref, config id and per section status files per host to allow
+# managing hot data from central shares
 
 # Load libs
 
@@ -95,22 +127,25 @@ import cStringIO
 import platform
 import optparse
 import glob
+from multiprocessing.pool import Pool
 
 # Converter version
-nmon2csv_version = '1.1.11'
+nmon2csv_version = '1.1.12'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
-# - When we want messages to be indexed within Splunk nmon_processing sourcetype, display the message in stdout (splunk won't index logging messages)
+# - When we want messages to be indexed within Splunk nmon_processing sourcetype, display the message
+# in stdout. (splunk won't index logging messages)
 # Typically, functional errors will be displayed in stdout while technical failure will be logged
 
 #################################################
-##      Parameters
+#      Parameters
 #################################################
 
 # Customizations goes here:
 
-# Sections of Performance Monitors with standard dynamic header but no "device" notion that would require the data to be transposed
+# Sections of Performance Monitors with standard dynamic header but no "device" notion that would require the data
+# to be transposed.
 # You can add or remove any section depending on your needs
 static_section = ["CPU_ALL", "FILE", "MEM", "PAGE", "MEMNEW", "MEMUSE", "PROC", "VM", "NFSSVRV2",
                   "NFSSVRV3", "NFSSVRV4", "NFSCLIV2", "NFSCLIV3", "NFSCLIV4"]
@@ -125,7 +160,8 @@ AIX_static_section = ["LPAR"]
 # It has a specific structure and requires specific treatment
 top_section = ["TOP"]
 
-# This is the UARG section which contains full command line arguments with some other information such as PID, user, group and so on
+# This is the UARG section which contains full command line arguments with some other information such as PID, user,
+# group and so on.
 # It has a specific structure and requires specific treatment
 uarg_section = ["UARG"]
 
@@ -155,7 +191,7 @@ solaris_dynamic_various = ["DISKSVCTM", "DISKWAITTM"]
 AIX_dynamic_various = ["SEA", "SEAPACKET", "SEACHPHY"]
 
 #################################################
-##      Variables
+#      Variables
 #################################################
 
 # Set logging format
@@ -173,13 +209,15 @@ colddata = False
 # Starting time of process
 start_time = time.time()
 
-# Verify SPLUNK_HOME environment variable is available, the script is expected to be launched by Splunk which will set this
+# Verify SPLUNK_HOME environment variable is available, the script is expected to be launched by Splunk
+# which will set this.
 # for debugging or manual run, please set this variable manually
 try:
     os.environ["SPLUNK_HOME"]
 except KeyError:
     logging.error(
-        'The environment variable SPLUNK_HOME could not be verified, if you want to run this script manually you need to export it before processing')
+        'The environment variable SPLUNK_HOME could not be verified, if you want to run this script manually you need'
+        ' to export it before processing')
     sys.exit(1)
 
 # Guest Operation System type
@@ -257,8 +295,8 @@ if not os.path.exists(APP_MAINVAR):
 if not os.path.exists(APP_VAR):
     os.mkdir(APP_VAR)
 
-# ID reference file, will be used to temporarily store the last execution result for a given nmon file, and prevent Splunk from
-# generating duplicates by relaunching the conversion process
+# ID reference file, will be used to temporarily store the last execution result for a given nmon file,
+# and prevent Splunk from generating duplicates by relaunching the conversion process
 # Splunk when using a custom archive mode, launches twice the custom script
 
 # Supplementary note: Since V1.1.0, the ID_REF is overwritten if running real time mode
@@ -316,18 +354,22 @@ SNAPSHOTS = "-1"
 sanity_check = "-1"
 
 #################################################
-##      Arguments
+#      Arguments
 #################################################
 
 parser = optparse.OptionParser(usage='usage: %prog [options]', version='%prog '+nmon2csv_version)
 
 parser.set_defaults(mode='auto', datadir=DATA_DIR, configdir=CONFIG_DIR, dumpargs=False)
 
-parser.add_option('-d', '--datadir', action='store', type='string', dest='datadir', help='sets the output directory for data CSV files (Default: %default)')
-parser.add_option('-c', '--configdir', action='store', type='string', dest='configdir', help='sets the output directory for config CSV files (Default: %default)')
+parser.add_option('-d', '--datadir', action='store', type='string', dest='datadir',
+                  help='sets the output directory for data CSV files (Default: %default)')
+parser.add_option('-j', '--jobs', action='store', type='int', dest='jobs',
+                  help='sets the number of multi concurrent process to run (Default: 1)')
 opmodes = ['auto', 'realtime', 'colddata']
-parser.add_option('-m', '--mode', action='store', type='choice', dest='mode', choices=opmodes, help='sets the operation mode (Default: %default); supported modes: ' + ', '.join(opmodes))
-parser.add_option('--dumpargs', action='store_true', dest='dumpargs', help='only dump the passed arguments and exit (for debugging purposes only)')
+parser.add_option('-m', '--mode', action='store', type='choice', dest='mode', choices=opmodes,
+                  help='sets the operation mode (Default: %default); supported modes: ' + ', '.join(opmodes))
+parser.add_option('--dumpargs', action='store_true', dest='dumpargs',
+                  help='only dump the passed arguments and exit (for debugging purposes only)')
 parser.add_option('--debug', action='store_true', dest='debug', help='Activate debug for testing purposes')
 
 (options, args) = parser.parse_args()
@@ -337,10 +379,17 @@ if options.dumpargs:
     print("args: ", args)
     sys.exit(0)
 
+# Set debug mode
 if options.debug:
     debug = True
 else:
     debug = False
+
+# Set mutli processing number of jobs
+if not options.jobs:
+    jobs = 1
+else:
+    jobs = options.jobs
 
 DATA_DIR = options.datadir
 CONFIG_DIR = options.configdir
@@ -367,10 +416,12 @@ if not os.path.exists(CONFIG_DIR):
         sys.exit(1)
 
 #################################################
-##      Functions
+#      Functions
 #################################################
 
 # Return current time stamp in Nmon fashion
+
+
 def currenttime():
     now = time.strftime("%d-%m-%Y %H:%M:%S")
 
@@ -444,7 +495,7 @@ def numbertomonth(month):
     return month
 
 ####################################################################
-#############           Main Program
+#           Main Program
 ####################################################################
 
 #################################
@@ -560,7 +611,8 @@ for line in data:
         SNAPSHOTS = snapshots.group(3)
         print("SNAPSHOTS:", SNAPSHOTS)
 
-    # Set logical_cpus (Note: AIX systems for example will have values behind AAA,cpus - should use the second by default if it exists)
+    # Set logical_cpus (Note: AIX systems for example will have values behind AAA,cpus - should use the second
+    # by default if it exists)
     LOGICAL_CPUS = re.match(r'^(AAA),(cpus),(.+),(.+)\n', line)
     if LOGICAL_CPUS:
         logical_cpus = LOGICAL_CPUS.group(4)
@@ -641,9 +693,12 @@ for line in data:
 
     ZZZZ_truncated = re.match(r'.+ZZZZ,', line)
     if ZZZZ_truncated:
-        # We do not use logging to be able to access this messages within Splunk (Splunk won't index error logging messages)
+        # We do not use logging to be able to access this messages within Splunk (Splunk won't index error
+        #  logging messages)
 
-        msg = 'ERROR: hostname: ' + HOSTNAME + ' Detected Bad Nmon structure, found ZZZZ lines truncated! (ZZZZ lines contains the event timestamp and should always begin the line)'
+        msg = 'ERROR: hostname: ' + HOSTNAME + ' Detected Bad Nmon structure, found ZZZZ lines truncated! ' \
+                                               '(ZZZZ lines contains the event timestamp and should always ' \
+                                               'begin the line)'
         print(msg)
         msg = 'ERROR: hostname: ' + HOSTNAME + ' Ignoring nmon data'
         print(msg)
@@ -674,13 +729,37 @@ for line in data:
 
 # End for
 
+################################
+# Data status store #
+################################
+
+# Various status are stored in different files
+# This includes the id check file, the config check file and status per section containing last epochtime proceeded
+# These items will be stored in a per host dedicated directory
+
+# create a directory under APP_VAR
+# This directory will used to store per section last epochtime status
+if is_windows:
+    HOSTNAME_VAR = APP_VAR + '\\' + HOSTNAME + '_' + SN
+else:
+    HOSTNAME_VAR = APP_VAR + '/' + HOSTNAME + '_' + SN
+
+if not os.path.isdir(HOSTNAME_VAR):
+    try:
+        os.mkdir(HOSTNAME_VAR)
+    except Exception, e:
+        msg = 'Error encountered during directory creation has failed due to:'
+        msg = (msg, '%s' % e.__class__)
+        logging.error(msg)
+
 ###############
 # ID Check #
 ###############
 
 # This section prevents Splunk from generating duplicated data for the same Nmon file
 # While using the archive mode, Splunk may opens twice the same file sequentially
-# If the Nmon file id is already present in our reference file, then we have already proceeded this Nmon and nothing has to be done
+# If the Nmon file id is already present in our reference file, then we have already proceeded this Nmon and
+# nothing has to be done
 # Last execution result will be extracted from it to stdout
 
 # Set default value for the last known epochtime
@@ -792,14 +871,23 @@ else:
 if realtime:
     # Override ID_REF & CONFIG_REF
     if is_windows:
-        ID_REF = APP_VAR + '\\id_reference_realtime.txt'
-        CONFIG_REF = APP_VAR + '\\config_reference_realtime.txt'
+        ID_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.id_reference_realtime.txt'
+        CONFIG_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.config_reference_realtime.txt'
     else:
-        ID_REF = APP_VAR + '/id_reference_realtime.txt'
-        CONFIG_REF = APP_VAR + '/config_reference_realtime.txt'
+        ID_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.id_reference_realtime.txt'
+        CONFIG_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.config_reference_realtime.txt'
+else:
+    # Override ID_REF & CONFIG_REF
+    if is_windows:
+        ID_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.id_reference.txt'
+        CONFIG_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.config_reference.txt'
+    else:
+        ID_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.id_reference.txt'
+        CONFIG_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.config_reference.txt'
 
 # NMON file id (concatenation of ids)
-idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + str(starting_epochtime) + ',' + str(ending_epochtime)
+idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + str(starting_epochtime) + ',' +\
+         str(ending_epochtime)
 
 # Partial idnmon that won't contain ending_epochtime for compare operation, to used for cold data
 partial_idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + str(starting_epochtime)
@@ -892,14 +980,16 @@ if last_known_epochtime == 0:
 # Write CONFIG csv #
 ####################
 
-# Extraction of the AAA and BBB sections with a supplementary header to allow Splunk identifying the host and timestamp as a multi-lines event
+# Extraction of the AAA and BBB sections with a supplementary header to allow Splunk identifying the host and
+# timestamp as a multi-lines event
 # In any case, the Configuration extraction will not be executed more than once per hour
 # In the case of Real Time data, the extraction will only be achieved once per Nmon file
 
 # Update 04/17/2015: In real time mode with very large system, the performance collect may starts before the
 # configuration ends (eg. an AAA section, followed by Perf metrics and later the BBB section)
 # This would implies partial configuration extraction to be proceeded
-# The script now verifies that the BBB section has been successfully extracted before setting the status to do not extract
+# The script now verifies that the BBB section has been successfully extracted before setting the status to
+# do not extract
 
 # Set section
 section = "CONFIG"
@@ -912,7 +1002,7 @@ config_output = CONFIG_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '
 # 0 --> Extract configuration
 # 1 --> Don't Extract configuration
 # default is extract
-config_run=0
+config_run = 0
 
 # Search in ID_REF for a last matching execution
 if os.path.isfile(CONFIG_REF):
@@ -935,15 +1025,15 @@ if os.path.isfile(CONFIG_REF):
 
                         # Only set the status to do not extract is the BBB_FLAG is not present
                         if not os.path.isfile(BBB_FLAG):
-                            config_run=1
+                            config_run = 1
                         else:
-                            config_run=0
+                            config_run = 0
 
                     elif time_delta > 3600:
 
-                        config_run=0
+                        config_run = 0
 
-if config_run==0:
+if config_run == 0:
 
     if realtime:
 
@@ -957,7 +1047,7 @@ if config_run==0:
             ref.write(msg + "\n")
 
             # Initialize BBB_count
-            BBB_count=0
+            BBB_count = 0
 
             # Open config output for writing
             with open(config_output, "wb") as config:
@@ -1043,9 +1133,10 @@ if config_run==0:
             with open(CONFIG_REF, "wb") as f:
                 f.write(HOSTNAME + ": " + str(now_epoch) + "\n")
 
-elif config_run==1:
+elif config_run == 1:
     # Show number of lines extracted
-    result = "CONFIG section: will not be extracted (time delta of " + str(time_delta) + " seconds is inferior to 1 hour)"
+    result = "CONFIG section: will not be extracted (time delta of " + str(time_delta) +\
+             " seconds is inferior to 1 hour)"
     print(result)
     ref.write(result + '\n')
 
@@ -1054,22 +1145,24 @@ elif config_run==1:
 ##########################
 
 ###################
-# Static Sections : Header is dynamic but no devices context (drives, interfaces...) and there is no need to transpose the data
+# Static Sections : Header is dynamic but no devices context (drives, interfaces...) and there is
+# no need to transpose the data
 ###################
+
 
 def standard_section_fn(section):
 
     # Set output file
-    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second +\
+                         '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
     # Store last epochtime if in real time mode
-    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+    keyref = HOSTNAME_VAR + '/' + HOSTNAME + '.' + section + '_lastepoch.txt'
 
     if realtime:
         if not os.path.exists(keyref):
             if debug:
-                print ("DEBUG, no keyref file for this " + section  +
+                print ("DEBUG, no keyref file for this " + section +
                        " section (searched for " + keyref + "), no data or first execution")
         else:
             with open(keyref, "r") as f:
@@ -1087,11 +1180,11 @@ def standard_section_fn(section):
 
         # In realtime mode, in case no per section information is available, let's use global epoch time
         try:
-          last_epoch_persection
+            last_epoch_persection
         except NameError:
             if debug:
-                print ("DEBUG: no last epoch information were found for " + section
-                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+                print ("DEBUG: no last epoch information were found for " + section +
+                       " , using global last epoch time (gaps in data may occur if not the first time we run)")
             last_epoch_filter = last_known_epochtime
         else:
             if debug:
@@ -1162,7 +1255,8 @@ def standard_section_fn(section):
                             count += 1
 
                             # Write header
-                            final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'
+                            final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'ZZZZ' + ',' +\
+                                           'interval' + ',' + 'snapshots' + ',' + header + '\n'
 
                             # Number of separators in final header
                             num_cols_header = final_header.count(',')
@@ -1170,8 +1264,8 @@ def standard_section_fn(section):
                             # Write header
                             currsection.write(final_header)
 
-                    # Old Nmon version sometimes incorporates a Txxxx reference in the header, this is unclean but we want to try
-                    # getting the header anyway
+                    # Old Nmon version sometimes incorporates a Txxxx reference in the header, this is unclean
+                    # but we want to try getting the header anyway
 
                     elif not fullheader_match:
                         # Assume the header may start with Txxx, then 1 non alpha char
@@ -1196,7 +1290,8 @@ def standard_section_fn(section):
                                 count += 1
 
                                 # Write header
-                                final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'
+                                final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'ZZZZ' +\
+                                               ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'
 
                                 # Number of separators in final header
                                 num_cols_header = final_header.count(',')
@@ -1227,7 +1322,8 @@ def standard_section_fn(section):
                         if is_windows:
                             ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                         else:
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
+                                .strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -1245,7 +1341,8 @@ def standard_section_fn(section):
                             if is_windows:
                                 ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                             else:
-                                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
+                                    .strftime('%s')
 
                     # Extract Data
                     myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -1261,12 +1358,17 @@ def standard_section_fn(section):
                                 count += 1
 
                                 # final_perfdata
-                                final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                                final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' +\
+                                                 INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
 
-                                # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                                # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                                # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                                # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                                # Analyse the first line of data: Compare number of fields in data with number of fields
+                                # in header
+                                # If the number of fields is higher than header, we assume this section is not
+                                # consistent and will be entirely dropped
+                                # This happens in rare times (mainly with old buggy nmon version) that the header is bad
+                                # formatted (for example missing comma between fields identification)
+                                # For performance purposes, we will test this only with first line of data and assume
+                                # the data sanity based on this result
                                 if count == 2:
 
                                     # Number of separators in final header
@@ -1274,9 +1376,11 @@ def standard_section_fn(section):
 
                                     if num_cols_perfdata > num_cols_header:
 
-                                        msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                        msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section +\
+                                              ' section data is not consistent: ' + str(num_cols_perfdata) +\
                                               ' fields in data, ' + str(num_cols_header) \
-                                              + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                              + ' fields in header, extra fields detected (more fields in data ' \
+                                                'than header), dropping this section to prevent data inconsistency'
                                         print(msg)
                                         ref.write(msg + "\n")
 
@@ -1292,9 +1396,9 @@ def standard_section_fn(section):
                                 currsection.write(final_perfdata)
                             else:
                                 if debug:
-                                    print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
-                                    " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
-                                                            "for this section " + last_epoch_filter + " )")
+                                    print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp +
+                                    " ( " + ZZZZ_epochtime + " is lower than last known epoch time for this section " +
+                                           last_epoch_filter + " )")
 
                         elif colddata:
 
@@ -1302,12 +1406,17 @@ def standard_section_fn(section):
                             count += 1
 
                             # final_perfdata
-                            final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                            final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' +\
+                                             INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
 
-                            # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                            # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                            # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                            # Analyse the first line of data: Compare number of fields in data with number of fields
+                            # in header
+                            # If the number of fields is higher than header, we assume this section is not consistent
+                            # and will be entirely dropped
+                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad
+                            # formatted (for example missing comma between fields identification)
+                            # For performance purposes, we will test this only with first line of data and assume the
+                            # data sanity based on this result
                             if count == 2:
 
                                 # Number of separators in final header
@@ -1315,9 +1424,11 @@ def standard_section_fn(section):
 
                                 if num_cols_perfdata > num_cols_header:
 
-                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section +\
+                                          ' section data is not consistent: ' + str(num_cols_perfdata) +\
                                           ' fields in data, ' + str(num_cols_header) \
-                                          + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                          + ' fields in header, extra fields detected (more fields in data ' \
+                                            'than header), dropping this section to prevent data inconsistency'
                                     print(msg)
                                     ref.write(msg + "\n")
 
@@ -1351,43 +1462,54 @@ def standard_section_fn(section):
         # In realtime, Store last epoch time for this section
         if realtime:
             with open(keyref, "wb") as f:
-                f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+                f.write("last_epoch: " + ZZZZ_epochtime + "\n")
 
 # End for
 
-
 # These are standard static sections common for all OS
-for section in static_section:
-    standard_section_fn(section)
+#for section in static_section:
+
+if __name__ == '__main__':
+    p = Pool(int(jobs))
+    p.map(standard_section_fn, static_section)
+    p.close()
+    p.join()
 
 # These are AIX specific static sections, search for this only if Nmon file comes from AIX, or if the OStype
 # couldn't be identified
 if OStype in ("AIX", "Unknown"):
-    for section in AIX_static_section:
-        standard_section_fn(section)
+    if __name__ == '__main__':
+        p = Pool(int(jobs))
+        p.map(standard_section_fn, AIX_static_section)
+        p.close()
+        p.join()
 
 # Solaris specific
 if OStype in ("Solaris", "Unknown"):
-    for section in Solaris_static_section:
-        standard_section_fn(section)
+    if __name__ == '__main__':
+        p = Pool(int(jobs))
+        p.map(standard_section_fn, Solaris_static_section)
+        p.close()
+        p.join()
 
 ###################
 # TOP section: has a specific structure with uncommon fields, needs to be treated separately
 ###################
 
+
 def top_section_fn(section):
 
     # Set output file
-    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second +\
+                         '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
     # Store last epochtime if in real time mode
-    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+    keyref = HOSTNAME_VAR + '/' + HOSTNAME + '.' + section + '_lastepoch.txt'
 
     if realtime:
         if not os.path.exists(keyref):
             if debug:
-                print ("DEBUG, no keyref file for this " + section  +
+                print ("DEBUG, no keyref file for this " + section +
                        " section (searched for " + keyref + "), no data or first execution")
         else:
             with open(keyref, "r") as f:
@@ -1405,11 +1527,11 @@ def top_section_fn(section):
 
         # In realtime mode, in case no per section information is available, let's use global epoch time
         try:
-          last_epoch_persection
+            last_epoch_persection
         except NameError:
             if debug:
-                print ("DEBUG: no last epoch information were found for " + section
-                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+                print ("DEBUG: no last epoch information were found for " + section +
+                       " , using global last epoch time (gaps in data may occur if not the first time we run)")
             last_epoch_filter = last_known_epochtime
         else:
             if debug:
@@ -1476,7 +1598,9 @@ def top_section_fn(section):
 
                             # Write header
                             currsection.write(
-                                'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'),
+                                'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' +
+                                ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' +
+                                ',' + header + '\n'),
 
                     # Extract timestamp
 
@@ -1500,7 +1624,8 @@ def top_section_fn(section):
                         if is_windows:
                             ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                         else:
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
+                                .strftime('%s')
 
                     # For Nmon V9 and less
 
@@ -1518,7 +1643,8 @@ def top_section_fn(section):
                             if is_windows:
                                 ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                             else:
-                                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                                ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
+                                    .strftime('%s')
 
                 # Extract Data
                 perfdata_match = re.match('^TOP,([0-9]+),(T\d+),(.+)\n', line)
@@ -1536,12 +1662,13 @@ def top_section_fn(section):
 
                             # Write perf data
                             currsection.write(
-                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
+                                ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
                         else:
                             if debug:
-                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
-                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
-                                                        "for this section " + last_epoch_filter + " )")
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp +
+                                       " ( " + ZZZZ_epochtime + " is lower than last known epoch time for this"
+                                                                " section " + last_epoch_filter + " )")
 
                     elif colddata:
 
@@ -1550,7 +1677,8 @@ def top_section_fn(section):
 
                         # Write perf data
                         currsection.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
+                            ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
@@ -1566,7 +1694,7 @@ def top_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
 
 # End for
 
@@ -1584,19 +1712,20 @@ for section in top_section:
 
 # UARG is applicable only for AIX and Linux hosts
 
+
 def uarg_section_fn(section):
 
     # Set output file
-    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second +\
+                         '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
     # Store last epochtime if in real time mode
-    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+    keyref = HOSTNAME_VAR + '/' + HOSTNAME + '.' + section + '_lastepoch.txt'
 
     if realtime:
         if not os.path.exists(keyref):
             if debug:
-                print ("DEBUG, no keyref file for this " + section  +
+                print ("DEBUG, no keyref file for this " + section +
                        " section (searched for " + keyref + "), no data or first execution")
         else:
             with open(keyref, "r") as f:
@@ -1614,11 +1743,11 @@ def uarg_section_fn(section):
 
         # In realtime mode, in case no per section information is available, let's use global epoch time
         try:
-          last_epoch_persection
+            last_epoch_persection
         except NameError:
             if debug:
-                print ("DEBUG: no last epoch information were found for " + section
-                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+                print ("DEBUG: no last epoch information were found for " + section +
+                       " , using global last epoch time (gaps in data may occur if not the first time we run)")
             last_epoch_filter = last_known_epochtime
         else:
             if debug:
@@ -1693,7 +1822,8 @@ def uarg_section_fn(section):
 
                         # Write header
                         membuffer.write(
-                            'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'),
+                            'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' + ',' +
+                            'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'),
 
                 # Extract timestamp
 
@@ -1736,9 +1866,8 @@ def uarg_section_fn(section):
                         if is_windows:
                             ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                         else:
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
-
-
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
+                                .strftime('%s')
 
             if oslevel == 'Linux':  # Linux OS specific header
 
@@ -1764,7 +1893,8 @@ def uarg_section_fn(section):
 
                             # Write perf data
                             membuffer.write(
-                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
+                                ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
                     elif colddata:
 
@@ -1773,13 +1903,15 @@ def uarg_section_fn(section):
 
                         # Write perf data
                         membuffer.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
+                            ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
             if oslevel == 'AIX':  # AIX OS specific header
 
                 # Extract Data
                 perfdata_match = re.match(
-                    '^UARG,T\d+,\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*\s*),\s*([a-zA-Z-/_:\.0-9]*)\s*,(.+)\n',
+                    '^UARG,T\d+,\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:\.0-9]*)\s*,\s*([0-9]*)\s*,\s*([a-zA-Z-/_:'
+                    '\.0-9]*\s*),\s*([a-zA-Z-/_:\.0-9]*)\s*,(.+)\n',
                     line)
 
                 if perfdata_match:
@@ -1795,7 +1927,8 @@ def uarg_section_fn(section):
                     perfdata_part6 = perfdata_match.group(6)
                     perfdata_part7 = perfdata_match.group(7)
 
-                    perfdata = perfdata_part1 + ',' + perfdata_part2 + ',' + perfdata_part3 + ',' + perfdata_part4 + ',' + perfdata_part5 + ',' + perfdata_part6 + ',"' + perfdata_part7 + '"'
+                    perfdata = perfdata_part1 + ',' + perfdata_part2 + ',' + perfdata_part3 + ',' + perfdata_part4 +\
+                               ',' + perfdata_part5 + ',' + perfdata_part6 + ',"' + perfdata_part7 + '"'
 
                     if realtime:
 
@@ -1806,11 +1939,12 @@ def uarg_section_fn(section):
 
                             # Write perf data
                             membuffer.write(
-                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
+                                ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
                         else:
                             if debug:
-                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
-                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp +
+                                " ( " + ZZZZ_epochtime + " is lower than last known epoch time "
                                                         "for this section " + last_epoch_filter + " )")
 
                     elif colddata:
@@ -1820,8 +1954,8 @@ def uarg_section_fn(section):
 
                         # Write perf data
                         membuffer.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
-
+                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
+                            ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
@@ -1834,7 +1968,7 @@ def uarg_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
 
             # Open output for writing
             with open(currsection_output, "wb") as currsection:
@@ -1859,22 +1993,23 @@ if OStype in ('AIX', 'Linux', 'Unknown'):
 # Dynamic Sections : data requires to be transposed to be exploitable within Splunk
 ###################
 
+
 def dynamic_section_fn(section):
 
     # Set output file (will be opened for writing after data transposition)
-    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second +\
+                         '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
     # Sequence to search for
     seq = str(section) + ',' + 'T'
 
     # Store last epochtime if in real time mode
-    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+    keyref = HOSTNAME_VAR + '/' + HOSTNAME + '.' + section + '_lastepoch.txt'
 
     if realtime:
         if not os.path.exists(keyref):
             if debug:
-                print ("DEBUG, no keyref file for this " + section  +
+                print ("DEBUG, no keyref file for this " + section +
                        " section (searched for " + keyref + "), no data or first execution")
         else:
             with open(keyref, "r") as f:
@@ -1892,11 +2027,11 @@ def dynamic_section_fn(section):
 
         # In realtime mode, in case no per section information is available, let's use global epoch time
         try:
-          last_epoch_persection
+            last_epoch_persection
         except NameError:
             if debug:
-                print ("DEBUG: no last epoch information were found for " + section
-                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+                print ("DEBUG: no last epoch information were found for " + section +
+                       " , using global last epoch time (gaps in data may occur if not the first time we run)")
             last_epoch_filter = last_known_epochtime
         else:
             if debug:
@@ -2011,7 +2146,8 @@ def dynamic_section_fn(section):
                         if is_windows:
                             ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                         else:
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
+                                .strftime('%s')
 
                 # Extract Data
                 myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -2029,10 +2165,14 @@ def dynamic_section_fn(section):
                             # increment
                             count += 1
 
-                            # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                            # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                            # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                            # Analyse the first line of data: Compare number of fields in data with number of fields
+                            # in header
+                            # If the number of fields is higher than header, we assume this section is not consistent
+                            # and will be entirely dropped
+                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad
+                            # formatted (for example missing comma between fields identification)
+                            # For performance purposes, we will test this only with first line of data and assume
+                            # the data sanity based on this result
                             if count == 2:
 
                                 # Number of separators in final header
@@ -2040,9 +2180,11 @@ def dynamic_section_fn(section):
 
                                 if num_cols_perfdata > num_cols_header:
 
-                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
-                                        num_cols_perfdata) + ' fields in data, ' + str(
-                                        num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section +\
+                                          ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                          ' fields in data, ' + str(num_cols_header) +\
+                                          ' fields in header, extra fields detected (more fields in data than header)' \
+                                          ', dropping this section to prevent data inconsistency'
                                     print(msg)
                                     ref.write(msg + "\n")
 
@@ -2058,19 +2200,23 @@ def dynamic_section_fn(section):
                             membuffer.write(ZZZZ_timestamp + ',' + perfdata + '\n'),
                         else:
                             if debug:
-                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
-                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
-                                                        "for this section " + last_epoch_filter + " )")
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp +
+                                " ( " + ZZZZ_epochtime + " is lower than last known epoch time for this section " +
+                                       last_epoch_filter + " )")
 
                     elif colddata:
 
                         # increment
                         count += 1
 
-                        # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                        # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                        # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                        # Analyse the first line of data: Compare number of fields in data with number of fields
+                        # in header
+                        # If the number of fields is higher than header, we assume this section is not consistent and
+                        # will be entirely dropped
+                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad
+                        # formatted (for example missing comma between fields identification)
+                        # For performance purposes, we will test this only with first line of data and assume the data
+                        # sanity based on this result
                         if count == 2:
 
                             # Number of separators in final header
@@ -2078,9 +2224,11 @@ def dynamic_section_fn(section):
 
                             if num_cols_perfdata > num_cols_header:
 
-                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
-                                    num_cols_perfdata) + ' fields in data, ' + str(
-                                    num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section +\
+                                      ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                      ' fields in data, ' + str(num_cols_header) +\
+                                      ' fields in header, extra fields detected (more fields in data than header),' \
+                                      ' dropping this section to prevent data inconsistency'
                                 print(msg)
                                 ref.write(msg + "\n")
 
@@ -2124,7 +2272,8 @@ def dynamic_section_fn(section):
 
                         # End for
 
-            # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
+            # Verify that the number of lines is at least 2 lines which should be the case if
+            #  we are here (header + data)
             # In any case, don't allow empty files to kept in repository
             if count < 1:
                 if os.path.isfile(currsection_output):
@@ -2138,7 +2287,7 @@ def dynamic_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
 
             # Discard memory membuffer
             membuffer.close()
@@ -2156,26 +2305,39 @@ def dynamic_section_fn(section):
 
 # Because Big systems can a very large number of drives, Nmon create a new section for each step of 150 devices
 # We allow up to 20 x 150 devices to be managed
-# This will create a csv for each section (DISKBUSY, DISKBUSY1...), Splunk will manage this using a wildcard when searching for data
+# This will create a csv for each section (DISKBUSY, DISKBUSY1...), Splunk will manage this using a wildcard when
+# searching for data
 
+# To get the better performance if we use Multi Processing, first proceed to standard section
+if __name__ == '__main__':
+    p = Pool(int(jobs))
+    p.map(dynamic_section_fn, dynamic_section1)
+    p.close()
+    p.join()
+
+# Then proceed to sub section if any
 for subsection in dynamic_section1:
 
-    subsection = [subsection, subsection + "1", subsection + "2", subsection + "3", subsection + "4", subsection + "5",
+    persubsection = [subsection + "1", subsection + "2", subsection + "3", subsection + "4", subsection + "5",
                   subsection + "6", subsection + "7", subsection + "8", subsection + "9", subsection + "10",
                   subsection + "11", subsection + "12", subsection + "13", subsection + "14", subsection + "15",
                   subsection + "17", subsection + "18", subsection + "19"]
 
-    for section in subsection:
-
-        dynamic_section_fn(section)
+    if __name__ == '__main__':
+        p = Pool(int(jobs))
+        p.map(dynamic_section_fn, persubsection)
+        p.close()
+        p.join()
 
 ###################
 # Other Dynamic Sections : data requires to be transposed to be exploitable within Splunk
 ###################
 
-for section in dynamic_section2:
-
-    dynamic_section_fn(section)
+if __name__ == '__main__':
+    p = Pool(int(jobs))
+    p.map(dynamic_section_fn, dynamic_section2)
+    p.close()
+    p.join()
 
 ###################
 # AIX Only Dynamic Sections : data requires to be transposed to be exploitable within Splunk
@@ -2184,9 +2346,11 @@ for section in dynamic_section2:
 # Run
 if OStype in ("AIX", "Unknown"):
 
-    for section in AIX_dynamic_various:
-
-        dynamic_section_fn(section)
+    if __name__ == '__main__':
+        p = Pool(int(jobs))
+        p.map(dynamic_section_fn, AIX_dynamic_various)
+        p.close()
+        p.join()
 
 ###################
 # Solaris Sections : data requires to be transposed to be exploitable within Splunk
@@ -2195,22 +2359,23 @@ if OStype in ("AIX", "Unknown"):
 # Specially for WLM Solaris section, we will add the number of logical CPUs to allow evaluation of % CPU
 # report in logical CPU
 
+
 def solaris_wlm_section_fn(section):
 
     # Set output file (will be opened for writing after data transposition)
-    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second + '_' + section + '_' + str(
-        bytes_total) + '_' + csv_timestamp + '.nmon.csv'
+    currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second +\
+                         '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
 
     # Sequence to search for
     seq = str(section) + ',' + 'T'
 
     # Store last epochtime if in real time mode
-    keyref = APP_VAR + '/' + section + '_lastepoch.txt'
+    keyref = HOSTNAME_VAR + '/' + HOSTNAME + '.' + section + '_lastepoch.txt'
 
     if realtime:
         if not os.path.exists(keyref):
             if debug:
-                print ("DEBUG, no keyref file for this " + section  +
+                print ("DEBUG, no keyref file for this " + section +
                        " section (searched for " + keyref + "), no data or first execution")
         else:
             with open(keyref, "r") as f:
@@ -2228,11 +2393,11 @@ def solaris_wlm_section_fn(section):
 
         # In realtime mode, in case no per section information is available, let's use global epoch time
         try:
-          last_epoch_persection
+            last_epoch_persection
         except NameError:
             if debug:
-                print ("DEBUG: no last epoch information were found for " + section
-                       + " , using global last epoch time (gaps in data may occur if not the first time we run)")
+                print ("DEBUG: no last epoch information were found for " + section +
+                       " , using global last epoch time (gaps in data may occur if not the first time we run)")
             last_epoch_filter = last_known_epochtime
         else:
             if debug:
@@ -2347,7 +2512,8 @@ def solaris_wlm_section_fn(section):
                         if is_windows:
                             ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
                         else:
-                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+                            ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').\
+                                strftime('%s')
 
                 # Extract Data
                 myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -2365,10 +2531,14 @@ def solaris_wlm_section_fn(section):
                             # increment
                             count += 1
 
-                            # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                            # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                            # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                            # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                            # Analyse the first line of data: Compare number of fields in data with number of fields
+                            # in header
+                            # If the number of fields is higher than header, we assume this section is not consistent
+                            # and will be entirely dropped
+                            # This happens in rare times (mainly with old buggy nmon version) that the header is
+                            # bad formatted (for example missing comma between fields identification)
+                            # For performance purposes, we will test this only with first line of data and assume
+                            # the data sanity based on this result
                             if count == 2:
 
                                 # Number of separators in final header
@@ -2376,9 +2546,11 @@ def solaris_wlm_section_fn(section):
 
                                 if num_cols_perfdata > num_cols_header:
 
-                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
-                                        num_cols_perfdata) + ' fields in data, ' + str(
-                                        num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                    msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section +\
+                                          ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                          ' fields in data, ' + str(num_cols_header) +\
+                                          ' fields in header, extra fields detected (more fields in data than header)' \
+                                          ', dropping this section to prevent data inconsistency'
                                     print(msg)
                                     ref.write(msg + "\n")
 
@@ -2395,19 +2567,23 @@ def solaris_wlm_section_fn(section):
 
                         else:
                             if debug:
-                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp + \
-                                " ( " + ZZZZ_epochtime +" is lower than last known epoch time " \
-                                                        "for this section " + last_epoch_filter + " )")
+                                print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp +
+                                " ( " + ZZZZ_epochtime + " is lower than last known epoch time for this section " +
+                                       last_epoch_filter + " )")
 
                     elif colddata:
 
                         # increment
                         count += 1
 
-                        # Analyse the first line of data: Compare number of fields in data with number of fields in header
-                        # If the number of fields is higher than header, we assume this section is not consistent and will be entirely dropped
-                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad formatted (for example missing comma between fields identification)
-                        # For performance purposes, we will test this only with first line of data and assume the data sanity based on this result
+                        # Analyse the first line of data: Compare number of fields in data with number of fields
+                        # in header
+                        # If the number of fields is higher than header, we assume this section is not consistent
+                        # and will be entirely dropped
+                        # This happens in rare times (mainly with old buggy nmon version) that the header is bad
+                        # formatted (for example missing comma between fields identification)
+                        # For performance purposes, we will test this only with first line of data and assume the
+                        # data sanity based on this result
                         if count == 2:
 
                             # Number of separators in final header
@@ -2415,9 +2591,11 @@ def solaris_wlm_section_fn(section):
 
                             if num_cols_perfdata > num_cols_header:
 
-                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section + ' section data is not consistent: ' + str(
-                                    num_cols_perfdata) + ' fields in data, ' + str(
-                                    num_cols_header) + ' fields in header, extra fields detected (more fields in data than header), dropping this section to prevent data inconsistency'
+                                msg = 'ERROR: hostname: ' + HOSTNAME + ' :' + section +\
+                                      ' section data is not consistent: ' + str(num_cols_perfdata) +\
+                                      ' fields in data, ' + str(num_cols_header) +\
+                                      ' fields in header, extra fields detected (more fields in data than header),' \
+                                      ' dropping this section to prevent data inconsistency'
                                 print(msg)
                                 ref.write(msg + "\n")
 
@@ -2445,7 +2623,8 @@ def solaris_wlm_section_fn(section):
 
                 writer = csv.writer(currsection)
                 writer.writerow(
-                    ['type', 'serialnum', 'hostname', 'logical_cpus', 'interval', 'snapshots', 'ZZZZ', 'device', 'value'])
+                    ['type', 'serialnum', 'hostname', 'logical_cpus', 'interval', 'snapshots', 'ZZZZ', 'device',
+                     'value'])
 
                 # increment
                 count += 1
@@ -2461,7 +2640,8 @@ def solaris_wlm_section_fn(section):
 
                         # End for
 
-            # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
+            # Verify that the number of lines is at least 2 lines which should be the case if we are
+            # here (header + data)
             # In any case, don't allow empty files to kept in repository
             if count < 1:
                 if os.path.isfile(currsection_output):
@@ -2475,7 +2655,7 @@ def solaris_wlm_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime +"\n")
+                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
 
             # Discard memory membuffer
             membuffer.close()
@@ -2490,14 +2670,23 @@ def solaris_wlm_section_fn(section):
 # Run
 if OStype in ("Solaris", "Unknown"):
 
-    for section in solaris_WLM:
-        solaris_wlm_section_fn(section)
+    if __name__ == '__main__':
+        p = Pool(int(jobs))
+        p.map(solaris_wlm_section_fn, solaris_WLM)
+        p.close()
+        p.join()
 
-    for section in solaris_VxVM:
-        dynamic_section_fn(section)
+    if __name__ == '__main__':
+        p = Pool(int(jobs))
+        p.map(dynamic_section_fn, solaris_VxVM)
+        p.close()
+        p.join()
 
-    for section in solaris_dynamic_various:
-        dynamic_section_fn(section)
+    if __name__ == '__main__':
+        p = Pool(int(jobs))
+        p.map(dynamic_section_fn, solaris_dynamic_various)
+        p.close()
+        p.join()
 
 ##########################
 # Move final Perf csv data
@@ -2510,7 +2699,7 @@ os.chdir(DATA_DIR)
 for xfile in glob.glob('*.csv'):
     src = DATA_DIR + xfile
     dst = DATAFINAL_DIR + xfile
-    os.rename(src,dst)
+    os.rename(src, dst)
 
 ###################
 # End

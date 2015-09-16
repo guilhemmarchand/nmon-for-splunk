@@ -61,8 +61,14 @@
 #                                         - hotfix for real time data management: Use epoch time identification per section instead of globally yo solve gaps in data
 #														- Corrected and improved optional arguments and help script
 #														- Added support for DISKREADSERV and DISKWRITESERV
+# Guilhem Marchand 09/12/2015, V1.2.11:
+#                                         - Per section status are now stored per hostname, section, this allows
+# 														managing realtime data from central shares (eg. Nmon data stored in a central place and periodically updated by a
+# 														third party software such as rsync
+#										  				- Manage ref, config id and per section status files per host to allow
+# 														managing hot data from central shares
 
-$version = "1.2.10";
+$version = "1.2.11";
 
 use Time::Local;
 use Time::HiRes;
@@ -147,7 +153,8 @@ Available options are:
 # Sections of Performance Monitors with Dynamic header (eg. device context) and that can be incremented (DISKBUSY1...)
 @dynamic_vars1 = (
     "DISKBSIZE", "DISKBUSY", "DISKREAD", "DISKWRITE",
-    "DISKXFER",  "DISKRIO",  "DISKWIO", "DISKREADSERV", "DISKWRITESERV"
+    "DISKXFER",  "DISKRIO",  "DISKWIO",  "DISKREADSERV",
+    "DISKWRITESERV"
 );
 
 # Sections that won't be incremented
@@ -587,6 +594,23 @@ foreach $FILENAME (@nmon_files) {
         $virtual_cpus = $logical_cpus;
     }
 
+#####################
+    # Data status store #
+#####################
+
+# Various status are stored in different files
+# This includes the id check file, the config check file and status per section containing last epochtime proceeded
+# These items will be stored in a per host dedicated directory
+
+    # create a directory under APP_VAR
+    # This directory will used to store per section last epochtime status
+    my $HOSTNAME_VAR = "$APP_VAR/${HOSTNAME}_${SN}";
+    if ( !-d "$HOSTNAME_VAR" ) { mkdir "$HOSTNAME_VAR"; }
+
+    # Overwrite ID_REF and CONFIG_REF
+    $ID_REF     = "$HOSTNAME_VAR/id_reference_realtime.txt";
+    $CONFIG_REF = "$HOSTNAME_VAR/config_reference_realtime.txt";
+
 ###############
     # ID Check #
 ###############
@@ -680,8 +704,8 @@ foreach $FILENAME (@nmon_files) {
         print("ANALYSIS: Enforcing realtime mode using --mode option \n");
 
         # Override ID_REF & CONFIG_REF
-        $ID_REF     = "$APP_VAR/id_reference_realtime.txt";
-        $CONFIG_REF = "$APP_VAR/config_reference_realtime.txt";
+        $ID_REF     = "$HOSTNAME_VAR/id_reference_realtime.txt";
+        $CONFIG_REF = "$HOSTNAME_VAR/config_reference_realtime.txt";
 
     }
 
@@ -698,8 +722,8 @@ foreach $FILENAME (@nmon_files) {
         print "ANALYSIS: Assuming Nmon realtime data \n";
 
         # Override ID_REF & CONFIG_REF
-        $ID_REF     = "$APP_VAR/id_reference_realtime.txt";
-        $CONFIG_REF = "$APP_VAR/config_reference_realtime.txt";
+        $ID_REF     = "$HOSTNAME_VAR/id_reference_realtime.txt";
+        $CONFIG_REF = "$HOSTNAME_VAR/config_reference_realtime.txt";
 
     }
 
@@ -959,6 +983,7 @@ foreach $FILENAME (@nmon_files) {
     foreach $key (@static_vars) {
         $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+        $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
         &static_sections_insert($key);
         $now = time();
@@ -972,6 +997,7 @@ foreach $FILENAME (@nmon_files) {
         foreach $key (@AIX_static_section) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             &static_sections_insert($key);
             $now = time();
@@ -987,6 +1013,7 @@ foreach $FILENAME (@nmon_files) {
         foreach $key (@Solaris_static_section) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             &static_sections_insert($key);
             $now = time();
@@ -1042,7 +1069,7 @@ foreach $FILENAME (@nmon_files) {
             $count = 0;
 
             # Store last epochtime if in real time mode
-            $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             if ( $realtime eq "True" ) {
 
@@ -1249,13 +1276,18 @@ foreach $FILENAME (@nmon_files) {
 
                     if ( $realtime eq "True" ) {
 
-                        print "Last epochtime is $ZZZZ_epochtime \n";
+                        if ($DEBUG) {
+                            print "Last epochtime is $ZZZZ_epochtime \n";
+                        }
 
                         # Open keyref for writing in create mode
                         open( f, ">$keyref" );
 
-                        # save configuration extraction
-                        print f "last_epoch: $ZZZZ_epochtime \n";
+                        if ($DEBUG) {
+
+                            # save configuration extraction
+                            print f "last_epoch: $ZZZZ_epochtime \n";
+                        }
 
                     }
 
@@ -1336,7 +1368,7 @@ foreach $FILENAME (@nmon_files) {
                 $count = 0;
 
                 # Store last epochtime if in real time mode
-                $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+                $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
                 if ( $realtime eq "True" ) {
 
@@ -1651,13 +1683,18 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
 
                         if ( $realtime eq "True" ) {
 
-                            print "Last epochtime is $ZZZZ_epochtime \n";
+                            if ($DEBUG) {
+                                print "Last epochtime is $ZZZZ_epochtime \n";
+                            }
 
                             # Open keyref for writing in create mode
                             open( f, ">$keyref" );
 
-                            # save configuration extraction
-                            print f "last_epoch: $ZZZZ_epochtime \n";
+                            if ($DEBUG) {
+
+                                # save configuration extraction
+                                print f "last_epoch: $ZZZZ_epochtime \n";
+                            }
 
                         }
 
@@ -1696,6 +1733,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         # First pass with standard keys
         $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+        $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
         &variable_sections_insert($key);
         $now = time();
@@ -1716,6 +1754,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
 
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -1732,6 +1771,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         # First pass with standard keys
         $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+        $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
         &variable_sections_insert($key);
         $now = time();
@@ -1746,6 +1786,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@AIX_dynamic_various) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -1764,6 +1805,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@solaris_WLM) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             &solaris_wlm_section_fn($key);
             $now = time();
@@ -1776,6 +1818,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@solaris_VxVM) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -1788,6 +1831,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@solaris_dynamic_various) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -1980,9 +2024,6 @@ sub static_sections_insert {
     my $sanity_check_timestampfailure = 0;
     $count = 0;
 
-    # Store last epochtime if in real time mode
-    $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
-
     if ( $realtime eq "True" ) {
 
         if ( -e $keyref ) {
@@ -2153,7 +2194,7 @@ qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@co
 
                     if ($DEBUG) {
                         print
-"DEBUG, $key ignoring event $DATETIME{@cols[1]} ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";                          
+"DEBUG, $key ignoring event $DATETIME{@cols[1]} ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";
                     }
 
                 }
@@ -2200,13 +2241,18 @@ qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@co
 
             if ( $realtime eq "True" ) {
 
-                print "Last epochtime is $ZZZZ_epochtime \n";
+                if ($DEBUG) {
+                    print "Last epochtime is $ZZZZ_epochtime \n";
+                }
 
                 # Open keyref for writing in create mode
                 open( f, ">$keyref" );
 
-                # save configuration extraction
-                print f "last_epoch: $ZZZZ_epochtime \n";
+                if ($DEBUG) {
+
+                    # save configuration extraction
+                    print f "last_epoch: $ZZZZ_epochtime \n";
+                }
 
             }
 
@@ -2240,9 +2286,6 @@ sub variable_sections_insert {
     my $sanity_check                  = 0;
     my $sanity_check_timestampfailure = 0;
     $count = 0;
-
-    # Store last epochtime if in real time mode
-    $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
 
     if ( $realtime eq "True" ) {
 
@@ -2379,7 +2422,7 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$co
             else {
 
                 if ($DEBUG) {
-"DEBUG, $key ignoring event $DATETIME{@cols[1]} ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";                                              
+"DEBUG, $key ignoring event $DATETIME{@cols[1]} ( $ZZZZ_epochtime is lower than last known epoch time for this section $last_epoch_filter) \n";
                 }
 
             }
@@ -2490,13 +2533,18 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$c
 
             if ( $realtime eq "True" ) {
 
-                print "Last epochtime is $ZZZZ_epochtime \n";
+                if ($DEBUG) {
+                    print "Last epochtime is $ZZZZ_epochtime \n";
+                }
 
                 # Open keyref for writing in create mode
                 open( f, ">$keyref" );
 
-                # save configuration extraction
-                print f "last_epoch: $ZZZZ_epochtime \n";
+                if ($DEBUG) {
+
+                    # save configuration extraction
+                    print f "last_epoch: $ZZZZ_epochtime \n";
+                }
 
             }
 
@@ -2531,7 +2579,7 @@ sub solaris_wlm_section_fn {
     $count = 0;
 
     # Store last epochtime if in real time mode
-    $keyref = "$APP_VAR/$key" . "_lastepoch.txt";
+    $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
 
     if ( $realtime eq "True" ) {
 
@@ -2781,13 +2829,18 @@ qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$
 
             if ( $realtime eq "True" ) {
 
-                print "Last epochtime is $ZZZZ_epochtime \n";
+                if ($DEBUG) {
+                    print "Last epochtime is $ZZZZ_epochtime \n";
+                }
 
                 # Open keyref for writing in create mode
                 open( f, ">$keyref" );
 
-                # save configuration extraction
-                print f "last_epoch: $ZZZZ_epochtime \n";
+                if ($DEBUG) {
+
+                    # save configuration extraction
+                    print f "last_epoch: $ZZZZ_epochtime \n";
+                }
 
             }
 
