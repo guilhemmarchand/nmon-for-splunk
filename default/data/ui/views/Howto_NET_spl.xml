@@ -240,7 +240,7 @@
 		</div>
 
 		<div>
-		  <h2>Min / Average / Max and Average sparkline Network Traffic in KBps over last 24 hours ordered and sorted by frame ID, hostnames, interfaces (excluding loopback interfaces)</h2>			
+		  <h2>Min / Average / Max and Average sparkline Network Traffic in KBps over last 24 hours ordered and sorted by frame ID, hostname, interfaces (excluding loopback interfaces)</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=NET frameID=$frameID$ hostname=$hostname$ device!=*lo*
 | stats min(value) AS &quot;Min KBps Traffic&quot;, avg(value) AS &quot;Avg KBps Traffic&quot;, max(value) AS &quot;Max KBps Traffic&quot;, sparkline(avg(value)) As sparkline by frameID,hostname,device
 | eval &quot;Avg KBps Traffic&quot;=round('Avg KBps Traffic',2) | rename device AS interface</pre>
@@ -262,7 +262,7 @@
 		</div>
 
 		<div>
-		  <h2>Inbound / Outbound Average Network Traffic in KBps over last 24 hours ordered and sorted by frame ID, hostnames (excluding loopback interfaces)</h2>			
+		  <h2>Inbound / Outbound Average Network Traffic in KBps over last 24 hours ordered and sorted by frame ID, hostname (excluding loopback interfaces)</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=NET frameID=$frameID$ hostname=$hostname$ device!=*lo*
 | eval traffic_type=case(match(device, &quot;.+read.+&quot;), &quot;Inbound&quot;, match(device, &quot;.+write.+&quot;), &quot;Outbound&quot;)
 | stats avg(value) AS value by frameID,hostname,traffic_type | eval value=round(value, 2) | eval value=traffic_type + &quot; &quot; + value + &quot; KBps&quot; | fields frameID,hostname,value

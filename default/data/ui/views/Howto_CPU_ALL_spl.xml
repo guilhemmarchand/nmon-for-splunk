@@ -189,7 +189,7 @@
 		</div>
 
 		<div>
-		  <h2>Min / Average / Max CPU Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostnames</h2>			
+		  <h2>Min / Average / Max CPU Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostname</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) 
 | stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
 		</div>		
@@ -203,7 +203,7 @@
 		</div>		
 
 		<div>
-		  <h2>Min / Average / Max and Average sparkline of CPU Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostnames</h2>			
+		  <h2>Min / Average / Max and Average sparkline of CPU Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostname</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) 
 | stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
 		</div>		
@@ -217,7 +217,7 @@
 		</div>		
 
 		<div>
-		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Business days only (monday to friday, 24hrs / 24hrs) ordered and sorted by frame ID, hostnames</h2>			
+		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Business days only (monday to friday, 24hrs / 24hrs) ordered and sorted by frame ID, hostname</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
 | eval date_wday=lower(strftime('_time', "%A")) | search (date_wday!="sunday" date_wday!="saturday") 
 | stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage" by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</pre>
@@ -232,7 +232,7 @@
 		</div>		
 
 		<div>
-		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) ordered and sorted by frame ID, hostnames</h2>			
+		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) ordered and sorted by frame ID, hostname</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
@@ -248,7 +248,7 @@
 		</div>		
 
 		<div>
-		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for non Working hours Business days only (monday to friday, 19h to 08h) ordered and sorted by frame ID, hostnames</h2>			
+		  <h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for non Working hours Business days only (monday to friday, 19h to 08h) ordered and sorted by frame ID, hostname</h2>			
 		  <pre>index=nmon sourcetype=nmon_data type=CPU_ALL frameID=$frameID$ hostname=$hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (local_time&gt;="1900" AND local_time&lt;="2359") OR (local_time&gt;="0000" AND local_time&lt;="0800") AND (date_wday!="sunday" date_wday!="saturday")
@@ -264,7 +264,7 @@
 		</div>		
 
 		<div>
-		  <h2>Compare Average CPU Usage in Percentage of current month versus previous month ordered and sorted by hostnames</h2>			
+		  <h2>Compare Average CPU Usage in Percentage of current month versus previous month ordered and sorted by hostname</h2>			
 		  <pre>index="nmon" sourcetype="nmon_data" hostname="*" type=CPU_ALL earliest="-1mon@mon" latest="@mon" | eval usage=(Sys_PCT+User_PCT+Wait_PCT)
 | stats avg(usage) As usage_period1 by hostname
 | append [ 
