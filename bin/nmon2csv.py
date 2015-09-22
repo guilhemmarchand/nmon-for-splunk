@@ -107,10 +107,9 @@
 #                                         - Per section status are now stored per hostname, section, this allows
 # managing realtime data from central shares (eg. Nmon data stored in a central place and periodically updated by a
 # third party software such as rsync
-#                                         - Introduced the use of Multi Processing capacities to improve time required
-# to process large volume of Nmon data from central shares
 #										  - Manage ref, config id and per section status files per host to allow
 # managing hot data from central shares
+#                                         - Added support for CPUnn (CPU usage per logical core)
 
 # Load libs
 
@@ -127,7 +126,6 @@ import cStringIO
 import platform
 import optparse
 import glob
-from multiprocessing.pool import Pool
 
 # Converter version
 nmon2csv_version = '1.1.12'
@@ -147,7 +145,7 @@ nmon2csv_version = '1.1.12'
 # Sections of Performance Monitors with standard dynamic header but no "device" notion that would require the data
 # to be transposed.
 # You can add or remove any section depending on your needs
-static_section = ["CPU_ALL", "FILE", "MEM", "PAGE", "MEMNEW", "MEMUSE", "PROC", "VM", "NFSSVRV2",
+static_section = ["CPUnn", "CPU_ALL", "FILE", "MEM", "PAGE", "MEMNEW", "MEMUSE", "PROC", "VM", "NFSSVRV2",
                   "NFSSVRV3", "NFSSVRV4", "NFSCLIV2", "NFSCLIV3", "NFSCLIV4"]
 
 # Some specific sections per OS
@@ -363,8 +361,6 @@ parser.set_defaults(mode='auto', datadir=DATA_DIR, configdir=CONFIG_DIR, dumparg
 
 parser.add_option('-d', '--datadir', action='store', type='string', dest='datadir',
                   help='sets the output directory for data CSV files (Default: %default)')
-parser.add_option('-j', '--jobs', action='store', type='int', dest='jobs',
-                  help='sets the number of multi concurrent process to run (Default: 1)')
 opmodes = ['auto', 'realtime', 'colddata']
 parser.add_option('-m', '--mode', action='store', type='choice', dest='mode', choices=opmodes,
                   help='sets the operation mode (Default: %default); supported modes: ' + ', '.join(opmodes))
@@ -384,12 +380,6 @@ if options.debug:
     debug = True
 else:
     debug = False
-
-# Set mutli processing number of jobs
-if not options.jobs:
-    jobs = 1
-else:
-    jobs = options.jobs
 
 DATA_DIR = options.datadir
 CONFIG_DIR = options.configdir
@@ -493,6 +483,12 @@ def numbertomonth(month):
         month = month.replace(k, v)
 
     return month
+
+
+# Open ID_REF, global to be used in function or current scope
+def openRef():
+    global ref
+    ref = open(ID_REF, "w")
 
 ####################################################################
 #           Main Program
@@ -951,7 +947,7 @@ if os.path.isfile(ID_REF):
 
 # Open reference file for writing
 msg = now + " Reading NMON data: " + str(nbr_lines) + " lines" + " " + str(bytes_total) + " bytes"
-ref = open(ID_REF, "w")
+openRef()
 
 # write id
 ref.write(msg + '\n')
@@ -1152,6 +1148,7 @@ elif config_run == 1:
 
 def standard_section_fn(section):
 
+
     # Set output file
     currsection_output = DATA_DIR + HOSTNAME + '_' + day + '_' + month + '_' + year + '_' + hour + minute + second +\
                          '_' + section + '_' + str(bytes_total) + '_' + csv_timestamp + '.nmon.csv'
@@ -1201,7 +1198,11 @@ def standard_section_fn(section):
     num_cols_header = 0
 
     # Sequence to search for
-    seq = str(section) + ',' + 'T'
+    if section == 'CPUnn':
+        # CPU001 is the first core of system, will always be present
+        seq = 'CPU001' + ',' + 'T'
+    else:
+        seq = str(section) + ',' + 'T'
 
     for line in data:
 
@@ -1221,8 +1222,12 @@ def standard_section_fn(section):
 
             for line in data:
 
-                # Extract sections, and write to output
-                myregex = r'^' + section + '|ZZZZ.+'
+                # Extract sections (manage specific case of CPUnn), and write to output
+                if section == "CPUnn":
+                    myregex = r'^' + 'CPU\d*' + '|ZZZZ.+'
+                else:
+                    myregex = r'^' + section + '|ZZZZ.+'
+
                 find_section = re.match(myregex, line)
                 if find_section:
 
@@ -1233,7 +1238,11 @@ def standard_section_fn(section):
                     # csv header
 
                     # Extract header excluding data that always has Txxxx for timestamp reference
-                    myregex = '(' + section + ')\,([^T].+)'
+                    if section == "CPUnn":
+                        myregex = '(' + 'CPU001' + ')\,([^T].+)'
+                    else:
+                        myregex = '(' + section + ')\,([^T].+)'
+
                     fullheader_match = re.search(myregex, line)
 
                     # Standard header extraction
@@ -1255,8 +1264,9 @@ def standard_section_fn(section):
                             count += 1
 
                             # Write header
-                            final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'ZZZZ' + ',' +\
-                                           'interval' + ',' + 'snapshots' + ',' + header + '\n'
+                            final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' 'logical_cpus' + ',' +\
+                                           'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' +\
+                                           ',' + header + '\n'
 
                             # Number of separators in final header
                             num_cols_header = final_header.count(',')
@@ -1290,8 +1300,9 @@ def standard_section_fn(section):
                                 count += 1
 
                                 # Write header
-                                final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'ZZZZ' +\
-                                               ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'
+                                final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' \
+                                               + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' +\
+                                               'snapshots' + ',' + header + '\n'
 
                                 # Number of separators in final header
                                 num_cols_header = final_header.count(',')
@@ -1345,10 +1356,18 @@ def standard_section_fn(section):
                                     .strftime('%s')
 
                     # Extract Data
-                    myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
+                    if section == "CPUnn":
+                        myregex = r'^' + '(CPU\d*)' + '\,(T\d+)\,(.+)\n'
+                    else:
+                        myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
                     perfdata_match = re.match(myregex, line)
+
                     if perfdata_match:
-                        perfdata = perfdata_match.group(2)
+                        if section == 'CPUnn':
+                            perfdatatype = perfdata_match.group(1)
+                            perfdata = perfdata_match.group(3)
+                        else:
+                            perfdata = perfdata_match.group(2)
 
                         if realtime:
 
@@ -1358,8 +1377,14 @@ def standard_section_fn(section):
                                 count += 1
 
                                 # final_perfdata
-                                final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' +\
-                                                 INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                                if section == 'CPUnn':
+                                    final_perfdata = perfdatatype + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus +\
+                                                     ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL +\
+                                                     ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                                else:
+                                    final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' +\
+                                                     virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' +\
+                                                     SNAPSHOTS + ',' + perfdata + '\n'
 
                                 # Analyse the first line of data: Compare number of fields in data with number of fields
                                 # in header
@@ -1406,8 +1431,14 @@ def standard_section_fn(section):
                             count += 1
 
                             # final_perfdata
-                            final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + ZZZZ_timestamp + ',' +\
-                                             INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                            if section == 'CPUnn':
+                                final_perfdata = perfdatatype + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus +\
+                                                 ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL +\
+                                                 ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                            else:
+                                final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' +\
+                                                 virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' +\
+                                                 SNAPSHOTS + ',' + perfdata + '\n'
 
                             # Analyse the first line of data: Compare number of fields in data with number of fields
                             # in header
@@ -1464,33 +1495,23 @@ def standard_section_fn(section):
             with open(keyref, "wb") as f:
                 f.write("last_epoch: " + ZZZZ_epochtime + "\n")
 
-# End for
+    # End for
+
 
 # These are standard static sections common for all OS
-#for section in static_section:
-
-if __name__ == '__main__':
-    p = Pool(int(jobs))
-    p.map(standard_section_fn, static_section)
-    p.close()
-    p.join()
+for section in static_section:
+    standard_section_fn(section)
 
 # These are AIX specific static sections, search for this only if Nmon file comes from AIX, or if the OStype
 # couldn't be identified
 if OStype in ("AIX", "Unknown"):
-    if __name__ == '__main__':
-        p = Pool(int(jobs))
-        p.map(standard_section_fn, AIX_static_section)
-        p.close()
-        p.join()
+    for section in AIX_static_section:
+        standard_section_fn(section)
 
 # Solaris specific
 if OStype in ("Solaris", "Unknown"):
-    if __name__ == '__main__':
-        p = Pool(int(jobs))
-        p.map(standard_section_fn, Solaris_static_section)
-        p.close()
-        p.join()
+    for section in Solaris_static_section:
+        standard_section_fn(section)
 
 ###################
 # TOP section: has a specific structure with uncommon fields, needs to be treated separately
@@ -2307,13 +2328,8 @@ def dynamic_section_fn(section):
 # We allow up to 20 x 150 devices to be managed
 # This will create a csv for each section (DISKBUSY, DISKBUSY1...), Splunk will manage this using a wildcard when
 # searching for data
-
-# To get the better performance if we use Multi Processing, first proceed to standard section
-if __name__ == '__main__':
-    p = Pool(int(jobs))
-    p.map(dynamic_section_fn, dynamic_section1)
-    p.close()
-    p.join()
+for section in dynamic_section1:
+    dynamic_section_fn(section)
 
 # Then proceed to sub section if any
 for subsection in dynamic_section1:
@@ -2323,21 +2339,15 @@ for subsection in dynamic_section1:
                   subsection + "11", subsection + "12", subsection + "13", subsection + "14", subsection + "15",
                   subsection + "17", subsection + "18", subsection + "19"]
 
-    if __name__ == '__main__':
-        p = Pool(int(jobs))
-        p.map(dynamic_section_fn, persubsection)
-        p.close()
-        p.join()
+    for section in persubsection:
+        dynamic_section_fn(section)
 
 ###################
 # Other Dynamic Sections : data requires to be transposed to be exploitable within Splunk
 ###################
 
-if __name__ == '__main__':
-    p = Pool(int(jobs))
-    p.map(dynamic_section_fn, dynamic_section2)
-    p.close()
-    p.join()
+for section in dynamic_section2:
+    dynamic_section_fn(section)
 
 ###################
 # AIX Only Dynamic Sections : data requires to be transposed to be exploitable within Splunk
@@ -2345,12 +2355,8 @@ if __name__ == '__main__':
 
 # Run
 if OStype in ("AIX", "Unknown"):
-
-    if __name__ == '__main__':
-        p = Pool(int(jobs))
-        p.map(dynamic_section_fn, AIX_dynamic_various)
-        p.close()
-        p.join()
+    for section in AIX_dynamic_various:
+        dynamic_section_fn(section)
 
 ###################
 # Solaris Sections : data requires to be transposed to be exploitable within Splunk
@@ -2669,24 +2675,14 @@ def solaris_wlm_section_fn(section):
 
 # Run
 if OStype in ("Solaris", "Unknown"):
+    for section in solaris_WLM:
+        solaris_wlm_section_fn(section)
 
-    if __name__ == '__main__':
-        p = Pool(int(jobs))
-        p.map(solaris_wlm_section_fn, solaris_WLM)
-        p.close()
-        p.join()
+    for section in solaris_VxVM:
+        dynamic_section_fn(section)
 
-    if __name__ == '__main__':
-        p = Pool(int(jobs))
-        p.map(dynamic_section_fn, solaris_VxVM)
-        p.close()
-        p.join()
-
-    if __name__ == '__main__':
-        p = Pool(int(jobs))
-        p.map(dynamic_section_fn, solaris_dynamic_various)
-        p.close()
-        p.join()
+    for section in solaris_dynamic_various:
+        dynamic_section_fn(section)
 
 ##########################
 # Move final Perf csv data

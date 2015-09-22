@@ -67,6 +67,7 @@
 # 														third party software such as rsync
 #										  				- Manage ref, config id and per section status files per host to allow
 # 														managing hot data from central shares
+#                                         - Added support for CPUnn (CPU usage per logical core)
 
 $version = "1.2.11";
 
@@ -131,9 +132,9 @@ Available options are:
 # Sections of Performance Monitors with standard dynamic header but no "device" notion that would require the data to be transposed
 # You can add or remove any section depending on your needs
 @static_vars = (
-    "CPU_ALL",  "FILE", "MEM",      "PAGE",     "MEMNEW",   "MEMUSE",
-    "PROC",     "VM",   "NFSSVRV2", "NFSSVRV3", "NFSSVRV4", "NFSCLIV2",
-    "NFSCLIV3", "NFSCLIV4"
+    "CPUnn",    "CPU_ALL",  "FILE", "MEM",      "PAGE",     "MEMNEW",
+    "MEMUSE",   "PROC",     "VM",   "NFSSVRV2", "NFSSVRV3", "NFSSVRV4",
+    "NFSCLIV2", "NFSCLIV3", "NFSCLIV4"
 );
 
 # Some specific sections per OS
@@ -983,7 +984,7 @@ foreach $FILENAME (@nmon_files) {
     foreach $key (@static_vars) {
         $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-        $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+        $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
         &static_sections_insert($key);
         $now = time();
@@ -997,7 +998,7 @@ foreach $FILENAME (@nmon_files) {
         foreach $key (@AIX_static_section) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             &static_sections_insert($key);
             $now = time();
@@ -1013,7 +1014,7 @@ foreach $FILENAME (@nmon_files) {
         foreach $key (@Solaris_static_section) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             &static_sections_insert($key);
             $now = time();
@@ -1069,7 +1070,7 @@ foreach $FILENAME (@nmon_files) {
             $count = 0;
 
             # Store last epochtime if in real time mode
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             if ( $realtime eq "True" ) {
 
@@ -1368,7 +1369,7 @@ foreach $FILENAME (@nmon_files) {
                 $count = 0;
 
                 # Store last epochtime if in real time mode
-                $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+                $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
                 if ( $realtime eq "True" ) {
 
@@ -1733,7 +1734,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         # First pass with standard keys
         $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-        $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+        $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
         &variable_sections_insert($key);
         $now = time();
@@ -1754,7 +1755,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
 
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -1771,7 +1772,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         # First pass with standard keys
         $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-        $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+        $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
         &variable_sections_insert($key);
         $now = time();
@@ -1786,7 +1787,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@AIX_dynamic_various) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -1805,7 +1806,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@solaris_WLM) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             &solaris_wlm_section_fn($key);
             $now = time();
@@ -1818,7 +1819,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@solaris_VxVM) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -1831,7 +1832,7 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
         foreach $key (@solaris_dynamic_various) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
-            $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
             &variable_sections_insert($key);
             $now = time();
@@ -2082,12 +2083,25 @@ sub static_sections_insert {
 
     }
 
-    @rawdata = grep( /^$nmon_var,/, @nmon );
+# Filter rawdata for this section, CPUnn has a special case that contains dynamic number of sub-sections
+    if ( $nmon_var eq "CPUnn" ) {
+        @rawdata = grep( /^CPU\d*,/, @nmon );
+    }
+    else {
+        @rawdata = grep( /^$nmon_var,/, @nmon );
+    }
 
     if ( @rawdata < 1 ) { return (1); }
     else {
 
-        @rawdataheader = grep( /^$nmon_var,([^T].+),/, @nmon );
+        # Focus on the header, manage CPUnn case
+        if ( $nmon_var eq "CPUnn" ) {
+            @rawdataheader = grep( /^CPU\d*,([^T].+),/, @nmon );
+        }
+        else {
+            @rawdataheader = grep( /^$nmon_var,([^T].+),/, @nmon );
+        }
+
         if ( @rawdataheader < 1 ) {
             $msg =
 "ERROR: hostname: $HOSTNAME :$key section data is not consistent: the data header could not be identified, dropping the section to prevent data inconsistency \n";
@@ -2108,6 +2122,7 @@ sub static_sections_insert {
 
     }
 
+    # Sort rawdata
     @rawdata = sort(@rawdata);
 
     @cols = split( /,/, $rawdata[0] );
@@ -2131,11 +2146,26 @@ qq|type,serialnum,hostname,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\
     );
     $count++;
 
+# For CPUnn case, filter on perf data only (multiple headers are present in rawdata)
+    if ( $nmon_var eq "CPUnn" ) {
+        @rawdata = grep( /^CPU\d*,T.+,/, @nmon );
+    }
+
     $comma = "";
     $n     = @cols;
     $n     = $n - 1;    # number of columns -1
 
-    for ( $i = 1 ; $i < @rawdata ; $i++ ) {
+# Define the starting line to read (exclusion of csv header)
+# For CPUnn, we don't need to filter the header as we already filtered on perf data
+
+    if ( $nmon_var eq "CPUnn" ) {
+        $startline = 0;
+    }
+    else {
+        $startline = 1;
+    }
+
+    for ( $i = $startline ; $i < @rawdata ; $i++ ) {
 
         $TS = $UTC_START + $INTERVAL * ($i);
 
@@ -2145,6 +2175,9 @@ qq|type,serialnum,hostname,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\
 
         my @c = $x =~ /,/g;
         my $fieldsrawcount = @c;
+
+        # section dynamic name
+        $datatype = @cols[0];
 
         if ( $fieldsrawcount != $fieldsheadercount ) {
 
@@ -2183,7 +2216,7 @@ qq|type,serialnum,hostname,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\
                 if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                     print INSERT (
-qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
+qq|$comma"$datatype","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
                     );
                     $count++;
 
@@ -2204,7 +2237,7 @@ qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@co
             elsif ( $colddata eq "True" ) {
 
                 print INSERT (
-qq|$comma"$key","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
+qq|$comma"$datatype","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
                 );
                 $count++;
 
@@ -2579,7 +2612,7 @@ sub solaris_wlm_section_fn {
     $count = 0;
 
     # Store last epochtime if in real time mode
-    $keyref = "$HOSTNAME_VAR/$key" . "_lastepoch.txt";
+    $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
     if ( $realtime eq "True" ) {
 
