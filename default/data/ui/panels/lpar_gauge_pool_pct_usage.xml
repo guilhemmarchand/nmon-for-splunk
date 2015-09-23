@@ -1,5 +1,12 @@
 <panel>
   <title>LPAR: Gauge Pool Pct Usage</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
   <input type="text" token="frameID" searchWhenChanged="true">
     <label>frameID:</label>
     <default>*</default>
@@ -17,8 +24,8 @@
       <query>index=nmon sourcetype=nmon_data type=LPAR $frameID$ $hostname$
 | eval Pool_Pct_usage=round(((poolCPUs-PoolIdle)/poolCPUs*100),2)
 | stats avg(Pool_Pct_usage) AS Pool_Pct_usage | eval Pool_Pct_usage=round(Pool_Pct_usage,2)</query>
-      <earliest>-24h</earliest>
-      <latest>now</latest>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
     </search>
     <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
     <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>

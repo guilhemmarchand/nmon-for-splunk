@@ -1,5 +1,12 @@
 <panel>
   <title>CPU_ALL: Table stats pct Usage by frameID,hostname</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
   <input type="text" token="frameID" searchWhenChanged="true">
     <label>frameID:</label>
     <default>*</default>
@@ -15,8 +22,8 @@
   <table>
     <search>
       <query>index=nmon sourcetype=nmon_data type=CPU_ALL $frameID$ $hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2)  | stats min(cpu_PCT) AS "Min % CPU usage", avg(cpu_PCT) AS "Avg % CPU usage", max(cpu_PCT) AS "Max % CPU usage", sparkline(avg(cpu_PCT)) As sparkline by frameID,hostname | eval "Avg % CPU usage"=round('Avg % CPU usage', 2) | sort frameID,hostname</query>
-      <earliest>-24h</earliest>
-      <latest>now</latest>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
     </search>
     <option name="wrap">true</option>
     <option name="rowNumbers">false</option>

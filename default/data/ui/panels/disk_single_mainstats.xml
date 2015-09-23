@@ -1,0 +1,48 @@
+<panel>
+  <title>DISK: single main Disks Monitors</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
+  <input type="text" token="frameID" searchWhenChanged="true">
+    <label>frameID:</label>
+    <default>*</default>
+    <prefix>frameID="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="hostname" searchWhenChanged="true">
+    <label>hostname:</label>
+    <default>*</default>
+    <prefix>hostname="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="device" searchWhenChanged="true">
+    <label>device:</label>
+    <default>*</default>
+    <prefix>device="</prefix>
+    <suffix>"</suffix>
+  </input>  
+  <single>
+    <search>
+      <query>index=nmon sourcetype=nmon_data type=DISKXFER OR type=DISKBUSY OR type=DISKREAD OR type=DISKWRITE OR type=DISKBSIZE $frameID$ $hostname$ $device$
+| dedup _time,type,frameID,hostname,device,value
+| eval sum_disk_total_IOPS=case(type == "DISKXFER", value)
+| eval avg_disk_busy_PCT=case(type == "DISKBUSY", value)
+| eval avg_disk_read_rate_KBps=case(type == "DISKREAD", value)
+| eval avg_disk_write_rate_KBps=case(type == "DISKWRITE", value)
+| eval avg_disk_data_transfer_KB=case(type == "DISKBSIZE", value)
+| fields _time,frameID,hostname,device,*disk*
+| stats sum(sum_*) AS *, avg(avg_*) AS * by _time,frameID,hostname
+| stats avg(*) AS "*" | foreach * [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | eval disk_total_IOPS=round(disk_total_IOPS, 0)
+| eval stats=disk_busy_PCT  + "% Busy time / "  + disk_data_transfer_KB + " KB Data Transfer / " + disk_total_IOPS + " Total iops / " + disk_read_rate_KBps + " KBps, " + disk_write_rate_KBps + " KBps - Read, Write Data Rates"
+| fields stats</query>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
+    </search>
+    <option name="afterLabel">KBps</option>
+    <option name="underLabel">NETWORK AVERAGE TRAFFIC</option>
+  </single>  
+</panel>

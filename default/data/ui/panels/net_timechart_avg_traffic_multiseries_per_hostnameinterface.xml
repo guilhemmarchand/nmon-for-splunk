@@ -1,5 +1,12 @@
 <panel>
   <title>NET: timechart (multiseries) Network traffic per hostname/interface (KBps)</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
   <input type="text" token="frameID" searchWhenChanged="true">
     <label>frameID:</label>
     <default>*</default>
@@ -24,8 +31,8 @@
 | eval series=hostname+":"+device
 | xyseries _time,series,yval
 | makecontinuous _time `inline_customspan`</query>
-      <earliest>-24h</earliest>
-      <latest>now</latest>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
     </search>
     <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
     <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>

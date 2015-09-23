@@ -1,5 +1,12 @@
 <panel>
   <title>LPAR: timechart Pool usage, Nbr of CPUs in Pool per hostname</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
   <input type="text" token="frameID" searchWhenChanged="true">
     <label>frameID:</label>
     <default>*</default>
@@ -17,8 +24,8 @@
       <query>index=nmon sourcetype=nmon_data type=LPAR $frameID$ $hostname$
 | eval Pool_usage=round((poolCPUs-PoolIdle),2)
 | timechart useother=f limit=0 `inline_customspan` max(Pool_usage) AS Pool_usage, max(poolCPUs) AS poolCPUs by hostname</query>
-      <earliest>-24h</earliest>
-      <latest>now</latest>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
     </search>
     <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
     <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>

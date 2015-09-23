@@ -1,5 +1,12 @@
 <panel>
   <title>CPU_ALL: timechart global pct CPU usage per hostname</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
   <input type="text" token="frameID" searchWhenChanged="true">
     <label>frameID:</label>
     <default>*</default>
@@ -15,8 +22,8 @@
   <chart>
     <search>
       <query>index=nmon sourcetype=nmon_data type=CPU_ALL $frameID$ $hostname$ | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS cpu_PCT by hostname</query>
-      <earliest>-24h</earliest>
-      <latest>now</latest>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
     </search>
     <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
     <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>

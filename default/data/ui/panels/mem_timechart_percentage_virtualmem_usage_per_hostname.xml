@@ -1,5 +1,12 @@
 <panel>
   <title>MEM: timechart Virtual Memory pct usage per hostname</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
   <input type="text" token="frameID" searchWhenChanged="true">
     <label>frameID:</label>
     <default>*</default>
@@ -16,8 +23,8 @@
     <search>
       <query>index=nmon sourcetype=nmon_data type=MEM $frameID$ $hostname$
 | `MEM_allOS` | timechart `inline_customspan` avg(Virtual_used_PCT) AS Virtual_used_PCT by hostname</query>
-      <earliest>-24h</earliest>
-      <latest>now</latest>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
     </search>
     <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
     <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
