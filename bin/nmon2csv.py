@@ -1199,8 +1199,12 @@ def standard_section_fn(section):
 
     # Sequence to search for
     if section == 'CPUnn':
-        # CPU001 is the first core of system, will always be present
-        seq = 'CPU001' + ',' + 'T'
+        if OStype in ("AIX", "Solaris"):
+            # CPU01 is the first core of system, will always be present
+            seq = 'CPU01' + ',' + 'T'
+        elif OStype in ("Linux"):
+            # CPU001 is the first core of system, will always be present
+            seq = 'CPU001' + ',' + 'T'
     else:
         seq = str(section) + ',' + 'T'
 
@@ -1239,7 +1243,11 @@ def standard_section_fn(section):
 
                     # Extract header excluding data that always has Txxxx for timestamp reference
                     if section == "CPUnn":
-                        myregex = '(' + 'CPU001' + ')\,([^T].+)'
+                        if OStype in ("AIX", "Solaris"):
+                            # CPU01 is the first core of system, will always be present
+                            myregex = '(' + 'CPU01' + ')\,([^T].+)'
+                        elif OStype in ("Linux"):
+                            myregex = '(' + 'CPU001' + ')\,([^T].+)'
                     else:
                         myregex = '(' + section + ')\,([^T].+)'
 
