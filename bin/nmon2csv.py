@@ -869,17 +869,21 @@ if realtime:
     if is_windows:
         ID_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.id_reference_realtime.txt'
         CONFIG_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.config_reference_realtime.txt'
+        BBB_FLAG = HOSTNAME_VAR + '\\' + HOSTNAME + '.BBB_status.flag'
     else:
         ID_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.id_reference_realtime.txt'
         CONFIG_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.config_reference_realtime.txt'
+        BBB_FLAG = HOSTNAME_VAR + '/' + HOSTNAME + '.BBB_status.flag'
 else:
     # Override ID_REF & CONFIG_REF
     if is_windows:
         ID_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.id_reference.txt'
         CONFIG_REF = HOSTNAME_VAR + '\\' + HOSTNAME + '.config_reference.txt'
+        BBB_FLAG = HOSTNAME_VAR + '\\' + HOSTNAME + '.BBB_status.flag'
     else:
         ID_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.id_reference.txt'
         CONFIG_REF = HOSTNAME_VAR + '/' + HOSTNAME + '.config_reference.txt'
+        BBB_FLAG = HOSTNAME_VAR + '/' + HOSTNAME + '.BBB_status.flag'
 
 # NMON file id (concatenation of ids)
 idnmon = DATE + ':' + TIME + ',' + HOSTNAME + ',' + SN + ',' + str(bytes_total) + ',' + str(starting_epochtime) + ',' +\

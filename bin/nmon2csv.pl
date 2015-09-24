@@ -268,13 +268,13 @@ if ( !-d "$OUTPUTCONF_DIR" ) { mkdir "$OUTPUTCONF_DIR"; }
 # Splunk when using a custom archive mode, launches twice the custom script
 
 # Supplementary note: Since V1.2.2, ID_REF & CONFIG_REF are overwritten if running real time mode
-my $ID_REF = "$APP_VAR/id_reference.txt";
+$ID_REF = "$APP_VAR/id_reference.txt";
 
 # Config Reference file
-my $CONFIG_REF = "$APP_VAR/config_reference.txt";
+$CONFIG_REF = "$APP_VAR/config_reference.txt";
 
 # BBB extraction flag
-my $BBB_FLAG = "$APP_VAR/BBB_status.flag";
+$BBB_FLAG = "$APP_VAR/BBB_status.flag";
 
 #################################################
 ## 	Various
@@ -604,13 +604,49 @@ foreach $FILENAME (@nmon_files) {
 # These items will be stored in a per host dedicated directory
 
     # create a directory under APP_VAR
-    # This directory will used to store per section last epochtime status
+    # This directory will be used to store per section last epochtime status
     my $HOSTNAME_VAR = "$APP_VAR/${HOSTNAME}_${SN}";
     if ( !-d "$HOSTNAME_VAR" ) { mkdir "$HOSTNAME_VAR"; }
 
     # Overwrite ID_REF and CONFIG_REF
-    $ID_REF     = "$HOSTNAME_VAR/id_reference_realtime.txt";
-    $CONFIG_REF = "$HOSTNAME_VAR/config_reference_realtime.txt";
+    $ID_REF     = "$HOSTNAME_VAR/${HOSTNAME}.id_reference.txt";
+    $CONFIG_REF = "$HOSTNAME_VAR/${HOSTNAME}.config_reference.txt";
+    $BBB_FLAG   = "$HOSTNAME_VAR/${HOSTNAME}.BBB_status.flag";
+
+#####################
+    # Migration from 1.2.10 #
+#####################
+
+# Manage migration of ID_REF, CONFIG_REF and BBB_FLAG from previous version of nmon2csv.pl
+
+    if (   -e "$APP_VAR/id_reference.txt"
+        || -e "$APP_VAR/id_reference_realtime.txt" )
+    {
+
+        print
+"INFO: Detected migration from V1.2.10, migrating status store file\n";
+
+        # Enter directory
+        chdir $APP_VAR;
+
+        # Items to clean
+        @cleaning = ( "*.txt", "*.flag" );
+
+        # Enter loop
+        foreach $key (@cleaning) {
+
+            @files = glob($key);
+
+            foreach $file (@files) {
+                if ( -f $file ) {
+
+                    move $file, "$HOSTNAME_VAR/${HOSTNAME}_${file}";
+
+                }
+            }
+        }
+
+    }
 
 ###############
     # ID Check #
@@ -705,8 +741,9 @@ foreach $FILENAME (@nmon_files) {
         print("ANALYSIS: Enforcing realtime mode using --mode option \n");
 
         # Override ID_REF & CONFIG_REF
-        $ID_REF     = "$HOSTNAME_VAR/id_reference_realtime.txt";
-        $CONFIG_REF = "$HOSTNAME_VAR/config_reference_realtime.txt";
+        $ID_REF     = "$HOSTNAME_VAR/${HOSTNAME}.id_reference.txt";
+        $CONFIG_REF = "$HOSTNAME_VAR/${HOSTNAME}.config_reference.txt";
+        $BBB_FLAG   = "$HOSTNAME_VAR/${HOSTNAME}.BBB_status.flag";
 
     }
 
@@ -723,8 +760,9 @@ foreach $FILENAME (@nmon_files) {
         print "ANALYSIS: Assuming Nmon realtime data \n";
 
         # Override ID_REF & CONFIG_REF
-        $ID_REF     = "$HOSTNAME_VAR/id_reference_realtime.txt";
-        $CONFIG_REF = "$HOSTNAME_VAR/config_reference_realtime.txt";
+        $ID_REF     = "$HOSTNAME_VAR/${HOSTNAME}.id_reference.txt";
+        $CONFIG_REF = "$HOSTNAME_VAR/${HOSTNAME}.config_reference.txt";
+        $BBB_FLAG   = "$HOSTNAME_VAR/${HOSTNAME}.BBB_status.flag";
 
     }
 
