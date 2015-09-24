@@ -624,7 +624,7 @@ foreach $FILENAME (@nmon_files) {
     {
 
         print
-"INFO: Detected migration from V1.2.10, migrating status store file\n";
+"INFO: Detected migration from V1.2.10 or previous, migrating status store file\n";
 
         # Enter directory
         chdir $APP_VAR;

@@ -748,6 +748,34 @@ if not os.path.isdir(HOSTNAME_VAR):
         msg = (msg, '%s' % e.__class__)
         logging.error(msg)
 
+#####################
+    # Migration from 1.1.11 #
+#####################
+
+def migrate():
+
+
+    for src in glob.glob('*.txt'):
+        if is_windows:
+            dst = HOSTNAME_VAR + '\\' + HOSTNAME + '.' + src
+        else:
+            dst = HOSTNAME_VAR + '/' + HOSTNAME + '.' + src
+        os.rename(src, dst)
+    for src in glob.glob('*.flag'):
+        if is_windows:
+            dst = HOSTNAME_VAR + '\\' + HOSTNAME + '.' + src
+        else:
+            dst = HOSTNAME_VAR + '/' + HOSTNAME + '.' + src
+        os.rename(src, dst)
+
+# Migrate the location and file names if we detected a version prior to V1.1.11
+current_dir = os.getcwd()
+os.chdir(APP_VAR)
+if os.path.isfile('id_reference.txt') or os.path.isfile('id_reference_realtime.txt'):
+        print('INFO: Detected migration from V1.1.11 or previous, migrating status store file')
+        migrate()
+os.chdir(current_dir)
+
 ###############
 # ID Check #
 ###############
