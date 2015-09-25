@@ -2150,6 +2150,9 @@ def dynamic_section_fn(section):
                     # Replace any blank space before comma only for header
                     fullheader = re.sub(", ", ',', fullheader)
 
+                    # Remove any blank space still present in header
+                    fullheader = re.sub(" ", '', fullheader)
+
                     header_match = re.match(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)', fullheader)
 
                     if header_match:
@@ -2249,6 +2252,12 @@ def dynamic_section_fn(section):
                                     print(msg)
                                     ref.write(msg + "\n")
 
+                                    if debug:
+                                        print("\nDebug information: header content:\n")
+                                        print(final_header)
+                                        print("\nDebug information: data sample:\n")
+                                        print(final_perfdata +"\n")
+
                                     # Affect a sanity check to 1, bad data
                                     sanity_check = 1
 
@@ -2292,6 +2301,12 @@ def dynamic_section_fn(section):
                                       ' dropping this section to prevent data inconsistency'
                                 print(msg)
                                 ref.write(msg + "\n")
+
+                                if debug:
+                                    print("\nDebug information: header content:")
+                                    print(final_header)
+                                    print("Debug information: data sample:")
+                                    print(final_perfdata)
 
                                 # Affect a sanity check to 1, bad data
                                 sanity_check = 1
@@ -2501,6 +2516,9 @@ def solaris_wlm_section_fn(section):
                     # Replace any blank space before comma only for header
                     fullheader = re.sub(", ", ',', fullheader)
 
+                    # Remove any blank space still present in header
+                    fullheader = re.sub(" ", '', fullheader)
+
                     header_match = re.match(r'([a-zA-Z\-/_0-9]+,)([a-zA-Z\-/_0-9,]*)', fullheader)
 
                     if header_match:
@@ -2600,6 +2618,12 @@ def solaris_wlm_section_fn(section):
                                     print(msg)
                                     ref.write(msg + "\n")
 
+                                    if debug:
+                                        print("\nDebug information: header content:")
+                                        print(final_header)
+                                        print("Debug information: data sample:")
+                                        print(final_perfdata)
+
                                     # Affect a sanity check to 1, bad data
                                     sanity_check = 1
 
@@ -2644,6 +2668,12 @@ def solaris_wlm_section_fn(section):
                                       ' dropping this section to prevent data inconsistency'
                                 print(msg)
                                 ref.write(msg + "\n")
+
+                                if debug:
+                                    print("\nDebug information: header content:")
+                                    print(final_header)
+                                    print("Debug information: data sample:")
+                                    print(final_perfdata)
 
                                 # Affect a sanity check to 1, bad data
                                 sanity_check = 1
