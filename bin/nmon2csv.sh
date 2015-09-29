@@ -11,8 +11,10 @@
 # Guilhem Marchand 2015/07/07, initial version
 # - 07/27/2015, V1.0.01: Guilhem Marchand:
 #                                         - hotfix for using the PA-nmon to generate Performance data in standalone indexers
+# - 09/29/2015, V1.0.02: Guilhem Marchand:
+#                                         - Restrict to Python 2.7.x to use nmon2csv.py
 
-# Version 1.0.01
+# Version 1.0.02
 
 # For AIX / Linux / Solaris
 
@@ -72,7 +74,7 @@ if [ $? -eq 0 ]; then
 
 	case $python_subversion in
 	
-	*" 2.6.6"* | *" 2.6.7"* | *" 2.6.8"* | *" 2.6.9"* | *" 2.7"*)
+	*" 2.7"*)
 		cat /tmp/nmon2csv.temp.$$ | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.py ;;
 		
 	*)
