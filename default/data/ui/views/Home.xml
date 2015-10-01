@@ -1,4 +1,4 @@
-<dashboard script="single_trend.js" stylesheet="Home.css,hover.css,single_decorations.css,hide_timeindicator.css,single_trend_transposed.css" hideEdit="true">
+<dashboard script="single_trend.js" stylesheet="Home.css,hover.css,custom_decorations.css,hide_timeindicator.css,single_trend_transposed.css" hideEdit="true">
   <label>NMON Performance Monitor</label>
   <description>NMON Performance Monitor for Unix and Linux Systems - Version 1.6.06</description>
 
@@ -152,13 +152,20 @@
 
      </html>
      
-      <single>
-        <search ref="SAFE CENTER - Number of active CPU alerts"></search>
-        <option name="classField">range</option>
-        <option name="linkFields">result</option>
-        <option name="linkView"><![CDATA[/app/nmon/search?q=search `alerting_cpu_usage(*,*,90,300,5m)`&earliest=-60m&latest=now]]></option>
-        <option name="refresh.auto.interval">60</option>        
-      </single>
+      <search ref="SAFE CENTER - Number of active CPU alerts">
+        <preview>
+          <set token="value1">$result.value$</set>
+          <set token="range1">$result.range$</set>
+        </preview>
+		  <option name="refresh.auto.interval">60</option>          
+      </search>
+      
+		<html>
+        <div class="custom-result-value $range1$">
+				$value1$
+		  </div>
+      </html>            
+      
       <single>
         <search ref="SAFE CENTER - Number of active Real Memory alerts"></search>
         <option name="classField">range</option>
