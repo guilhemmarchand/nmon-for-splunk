@@ -1,11 +1,11 @@
 <form stylesheet="ui_simple.css">
   <label>UI CONFIG, Inventory for Solaris OS</label>
   <description>User Interface for inventory data of Solaris systems</description>
-  
+
   <search id="Global">
     <query>| inputlookup nmon_inventory | search OStype=Solaris $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$</query>
   </search>
-  
+
   <row>
     <html>
       <div style="text-align: center;">
@@ -60,25 +60,25 @@
         <prefix>nmon_version="</prefix>
         <suffix>"</suffix>
         <default>*</default>
-      </input>      
+      </input>
       <html>
-      <div style="text-align: left;">
-        <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
-      </div>
-    </html>
+        <div style="text-align: left;">
+          <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
+        </div>
+      </html>
     </panel>
   </row>
 
-  <row>  
+  <row>
     <single>
-    	<search base="Global">
+      <search base="Global">
         <query>stats count</query>
-      </search>  
+      </search>
       <option name="afterLabel">Solaris Hosts known</option>
       <option name="beforeLabel">Found</option>
     </single>
   </row>
-  
+
   <row grouping="1,1">
     <chart>
       <title>Solaris version</title>
@@ -104,13 +104,13 @@
       <title>Table Stats</title>
       <search base="Global">
         <query>top limit=0 Solaris_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-		</search>
+      </search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Solaris (sunOS) version</title>
-		<search base="Global">
+      <search base="Global">
         <query>stats count by Solaris_sunOS_version</query>
       </search>
       <option name="charting.axisTitleX.visibility">visible</option>
@@ -132,7 +132,7 @@
       <title>Table Stats</title>
       <search base="Global">
         <query>top limit=0 Solaris_sunOS_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-		</search>
+      </search>
     </table>
   </row>
   <row grouping="1,1">
@@ -140,7 +140,7 @@
       <title>CPUs cores Capacity</title>
       <search base="Global">
         <query>stats count by cpu_cores</query>
-		</search>
+      </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -160,15 +160,15 @@
       <title>Table Stats</title>
       <search base="Global">
         <query>top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-		</search>
+      </search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Processor</title>
       <search base="Global">
-      <query>stats count by Processor</query>
-		</search>
+        <query>stats count by Processor</query>
+      </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -188,15 +188,15 @@
       <title>Table Stats</title>
       <search base="Global">
         <query>search $hostname$ $Solaris_version$ $Solaris_sunOS_version$ $cpu_cores$ $Processor$ $Solaris_processor_clockspeed$ $nmon_version$ | top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-		</search>
+      </search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Processor ClockSpeed</title>
-		<search base="Global">
+      <search base="Global">
         <query>stats count by Solaris_processor_clockspeed</query>
-		</search>
+      </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -214,17 +214,17 @@
     </chart>
     <table>
       <title>Table Stats</title>
-		<search base="Global">
+      <search base="Global">
         <query>top limit=0 Solaris_processor_clockspeed | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-		</search>
+      </search>
     </table>
   </row>
   <row grouping="1,1">
     <chart>
       <title>Nmon version</title>
-		<search base="Global">
+      <search base="Global">
         <query>stats count by nmon_version</query>
-		</search>
+      </search>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -244,15 +244,15 @@
       <title>Table Stats</title>
       <search base="Global">
         <query>top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-		</search>
+      </search>
     </table>
   </row>
   <row>
     <table>
       <title>Table Stats</title>
-		<search base="Global">
+      <search base="Global">
         <query>fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</query>
-		</search>
+      </search>
     </table>
   </row>
 </form>
