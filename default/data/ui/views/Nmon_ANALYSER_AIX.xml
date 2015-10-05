@@ -344,7 +344,7 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link1,link2,link3,link4">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link1,link2,link3,link4,link5"><!--Links go here-->
       </div>
     </html>
 
@@ -417,6 +417,41 @@ avg("CPU.cpu_PCT") AS "CPU_PCT"</link>
     </chart>
 
     <chart id="link3">
+      <title>CPUnn, % usage per logical core</title>
+		<search>
+			<query>| tstats max("CPU.cpu_PCT") AS cpu_PCT from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.$hostname$) groupby _time, "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.cpu_PCT") AS cpu_PCT by _time, "CPU.CPUnn.logical_core"
+| timechart `inline_customspan` useother=f limit=0  avg(cpu_PCT) AS cpu_PCT by "CPU.CPUnn.logical_core"</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		</search>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">680px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">% CPUs</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.maximumNumber">100</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.cpu_PCT") AS cpu_PCT from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.cpu_PCT") AS cpu_PCT by _time, "CPU.hostname"
+| timechart span=1m useother=f limit=0  avg(cpu_PCT) AS cpu_PCT by "CPU.CPUnn.logical_core"</link>
+      </drilldown>
+    </chart>
+
+
+    <chart id="link4">
       <title>LPAR, Virtual CPU usage</title>
   		<search>
     		<query>| tstats max(CPU.lpar_vp_usage) AS lpar_vp_usage, max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.$hostname$)
@@ -451,7 +486,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
       </drilldown>
     </chart>
 
-    <chart id="link4">
+    <chart id="link5">
       <title>LPAR, Pools Virtual CPU usage</title>
   			<search>
     		  <query>| tstats max("CPU.poolCPUs") AS "poolCPUs" max("CPU.LPAR.Pool_usage") AS "pool_usage" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR)
@@ -504,7 +539,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link10,link11,link13,link14,link15">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link10,link11,link13,link14,link15"><!--Links go here-->
       </div>
     </html>
 
@@ -741,7 +776,7 @@ max(FILE.ttycanch) As ttycanch, max(FILE.ttyoutch) As ttyoutch, max(FILE.ttyrawc
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link20,link21">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link20,link21"><!--Links go here-->
       </div>
     </html>
 
@@ -813,7 +848,7 @@ max(FILE.ttycanch) As ttycanch, max(FILE.ttyoutch) As ttyoutch, max(FILE.ttyrawc
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link25,link26">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link25,link26"><!--Links go here-->
       </div>
     </html>
 
@@ -903,7 +938,7 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link30,link31,link32">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link30,link31,link32"><!--Links go here-->
       </div>
     </html>
     
@@ -1015,7 +1050,7 @@ max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsou
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link33,link34,link35">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link33,link34,link35"><!--Links go here-->
       </div>
     </html>
     
@@ -1159,7 +1194,7 @@ max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT<
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link40,link41,link42,link43,link44">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link40,link41,link42,link43,link44"><!--Links go here-->
       </div>
     </html>
 
@@ -1352,7 +1387,7 @@ max("AIX.PCTnumperm") AS PCTnumperm</link>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link50,link51,link52,link53,link54,link55">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link50,link51,link52,link53,link54,link55"><!--Links go here-->
       </div>
     </html>
 
@@ -1619,7 +1654,7 @@ groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true span=1
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link56,link57">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link56,link57"><!--Links go here-->
       </div>
     </html>
 
@@ -1710,7 +1745,7 @@ where (nodename = JFS.JFSINODE) (JFS.$hostname$) groupby _time, "JFS.device" pre
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link60,link61,link62">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link60,link61,link62"><!--Links go here-->
       </div>
     </html>
 
@@ -1822,25 +1857,87 @@ where (nodename = NET_Data_types.NETERROR) (NET_Data_types.$hostname$) groupby _
 
   <row>
     <panel>
-    
-      <html>
-      <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link70,link71,link72">Select a view:<!--Links go here-->
-      </div>
-	   </html>
-
-      <chart id="link70">
+      <input type="link" token="nfstoken">
+        <label></label>
+        <choice value="nfs_server_v4">NFS Server V4</choice>
+        <choice value="nfs_server_v3">NFS Server V3</choice>
+        <choice value="nfs_server_v2">NFS Server V2</choice>
+        <choice value="nfs_client_v4">NFS Client V4</choice>
+        <choice value="nfs_client_v3">NFS Client V3</choice>
+        <choice value="nfs_client_v2">NFS Client V2</choice>
+        <default>nfs_server_v4</default>
+        <change>
+          <condition value="nfs_server_v4">
+            <set token="show_nfs_server_v4">true</set>
+            <unset token="show_nfs_server_v3"></unset>
+            <unset token="show_nfs_server_v2"></unset>
+            <unset token="show_nfs_client_v4"></unset>
+            <unset token="show_nfs_client_v3"></unset>
+            <unset token="show_nfs_client_v2"></unset>
+          </condition>
+          <condition value="nfs_server_v3">
+            <set token="show_nfs_server_v3">true</set>
+            <unset token="show_nfs_server_v4"></unset>
+            <unset token="show_nfs_server_v2"></unset>
+            <unset token="show_nfs_client_v4"></unset>
+            <unset token="show_nfs_client_v3"></unset>
+            <unset token="show_nfs_client_v2"></unset>
+          </condition>
+          <condition value="nfs_server_v2">
+            <set token="show_nfs_server_v2">true</set>
+            <unset token="show_nfs_server_v4"></unset>
+            <unset token="show_nfs_server_v3"></unset>
+            <unset token="show_nfs_client_v4"></unset>
+            <unset token="show_nfs_client_v3"></unset>
+            <unset token="show_nfs_client_v2"></unset>
+          </condition>
+          <condition value="nfs_client_v4">
+            <set token="show_nfs_client_v4">true</set>
+            <unset token="show_nfs_server_v4"></unset>
+            <unset token="show_nfs_server_v3"></unset>
+            <unset token="show_nfs_server_v2"></unset>
+            <unset token="show_nfs_client_v3"></unset>
+            <unset token="show_nfs_client_v2"></unset>
+          </condition>
+          <condition value="nfs_client_v3">
+            <set token="show_nfs_client_v3">true</set>
+            <unset token="show_nfs_server_v4"></unset>
+            <unset token="show_nfs_server_v3"></unset>
+            <unset token="show_nfs_server_v2"></unset>
+            <unset token="show_nfs_client_v4"></unset>
+            <unset token="show_nfs_client_v2"></unset>
+          </condition>
+          <condition value="nfs_client_v2">
+            <set token="show_nfs_client_v2">true</set>
+            <unset token="show_nfs_server_v4"></unset>
+            <unset token="show_nfs_server_v3"></unset>
+            <unset token="show_nfs_server_v2"></unset>
+            <unset token="show_nfs_client_v4"></unset>
+            <unset token="show_nfs_client_v3"></unset>
+          </condition>
+        </change>
+      </input>
+      <chart depends="$show_nfs_server_v4$" rejects="$show_nfs_server_v4_msg$">
         <title>NFS Server V4</title>
-		  <search>        
+        <search>
           <query>| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSSVRV4(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-		  </search>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+          <!-- Progress event has access to job properties only -->
+          <progress>
+            <condition match="'job.resultCount' == 0">
+              <set token="show_nfs_server_v4_msg">foob</set>
+            </condition>
+            <condition>
+              <unset token="show_nfs_server_v4_msg"></unset>
+            </condition>
+          </progress>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -1858,28 +1955,36 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
-		  <drilldown target="search">
-		  <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS 
+        <drilldown target="search">
+          <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSSVRV4(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
-      	</drilldown>        
+        </drilldown>
       </chart>
-      
-      <chart id="link71">
+      <chart depends="$show_nfs_server_v3$" rejects="$show_nfs_server_v3_msg$">
         <title>NFS Server V3</title>
         <search>
           <query>| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSSVRV3(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-		  </search>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+          <!-- Progress event has access to job properties only -->
+          <progress>
+            <condition match="'job.resultCount' == 0">
+              <set token="show_nfs_server_v3_msg">foob</set>
+            </condition>
+            <condition>
+              <unset token="show_nfs_server_v3_msg"></unset>
+            </condition>
+          </progress>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -1897,28 +2002,36 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
-		  <drilldown target="search">
-		  <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS 
+        <drilldown target="search">
+          <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSSVRV3(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
-      	</drilldown>
+        </drilldown>
       </chart>
-
-      <chart id="link72">
+      <chart depends="$show_nfs_server_v2$" rejects="$show_nfs_server_v2_msg$">
         <title>NFS Server V2</title>
         <search>
           <query>| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSSVRV2(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-		  </search>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+          <!-- Progress event has access to job properties only -->
+          <progress>
+            <condition match="'job.resultCount' == 0">
+              <set token="show_nfs_server_v2_msg">foob</set>
+            </condition>
+            <condition>
+              <unset token="show_nfs_server_v2_msg"></unset>
+            </condition>
+          </progress>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -1936,40 +2049,38 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
-		  <drilldown target="search">
-		  <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS 
+        <drilldown target="search">
+          <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSSVRV2(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
-      	</drilldown>
+        </drilldown>
       </chart>
 
-    </panel>
-   </row>
-   
-   <row>    
-    <panel>
 
-      <html>
-      <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link75,link76,link77">Select a view:<!--Links go here-->
-      </div>
-	   </html>
-
-      <chart id="link75">
+      <chart depends="$show_nfs_client_v4$" rejects="$show_nfs_client_v4_msg$">
         <title>NFS Client V4</title>
-		  <search>        
+        <search>
           <query>| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSCLIV4(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-		  </search>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+          <!-- Progress event has access to job properties only -->
+          <progress>
+            <condition match="'job.resultCount' == 0">
+              <set token="show_nfs_client_v4_msg">foob</set>
+            </condition>
+            <condition>
+              <unset token="show_nfs_client_v4_msg"></unset>
+            </condition>
+          </progress>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -1987,28 +2098,40 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time presta
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
-		  <drilldown target="search">
-		  <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS 
+        <drilldown target="search">
+          <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSCLIV4(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
-        </drilldown>        
+        </drilldown>
       </chart>
       
-      <chart id="link76">
+      
+      
+      
+      <chart depends="$show_nfs_client_v3$" rejects="$show_nfs_client_v3_msg$">
         <title>NFS Client V3</title>
-		  <search>        
+        <search>
           <query>| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSCLIV3(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-		  </search>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+          <!-- Progress event has access to job properties only -->
+          <progress>
+            <condition match="'job.resultCount' == 0">
+              <set token="show_nfs_client_v3_msg">foob</set>
+            </condition>
+            <condition>
+              <unset token="show_nfs_client_v3_msg"></unset>
+            </condition>
+          </progress>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -2026,28 +2149,36 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time presta
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
-		  <drilldown target="search">
-		  <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS 
+        <drilldown target="search">
+          <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSCLIV3(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
-        </drilldown>        
+        </drilldown>
       </chart>
-
-      <chart id="link77">
+      <chart depends="$show_nfs_client_v2$" rejects="$show_nfs_client_v2_msg$">
         <title>NFS Client V2</title>
-		  <search>        
+        <search>
           <query>| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time prestats=true $span$
 | stats dedup_splitvals=t `NFSCLIV2(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 $span$ max(value) AS value by monitor</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-		  </search>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+          <!-- Progress event has access to job properties only -->
+          <progress>
+            <condition match="'job.resultCount' == 0">
+              <set token="show_nfs_client_v2_msg">foob</set>
+            </condition>
+            <condition>
+              <unset token="show_nfs_client_v2_msg"></unset>
+            </condition>
+          </progress>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -2065,17 +2196,35 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time presta
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Nbr of Operations</option>
-		  <drilldown target="search">
-		  <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS 
+        <drilldown target="search">
+          <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS 
 where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSCLIV2(max)` by _time
 | sort limit=0 _time
-| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
+| rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value&gt;0
 | timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
-        </drilldown>        
+        </drilldown>
       </chart>
-
+      <html depends="$show_nfs_server_v4$,$show_nfs_server_v4_msg$">
+         <p style="color:blue;margin-left:30px;font-size:14px">NFS Server V4 metric did not returned any results, NFS collect may not be activated or there are no activity for this metric.</p>
+      </html>
+      <html depends="$show_nfs_server_v3$,$show_nfs_server_v3_msg$">
+         <p style="color:blue;margin-left:30px;font-size:14px">NFS Server V3 metric did not returned any results, NFS collect may not be activated or there are no activity for this metric.</p>
+      </html>
+      <html depends="$show_nfs_server_v2$,$show_nfs_server_v3_msg$">
+         <p style="color:blue;margin-left:30px;font-size:14px">NFS Server V2 metric did not returned any results, NFS collect may not be activated or there are no activity for this metric.</p>
+      </html>
+      <html depends="$show_nfs_client_v4$,$show_nfs_client_v4_msg$">
+         <p style="color:blue;margin-left:30px;font-size:14px">NFS Client V4 metric did not returned any results, NFS collect may not be activated or there are no activity for this metric.</p>
+      </html>
+      <html depends="$show_nfs_client_v3$,$show_nfs_client_v3_msg$">
+         <p style="color:blue;margin-left:30px;font-size:14px">NFS Client V3 metric did not returned any results, NFS collect may not be activated or there are no activity for this metric.</p>
+      </html>
+      <html depends="$show_nfs_client_v2$,$show_nfs_client_v2_msg$">
+         <p style="color:blue;margin-left:30px;font-size:14px">NFS Client V2 metric did not returned any results, NFS collect may not be activated or there are no activity for this metric.</p>
+      </html>
     </panel>
-  </row>
+
+	</row>
 
 </form>

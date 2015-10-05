@@ -333,7 +333,7 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link1,link2">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link1,link2,link3"><!--Links go here-->
       </div>
     </html>
 
@@ -405,6 +405,40 @@ avg("CPU.cpu_PCT") AS "CPU_PCT"</link>
       </drilldown>
     </chart>
 
+    <chart id="link3">
+      <title>CPUnn, % usage per logical core</title>
+		<search>
+			<query>| tstats max("CPU.cpu_PCT") AS cpu_PCT from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.$hostname$) groupby _time, "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.cpu_PCT") AS cpu_PCT by _time, "CPU.CPUnn.logical_core"
+| timechart `inline_customspan` useother=f limit=0  avg(cpu_PCT) AS cpu_PCT by "CPU.CPUnn.logical_core"</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+		</search>
+      <option name="charting.axisTitleX.visibility">visible</option>
+      <option name="charting.axisTitleY.visibility">visible</option>
+      <option name="charting.axisX.scale">linear</option>
+      <option name="charting.axisY.scale">linear</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">gaps</option>
+      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.style">shiny</option>
+      <option name="charting.drilldown">all</option>
+      <option name="charting.layout.splitSeries">0</option>
+      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+      <option name="charting.legend.placement">bottom</option>
+      <option name="height">680px</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">% CPUs</option>
+      <option name="charting.axisY.minimumNumber">0</option>
+      <option name="charting.axisY.maximumNumber">100</option>
+		<drilldown target="search">
+			<link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.cpu_PCT") AS cpu_PCT from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.cpu_PCT") AS cpu_PCT by _time, "CPU.hostname"
+| timechart span=1m useother=f limit=0  avg(cpu_PCT) AS cpu_PCT by "CPU.CPUnn.logical_core"</link>
+      </drilldown>
+    </chart>
+
    </panel>
   </row>  
 
@@ -413,7 +447,7 @@ avg("CPU.cpu_PCT") AS "CPU_PCT"</link>
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link5,link6,link7,link8">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link5,link6,link7,link8"><!--Links go here-->
       </div>
     </html>
 
@@ -575,7 +609,7 @@ groupby _time, "WLM.hostname", "WLM.device" prestats=true span=1m
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link10,link11,link12,link13,link14,link15">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link10,link11,link12,link13,link14,link15"><!--Links go here-->
       </div>
     </html>
 
@@ -796,7 +830,7 @@ max(FILE.ttycanch) As ttycanch, max(FILE.ttyoutch) As ttyoutch, max(FILE.ttyrawc
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link20,link21">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link20,link21"><!--Links go here-->
       </div>
     </html>
 
@@ -880,7 +914,7 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link30,link31,link32">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link30,link31,link32"><!--Links go here-->
       </div>
     </html>
     
@@ -979,7 +1013,7 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link33">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link33"><!--Links go here-->
       </div>
     </html>
     
@@ -1057,7 +1091,7 @@ groupby _time prestats=true $span$
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link34,link35,link36,link37,link38,link39">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link34,link35,link36,link37,link38,link39"><!--Links go here-->
       </div>
     </html>
 
@@ -1304,7 +1338,7 @@ max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite</query>
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link40,link41,link42,link43,link44,link45,link46,link47">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link40,link41,link42,link43,link44,link45,link46,link47"><!--Links go here-->
       </div>
     </html>
 
@@ -1604,7 +1638,7 @@ max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite | fields _time,bre
   
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link470,link471,link472,link473">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link470,link471,link472,link473"><!--Links go here-->
       </div>
     </html>
 
@@ -1768,7 +1802,7 @@ groupby _time, "WLM.hostname", "WLM.device" prestats=true span=1m
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link50,link51,link52,link53,link54,link541,link542">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link50,link51,link52,link53,link54,link541,link542"><!--Links go here-->
       </div>
     </html>
 
@@ -2058,7 +2092,7 @@ where (nodename = DISKWAITTM) (DISKWAITTM.$hostname$) (DISKWAITTM.value&gt;0) gr
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link55">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link55"><!--Links go here-->
       </div>
     </html>
 
@@ -2115,7 +2149,7 @@ where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" pres
 
     <html>
       <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link60,link61,link62">Select a view:<!--Links go here-->
+      <div class="link-switcher" data-items="link60,link61,link62"><!--Links go here-->
       </div>
     </html>
 
