@@ -1,270 +1,241 @@
 <dashboard stylesheet="Home.css,hover.css,hide_timeindicator.css,single_trend_transposed.css" hideEdit="true">
-  <label>LINUX Home</label>
-  <description>LINUX NMON Performance Monitor - Version 1.7.0</description>
+	<label>LINUX Home</label>
+	<description>LINUX NMON Performance Monitor - Version 1.7.0</description>
 
-  <!-- Global Search -->
+	<!-- Global Search -->
 
-  <search id="Global">
-    <query>| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary='First Event' + " - " + 'Last Event'</query>
-  </search>
+	<search id="Global">
+		<query>| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary='First Event' + " - " + 'Last Event'</query>
+	</search>
 
-  <row>  
-  
-   <panel>
-    <html>		
-		<div style="text-align: center;">		  
-			<a class="button2 glow" target="_blank" href="Nmon_Summary?form.osfilter=Linux">NMON SUMMARY</a>
-		</div>
-    </html>
-   </panel>
-   
-   <panel>
-    <html>		
-		<div style="text-align: center;">		  
-			<a class="button2 glow" target="_blank" href="Nmon_ANALYSER_LINUX">NMON ANALYSER</a>
-		</div>
-    </html>
-   </panel>
+	<row>
 
-  </row>
+		<panel>
+			<html>
+				<div style="text-align: center;">
+					<a class="button2 glow" target="_blank" href="Nmon_Summary?form.osfilter=Linux">NMON SUMMARY</a>
+				</div>
+			</html>
+		</panel>
 
-  <row>  
-   <panel>  
-  
-    <single>
-      <search id="HostsCount">
-        <query>| inputlookup nmon_inventory | search OStype="Linux" | stats count</query>
-      </search>
-      <option name="linkView">search</option>
-      <option name="beforeLabel">There are</option>
-      <option name="afterLabel">Linux Host(s)</option>
-      <option name="underLabel">KNOWN IN NMON INVENTORY</option>
-      <option name="field">count</option>
-      <option name="drilldown">all</option>
-      <option name="linkFields">result</option>
-      <option name="linkSearch">| inputlookup nmon_inventory | search OStype="Linux"
-| fields hostname,cpu_cores,OStype,Processor,Linux_memory_MB,Linux_swap_MB,Linux_vendor,Linux_distribution,Linux_kernelversion,nmon_version</option>
-    </single>     
+		<panel>
+			<html>
+				<div style="text-align: center;">
+					<a class="button2 glow" target="_blank" href="Nmon_ANALYSER_LINUX">NMON ANALYSER</a>
+				</div>
+			</html>
+		</panel>
 
-  </panel>
-  </row>
+	</row>
 
-  <row>
-    <panel>
-      <html>
+	<row>
+		<panel>
 
-      <div class="imgheader">
-        	<img src="../../static/app/nmon/icons/color_theme/info2.png" alt="info"/>
-			<h1>APPLICATION INFORMATION:</h1>		
-			<br />
-		</div>      
+			<single>
+				<search id="HostsCount">
+					<query>| inputlookup nmon_inventory | search OStype="Linux" | stats count</query>
+				</search>
+				<option name="linkView">search</option>
+				<option name="beforeLabel">There are</option>
+				<option name="afterLabel">Linux Host(s)</option>
+				<option name="underLabel">KNOWN IN NMON INVENTORY</option>
+				<option name="field">count</option>
+				<option name="drilldown">all</option>
+				<option name="linkFields">result</option>
+				<option name="linkSearch">| inputlookup nmon_inventory | search OStype="Linux" | fields hostname,cpu_cores,OStype,Processor,Linux_memory_MB,Linux_swap_MB,Linux_vendor,Linux_distribution,Linux_kernelversion,nmon_version</option>
+			</single>
 
-      <div class="imgminiheader">
-        <h4>
-        <i>        
-        Index name: <a href="search?q=search%20index%3Dnmon" target="_blank">nmon</a> / 
-        Main sourcetypes: <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data" target="_blank">nmon_data</a> (Performance data), 
-        <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_config" target="_blank">nmon_config</a> (Configuration data), 
-        <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_collect" target="_blank">nmon_collect</a> (Nmon raw data generation), 
-        <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_processing" target="_blank">nmon_processing</a> (Nmon raw data processing)
-        &#160;&#160;&#160;-&#160;&#160;&#160;<img src="../../static/app/nmon/icons/grey_theme/minihelp.png" alt="minihelp"/>
-        &#160;&#160;&#160; <a href="Help" target="_blank">About Nmon Performance Monitor</a>
-        </i>
-        </h4>
-      </div>
+		</panel>
+	</row>
 
-	
-     </html>
-      <single>
-        <search base="Global">
-	       <query>fields summary</query>
-	     </search>
-        <option name="linkView">search</option>
-        <option name="underLabel">Date of first and last performance event</option>
-        <option name="drilldown">none</option>
-        <option name="refresh.auto.interval">60</option>
-        <option name="drilldown">all</option>
-        <option name="linkFields">result</option>
-        <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary="Starts at:" + 'First Event' + " # " + "Ends at:" + 'Last Event'</option>
-      </single>
-      <single>
-        <search ref="Hosts with data within last 7 days"></search>
-        <option name="refresh.auto.interval">60</option>
-      </single>
-      <single>
-        <search ref="Volume of Data indexed Today"></search>
-        <option name="refresh.auto.interval">60</option>
-      </single>
-      <single>
-        <search ref="Number of Errors in Data Processing or Data Collect since last 24 Hours"></search>
-        <option name="refresh.auto.interval">60</option>
-      </single>
-    </panel>
-  </row>
-  
-  <row>
-    <panel>
-      <html>
+	<row>
+		<panel>
+			<html>
 
-      <div class="imgheader">
-        	<img src="../../static/app/nmon/icons/color_theme/redcross.png" alt="redcross"/>
-			<h1>SAFE CENTER: Active Triggered Alerts</h1>
-			<br />		
-		</div>      
-      
-      <div class="customleft">
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/color_theme/info2.png" alt="info"/>
+					<h1>APPLICATION INFORMATION:</h1>
+				</div>
 
-        <h4><i>
-        Enter <a href="../../alerts/nmon" target="_blank">Splunk Triggered Alerts for Nmon App</a> - 
-		  Enter <a href="UI_Safe_Center" target="_blank">Nmon SAFE CENTER dashboard</a>
-		  </i></h4>        
-        
-      </div>
+				<div class="imgminiheader">
+					<h4>
+						<i>
+							Index name: <a href="search?q=search%20index%3Dnmon" target="_blank">nmon</a> /
+							Main sourcetypes: <a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data" target="_blank">nmon_data</a> (Performance data),
+							<a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_config" target="_blank">nmon_config</a> (Configuration data),
+							<a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_collect" target="_blank">nmon_collect</a> (Nmon raw data generation),
+							<a href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_processing" target="_blank">nmon_processing</a> (Nmon raw data processing)
+							&#160;&#160;&#160;-&#160;&#160;&#160;<img src="../../static/app/nmon/icons/grey_theme/minihelp.png" alt="minihelp"/>
+							&#160;&#160;&#160; <a href="Help" target="_blank">About Nmon Performance Monitor</a>
+						</i>
+					</h4>
+				</div>
 
-     </html>
-     
-      <single>
-        <search ref="SAFE CENTER - Number of active CPU alerts"></search>
-        <option name="refresh.auto.interval">60</option>        
-      </single>
-      <single>
-        <search ref="SAFE CENTER - Number of active Real Memory alerts"></search>
-        <option name="refresh.auto.interval">60</option>
-      </single>
-      <single>
-        <search ref="SAFE CENTER - Number of active Virtual Memory alerts"></search>
-        <option name="refresh.auto.interval">60</option>
-      </single>
-      <single>
-        <search ref="SAFE CENTER - Number of active FS alerts"></search>
-        <option name="refresh.auto.interval">60</option>
-      </single>
 
-    </panel>
+			</html>
+			<single>
+				<search base="Global">
+					<query>fields summary</query>
+				</search>
+				<option name="linkView">search</option>
+				<option name="underLabel">Date of first and last performance event</option>
+				<option name="drilldown">none</option>
+				<option name="refresh.auto.interval">60</option>
+				<option name="drilldown">all</option>
+				<option name="linkFields">result</option>
+				<option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary="Starts at:" + 'First Event' + " # " + "Ends at:" + 'Last Event'</option>
+			</single>
+			<single>
+				<search ref="Hosts with data within last 7 days"></search>
+				<option name="refresh.auto.interval">60</option>
+			</single>
+			<single>
+				<search ref="Volume of Data indexed Today"></search>
+				<option name="refresh.auto.interval">60</option>
+			</single>
+			<single>
+				<search ref="Number of Errors in Data Processing or Data Collect since last 24 Hours"></search>
+				<option name="refresh.auto.interval">60</option>
+			</single>
+		</panel>
+	</row>
 
-  </row>		
+	<row>
+		<panel>
+			<html>
 
-  <row>
-    <html>
-      <div class="customleft">
-        <h1>INTERFACES PER CATEGORY:</h1>
-      </div>
-    </html>
-  </row>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/color_theme/redcross.png" alt="redcross"/>
+					<h1>SAFE CENTER: Active Triggered Alerts</h1>
+				</div>
 
-  <row>
-  
-<!-- ############################################ CPU CATEGORY ############################################ -->
+				<div class="customleft">
 
-	<panel>
-    
-    <html>
+					<h4><i>
+						Enter <a href="../../alerts/nmon" target="_blank">Splunk Triggered Alerts for Nmon App</a> -
+						Enter <a href="UI_Safe_Center" target="_blank">Nmon SAFE CENTER dashboard</a>
+					</i></h4>
 
-      <div class="imgheader">
-        	<img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
-			<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=CPU%20USAGE%20STATISTICS" target="_blank">CPU Usage Statistics</a></h2>		
-		</div>
-      
-		<br />
-		<br />
-		
-		<div>		
-      
+				</div>
+
+			</html>
+
+			<single>
+				<search ref="SAFE CENTER - Number of active CPU alerts"></search>
+				<option name="refresh.auto.interval">60</option>
+			</single>
+			<single>
+				<search ref="SAFE CENTER - Number of active Real Memory alerts"></search>
+				<option name="refresh.auto.interval">60</option>
+			</single>
+			<single>
+				<search ref="SAFE CENTER - Number of active Virtual Memory alerts"></search>
+				<option name="refresh.auto.interval">60</option>
+			</single>
+			<single>
+				<search ref="SAFE CENTER - Number of active FS alerts"></search>
+				<option name="refresh.auto.interval">60</option>
+			</single>
+
+		</panel>
+
+	</row>
+
+	<row>
+		<html>
+			<div class="customleft">
+				<h1>INTERFACES PER CATEGORY:</h1>
+			</div>
+		</html>
+	</row>
+
+	<row>
+
+		<!-- ############################################ CPU CATEGORY ############################################ -->
+
+		<panel>
+
+			<html>
+
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=CPU%20USAGE%20STATISTICS" target="_blank">CPU Usage Statistics</a></h2>
+				</div>
+
+				<hr />
+
 				<div class="cat_title">
 
-				
-				<a target="_blank" href="UI_Nmon_CPU_ALL?form.osfilter=Linux" class="tryitbtn">CPU_ALL »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_CPU_ALL?form.osfilter=Linux">			
-				<span title="CPU Utilization statistics in Percentage (%) &#013;
+					<a target="_blank" href="UI_Nmon_CPU_ALL?form.osfilter=Linux" class="tryitbtn">CPU_ALL »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_CPU_ALL?form.osfilter=Linux">
+						<span title="CPU Utilization statistics in Percentage (%) &#013;
 &#013;
 • Represents the percentage of CPU system load for all available cores &#013;
 &#013;
 • Statistics can be returned in global usage or main category: Sys,User,Wait,Idle">
-				Percentage of CPU Utilization
-				</span>
-				</a>
-				
-				<a target="_blank" href="UI_RT_Nmon_CPU_ALL?form.osfilter=Linux" class="rt">
-				<span title="Click here to access Real Time search simplified interface for this section"> 
-				  <img src="../../static/app/nmon/logos/Others/RT_icon.png" alt="RT"/>
-				</span>				
-				</a>			
-				
-				</div>			
+							Percentage of CPU Utilization
+						</span>
+					</a>
 
-         <br />
+					<a target="_blank" href="UI_RT_Nmon_CPU_ALL?form.osfilter=Linux" class="rt">
+						<span title="Click here to access Real Time search simplified interface for this section">
+							<img src="../../static/app/nmon/logos/Others/RT_icon.png" alt="RT"/>
+						</span>
+					</a>
 
-		</div>
+				</div>
 
-		<div>		
-      
 				<div class="cat_title">
 
-				
-				<a target="_blank" href="UI_Nmon_CPUnn?form.osfilter=Linux" class="tryitbtn">CPUnn »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_CPUnn?form.osfilter=Linux">			
-				<span title="CPU Utilization per logical core statistics in Percentage (%) &#013;
+
+					<a target="_blank" href="UI_Nmon_CPUnn?form.osfilter=Linux" class="tryitbtn">CPUnn »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_CPUnn?form.osfilter=Linux">
+						<span title="CPU Utilization per logical core statistics in Percentage (%) &#013;
 &#013;
 • Represents the percentage of CPU system load by logical core (lower level of CPU usage details) &#013;
 &#013;
 • Statistics can be returned in global usage or main category: Sys,User,Wait,Idle">
-				ALL OS: Percentage of CPU Utilization per logical core
-				</span>
-				</a>
-				
-				<a target="_blank" href="UI_RT_Nmon_CPUnn?form.osfilter=Linux" class="rt">
-				<span title="Click here to access Real Time search simplified interface for this section"> 
-				  <img src="../../static/app/nmon/logos/Others/RT_icon.png" alt="RT"/>
-				</span>				
-				</a>				
-				
-				</div>			
+							ALL OS: Percentage of CPU Utilization per logical core
+						</span>
+					</a>
 
-         <br />
+					<a target="_blank" href="UI_RT_Nmon_CPUnn?form.osfilter=Linux" class="rt">
+						<span title="Click here to access Real Time search simplified interface for this section">
+							<img src="../../static/app/nmon/logos/Others/RT_icon.png" alt="RT"/>
+						</span>
+					</a>
 
-		</div>
-		      
-		<!-- Prevent Categories with low level of elements to drow up / down during loading step -->
+				</div>
 
-		<br />
-		<br />
-		<br />
-		<br />
-		<br />
-		<br />
-		      
-    </html>
-   </panel>
-   
-<!-- ###################################################################################################### -->
+			</html>
+		</panel>
 
-<!-- ############################################ KERNEL CATEGORY ############################################ -->
+		<!-- ###################################################################################################### -->
 
-   <panel> 
-    <html>
+		<!-- ############################################ KERNEL CATEGORY ############################################ -->
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="Process"/>
-        <h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=KERNEL%20STATISTICS&amp;form.itemfilter=PROCESSES%20STATISTICS&amp;form.itemfilter=PAGING%20STATISTICS&amp;form.itemfilter=FIBER%20CHANNEL%20STATISTICS" target="_blank">Process, Kernel, I/O Statistics</a></h2>
-          
-		</div>
-		    
-      <br />
-      <br />		    
-		
-		<div>		
-                
+		<panel>
+			<html>
+
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/process.png" alt="Process"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=KERNEL%20STATISTICS&amp;form.itemfilter=PROCESSES%20STATISTICS&amp;form.itemfilter=PAGING%20STATISTICS&amp;form.itemfilter=FIBER%20CHANNEL%20STATISTICS" target="_blank">Process, Kernel, I/O Statistics</a></h2>
+
+				</div>
+
+				<hr />
+
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_TOP_LINUX" class="tryitbtn">TOP »
-				</a>			
+					<a target="_blank" href="UI_Nmon_TOP_LINUX" class="tryitbtn">TOP »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_TOP_LINUX">		
-				<span title="Statistics of Main Processes System Resources Usage &#013;
+					<a target="_blank" href="UI_Nmon_TOP_LINUX">
+						<span title="Statistics of Main Processes System Resources Usage &#013;
 &#013;
 • Get the CPU core utilization of main processes aggregated by Command invocations &#013;
 &#013;
@@ -272,69 +243,51 @@
 &#013;
 • With UARG information, filter PIDs from Command to get accurate measures of complex processes
 &#013;">
-				Main Processes System Resources Usage
-				</span>
-				</a>
-				
-				</div>			
+							Main Processes System Resources Usage
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>		
-		
-		<div>
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_UARG_LINUX" class="tryitbtn">UARG »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_UARG_LINUX">
-				<span title="Search for PIDs, Commands and Full Arguments of Processes &#013;
+					<a target="_blank" href="UI_Nmon_UARG_LINUX" class="tryitbtn">UARG »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_UARG_LINUX">
+						<span title="Search for PIDs, Commands and Full Arguments of Processes &#013;
 &#013;
 • With UARG, get detailed information about Commands registered: PID, Full arguments and more &#013;
 &#013;
-• These information can also be very useful within TOP interfaces for accurate analysis">				
-				Search for PIDs, Commands and Arguments
-				</span>				
-				</a>
-				
-				</div>			
+• These information can also be very useful within TOP interfaces for accurate analysis">
+							Search for PIDs, Commands and Arguments
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>		
-				    
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_PROC?form.osfilter=Linux" class="tryitbtn">PROC »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_PROC?form.osfilter=Linux">
-				<span title="Kernel Internal Statistics &#013;
+					<a target="_blank" href="UI_Nmon_PROC?form.osfilter=Linux" class="tryitbtn">PROC »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_PROC?form.osfilter=Linux">
+						<span title="Kernel Internal Statistics &#013;
 &#013;
-• RunQueue, Swap-In, pswitch, syscall, fork, exec and more">				
-				Kernel Internal Statistics
-				</span>
-				</a>				
-								
-				</div>			
+• RunQueue, Swap-In, pswitch, syscall, fork, exec and more">
+							Kernel Internal Statistics
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>		
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_VM_LINUX" class="tryitbtn">VM »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_VM_LINUX">
-				<span title="Various Virtual Memory statistics &#013;
+					<a target="_blank" href="UI_Nmon_VM_LINUX" class="tryitbtn">VM »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_VM_LINUX">
+						<span title="Various Virtual Memory statistics &#013;
 &#013;
 • Pageins / Pageout &#013;
 &#013;
@@ -343,533 +296,414 @@
 • Minor and Major faults &#013;
 &#013;
 And more">
-				Kernel Virtual Memory Statistics
-				</span>	
-				</a>				
-								
-				</div>			
+							Kernel Virtual Memory Statistics
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
+			</html>
+		</panel>
 
-    </html>
-	</panel>
+		<!-- ###################################################################################################### -->
 
-<!-- ###################################################################################################### -->
+		<!-- ############################################ MEMORY CATEGORY ############################################ -->
 
-<!-- ############################################ MEMORY CATEGORY ############################################ -->
-	
-	<panel>
-    <html>
+		<panel>
+			<html>
 
-		<div class="imgheader">
+				<div class="imgheader">
 
-      	<img src="../../static/app/nmon/icons/grey_theme/memory.png" alt="Memory"/>
-			<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=MEMORY%20STATISTICS" target="_blank">Memory Statistics</a></h2>		
+					<img src="../../static/app/nmon/icons/grey_theme/memory.png" alt="Memory"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=MEMORY%20STATISTICS" target="_blank">Memory Statistics</a></h2>
 
-		</div>
+				</div>
 
-		<br />
-		<br />
+				<hr />
 
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_MEM_LINUX" class="tryitbtn">MEM »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_MEM_LINUX">
-				<span title="Real and Virtual Memory Statistics &#013;
+					<a target="_blank" href="UI_Nmon_MEM_LINUX" class="tryitbtn">MEM »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_MEM_LINUX">
+						<span title="Real and Virtual Memory Statistics &#013;
 &#013;
 • Memory Usage in Data Volume (MB) or Percentage &#013;
 &#013;
 • Specific System Stats (for Linux: Buffers / Cached / Active / Inactive...)">
-				Real and Virtual Memory Statistics
-				</span>	
-				</a>				
-								
-				</div>			
+							Real and Virtual Memory Statistics
+						</span>
+					</a>
 
-         <br />
-         <br />
-         <br />
-         <br />
-         <br />
-         <br />        
-         <br />
-         <br />
-         <br />        
-         <br />
-         <br />        
+				</div>
 
-		</div>          
-          
-    </html>
-	</panel>
+			</html>
+		</panel>
 
-<!-- ###################################################################################################### -->
-    
-<!-- ############################################ DISKS AND FS CATEGORY ############################################ -->    
-	
-	<panel>
-    <html>
+		<!-- ###################################################################################################### -->
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="Drive"/>
-		  <h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=DISKS%20STATISTICS&amp;form.itemfilter=FILESYSTEMS%20STATISTICS" target="_blank">Disks and Filesystems Statistics</a></h2>		
-		</div>
+		<!-- ############################################ DISKS AND FS CATEGORY ############################################ -->
 
-		<br />
-		<br />
-		
-		<div>		
-                
+		<panel>
+			<html>
+
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="Drive"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=DISKS%20STATISTICS&amp;form.itemfilter=FILESYSTEMS%20STATISTICS" target="_blank">Disks and Filesystems Statistics</a></h2>
+				</div>
+
+				<hr />
+
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_DISKBSIZE?form.osfilter=Linux" class="tryitbtn">DISKBSIZE »
-				</a>
+					<a target="_blank" href="UI_Nmon_DISKBSIZE?form.osfilter=Linux" class="tryitbtn">DISKBSIZE »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_DISKBSIZE?form.osfilter=Linux">
-				<span title="Transfer Statistics per Disk &#013;
+					<a target="_blank" href="UI_Nmon_DISKBSIZE?form.osfilter=Linux">
+						<span title="Transfer Statistics per Disk &#013;
 &#013;
 • Average data size per block device transfer per disk (KBytes per transfer)">
-				Average Data Transfer Size
-				</span>
-				</a>				
-								
-				</div>			
+							Average Data Transfer Size
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_DISKBUSY?form.osfilter=Linux" class="tryitbtn">DISKBUSY »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_DISKBUSY?form.osfilter=Linux">
-				<span title="Percentage of Time Busy Disk &#013;
+					<a target="_blank" href="UI_Nmon_DISKBUSY?form.osfilter=Linux" class="tryitbtn">DISKBUSY »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_DISKBUSY?form.osfilter=Linux">
+						<span title="Percentage of Time Busy Disk &#013;
 &#013;
 • Analyse the Percentage of Time a disk was busy">
-				The Percentage of time a disk was Busy
-				</span>
-				</a>				
-								
-				</div>			
+							The Percentage of time a disk was Busy
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_DISKREAD-WRITE?form.osfilter=Linux" class="tryitbtn">DISKREAD/WRITE »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_DISKREAD-WRITE?form.osfilter=Linux">
-				<span title="Disks Read and Write Data rate &#013;
+					<a target="_blank" href="UI_Nmon_DISKREAD-WRITE?form.osfilter=Linux" class="tryitbtn">DISKREAD/WRITE »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_DISKREAD-WRITE?form.osfilter=Linux">
+						<span title="Disks Read and Write Data rate &#013;
 &#013;
 • Analyse Disk Read and Write operation Data rate in Kbytes/sec">
-				Disk Read/Write Data Rate
-				</span>
-				</a>				
-								
-				</div>			
+							Disk Read/Write Data Rate
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_DISKXFER?form.osfilter=Linux" class="tryitbtn">DISKXFER »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_DISKXFER?form.osfilter=Linux">
-				<span title="Disks I/O per second &#013;
+					<a target="_blank" href="UI_Nmon_DISKXFER?form.osfilter=Linux" class="tryitbtn">DISKXFER »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_DISKXFER?form.osfilter=Linux">
+						<span title="Disks I/O per second &#013;
 &#013;
 • Numbers of Input / Output operations per second (formerly IOPS) by disk">
-				Disk I/O Operations per second (IOPS)
-				</span>
-				</a>				
-								
-				</div>			
+							Disk I/O Operations per second (IOPS)
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_JFSFILE?form.osfilter=Linux" class="tryitbtn">JFSFILE »
-				</a>
-				
-				<a target="_blank" href="UI_Nmon_JFSFILE?form.osfilter=Linux">
-				<span title="File Systems Percentage Usage &#013;
+					<a target="_blank" href="UI_Nmon_JFSFILE?form.osfilter=Linux" class="tryitbtn">JFSFILE »
+					</a>
+
+					<a target="_blank" href="UI_Nmon_JFSFILE?form.osfilter=Linux">
+						<span title="File Systems Percentage Usage &#013;
 &#013;
 • Percentage usage of different file systems available">
-				File systems Percentage Usage
-				</span>
-				</a>				
-								
-				</div>			
+							File systems Percentage Usage
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-		
-    </html>
-	</panel>
+			</html>
+		</panel>
 
-  </row>
+	</row>
 
-<!-- ###################################################################################################### -->
+	<!-- ###################################################################################################### -->
 
-<!-- ############################################ NET CATEGORY ############################################ -->
+	<!-- ############################################ NET CATEGORY ############################################ -->
 
-  <row>
+	<row>
 
-	<panel>
-     <html>
+		<panel>
+			<html>
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/network.png" alt="Network"/>
-		  <h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=NETWORK*" target="_blank">Network Statistics</a></h2>		
-		</div>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/network.png" alt="Network"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=NETWORK*" target="_blank">Network Statistics</a></h2>
+				</div>
 
-		<br />
-		<br />
+				<hr />
 
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_NET?form.osfilter=Linux" class="tryitbtn">NET »
-				</a>
+					<a target="_blank" href="UI_Nmon_NET?form.osfilter=Linux" class="tryitbtn">NET »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_NET?form.osfilter=Linux">
-				<span title="Network Traffic per interface &#013;
+					<a target="_blank" href="UI_Nmon_NET?form.osfilter=Linux">
+						<span title="Network Traffic per interface &#013;
 &#013;
 • Analyse Traffic Data per interface in Kbps / Mbps / Gbps and per host">
-				Traffic Data Rate per Interface
-				</span>
-				</a>				
-								
-				</div>			
+							Traffic Data Rate per Interface
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-		
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_NETPACKET?form.osfilter=Linux" class="tryitbtn">NETPACKET »
-				</a>
+					<a target="_blank" href="UI_Nmon_NETPACKET?form.osfilter=Linux" class="tryitbtn">NETPACKET »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_NETPACKET?form.osfilter=Linux">
-				<span title="Network Packets per interface &#013;
+					<a target="_blank" href="UI_Nmon_NETPACKET?form.osfilter=Linux">
+						<span title="Network Packets per interface &#013;
 &#013;
 • Analyse the Number of Read and Write Network packets per interface and per host">
-				Read/Write packets per Interface
-				</span>
-				</a>				
-								
-				</div>			
+							Read/Write packets per Interface
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_NFS?form.osfilter=Linux" class="tryitbtn">NFS »
-				</a>
+					<a target="_blank" href="UI_Nmon_NFS?form.osfilter=Linux" class="tryitbtn">NFS »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_NFS?form.osfilter=Linux">
-				<span title="Network File System (NFS) Server and Client Statistics &#013;
+					<a target="_blank" href="UI_Nmon_NFS?form.osfilter=Linux">
+						<span title="Network File System (NFS) Server and Client Statistics &#013;
 &#013;
 • Analyse various NFS Client and Server Statistics, eligible for NFS version 2/3/4">
-				Network FileSystem Statistics
-				</span>
-				</a>				
-								
-				</div>			
+							Network FileSystem Statistics
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>    
+			</html>
+		</panel>
 
-    </html> 
-	</panel>
+		<!-- ###################################################################################################### -->
 
-<!-- ###################################################################################################### -->
+		<!-- ############################################ PREDICT AND COMPARE ############################################ -->
 
-<!-- ############################################ PREDICT AND COMPARE ############################################ -->    
+		<panel>
+			<html>
 
-	<panel>
-    <html>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/predict.png" alt="Prediction"/>
+					<h2>Data Prediction</h2>
+				</div>
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/predict.png" alt="Prediction"/>
-		<h2>Data Prediction</h2>		
-		</div>
+				<hr />
 
-		<br />
-		<br />
-		
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="../../../dj/en-us/nmon/UI_Predict_dj" class="tryitbtn-alt">PREDICTIVE »
-				</a>
+					<a target="_blank" href="../../../dj/en-us/nmon/UI_Predict_dj" class="tryitbtn-alt">PREDICTIVE »
+					</a>
 
-				<a target="_blank" href="../../../dj/en-us/nmon/UI_Predict_dj">
-				<span title="CPU Predictive Analysis Interface &#013;
+					<a target="_blank" href="../../../dj/en-us/nmon/UI_Predict_dj">
+						<span title="CPU Predictive Analysis Interface &#013;
 &#013;
 • Using the predict Splunk command, this interface will help trying to estimate future CPU load of your systems &#013;
 &#013;
 • Choose between available algorithms: Local Level (LL), Seasonal Local Level (LLP) and Local Level Trend (LLT) &#013;
 &#013;
 • Interact with the Prediction adding your own input knowledge to take in consideration futures projects and so on">
-				CPU Usage Predictive Interface
-				</span>
-				</a>				
-								
-				</div>			
+							CPU Usage Predictive Interface
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>		
+				<hr />
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/compare.png" alt="Compare"/>
-		<h2>Data Comparison</h2>		
-		</div>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/compare.png" alt="Compare"/>
+					<h2>Data Comparison</h2>
+				</div>
 
-		<br />
-		<br />
+				<hr />
 
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_compare" class="tryitbtn-alt">COMPARE »
-				</a>
+					<a target="_blank" href="UI_Nmon_compare" class="tryitbtn-alt">COMPARE »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_compare">
-				<span title="Nmon Comparison Interface &#013;
+					<a target="_blank" href="UI_Nmon_compare">
+						<span title="Nmon Comparison Interface &#013;
 &#013;
 • Compare System Resources usage between 2 periods, a reference Period and arrival Period &#013;
 &#013;
 • Choose between Main Monitors: CPU usage (CPU_ALL / LPAR), Memory, I/O, Network &#013;
 &#013;
 • Evaluate the trend with Evolution Rate and graphical decorations to help instantly discover the comparison result">
-				Nmon Comparison Interface
-				</span>
-				</a>				
-								
-				</div>			
+							Nmon Comparison Interface
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>		
+			</html>
+		</panel>
 
-		<br />
-		<br />
-	  
-    </html>
-	</panel>
+		<!-- ###################################################################################################### -->
 
-<!-- ###################################################################################################### -->
+		<!-- ############################################ DASHBOARDS ############################################ -->
 
-<!-- ############################################ DASHBOARDS ############################################ -->    
-	
-	<panel>
-    <html>
+		<panel>
+			<html>
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/dashboard.png" alt="Dashboard"/>
-		<h2>Dashboards</h2>		
-		</div>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/dashboard.png" alt="Dashboard"/>
+					<h2>Dashboards</h2>
+				</div>
 
-		<br />
-		<br />
+				<hr />
 
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="Dashboard_BubbleChart_top_hosts?&amp;form.osfilter=Linux" class="tryitbtn-alt">TOP CPU »
-				</a>
+					<a target="_blank" href="Dashboard_BubbleChart_top_hosts?&amp;form.osfilter=Linux" class="tryitbtn-alt">TOP CPU »
+					</a>
 
-				<a target="_blank" href="Dashboard_BubbleChart_top_hosts?&amp;form.osfilter=Linux">
-				<span title="BubbleChart: TOP hosts CPU Usage &#013;
+					<a target="_blank" href="Dashboard_BubbleChart_top_hosts?&amp;form.osfilter=Linux">
+						<span title="BubbleChart: TOP hosts CPU Usage &#013;
 &#013;
 • Evaluate the TOP 100 hosts CPU load represented in Bubble Charts to instantly discover hosts responsible of the global load average &#013;
 &#013;
 • Evaluate the TOP 20 hosts CPU load represented in d3chart bar chart &#013;
 &#013;
 • Evaluate the full Statistics table of hosts CPU load with main hosts information">
-				BubbleChart: TOP hosts CPU Usage
-				</span>
-				</a>				
-								
-				</div>			
+							BubbleChart: TOP hosts CPU Usage
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="../../../dj/en-us/nmon/UI_TOPChart_dj_LINUX" class="tryitbtn-alt">TOP CPU »
-				</a>
+					<a target="_blank" href="../../../dj/en-us/nmon/UI_TOPChart_dj_LINUX" class="tryitbtn-alt">TOP CPU »
+					</a>
 
-				<a target="_blank" href="../../../dj/en-us/nmon/UI_TOPChart_dj_LINUX">
-				<span title="PieChart: TOP Hosts CPU and Memory Usage &#013;
+					<a target="_blank" href="../../../dj/en-us/nmon/UI_TOPChart_dj_LINUX">
+						<span title="PieChart: TOP Hosts CPU and Memory Usage &#013;
 &#013;
 • Evaluate the TOP 30 CPU Usage hosts in d3chart Donut chart / CPU Usage hosts in Statistics table &#013;
 &#013;
 • Evaluate the TOP 30 Real Memory Usage hosts in d3chart Donut chart / Real Memory Usage hosts in Statistics table &#013;
 &#013;
 • Evaluate the TOP 30 Virtual Memory Usage hosts in d3chart Donut chart / Virtual Memory Usage hosts in Statistics table">
-				PieChart: TOP hosts CPU Usage
-				</span>
-				</a>				
-								
-				</div>			
+							PieChart: TOP hosts CPU Usage
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_LINUX" class="tryitbtn-alt">TOP CPU &amp; MEM »
-				</a>
+					<a target="_blank" href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_LINUX" class="tryitbtn-alt">TOP CPU &amp; MEM »
+					</a>
 
-				<a target="_blank" href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_LINUX">
-				<span title="D3chart: Processes CPU and Memory Usage &#013;
+					<a target="_blank" href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_LINUX">
+						<span title="D3chart: Processes CPU and Memory Usage &#013;
 &#013;
 • Evaluate Processes CPU and Memory usage in d3chart BubbleChart to instantly represent major Command invocations &#013;
 &#013;
 • Represent this CPU / Memory usage in a d3chart chart over time &#013;
 &#013;">
-				D3chart: Processes CPU and Memory Usage
-				</span>
-				</a>				
-								
-				</div>			
+							D3chart: Processes CPU and Memory Usage
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
+				<!-- ###################################################################################################### -->
 
-<!-- ###################################################################################################### -->
+				<!-- ############################################ CONFIG ############################################ -->
 
-<!-- ############################################ CONFIG ############################################ -->    
+				<hr />
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/server_info.png" alt="ServerInfo"/>
-		  <h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=CONFIGURATION%20DATA" target="_blank">Hosts Configuration</a></h2>		
-		</div>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/server_info.png" alt="ServerInfo"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=CONFIGURATION%20DATA" target="_blank">Hosts Configuration</a></h2>
+				</div>
 
-         <br />
-         <br />
-		
-		<div>		
-                
+				<hr />
+
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_CONFIG?form.osfilter=Linux" class="tryitbtn-alt">CONFIG »
-				</a>
+					<a target="_blank" href="UI_Nmon_CONFIG?form.osfilter=Linux" class="tryitbtn-alt">CONFIG »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_CONFIG?form.osfilter=Linux">
-				<span title="Hosts Configuration Show Interface &#013;
+					<a target="_blank" href="UI_Nmon_CONFIG?form.osfilter=Linux">
+						<span title="Hosts Configuration Show Interface &#013;
 &#013;
 • Explore the raw configuration of hosts &#013;
 &#013;
 • The full raw host configuration is part of AAA and BBB sections of raw Nmon files">
-				CONFIG: Hosts Configuration Show Interface
-				</span>
-				</a>				
-								
-				</div>			
+							CONFIG: Hosts Configuration Show Interface
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="UI_Nmon_CONFIG_simple_inventory_LINUX" class="tryitbtn-alt">INVENTORY »
-				</a>
+					<a target="_blank" href="UI_Nmon_CONFIG_simple_inventory_LINUX" class="tryitbtn-alt">INVENTORY »
+					</a>
 
-				<a target="_blank" href="UI_Nmon_CONFIG_simple_inventory_LINUX">
-				<span title="Nmon Configuration Inventory &#013;
+					<a target="_blank" href="UI_Nmon_CONFIG_simple_inventory_LINUX">
+						<span title="Nmon Configuration Inventory &#013;
 &#013;
 • Explore the Nmon inventory of known hosts from your system to get valuable information &#013;
 &#013;
 • Main configuration Items depends on Operating System: type of OS, OS version, CPU / Mem configuration and more">
-				Nmon Configuration Inventory
-				</span>
-				</a>				
-								
-				</div>			
+							Nmon Configuration Inventory
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-	
-    </html>
-	</panel>
-	
-<!-- ###################################################################################################### -->
+			</html>
+		</panel>
 
-<!-- ############################################ PROCESSING ############################################ -->    
+		<!-- ###################################################################################################### -->
 
-	<panel>	
-    <html>
+		<!-- ############################################ PROCESSING ############################################ -->
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/calendar.png" alt="Calendar"/>
-		  <h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=APPLICATION*" target="_blank">Data Processing / Collect Analysis</a></h2>
-		</div>
+		<panel>
+			<html>
 
-		<br />
-		<br />
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/calendar.png" alt="Calendar"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=Linux%3Dtrue&amp;form.itemfilter=APPLICATION*" target="_blank">Data Processing / Collect Analysis</a></h2>
+				</div>
 
-		<div>
-                
+				<hr />
+
 				<div class="cat_title">
 
-				<a target="_blank" href="Dashboard_rawprocessing_calendar" class="tryitbtn-alt">PROCESSING »
-				</a>
+					<a target="_blank" href="Dashboard_rawprocessing_calendar" class="tryitbtn-alt">PROCESSING »
+					</a>
 
-				<a target="_blank" href="Dashboard_rawprocessing_calendar">
-				<span title="Data Processing Activity: Calendar &#013;
+					<a target="_blank" href="Dashboard_rawprocessing_calendar">
+						<span title="Data Processing Activity: Calendar &#013;
 &#013;
 Analyse in Heatmap Calendars the Nmon Processing Activity: &#013;
 &#013;
@@ -878,56 +712,43 @@ Analyse in Heatmap Calendars the Nmon Processing Activity: &#013;
 • Errors in Data Processing (Count of) &#013;
 &#013;
 • Time Spent in Data Processing (in Seconds, conversion of NMON files)">
-				Data Processing Activity: Calendar
-				</span>
-				</a>				
-								
-				</div>			
+							Data Processing Activity: Calendar
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-
-		<div>		
-                
 				<div class="cat_title">
 
-				<a target="_blank" href="Dashboard_nmondata_calendar" class="tryitbtn-alt">DATA »
-				</a>
+					<a target="_blank" href="Dashboard_nmondata_calendar" class="tryitbtn-alt">DATA »
+					</a>
 
-				<a target="_blank" href="Dashboard_nmondata_calendar">
-				<span title="Data Performance Activity: Calendar &#013;
+					<a target="_blank" href="Dashboard_nmondata_calendar">
+						<span title="Data Performance Activity: Calendar &#013;
 &#013;
 Analyse in Heatmap Calendars type of Performance Data available for hosts">
-				Data Performance Activity: Calendar
-				</span>
-				</a>				
-								
-				</div>			
+							Data Performance Activity: Calendar
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>   
+				<hr />
 
-		<br />
-      
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-		<h2>Application Informations</h2>		
-		</div>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+					<h2>Application Informations</h2>
+				</div>
 
-		<br />
-		<br />
-		
-		<div>		
-                
+				<hr />
+
 				<div class="cat_title">
 
-				<a target="_blank" href="Dashboard_Internal_Stats" class="tryitbtn-alt">INTERNAL »
-				</a>
+					<a target="_blank" href="Dashboard_Internal_Stats" class="tryitbtn-alt">INTERNAL »
+					</a>
 
-				<a target="_blank" href="Dashboard_Internal_Stats">
-				<span title="Application Internal Statistics &#013;
+					<a target="_blank" href="Dashboard_Internal_Stats">
+						<span title="Application Internal Statistics &#013;
 &#013;
 • Analyse detailed Nmon Processing Statistics: Conversion of raw Nmon data files &#013;
 &#013;
@@ -935,30 +756,25 @@ Analyse in Heatmap Calendars type of Performance Data available for hosts">
 &#013;
 • Get Applications Statistics: Volume of Data indexes, Number of Hits per page &#013;
 ">
-				Application Internal Statistics
-				</span>
-				</a>				
-								
-				</div>			
+							Application Internal Statistics
+						</span>
+					</a>
 
-         <br />
+				</div>
 
-		</div>
-		
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/dictionary.png" alt="Dictionary"/>
-		<h2>Data Dictionary</h2>		
-		</div>
-		
-		<br />
-		<br />
-            
-      <div>
-         
-		<div class="cat_title">
+				<hr />
 
-			<a target="_blank" href="UI_data_dictionary?form.osfilter=AIX%3Dtrue" class="tryitbtn-alt">
-				<span title="Data Dictionary &#013;
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/dictionary.png" alt="Dictionary"/>
+					<h2>Data Dictionary</h2>
+				</div>
+
+				<hr />
+
+				<div class="cat_title">
+
+					<a target="_blank" href="UI_data_dictionary?form.osfilter=AIX%3Dtrue" class="tryitbtn-alt">
+						<span title="Data Dictionary &#013;
 &#013;
 • Discover and Explore available data within the Nmon Splunk Application &#013;
 &#013;
@@ -966,18 +782,15 @@ Analyse in Heatmap Calendars type of Performance Data available for hosts">
 &#013;
 • Access to full metric definition: brieve and full description, relevant unity, formula...">
 
-				Explore The Data Dictionary »
+							Explore The Data Dictionary »
 
-				</span>			
-			</a>			
-					
-		</div>		
+						</span>
+					</a>
 
+				</div>
 
-		</div>				
+			</html>
+		</panel>
 
-    </html>
-	</panel>
-
-  </row>
+	</row>
 </dashboard>
