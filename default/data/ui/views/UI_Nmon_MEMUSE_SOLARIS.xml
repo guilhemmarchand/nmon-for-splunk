@@ -1,363 +1,363 @@
 <form stylesheet="ui_simple.css" script="link_switcher.js, autodiscover.js">
-  <label>UI MEMUSE, Various Solaris Memory Statistics</label>
-  <description>User Interface for MEMUSE monitor</description>  
-  
-  <fieldset autoRun="false" submitButton="false">
+    <label>UI MEMUSE, Various Solaris Memory Statistics</label>
+    <description>User Interface for MEMUSE monitor</description>
 
-    <input type="time" token="timerange" searchWhenChanged="true">
-      <label>Time Range:</label>
-      <default>
-        <earliestTime>-24h</earliestTime>
-        <latestTime>now</latestTime>
-      </default>
-    </input>
+    <fieldset autoRun="false" submitButton="false">
 
-    <input type="dropdown" token="timefilter" searchWhenChanged="true">
-      <label>Time Filtering:</label>
-      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-      <default>No_Filter</default>
-    </input>
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
 
-    <input type="dropdown" token="osfilter" searchWhenChanged="true">
-      <label>Filter OS Type:</label>
-      <default>Solaris</default>
-      <prefix>Solaris.OStype="</prefix>
-      <suffix>"</suffix>      
-      <choice value="*">Any OS</choice>
-      <choice value="Solaris">Solaris</choice>
-    </input>
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
 
-     <input type="multiselect" token="frameID" searchWhenChanged="true">
-      <label>Frame IDs:</label>
-      <!-- Populating Data Model Search -->
-      <search id="frameIDSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) groupby "Solaris.frameID" prestats=true
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>Solaris</default>
+            <prefix>Solaris.OStype="</prefix>
+            <suffix>"</suffix>
+            <choice value="*">Any OS</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) groupby "Solaris.frameID" prestats=true
 | stats dedup_splitvals=t count AS Count by "Solaris.frameID"
 | sort limit=0 "Solaris.frameID"
 | fields - _span | fillnull Count | fields "Solaris.frameID"</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-      </search>
-      <valuePrefix>Solaris.frameID="</valuePrefix>
-      <valueSuffix>"</valueSuffix>
-      <delimiter> OR </delimiter>
-      <choice value="*">Any</choice>
-      <default>*</default>
-      <fieldForLabel>Solaris.frameID</fieldForLabel>
-      <fieldForValue>Solaris.frameID</fieldForValue>
-    </input>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>Solaris.frameID="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>Solaris.frameID</fieldForLabel>
+            <fieldForValue>Solaris.frameID</fieldForValue>
+        </input>
 
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <default>*</default>
-    </input> 
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
 
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <!-- Populating Data Model Search -->
-      <search id="hostsSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "Solaris.hostname" prestats=true
+        <input type="multiselect" token="hostname" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="hostsSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "Solaris.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "Solaris.hostname"
 | sort limit=0 "Solaris.hostname"
 | fields - _span | fillnull Count | fields "Solaris.hostname"</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-      </search>
-      <valuePrefix>Solaris.hostname="</valuePrefix>
-      <valueSuffix>"</valueSuffix>
-      <delimiter> OR </delimiter>
-      <choice value="*">ALL Hosts</choice>
-      <fieldForLabel>Solaris.hostname</fieldForLabel>
-      <fieldForValue>Solaris.hostname</fieldForValue>
-    </input>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>Solaris.hostname="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>Solaris.hostname</fieldForLabel>
+            <fieldForValue>Solaris.hostname</fieldForValue>
+        </input>
 
-    <input type="dropdown" token="statsmode" searchWhenChanged="true">
-      <label>Select a stats mode:</label>
-      <default>max</default>
-      <choice value="max">Max</choice>
-      <choice value="avg">Avg</choice>
-      <choice value="min">Min</choice>
-      <choice value="median">Median</choice>
-      <choice value="mode">Mode</choice>
-      <choice value="range">Range</choice>
-    </input>
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Select a stats mode:</label>
+            <default>max</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
 
-    <input type="checkbox" token="charting" searchWhenChanged="true">
-      <label>Charting:</label>
-      <default>fields *</default>
-      <choice value="fields *">On</choice>
-    </input>
+        <input type="checkbox" token="charting" searchWhenChanged="true">
+            <label>Charting:</label>
+            <default>fields *</default>
+            <choice value="fields *">On</choice>
+        </input>
 
-  </fieldset>
+    </fieldset>
 
-  <!-- Information panel -->
-  
-  <row>
-    <panel>
-      <html>
+    <!-- Information panel -->
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-        <h4>Metrics information:</h4> 
-		</div>
+    <row>
+        <panel>
+            <html>
 
-		<div class="list">
-		  <lu>
-			<li><b>PCTrcache:</b> Cache hit ratio, Same as 'sar -b'</li>
-			<li><b>PCTwcache:</b>	Cache hit ratio, Same as 'sar -b'</li>
-			<li><b>lread:</b> (sec) accesses of system buffers, Same as 'sar -b'</li>
-			<li><b>lwrite:</b> (sec) accesses of system buffers, Same as 'sar -b'</li>
-		  </lu>
-		</div>		
+                <div class="imgheader">
+                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+                    <h4>Metrics information:</h4>
+                </div>
 
-		<div class="list">
-		  <lu>
-			<li><b>pread:</b> (sec) transfers using raw (physical) device mechanism, Same as 'sar -b'</li>
-			<li><b>pwrite:</b> (sec) transfers using raw (physical) device mechanism, Same as 'sar -b'</li>
-			<li><b>bread:</b> (sec) transfer of data between system buffers and disk or other block device, Same as 'sar -b'</li>
-			<li><b>bwrite:</b> (sec) transfer of data between system buffers and disk or other block device, Same as 'sar -b'</li>  
-		  </lu>
-		</div>
-      
-     </html>
-    </panel>
-  </row>  
+                <div class="list">
+                    <lu>
+                        <li><b>PCTrcache:</b> Cache hit ratio, Same as 'sar -b'</li>
+                        <li><b>PCTwcache:</b>	Cache hit ratio, Same as 'sar -b'</li>
+                        <li><b>lread:</b> (sec) accesses of system buffers, Same as 'sar -b'</li>
+                        <li><b>lwrite:</b> (sec) accesses of system buffers, Same as 'sar -b'</li>
+                    </lu>
+                </div>
 
-  <row>
-    <panel>
-    <title>Table Stats</title>
-      <table>   
-        <search>
-          <query>| tstats
-max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite 
+                <div class="list">
+                    <lu>
+                        <li><b>pread:</b> (sec) transfers using raw (physical) device mechanism, Same as 'sar -b'</li>
+                        <li><b>pwrite:</b> (sec) transfers using raw (physical) device mechanism, Same as 'sar -b'</li>
+                        <li><b>bread:</b> (sec) transfer of data between system buffers and disk or other block device, Same as 'sar -b'</li>
+                        <li><b>bwrite:</b> (sec) transfer of data between system buffers and disk or other block device, Same as 'sar -b'</li>
+                    </lu>
+                </div>
+
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <title>Table Stats</title>
+            <table>
+                <search>
+                    <query>| tstats
+max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
 groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t 
-max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite 
+| stats dedup_splitvals=t
+max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by "Solaris.frameID", "Solaris.hostname"
-| stats dedup_splitvals=t 
-$statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache $statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite 
+| stats dedup_splitvals=t
+$statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache $statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite
 $statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite $statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by "Solaris.frameID", "Solaris.hostname"
 | rename "Solaris.frameID" AS "frameID" "Solaris.hostname" AS hostname
 | sort frameID, hostname
 | fields frameID, hostname, PCT*,*</query>
-           <earliest>$timerange.earliest$</earliest>
-           <latest>$timerange.latest$</latest>
-        </search>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
-    </panel>
-  </row>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+    </row>
 
-  <row depends="$charting$">
-    <panel>
-      <title>Charting parameters:</title>         
-      <input type="dropdown" token="chart" searchWhenChanged="true">
-        <label>Select a type of chart:</label>
-        <default>line</default>
-        <choice value="area">Area</choice>
-        <choice value="line">Line</choice>
-        <choice value="column">Column</choice>
-        <choice value="bar">Bar</choice>
-      </input>
-      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
-        <label>Missing Data:</label>
-        <default>gaps</default>
-        <choice value="gaps">Gaps</choice>
-        <choice value="connect">Connect</choice>
-        <choice value="zero">Zero</choice>
-      </input>
-      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked (lines excluded)</choice>
-        <choice value="stacked100">100% stacked (lines excluded)</choice>
-        <choice value="unstacked">unstacked</choice>
-      </input>
-      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-        <label>Legend placement:</label>
-        <default>bottom</default>
-        <choice value="bottom">Bottom</choice>
-        <choice value="top">Top</choice>
-        <choice value="left">left</choice>
-        <choice value="right">right</choice>
-        <choice value="center">center</choice>
-        <choice value="none">none</choice>
-      </input>
-      <input type="dropdown" token="span" searchWhenChanged="true">
-        <label>Span:</label>
-        <default>`inline_customspan`</default>
-        <choice value="`inline_customspan`">auto</choice>
-		  <choice value="span=1m">1 minute</choice>
-		  <choice value="span=2m">2 minutes</choice>
-		  <choice value="span=3m">3 minutes</choice>
-		  <choice value="span=4m">4 minutes</choice>
-		  <choice value="span=5m">5 minutes</choice>
-		  <choice value="span=10m">10 minutes</choice>
-		  <choice value="span=15m">15 minutes</choice>
-		  <choice value="span=30m">30 minutes</choice>
-		  <choice value="span=1h">1 hour</choice>
-		  <choice value="span=2h">2 hours</choice>
-		  <choice value="span=12h">12 hours</choice>
-		  <choice value="span=4h">4 hours</choice>
-		  <choice value="span=1d">1 day</choice>
-		  <choice value="span=2d">2 days</choice>
-		  <choice value="span=1w">7 days</choice>
-		  <choice value="span=1mon">1 month</choice>
-      </input>      
-    </panel>
-  </row>  
+    <row depends="$charting$">
+        <panel>
+            <title>Charting parameters:</title>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`inline_customspan`</default>
+                <choice value="`inline_customspan`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+        </panel>
+    </row>
 
-  <row depends="$charting$">
-    <panel>
-      <html>
-      <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link10,link11,link12,link13">Select a view:<!--Links go here-->
-      </div>
-    </html>
-      <chart id="link10">
-        <title>Cache Hit Ratio (%)</title>
-        <search>        
-          <query>| tstats
+    <row depends="$charting$">
+        <panel>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link10,link11,link12,link13">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link10">
+                <title>Cache Hit Ratio (%)</title>
+                <search>
+                    <query>| tstats
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
 groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t 
+| stats dedup_splitvals=t
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache by "Solaris.hostname"</query>
-           <earliest>$timerange.earliest$</earliest>
-           <latest>$timerange.latest$</latest>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Percentage (%)</option>
-        <option name="charting.axisY.minimumNumber">0</option>
-        <option name="charting.axisY.maximumNumber">100</option>
-      </chart>
-      <chart id="link11">
-        <title>System Buffer Accesses</title>
-        <searchPostProcess>fields _time,*lread*,*lwrite*</searchPostProcess>
-        <search>        
-          <query>| tstats
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Percentage (%)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+            </chart>
+            <chart id="link11">
+                <title>System Buffer Accesses</title>
+                <searchPostProcess>fields _time,*lread*,*lwrite*</searchPostProcess>
+                <search>
+                    <query>| tstats
 max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
 groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t 
+| stats dedup_splitvals=t
 max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite by "Solaris.hostname"</query>
-           <earliest>$timerange.earliest$</earliest>
-           <latest>$timerange.latest$</latest>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Volume per second</option>
-      </chart>
-      <chart id="link12">
-        <title>Transfers using raw (physical) device mechanism</title>
-        <search>        
-          <query>| tstats 
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Volume per second</option>
+            </chart>
+            <chart id="link12">
+                <title>Transfers using raw (physical) device mechanism</title>
+                <search>
+                    <query>| tstats
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
 groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t 
+| stats dedup_splitvals=t
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite by "Solaris.hostname"</query>
-           <earliest>$timerange.earliest$</earliest>
-           <latest>$timerange.latest$</latest>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Volume per second</option>
-      </chart>
-      <chart id="link13">
-        <title>Transfer of data between system buffers and disk or other block device</title>
-        <search>        
-          <query>| tstats
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Volume per second</option>
+            </chart>
+            <chart id="link13">
+                <title>Transfer of data between system buffers and disk or other block device</title>
+                <search>
+                    <query>| tstats
 max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
 from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
 groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t 
+| stats dedup_splitvals=t
 max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by _time, "Solaris.frameID", "Solaris.hostname"
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by "Solaris.hostname"</query>
-           <earliest>$timerange.earliest$</earliest>
-           <latest>$timerange.latest$</latest>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Volume per second</option>
-      </chart>
-    </panel>
-  </row>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Volume per second</option>
+            </chart>
+        </panel>
+    </row>
 </form>

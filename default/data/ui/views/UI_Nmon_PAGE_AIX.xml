@@ -47,7 +47,7 @@
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
       <default>*</default>
-    </input>         
+    </input>
 
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
@@ -83,87 +83,87 @@
       <label>Charting:</label>
       <default>fields *</default>
       <choice value="fields *">On</choice>
-    </input>    
-    
+    </input>
+
   </fieldset>
 
   <!-- Information panel -->
-  
+
   <row>
     <panel>
       <html>
 
-		<div class="imgheader">
-        <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-        <h4>Metrics information:</h4> 
-		</div>
-		
-		<div class="list">
-		  <lu>
-			<li><b>faults:</b> Total nbr of page faults taken per second over the monitoring interval. This includes page faults that do not cause paging activity</li>
-			<li><b>pgspin:</b> The nbr of 4 K pages read from paging space per second over the monitoring interval</li>
-			<li><b>pgsout:</b> The nbr of 4 K pages written to paging space per second over the monitoring interval</li>
-			<li><b>pgin:</b> The nbr of 4 K pages read per second over the monitoring interval. This includes paging activity associated with reading from file systems. Subtract PgspIn from this value to get the number of 4K pages read from file systems per second over the monitoring interval</li>
-			<li><b>pgout:</b> The nbr of 4 K pages written per second over the monitoring interval. This includes paging activity associated with writing to file systems. Subtract PgspOut from this value to get the number of 4K pages written to file systems per second over the monitoring interval</li>
-		  </lu>
-		</div>
-		<div class="list">
-		  <lu>
-			<li><b>scans:</b> Nbr of page scans by clock</li>
-			<li><b>reclaims:</b> Nbr of pages reclaims</li>
-			<li><b>fsin:</b> Sum of pgsin / pgin per time interval</li>
-			<li><b>fsout:</b> Sum of pgsout / pgout per time interval</li>
-			<li><b>scanfree_ratio:</b> Scan Free Ratio, Pages scans by reclaims per time interval (scans/reclaims)</li>
-	  	  </lu>
-		</div>
-      
-     </html>
+        <div class="imgheader">
+          <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+          <h4>Metrics information:</h4>
+        </div>
+
+        <div class="list">
+          <lu>
+            <li><b>faults:</b> Total nbr of page faults taken per second over the monitoring interval. This includes page faults that do not cause paging activity</li>
+            <li><b>pgspin:</b> The nbr of 4 K pages read from paging space per second over the monitoring interval</li>
+            <li><b>pgsout:</b> The nbr of 4 K pages written to paging space per second over the monitoring interval</li>
+            <li><b>pgin:</b> The nbr of 4 K pages read per second over the monitoring interval. This includes paging activity associated with reading from file systems. Subtract PgspIn from this value to get the number of 4K pages read from file systems per second over the monitoring interval</li>
+            <li><b>pgout:</b> The nbr of 4 K pages written per second over the monitoring interval. This includes paging activity associated with writing to file systems. Subtract PgspOut from this value to get the number of 4K pages written to file systems per second over the monitoring interval</li>
+          </lu>
+        </div>
+        <div class="list">
+          <lu>
+            <li><b>scans:</b> Nbr of page scans by clock</li>
+            <li><b>reclaims:</b> Nbr of pages reclaims</li>
+            <li><b>fsin:</b> Sum of pgsin / pgin per time interval</li>
+            <li><b>fsout:</b> Sum of pgsout / pgout per time interval</li>
+            <li><b>scanfree_ratio:</b> Scan Free Ratio, Pages scans by reclaims per time interval (scans/reclaims)</li>
+          </lu>
+        </div>
+
+      </html>
     </panel>
   </row>
 
   <search id="tableStats">
     <query>
 | tstats max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin max("PAGE_AIX.pgsout") AS pgsout
-max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles 
-max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
+max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles
+max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
 from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
-groupby "PAGE_AIX.frameID", "PAGE_AIX.hostname" prestats=true 
-| stats dedup_splitvals=t 
-max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin 
-max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans 
-max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
-by "PAGE_AIX.frameID", "PAGE_AIX.hostname" 
-| sort limit=0 "PAGE_AIX.frameID" 
-| fields - _span 
-| rename "PAGE_AIX.frameID" AS "frameID" "PAGE_AIX.hostname" AS hostname 
+groupby "PAGE_AIX.frameID", "PAGE_AIX.hostname" prestats=true
+| stats dedup_splitvals=t
+max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin
+max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans
+max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
+by "PAGE_AIX.frameID", "PAGE_AIX.hostname"
+| sort limit=0 "PAGE_AIX.frameID"
+| fields - _span
+| rename "PAGE_AIX.frameID" AS "frameID" "PAGE_AIX.hostname" AS hostname
 | fields frameID, hostname, faults, pgin, pgout, pgsin, pgsout, reclaims, scans, cycles, fsin, fsout, scanfree_ratio</query>
-	 <earliest>$timerange.earliest$</earliest>
+    <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>
-  </search>  
+  </search>
 
   <search id="timeStats">
     <query>
 | tstats max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin max("PAGE_AIX.pgsout") AS pgsout
-max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles 
-max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
+max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles
+max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
 from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
 groupby _time, "PAGE_AIX.hostname" prestats=true `inline_customspan`
-| timechart $span$ useother=f limit=0 
-max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin 
-max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans 
-max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio 
+| timechart $span$ useother=f limit=0
+max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin
+max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans
+max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
 by "PAGE_AIX.hostname"</query>
-	 <earliest>$timerange.earliest$</earliest>
+    <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>
-  </search>  
-  
+  </search>
+
   <row>
     <panel>
       <table>
         <title>Global Table Stats</title>
-		  <search base="tableStats">
+        <search base="tableStats">
           <query>fields frameID,hostname,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
-		  </search>
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -174,9 +174,9 @@ by "PAGE_AIX.hostname"</query>
     <panel>
       <table>
         <title>Fs In/Out and Scan Free Ratio Table Stats</title>
-		  <search base="tableStats">
+        <search base="tableStats">
           <query>fields frameID,hostname,fsin,fsout,scanfree_ratio</query>
-		  </search> 
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -225,38 +225,38 @@ by "PAGE_AIX.hostname"</query>
         <label>Span:</label>
         <default>`inline_customspan`</default>
         <choice value="`inline_customspan`">auto</choice>
-		  <choice value="span=1m">1 minute</choice>
-		  <choice value="span=2m">2 minutes</choice>
-		  <choice value="span=3m">3 minutes</choice>
-		  <choice value="span=4m">4 minutes</choice>
-		  <choice value="span=5m">5 minutes</choice>
-		  <choice value="span=10m">10 minutes</choice>
-		  <choice value="span=15m">15 minutes</choice>
-		  <choice value="span=30m">30 minutes</choice>
-		  <choice value="span=1h">1 hour</choice>
-		  <choice value="span=2h">2 hours</choice>
-		  <choice value="span=12h">12 hours</choice>
-		  <choice value="span=4h">4 hours</choice>
-		  <choice value="span=1d">1 day</choice>
-		  <choice value="span=2d">2 days</choice>
-		  <choice value="span=1w">7 days</choice>
-		  <choice value="span=1mon">1 month</choice>
-      </input>      
+        <choice value="span=1m">1 minute</choice>
+        <choice value="span=2m">2 minutes</choice>
+        <choice value="span=3m">3 minutes</choice>
+        <choice value="span=4m">4 minutes</choice>
+        <choice value="span=5m">5 minutes</choice>
+        <choice value="span=10m">10 minutes</choice>
+        <choice value="span=15m">15 minutes</choice>
+        <choice value="span=30m">30 minutes</choice>
+        <choice value="span=1h">1 hour</choice>
+        <choice value="span=2h">2 hours</choice>
+        <choice value="span=12h">12 hours</choice>
+        <choice value="span=4h">4 hours</choice>
+        <choice value="span=1d">1 day</choice>
+        <choice value="span=2d">2 days</choice>
+        <choice value="span=1w">7 days</choice>
+        <choice value="span=1mon">1 month</choice>
+      </input>
     </panel>
-  </row>  
-  
+  </row>
+
   <row depends="$charting$">
     <panel>
       <html>
-      <!-- Placeholder/container for the link switcher to appear -->
-      <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
-      </div>
-    </html>
+        <!-- Placeholder/container for the link switcher to appear -->
+        <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
+        </div>
+      </html>
       <chart id="link10">
         <title>Pages In / Pages Out (pgsin / pgsout, pgin / pgout)</title>
-		  <search base="timeStats">
+        <search base="timeStats">
           <query>fields _time,pgsin*,pgsout*,pgin*,pgout*</query>
-		  </search> 
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -277,9 +277,9 @@ by "PAGE_AIX.hostname"</query>
       </chart>
       <chart id="link11">
         <title>Fs In / Fs Out (sum of pgin/pgsin and pgout/pgsout per interval)</title>
-		  <search base="timeStats">
+        <search base="timeStats">
           <query>fields _time,fsin*,fsout*</query>
-		  </search> 
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -300,9 +300,9 @@ by "PAGE_AIX.hostname"</query>
       </chart>
       <chart id="link12">
         <title>Scan Free Ratio (Pages scans by reclaims per interval)</title>
-		  <search base="timeStats">
+        <search base="timeStats">
           <query>fields _time,scanfree_ratio* | fillnull value=0</query>
-		  </search> 
+        </search>
         <earliestTime>$timerange.earliest$</earliestTime>
         <latestTime>$timerange.latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
