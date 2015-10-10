@@ -1,24 +1,35 @@
-<form stylesheet="ui_simple.css">
-  <label>UI CONFIG, Inventory for AIX OS</label>
-  <description>User Interface for Inventory Data of AIX systems</description>
-
-  <search id="Global">
-    <query>| inputlookup nmon_inventory | search OStype="AIX" $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$</query>
-  </search>
-
+<form stylesheet="Home.css,singlevalue.css,ui_simple.css">
+  <label>NMON CONFIG, AIX Simple Inventory</label>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="time" searchWhenChanged="true" token="timerange">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="radio" token="datasource" searchWhenChanged="true">
+      <label>Data Source:</label>
+      <choice value="inputlookup nmon_inventory | search OStype=AIX">Based on Nmon Inventory Lookup</choice>
+      <choice value="search `nmon_config` | search OStype=&quot;AIX&quot; | stats latest(AIX_Machine_SerialNumber) As Machine_SerialNumber, latest(AIX_virtualcpus) As virtualcpus, latest(AIX_logicalcores) As logicalcores,  latest(AIX_entitled) As entitled, latest(OStype) As OStype, latest(Processor) As Processor, latest(AIX_processor_mode) As AIX_processor_mode, latest(AIX_processor_clockspeed) As AIX_processor_clockspeed, latest(AIX_cpu_type) As AIX_cpu_type, latest(AIX_kernel_type) As AIX_kernel_type, latest(AIX_plateform_firmware_level) As AIX_plateform_firmware_level, latest(nmon_version) As nmon_version, latest(AIX_PoolID) As AIX_PoolID, latest(AIX_system_installed_CPUs) As AIX_system_installed_CPUs, latest(AIX_system_active_CPUs) As AIX_system_active_CPUs, latest(AIX_PoolCPUs) As AIX_PoolCPUs by hostname | fillnull value=Undeterminated">Based on Nmon Raw Data</choice>
+      <default>inputlookup nmon_inventory | search OStype=AIX</default>
+    </input>
+  </fieldset>
+  <searchTemplate>| $datasource$</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
   <row>
     <panel>
       <html>
-        <div style="text-align: center;">
-          <img src="../../static/app/nmon/icons/grey_theme/inventory.png" alt="Inventory"/>
-        </div>
-        <div class="custom">
-          <h1>AIX Inventory Summary</h1>
-        </div>
-      </html>
+      <div style="text-align: center;">
+        <img src="../../static/app/nmon/icons/grey_theme/inventory.png" alt="Inventory"/>
+      </div>
+      <div class="custom">
+        <h1>AIX Inventory Summary</h1>
+      </div>
+    </html>
     </panel>
   </row>
-
   <row>
     <panel>
       <input type="text" token="hostname" searchWhenChanged="true">
@@ -88,19 +99,17 @@
         <default>*</default>
       </input>
       <html>
-        <div style="text-align: left;">
-          <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
-        </div>
-      </html>
+      <div style="text-align: left;">
+        <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
+      </div>
+    </html>
     </panel>
   </row>
   <row>
     <panel>
       <single>
-        <search base="Global">
-          <query>stats dc(hostname) As count</query>
-        </search>
-        <option name="afterLabel">Hosts known</option>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats dc(hostname) As count</searchPostProcess>
+        <option name="afterLabel">Hosts known within this period</option>
         <option name="beforeLabel">Found</option>
         <option name="underLabel">AIX</option>
         <option name="linkView">search</option>
@@ -112,9 +121,7 @@
     <panel>
       <chart>
         <title>AIX Version</title>
-        <search base="Global">
-          <query>stats count by AIX_LEVEL</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_LEVEL</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -134,9 +141,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_LEVEL | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_LEVEL | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -144,9 +149,7 @@
     <panel>
       <chart>
         <title>Processor Type</title>
-        <search base="Global">
-          <query>stats count by Processor</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by Processor</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -166,9 +169,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -176,9 +177,7 @@
     <panel>
       <chart>
         <title>Processor Mode</title>
-        <search base="Global">
-          <query>stats count by AIX_processor_mode</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_processor_mode</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -198,9 +197,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_processor_mode | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_processor_mode | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -208,9 +205,7 @@
     <panel>
       <chart>
         <title>Processor Clock Speed</title>
-        <search base="Global">
-          <query>stats count by AIX_processor_clockspeed</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_processor_clockspeed</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -230,9 +225,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_processor_clockspeed | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_processor_clockspeed | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -240,9 +233,7 @@
     <panel>
       <chart>
         <title>CPU Type</title>
-        <search base="Global">
-          <query>stats count by AIX_cpu_type</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_cpu_type</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -262,9 +253,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_cpu_type | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_cpu_type | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -272,9 +261,7 @@
     <panel>
       <chart>
         <title>Kernel Type</title>
-        <search base="Global">
-          <query>stats count by AIX_kernel_type</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_kernel_type</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -294,9 +281,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_kernel_type | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_kernel_type | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -304,9 +289,7 @@
     <panel>
       <chart>
         <title>Plateform Firmware Level</title>
-        <search base="Global">
-          <query>stats count by AIX_plateform_firmware_level</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_plateform_firmware_level</searchPostProcess>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -328,9 +311,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_plateform_firmware_level | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_plateform_firmware_level | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -338,9 +319,7 @@
     <panel>
       <chart>
         <title>CPU Virtual (VP) Capacity</title>
-        <search base="Global">
-          <query>stats count by AIX_virtualcpus</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_virtualcpus</searchPostProcess>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -362,9 +341,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_virtualcpus | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_virtualcpus | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -372,9 +349,7 @@
     <panel>
       <chart>
         <title>CPU cores Capacity</title>
-        <search base="Global">
-          <query>stats count by AIX_logicalcores</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by AIX_logicalcores</searchPostProcess>
         <earliestTime>$earliest$</earliestTime>
         <latestTime>$latest$</latestTime>
         <option name="charting.axisTitleX.visibility">visible</option>
@@ -396,9 +371,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 AIX_logicalcores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 AIX_logicalcores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -406,9 +379,7 @@
     <panel>
       <chart>
         <title>Nmon version</title>
-        <search base="Global">
-          <query>stats count by nmon_version</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | stats count by nmon_version</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -428,9 +399,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
       </table>
     </panel>
   </row>
@@ -438,9 +407,7 @@
     <panel>
       <table>
         <title>Table Stats</title>
-        <search base="Global">
-          <query>fields hostname,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_LEVEL,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</query>
-        </search>
+        <searchPostProcess>search $hostname$ $AIX_LEVEL$ $Processor$ $AIX_processor_mode$ $AIX_processor_clockspeed$ $AIX_cpu_type$ $AIX_kernel_type$ $AIX_plateform_firmware_level$ $AIX_virtualcpus$ $AIX_logicalcores$ $nmon_version$ | fields hostname,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_LEVEL,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</searchPostProcess>
       </table>
     </panel>
   </row>

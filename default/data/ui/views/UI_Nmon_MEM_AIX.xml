@@ -1,323 +1,197 @@
-<form stylesheet="ui_simple.css" script="link_switcher.js, autodiscover.js">
-    <label>UI MEM, AIX Free Memory and Paging space activity</label>
-    <description>User Interface for the MEM monitor</description>
-
-    <fieldset autoRun="false" submitButton="false">
-
-        <input type="time" token="timerange" searchWhenChanged="true">
-            <label>Time Range:</label>
-            <default>
-                <earliestTime>-24h</earliestTime>
-                <latestTime>now</latestTime>
-            </default>
-        </input>
-
-        <input type="dropdown" token="timefilter" searchWhenChanged="true">
-            <label>Time Filtering:</label>
-            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-            <default>No_Filter</default>
-        </input>
-
-        <input type="dropdown" token="osfilter" searchWhenChanged="true">
-            <label>Filter OS Type:</label>
-            <default>AIX</default>
-            <prefix>MEM.OStype="</prefix>
-            <suffix>"</suffix>
-            <choice value="*">Any OS</choice>
-            <choice value="AIX">AIX</choice>
-        </input>
-
-        <input type="multiselect" token="frameID" searchWhenChanged="true">
-            <label>Frame IDs:</label>
-            <!-- Populating Data Model Search -->
-            <search id="frameIDSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($osfilter$) groupby "MEM.frameID" prestats=true
-| stats dedup_splitvals=t count AS Count by "MEM.frameID"
-| sort limit=0 "MEM.frameID"
-| fields - _span | fillnull Count | fields "MEM.frameID"</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <valuePrefix>MEM.frameID="</valuePrefix>
-            <valueSuffix>"</valueSuffix>
-            <delimiter> OR </delimiter>
-            <choice value="*">Any</choice>
-            <default>*</default>
-            <fieldForLabel>MEM.frameID</fieldForLabel>
-            <fieldForValue>MEM.frameID</fieldForValue>
-        </input>
-
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-            <label>Optional: Filter hosts populating</label>
-            <default>*</default>
-        </input>
-
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
-            <label>Hosts Selection:</label>
-            <!-- Populating Data Model Search -->
-            <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "MEM.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "MEM.hostname"
-| sort limit=0 "MEM.hostname"
-| fields - _span | fillnull Count | fields "MEM.hostname"</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <valuePrefix>MEM.hostname="</valuePrefix>
-            <valueSuffix>"</valueSuffix>
-            <delimiter> OR </delimiter>
-            <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>MEM.hostname</fieldForLabel>
-            <fieldForValue>MEM.hostname</fieldForValue>
-        </input>
-
-        <input type="dropdown" token="statsmode" searchWhenChanged="true">
-            <label>Select a stats mode:</label>
-            <default>max</default>
-            <choice value="max">Max</choice>
-            <choice value="avg">Avg</choice>
-            <choice value="min">Min</choice>
-            <choice value="median">Median</choice>
-            <choice value="mode">Mode</choice>
-            <choice value="range">Range</choice>
-        </input>
-
-        <input type="checkbox" token="charting" searchWhenChanged="true">
-            <label>Charting:</label>
-            <default>fields *</default>
-            <choice value="fields *">On</choice>
-        </input>
-
-    </fieldset>
-
-    <search id="Global">
-        <query>| tstats max("MEM.allOS_Real_Free_PCT") AS allOS_Real_Free_PCT max("MEM.allOS_Real_total_MB") AS allOS_Real_total_MB max("MEM.allOS_Real_used_MB") AS allOS_Real_used_MB
-max("MEM.allOS_Real_used_PCT") AS allOS_Real_used_PCT max("MEM.allOS_Virtual_free_PCT") AS allOS_Virtual_free_PCT max("MEM.allOS_Virtual_total_MB") AS allOS_Virtual_total_MB
-max("MEM.allOS_Virtual_used_MB") AS allOS_Virtual_used_MB max("MEM.allOS_Virtual_used_PCT") AS allOS_Virtual_used_PCT from datamodel=NMON_Data_MEM
-where (nodename = MEM) ($osfilter$) (MEM.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t max("MEM.allOS_Real_Free_PCT") AS allOS_Real_Free_PCT max("MEM.allOS_Real_total_MB") AS allOS_Real_total_MB max("MEM.allOS_Real_used_MB") AS allOS_Real_used_MB
-max("MEM.allOS_Real_used_PCT") AS allOS_Real_used_PCT max("MEM.allOS_Virtual_free_PCT") AS allOS_Virtual_free_PCT max("MEM.allOS_Virtual_total_MB") AS allOS_Virtual_total_MB
-max("MEM.allOS_Virtual_used_MB") AS allOS_Virtual_used_MB max("MEM.allOS_Virtual_used_PCT") AS allOS_Virtual_used_PCT by _time, "MEM.frameID", "MEM.hostname"
-| stats dedup_splitvals=t $statsmode$("allOS_Real_Free_PCT") AS Real_Free_PCT $statsmode$("allOS_Real_total_MB") AS Real_total_MB $statsmode$("allOS_Real_used_MB") AS Real_used_MB
-$statsmode$("allOS_Real_used_PCT") AS Real_used_PCT $statsmode$("allOS_Virtual_free_PCT") AS Virtual_free_PCT $statsmode$("allOS_Virtual_total_MB") AS Virtual_total_MB
-$statsmode$("allOS_Virtual_used_MB") AS Virtual_used_MB $statsmode$("allOS_Virtual_used_PCT") AS Virtual_used_PCT by "MEM.frameID", "MEM.hostname"
-| rename "MEM.frameID" AS "frameID" "MEM.hostname" AS hostname
-| foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
-| foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-    </search>
-
-    <!-- Information panel -->
-
-    <row>
-        <panel>
-            <html>
-
-                <div class="imgheader">
-                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-                    <h4>Metrics information:  <a href="/app/nmon/Howto_MEM_spl" target="_blank">(Open the Howto build Nmon statistics for MEM)</a></h4>
-                </div>
-
-                <div class="list">
-                    <lu>
-                        <li><b>Real_free_MB / Real_free_PCT:</b> (MB / %) Physical memory free</li>
-                        <li><b>Real_total_MB:</b> (MB) Total physical memory available</li>
-                        <li><b>Real_used_MB / Real_used_PCT:</b> (MB / %) Physical memory used</li>
-                    </lu>
-                </div>
-                <div class="list">
-                    <lu>
-                        <li><b>Virtual_free_MB / Virtual_free_PCT:</b> (MB / %) Free paging space</li>
-                        <li><b>Virtual_total_MB:</b> (MB) Total paging space</li>
-                        <li><b>Virtual_used_MB / Virtual_used_PCT:</b> (MB / %) Used paging space</li>
-                    </lu>
-                </div>
-
-            </html>
-        </panel>
-    </row>
-
-    <row>
-        <panel>
-            <table>
-                <title>MEM - Real Memory Table Stats</title>
-                <search base="Global">
-                    <query>fields frameID,hostname,*Real*MB,*Real*PCT*</query>
-                </search>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
-            </table>
-        </panel>
-
-        <panel>
-            <table>
-                <title>MEM - Paging Space Table Stats</title>
-                <search base="Global">
-                    <query>fields frameID,hostname,*Virtual*PCT,*Virtual*MB*</query>
-                </search>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
-            </table>
-        </panel>
-    </row>
-
-    <row depends="$charting$">
-        <panel>
-            <title>Charting parameters:</title>
-            <input type="dropdown" token="memmode" searchWhenChanged="true">
-                <label>Show Mem load by:</label>
-                <default>fields _time,*MB*</default>
-                <choice value="fields _time,*MB*">Activity in Data Volume (MB)</choice>
-                <choice value="fields _time,*Real_used_PCT*,*Virtual_used_PCT*">Usage in percentage (%)</choice>
-                <choice value="fields _time,*Real_Free_PCT*,*Virtual_free_PCT*">Free in percentage (%)</choice>
-            </input>
-            <input type="dropdown" token="chart" searchWhenChanged="true">
-                <label>Select a type of chart:</label>
-                <default>line</default>
-                <choice value="area">Area</choice>
-                <choice value="line">Line</choice>
-                <choice value="column">Column</choice>
-                <choice value="bar">Bar</choice>
-            </input>
-            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
-                <label>Missing Data:</label>
-                <default>gaps</default>
-                <choice value="gaps">Gaps</choice>
-                <choice value="connect">Connect</choice>
-                <choice value="zero">Zero</choice>
-            </input>
-            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-                <label>Select a stacking mode:</label>
-                <default>unstacked</default>
-                <choice value="stacked">stacked (lines excluded)</choice>
-                <choice value="stacked100">100% stacked (lines excluded)</choice>
-                <choice value="unstacked">unstacked</choice>
-            </input>
-            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-                <label>Legend placement:</label>
-                <default>bottom</default>
-                <choice value="bottom">Bottom</choice>
-                <choice value="top">Top</choice>
-                <choice value="left">left</choice>
-                <choice value="right">right</choice>
-                <choice value="center">center</choice>
-                <choice value="none">none</choice>
-            </input>
-            <input type="dropdown" token="span" searchWhenChanged="true">
-                <label>Span:</label>
-                <default>`inline_customspan`</default>
-                <choice value="`inline_customspan`">auto</choice>
-                <choice value="span=1m">1 minute</choice>
-                <choice value="span=2m">2 minutes</choice>
-                <choice value="span=3m">3 minutes</choice>
-                <choice value="span=4m">4 minutes</choice>
-                <choice value="span=5m">5 minutes</choice>
-                <choice value="span=10m">10 minutes</choice>
-                <choice value="span=15m">15 minutes</choice>
-                <choice value="span=30m">30 minutes</choice>
-                <choice value="span=1h">1 hour</choice>
-                <choice value="span=2h">2 hours</choice>
-                <choice value="span=12h">12 hours</choice>
-                <choice value="span=4h">4 hours</choice>
-                <choice value="span=1d">1 day</choice>
-                <choice value="span=2d">2 days</choice>
-                <choice value="span=1w">7 days</choice>
-                <choice value="span=1mon">1 month</choice>
-            </input>
-        </panel>
-    </row>
-
-    <row depends="$charting$">
-        <panel>
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
-                </div>
-            </html>
-            <chart id="link10">
-                <title>Real Memory</title>
-                <search>
-                    <query>| tstats
-max("MEM.allOS_Real_Free_PCT") AS allOS_Real_Free_PCT max("MEM.allOS_Real_total_MB") AS allOS_Real_total_MB max("MEM.allOS_Real_used_MB") AS allOS_Real_used_MB
-max("MEM.allOS_Real_used_PCT") AS allOS_Real_used_PCT from datamodel=NMON_Data_MEM
-where (nodename = MEM) ($osfilter$) (MEM.hostname=$hostname-prefilter$) ($hostname$) ($frameID$)
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t max("MEM.allOS_Real_Free_PCT") AS allOS_Real_Free_PCT max("MEM.allOS_Real_total_MB") AS allOS_Real_total_MB max("MEM.allOS_Real_used_MB") AS allOS_Real_used_MB
-max("MEM.allOS_Real_used_PCT") AS allOS_Real_used_PCT by _time, "MEM.frameID", "MEM.hostname"
-| timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("allOS_Real_Free_PCT") AS Real_Free_PCT $statsmode$("allOS_Real_total_MB") AS Real_total_MB $statsmode$("allOS_Real_used_MB") AS Real_used_MB
-$statsmode$("allOS_Real_used_PCT") AS Real_used_PCT by "MEM.hostname" | $charting$ | $memmode$</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
-                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">$charting.legend.placement$</option>
-                <option name="height">680px</option>
-                <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Real Memory</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-            </chart>
-            <chart id="link11">
-                <title>Paging Space</title>
-                <search>
-                    <query>| tstats max("MEM.allOS_Virtual_free_PCT") AS allOS_Virtual_free_PCT max("MEM.allOS_Virtual_total_MB") AS allOS_Virtual_total_MB
-max("MEM.allOS_Virtual_used_MB") AS allOS_Virtual_used_MB max("MEM.allOS_Virtual_used_PCT") AS allOS_Virtual_used_PCT from datamodel=NMON_Data_MEM
-where (nodename = MEM) ($osfilter$) (MEM.hostname=$hostname-prefilter$) ($hostname$) ($frameID$)
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t max("MEM.allOS_Virtual_free_PCT") AS allOS_Virtual_free_PCT max("MEM.allOS_Virtual_total_MB") AS allOS_Virtual_total_MB
-max("MEM.allOS_Virtual_used_MB") AS allOS_Virtual_used_MB max("MEM.allOS_Virtual_used_PCT") AS allOS_Virtual_used_PCT by _time, "MEM.frameID", "MEM.hostname"
-| timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("allOS_Virtual_free_PCT") AS Virtual_free_PCT $statsmode$("allOS_Virtual_total_MB") AS Virtual_total_MB
-$statsmode$("allOS_Virtual_used_MB") AS Virtual_used_MB $statsmode$("allOS_Virtual_used_PCT") AS Virtual_used_PCT by "MEM.hostname" | $charting$ | $memmode$</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
-                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">$charting.legend.placement$</option>
-                <option name="height">680px</option>
-                <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Paging Space</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-            </chart>
-        </panel>
-    </row>
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON - MEM, AIX Free Memory and Paging space activity</label>
+  <description/>
+  <fieldset autoRun="false" submitButton="false">
+    <input type="time" token="timerange" searchWhenChanged="true">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+      <input type="dropdown" token="timefilter" searchWhenChanged="true">
+        <label>Time Filtering:</label>
+        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+        <default>No_Filter</default>
+      </input>    
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default>| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
+      <choice value="">Inactive</choice>
+    </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=MEM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+      <input type="dropdown" token="statsmode" searchWhenChanged="true">
+        <label>Select a stats mode:</label>
+        <default>max</default>
+        <choice value="max">Max</choice>
+        <choice value="avg">Avg</choice>
+        <choice value="min">Min</choice>
+        <choice value="median">Median</choice>
+        <choice value="mode">Mode</choice>
+        <choice value="range">Range</choice>
+      </input>
+    <input type="radio" token="memmode" searchWhenChanged="true">
+      <label>Show Mem load by:</label>
+      <default>fields _time,*MB*</default>
+      <choice value="fields _time,*MB*">Activity in Data Volume (MB)</choice>
+      <choice value="fields _time,*Real_used_PCT*,*Virtual_used_PCT*">Usage in percentage (%)</choice>
+      <choice value="fields _time,*Real_Free_PCT*,*Virtual_free_PCT*">Free in percentage (%)</choice>
+    </input>
+  </fieldset>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
+| eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
+| eval Virtual_total_MB=round((Virtual_total_MB),0)
+| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
+| eval Real_used_PCT=round(((Real_used_MB/Real_total_MB)*100),0)
+| eval Virtual_used_PCT=round(((Virtual_used_MB/Virtual_total_MB)*100),0)
+| timechart `inline_customspan(type=MEM,$hostname$)` limit=0 useother=f
+$statsmode$(Real_total_MB) As Real_total_MB, $statsmode$(Real_used_MB) As Real_used_MB, 
+$statsmode$(Virtual_total_MB) As Virtual_total_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB
+$statsmode$(Real_Free_PCT) As Real_Free_PCT, $statsmode$(Virtual_free_PCT) As Virtual_free_PCT
+$statsmode$(Real_used_PCT) As Real_used_PCT, $statsmode$(Virtual_used_PCT) As Virtual_used_PCT by hostname</searchTemplate>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <table>
+        <title>MEM - Real Memory Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
+| eval Real_used_MB=round((Real_total_MB-Real_free_MB),0)
+| stats
+$statsmode$(Real_free_MB) As Real_free_MB, $statsmode$(Real_used_MB) As Real_used_MB, $statsmode$(Real_total_MB) As Real_total_MB
+by hostname
+| eval Real_free_MB=round(Real_free_MB,0)
+| eval Real_used_MB=round(Real_used_MB,0)
+| eval Real_total_MB=round(Real_total_MB,0)</searchString>
+		  <earliestTime>$timerange.earliest$</earliestTime>
+		  <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>MEM - Paging Space Table Stats</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="MEM" $hostname$ | `$timefilter$`
+| eval Virtual_used_MB=round((Virtual_total_MB-Virtual_free_MB),0)
+| stats
+$statsmode$(Virtual_free_MB) As Virtual_free_MB, $statsmode$(Virtual_used_MB) As Virtual_used_MB, $statsmode$(Virtual_total_MB) As Virtual_total_MB
+by hostname
+| eval Virtual_free_MB=round(Virtual_free_MB,0)
+| eval Virtual_used_MB=round(Virtual_used_MB,0)
+| eval Virtual_total_MB=round(Virtual_total_MB,0)</searchString>
+		  <earliestTime>$timerange.earliest$</earliestTime>
+		  <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="radio" token="chart" searchWhenChanged="true">
+        <label>Select a type of chart:</label>
+        <default>line</default>
+        <choice value="area">Area</choice>
+        <choice value="line">Line (recommended)</choice>
+        <choice value="column">Column</choice>
+        <choice value="bar">Bar</choice>
+      </input>
+      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked</choice>
+        <choice value="unstacked">unstacked (recommended)</choice>
+      </input>
+      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+        <label>Missing Data:</label>
+        <default>gaps</default>
+        <choice value="gaps">Gaps</choice>
+        <choice value="connect">Connect</choice>
+        <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+        <label>Legend placement:</label>
+        <default>bottom</default>
+        <choice value="bottom">Bottom</choice>
+        <choice value="top">Top</choice>
+        <choice value="left">left</choice>
+        <choice value="right">right</choice>
+        <choice value="center">center</choice>
+        <choice value="none">none</choice>
+      </input>
+      <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
+      </div>
+    </html>
+      <chart id="link10">
+        <title>Real Memory</title>
+        <searchPostProcess>$memmode$ | fields _time, *Real*</searchPostProcess>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Real Memory</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+      </chart>
+      <chart id="link11">
+        <title>Paging Space</title>
+        <searchPostProcess>$memmode$ | fields _time,*Virtual*</searchPostProcess>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Paging Space</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+      </chart>
+    </panel>
+  </row>
 </form>

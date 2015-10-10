@@ -13,44 +13,26 @@
 
 	<div class="customimgheader">
 	
-	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.svg" alt="Nmon"/>	
+	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.png" alt="Nmon"/>	
 	<h1>NMON Data Analysis, Performance Monitors indexing</h1>
 
 	</div>
 
-	 {% endblock heading %} 
-        
-    {% block cal1 %}
- 
-	<div style="text-align: center;"> 
+	 {% endblock heading %}
     
-		{% single 
-            id="single1-maxhosts" 
-            managerid="maxhosts"
-            field="count"
-				underLabel="Max hosts per day" %}    
-
-		{% single 
-            id="single1-avghosts" 
-            managerid="avghosts"
-            field="count"
-				underLabel="Avg hosts per day" %}    
-
-		{% single 
-            id="single1-minhosts" 
-            managerid="minhosts"
-            field="count"
-				underLabel="Min hosts per day" %}    
-
-	</div>
+    {% block searchcontrol %}
 
 		{% searchcontrols
 			id="searchcontrol1" 
-			managerid="dcount" %}
+			managerid="mainsearch" %}
+			
+    {% endblock searchcontrol %}
+        
+    {% block cal1 %}
 
 		{% calendarheatmap 
                 id="calendar1"
-                managerid="dcount"
+                managerid="hosts_perday"
                 domain="month"
                 subDomain="x_day" %}
 		
@@ -58,35 +40,9 @@
 
     {% block cal2 %}
 
-	<div style="text-align: center;">
-
-		{% single 
-            id="single1-maxevents" 
-            managerid="maxevents"
-            field="count"
-				underLabel="Max events per day" %}    
-
-		{% single 
-            id="single1-avgevents" 
-            managerid="avgevents"
-            field="count"
-				underLabel="Avg events per day" %}    
-
-		{% single 
-            id="single1-minevents" 
-            managerid="minevents"
-            field="count"
-				underLabel="Min events per day" %}    
-
-	</div>
-
-		{% searchcontrols
-			id="searchcontrol2" 
-			managerid="count" %}
-
 		{% calendarheatmap 
                 id="calendar2"
-                managerid="count"
+                managerid="events_perday"
                 domain="month"
                 subDomain="x_day" %}
 		
@@ -96,108 +52,87 @@
     {% block usage%}
 
         <table class="table table-striped table-bordered">
-          <tr>
-          
-            <td>
 
-              <h3>Time Range:</h3>
 
-    			  {% timerange id="example-timerange" managerid="example-search" preset="Last 30 days" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}              
+            <tr>
+                <td>
+					 <p></p>
+                <h2>TimeRange:</h2>
+                </td>
+                <td>
+                	<p></p>
+    					{% timerange id="example-timerange" 
+						managerid="example-search" 
+        				preset="Last 30 days"
+        				earliest_time="$earlyval$"|token_safe
+        				latest_time="$lateval$"|token_safe %}                
+						<p></p>                
+                </td>
+            </tr>
 
-            </td>
+            <tr>
+                <td>
+                <h2>Filter by NMON Performance Monitor:</h2>
+                </td>
+                <td>
+					 <p </p>
+                {% dropdown id="filter-dropdowngroup" default="CPU_ALL" value="$filtermode$"|token_safe %}
+                </td>
+            </tr>
 
-            <td>
+            <tr>
+                <td>
+					<p></p>
+					<h2>Optional Filters</h2>
+				</td>
+					<td>
 
-              <h3>Performance Monitor:</h3>
-
-              {% dropdown id="filter-dropdowngroup" default="NMON_Data_CPU,CPU_ALL" value="$filterdatamodel$"|token_safe %}
-
-            </td>
-
-            <td>
-
-				   <h3>Frame IDs:</h3>
-				   				
-					{% dropdown id="frameid-dropdown" managerid="frameid-populate" valueField="frameID" default="*" value="$frameID$"|token_safe %}						
-
-            </td>
-
-            <td>
-
-				   <h3>Hosts Filtering:</h3>					
+                <p></p>                
+                <h2>Filter OS Type:</h2>
+                <p></p>                
+                {% radiogroup id="osfilter-radiogroup" default="" value="$valuesosfilter$"|token_safe%}
 					
-					{% textinput id="hosts-textinput" value="$hostname$"|token_safe default="*" %}	
+					<h2>Hosts and SN Filtering:</h2>					
 
-            </td>
+					<p></p>
+					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
+					
+					<p>hostnames:</p>										
+					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
 
-          </tr>
+					<p>serialnumbers:</p>					
+					{% textinput id="sn-textinput" value="$valuessn$"|token_safe default="*" %}	
+
+
+				</td>
+            </tr>			
+
+
         </table>
-	
+
+		
     {% endblock usage%}
 	
 {% block managers %}
-
-	<!-- Populate dropdown (main search) -->
-	
-	{% searchmanager id="frameid-populate"
-			search='| pivot `frameID_populate($filterdatamodel$)`'|token_safe
-			earliest_time="$earlyval$"|token_safe
-			latest_time="$lateval$"|token_safe
-			cache=False
-			auto_cancel=60
-			preview=True %}
     
-	{% searchmanager id="dcount"
-      	search='| pivot `heatmap_calendar_dcount($filterdatamodel$,$frameID$,$hostname$)`'|token_safe
+	{% searchmanager id="mainsearch"
+      	search='index=nmon sourcetype=nmon_data type=$filtermode$ hostname=$valueshosts$ serialnum=$valuessn$ $valuesosfilter$ | bucket _time span=1d | stats count by _time,hostname,serialnum'|token_safe
 			earliest_time="$earlyval$"|token_safe
 			latest_time="$lateval$"|token_safe
 			cache=False
 			auto_cancel=60
 			preview=True %}
 			
-	{% postprocessmanager
-			id="maxhosts"
-			managerid="dcount"
-			auto_cancel=60
-			search='stats max("Distinct count of hosts per day") AS count' %}
+	{% postprocessmanager 
+			id="hosts_perday"
+			managerid="mainsearch" 
+			search='| timechart span=1d count As count | where count>0 | rename count As "Count of Hosts collected per day"' %}
 			
-	{% postprocessmanager
-			id="avghosts"
-			managerid="dcount"
-			auto_cancel=60
-			search='stats avg("Distinct count of hosts per day") AS count | eval count=round(count,0)' %}		
+	{% postprocessmanager 
+			id="events_perday"
+			managerid="mainsearch" 
+			search='| timechart span=1d sum(count) As count | where count>0 | rename count As "Count of events per day"' %}
 			
-	{% postprocessmanager
-			id="minhosts"
-			managerid="dcount"
-			auto_cancel=60
-			search='stats min("Distinct count of hosts per day") AS count' %}					
-
-	{% searchmanager id="count"
-      	search='| pivot `heatmap_calendar_count($filterdatamodel$,$frameID$,$hostname$)`'|token_safe
-			earliest_time="$earlyval$"|token_safe
-			latest_time="$lateval$"|token_safe
-			cache=False
-			auto_cancel=60
-			preview=True %}
-
-	{% postprocessmanager
-			id="maxevents"
-			managerid="count"
-			auto_cancel=60
-			search='stats max("Count of events per day") AS count' %}
-			
-	{% postprocessmanager
-			id="avgevents"
-			managerid="count"
-			auto_cancel=60
-			search='stats avg("Count of events per day") AS count | eval count=round(count,0)' %}		
-			
-	{% postprocessmanager
-			id="minevents"
-			managerid="count"
-			auto_cancel=60
-			search='stats min("Count of events per day") AS count' %}									
 
 {% endblock managers %}
 
@@ -218,54 +153,50 @@
                 CalHeat) {
 
 		var choices = [
-        {label: " CPU_ALL ", value: "NMON_Data_CPU,CPU_ALL"},
-        {label: " DISKBSIZE ", value: "NMON_Data_DISKBSIZE,DISKBSIZE"},
-        {label: " DISKBUSY ", value: "NMON_Data_DISKBUSY,DISKBUSY"},
-        {label: " DISKREAD/WRITE ", value: "NMON_Data_DISKREADWRITE,DISKREADWRITE"},
-        {label: " DISKXFER ", value: "NMON_Data_DISKXFER,DISKXFER"},
-        {label: " DISKRIO/WRIO ", value: "NMON_Data_DISKRIOWRIO,DISKRIOWRIO"},
-        {label: " DISKSVCTM ", value: "NMON_Data_DISKSVCTM,DISKSVCTM"},
-        {label: " DISKWAITTM ", value: "NMON_Data_DISKWAITTM,DISKWAITTM"},
-        {label: " FCREAD/FCWRITE ", value: "NMON_Data_FC,READWRITE"},
-        {label: " FCXFERIN/FCXFEROUT ", value: "NMON_Data_FC,XFERINOUT"},
-        {label: " FILE ", value: "NMON_Data_FILE,FILE"},
-        {label: " IOADAPT ", value: "NMON_Data_IOADAPT,IOADAPT"},
-        {label: " LPAR ", value: "NMON_Data_CPU,LPAR"},
-        {label: " MEM ", value: "NMON_Data_MEM,MEM"},
-        {label: " MEMNEW ", value: "NMON_Data_MEMNEW,MEMNEW"},
-        {label: " MEMUSE (AIX) ", value: "NMON_Data_MEMUSE,AIX"},
-        {label: " MEMUSE (Solaris) ", value: "NMON_Data_MEMUSE,Solaris"},
-        {label: " NET ", value: "NMON_Data_NET,NET"},
-        {label: " NETERROR ", value: "NMON_Data_NET,NETERROR"},
-        {label: " NETPACKET ", value: "NMON_Data_NET,NETPACKET"},
-        {label: " NFSSVRV2 ", value: "NMON_Data_NFS,NFS_V2"},
-        {label: " NFSSVRV3 ", value: "NMON_Data_NFS,NFS_V3"},
-        {label: " NFSSVRV4 ", value: "NMON_Data_NFS,NFS_V4"},
-        {label: " NFSCLIV2 ", value: "NMON_Data_NFS,NFSCLIV2"},
-        {label: " NFSCLIV3 ", value: "NMON_Data_NFS,NFSCLIV3"},
-        {label: " NFSCLIV4 ", value: "NMON_Data_NFS,NFSCLIV4"},
-        {label: " PAGE ", value: "NMON_Data_PAGE,PAGE_AIX"},
-        {label: " PROC ", value: "NMON_Data_PROC,PROC"},
-        {label: " PROCSOL ", value: "NMON_Data_PROCSOL,PROCSOL"},	
-        {label: " SEA ", value: "NMON_Data_SEA,SEA"},
-        {label: " SEAPACKET ", value: "NMON_Data_SEA,SEAPACKET"},
-        {label: " SEACHPHY ", value: "NMON_Data_SEA,SEACHPHY"},
-        {label: " TOP ", value: "NMON_Data_TOP,TOP_ALLOS"},
-        {label: " UARG ", value: "NMON_Data_UARG,UARG"},
-        {label: " VM (Linux) ", value: "NMON_Data_VM,Linux"},
-        {label: " VM (Solaris)", value: "NMON_Data_VM,Solaris"},
-        {label: " WLMPROJECTCPU", value: "NMON_Data_WLM,WLMPROJECTCPU"},
-        {label: " WLMZONECPU", value: "NMON_Data_WLM,WLMZONECPU"},
-        {label: " WLMTASKCPU", value: "NMON_Data_WLM,WLMTASKCPU"},
-        {label: " WLMUSERCPU", value: "NMON_Data_WLM,WLMUSERCPU"},
-        {label: " WLMPROJECTMEM", value: "NMON_Data_WLM,WLMPROJECTMEM"},
-        {label: " WLMZONEMEM", value: "NMON_Data_WLM,WLMZONEMEM"},
-        {label: " WLMTASKMEM", value: "NMON_Data_WLM,WLMTASKMEM"},
-        {label: " WLMUSERMEM", value: "NMON_Data_WLM,WLMUSERMEM"}
+        {label: " All (No filter) ", value: "*"},
+        {label: " CPU_ALL ", value: "CPU_ALL"},
+        {label: " DISKBSIZE ", value: "DISKBSIZE"},
+        {label: " DISKBUSY ", value: "DISKBUSY"},
+        {label: " DISKREAD ", value: "DISKREAD"},
+        {label: " DISKWRITE ", value: "DISKWRITE"},
+        {label: " DISKXFER ", value: "DISKXFER"},
+        {label: " DISKRIO ", value: "DISKRIO"},
+        {label: " DISKWIO ", value: "DISKWIO"},
+        {label: " FILE ", value: "FILE"},
+        {label: " IOADAPT ", value: "IOADAPT"},
+        {label: " LPAR ", value: "LPAR"},
+        {label: " MEM ", value: "MEM"},
+        {label: " MEMNEW ", value: "MEMNEW"},
+        {label: " MEMUSE ", value: "MEMUSE"},
+        {label: " NET ", value: "NET"},
+        {label: " NETERROR ", value: "NETERROR"},
+        {label: " NETPACKET ", value: "NETPACKET"},
+        {label: " NFSSVRV2 ", value: "NFSSVRV2"},
+        {label: " NFSSVRV3 ", value: "NFSSVRV3"},
+        {label: " NFSSVRV4 ", value: "NFSSVRV4"},
+        {label: " NFSCLIV2 ", value: "NFSCLIV2"},
+        {label: " NFSCLIV3 ", value: "NFSCLIV3"},
+        {label: " NFSCLIV4 ", value: "NFSCLIV4"},
+        {label: " PAGE ", value: "PAGE"},
+        {label: " PROC ", value: "PROC"},
+        {label: " PROCSOL ", value: "PROCSOL"},	
+        {label: " TOP ", value: "TOP"},
+        {label: " UARG ", value: "UARG"}
         ]
  
 		// Assign them to the button group
 		splunkjs.mvc.Components.getInstance("filter-dropdowngroup").settings.set("choices", choices);
+
+		var choices = [
+        {label: " Any OS", value: ""},
+        {label: " AIX", value: "| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]"},
+        {label: " Solaris", value: "| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]"},
+        {label: " Linux", value: "| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]"}
+        ] 
+ 
+		// Assign them to the button group
+		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);	
+
 		
     });
 </script>

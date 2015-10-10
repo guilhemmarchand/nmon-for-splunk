@@ -9,17 +9,19 @@
 <style type="text/css">
 
 #cpu-bubble{
-   height: 527px;
+   height: 447px;
+}
+
+#d3chart-cpu{
+   height: 400px;
 }
 
 #memory-bubble{
-   height: 527px;
+   height: 447px;
 }
 
-.html h3 {
-	font-size: 12px;
-	font-weight: normal;
-	line-height: 16px;
+#d3chart-memory{
+   height: 400px;
 }
 
 </style>
@@ -30,7 +32,7 @@
 
 	<div class="customimgheader">
 	
-	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.svg" alt="Nmon"/>	
+	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.png" alt="Nmon"/>	
 	<h1>NMON TOP: Resources Usage per Command Invocation</h1>
 
 	</div>        
@@ -41,51 +43,130 @@
    
     {% block usage%}
 
-        <div class="input input-timerangepicker" id="timerange">
-            <label>Time Range:</label>
-    			{% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}
-        </div>
+      <p>Change your parameters if required:</p>
+		<p> </p>
 
-        <div class="input input-dropdown" id="filtertime-dropdown">
-            <label>Time Filtering:</label>
-				  {% dropdown id="filtertime-dropdown" default="No_Filter" value="$timefilter$"|token_safe %}
-        </div>
+		
+        <table class="table table-striped table-bordered">
 
-        <div class="input input-dropdown" id="osfilter-dropdown">
-            <label>Filter OS Type:</label>
-              {% dropdown id="osfilter-dropdown" default="Linux" value="$OStype$"|token_safe%}
-        </div>
 
-        <div class="input input-dropdown" id="frameid-dropdown">
-            <label>Frame IDs:</label>
-					{% dropdown id="frameid-dropdown" managerid="frameid-populate" valueField="TOP_Linux.frameID" default="*" value="$frameID$"|token_safe %}
-        </div>
+            <tr>
+                <td>
+				
+				<p></p>
+                <h2>TimeRange:</h2>
+                </td>
+                <td>
+					<p></p>
+    				{% timerange id="timerange" 
+					managerid="search1" 
+        			preset="Last 24 hours"
+        			earliest_time="$earlyval$"|token_safe
+        			latest_time="$lateval$"|token_safe %}                
+					<p></p>                
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+					 <p></p>
 
-        <div class="input input-text" id="hosts-textinput">
-            <label>Optional: Filter hosts populating</label>
-					{% textinput id="hosts-textinput" value="$hostname-filter$"|token_safe default="*" %}
-        </div>
+					 <p></p>
+                <h2>Select Hostname:</h2>
+                </td>
+                <td>
+                
+                <p></p>                
+                <h2>Filter OS Type:</h2>
+                <p></p>                
+                {% radiogroup id="osfilter-radiogroup" default="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
 
-        <div class="input input-dropdown" id="hosts-dropdown">
-            <label>Host Selection:</label>
-					{% dropdown id="hosts-dropdown" managerid="hostname-populate" valueField="TOP_Linux.hostname" value="$hostname$"|token_safe %}	
-        </div>
+					<h2>Hosts Filtering:</h2>					
 
-        <div class="input input-text" id="command-textinput">
-            <label>Optional: Filter Commands</label>
-					{% textinput id="command-textinput" value="$Command$"|token_safe default="*" %}
-        </div>
+					<p></p>
+					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
+					
+					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
 
-        <div class="input input-text" id="pid-textinput">
-            <label>Optional: Filter PIDs</label>
-					{% textinput id="pid-textinput" value="$PID$"|token_safe default="*" %}
-        </div>
+                <p></p>                
+                <h2>Hosts:</h2>                             
+                <p></p>
+                {% dropdown id="hostname-dropdown" managerid="hostname-populate" valueField="hostname" default="none" value="$valueshostname$"|token_safe %}	
+					 </td>
+            </tr>            	
 
-        <div class="input input-dropdown" id="stats-dropdown">
-            <label>Stats mode:</label>
-					{% dropdown id="stats-dropdown" width="250" default="avg" value="$statsmode$"|token_safe %}
-        </div>
+            <tr>
+                <td>
+					 <p></p>
 
+					 <p></p>
+                <h2>Optional: Filter by Command name</h2>
+                </td>
+                <td>
+                
+                <p></p>                
+                <h2>Command:</h2>
+                <p></p>                
+					 {% textinput id="command-textinput" value="$valuescommand$"|token_safe default="*" %}
+
+					 </td>
+            </tr>            	
+
+            <tr>
+                <td>
+					 <p></p>
+
+					 <p></p>
+                <h2>Optional: Filter by PIDs</h2>
+                </td>
+                <td>
+
+					 <div class="imgheader">
+        				<img src="{{STATIC_URL}}/nmon/icons/grey_theme/info.png" alt="Info"/>
+        				<h4>If UARG is activated in Nmon, search for PIDs, Commands and Full Arguments of processes: <br /> <a href="../../../../app/nmon/UI_Nmon_UARG_LINUX" target="_blank">Open UARG Search Interface in new window</a></h4> 
+						<br />
+						<br />
+
+ 					 </div>
+ 
+                <p></p>                
+                <h2>PIDs:</h2>
+                <p></p>                
+					 {% textinput id="pid-textinput" value="$valuespid$"|token_safe default="*" %}
+
+					 </td>
+            </tr>            	
+			
+            <tr>
+                <td>
+					<p></p>
+					<h2>Select a Stats Mode:</h2>
+                </td>
+                <td>
+
+					<p></p>
+					<p>INFO: For long TimeRange searches, Average stats mode is recommended</p>                
+					<p></p>                
+                
+					<p></p>
+					{% dropdown id="stats-dropdown" default="max" value="$valuesstats$"|token_safe %}	
+				</td>
+            </tr>
+            
+            <tr>
+                <td>
+					 <p></p>
+                <h2>Timechart Auto Interval definition:</h2>
+                </td>
+                <td>
+                <p></p>
+                {% dropdown id="interval-dropdown" managerid="interval-definition" valueField="span" selectFirstChoice="true" showClearButton=false value="$valuesspan$"|token_safe %}	
+					 </td>
+					 
+            </tr>            
+
+        </table>
+		
     {% endblock usage%}
 
 <!-- ##################################################################################### Single Core CPU Usage per Command Invocation ##################################################################################### -->
@@ -103,7 +184,7 @@
 <!-- #### Bubble Chart #### -->
 
     {% block bubblechart-cpu %}
-
+		 
 		 		{% bubblechart 
             	id="cpu-bubble" 
             	managerid="search-cpu"
@@ -120,20 +201,26 @@
 				{% table 
 					id="table-cpu" 
 					managerid="search-table-cpu"
-					pageSize="19" %}
+					pageSize="15" %}
 			
-    {% endblock table-cpu %}
-    
-<!-- #### Table Stats #### -->
-		
-    {% block table-cpu-byhosts %}
+    {% endblock table-cpu %}	
 
-				{% table 
-					id="table-cpu-byhosts" 
-					managerid="search-cpu-byhosts"
-					pageSize="19" %}
-			
-    {% endblock table-cpu-byhosts %}
+	
+<!-- #### Timechart #### -->
+
+    {% block timechart-cpu %}
+
+			{% searchcontrols 
+				id="searchcontrol-timecpu" 
+				managerid="timesearch-cpu" %}
+		
+			{% d3chart 
+				id="d3chart-cpu" 
+				managerid="timesearch-cpu" 
+				type="stackedAreaChart" %}
+
+    {% endblock timechart-cpu %}	
+
 
 <!-- ##################################################################################### MEMORY Usage per Command Invocation ##################################################################################### -->
 
@@ -167,18 +254,26 @@
 				{% table 
 					id="table-memory" 
 					managerid="search-table-memory"
-					pageSize="19" %}
+					pageSize="15" %}
 			
     {% endblock table-memory %}	
 
-    {% block table-memory-byhosts %}
+	
+<!-- #### Timechart #### -->
 
-				{% table 
-					id="table-memory-byhosts" 
-					managerid="search-memory-byhosts"
-					pageSize="19" %}
-			
-    {% endblock table-memory-byhosts %}
+    {% block timechart-memory %}
+
+			{% searchcontrols 
+				id="searchcontrol-timememory" 
+				managerid="timesearch-memory" %}
+		
+			{% d3chart 
+				id="d3chart-memory" 
+				managerid="timesearch-memory" 
+				type="stackedAreaChart" %}
+
+    {% endblock timechart-memory %}	
+
 
 <!-- ##################################################################################### BLOCK MANAGERS ##################################################################################### -->	
 	
@@ -189,51 +284,59 @@
 	<!-- Populate dropdown (main search) -->
 	
 	{% searchmanager
-		id="frameid-populate" search='| tstats count AS Count from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.OStype="$OStype$") (TOP_Linux.hostname="$hostname-filter$") groupby "TOP_Linux.frameID" prestats=true | stats dedup_splitvals=t count AS Count by "TOP_Linux.frameID" | sort limit=0 "TOP_Linux.frameID" | fields - _span | fillnull Count | fields "TOP_Linux.frameID"'|token_safe
+		id="hostname-populate" search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshosts$ | stats count by hostname $valuesosfilter$'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
-		cache=False
+		cache=True
 		auto_cancel=60
-		preview=True %}	
+		preview=True %}
+
+	<!-- Interval Definition (span) -->
 	
 	{% searchmanager
-		id="hostname-populate" search='| tstats count AS count from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.frameID="$frameID$") (TOP_Linux.OStype="$OStype$") (TOP_Linux.hostname="$hostname-filter$") groupby "TOP_Linux.hostname" prestats=true | stats dedup_splitvals=t count AS Count by "TOP_Linux.hostname" | fields "TOP_Linux.hostname" | dedup "TOP_Linux.hostname" | sort "TOP_Linux.hostname"'|token_safe
+		id="interval-definition" search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ | `inline_customspan_django(type=TOP,hostname=$valueshostname$)`'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
+		autostart=True	
 		cache=False
 		auto_cancel=60
-		preview=True %}	
+		preview=True %}
 
 <!-------------------------------------------------------------------- CPU Usage -------------------------------------------------------------------->
     
 	{% searchmanager 
 	id="search-cpu" 
-	search='| tstats `TOP_Linux_cpu($frameID$,$OStype$,$hostname$,$timefilter$,$Command$,$PID$)` | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | stats $statsmode$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ PID=$valuespid$ | dedup _time,pct_CPU,PID,Command,hostname | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | stats $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
 	auto_cancel=60
 	preview=True %}
+	
+	{% postprocessmanager 
+	id="search-cpu-top30" 
+	managerid="search-cpu" 
+	search="| sort - Usage_per_single_core | fields Command,Usage_per_single_core | head 30" %}
 	
 	{% postprocessmanager 
 	id="search-table-cpu" 
 	managerid="search-cpu" 
 	search="| sort - Usage_per_single_core" %}
-	
+
 	{% searchmanager 
-	id="search-cpu-byhosts" 
-	search='| tstats `TOP_Linux_cpu($frameID$,$OStype$,$hostname$,$timefilter$,$Command$,$PID$)` | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,hostname,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,hostname,Command | stats $statsmode$(conso_per_core) as "Usage_per_single_core" by hostname,Command | sort - Usage_per_single_core'|token_safe 
+	id="timesearch-cpu" 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ PID=$valuespid$ | dedup _time,pct_CPU,PID,Command,hostname | eval limit=(logical_cpus*100) | where pct_CPU<=limit | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command | eval conso_per_core=(pct_CPU/100) | stats sum(conso_per_core) As conso_per_core by _time,Command | timechart span=$valuesspan$ useother=f limit=20 $valuesstats$(conso_per_core) as "Usage_per_single_core" by Command'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
 	auto_cancel=60
-	preview=True %}	
+	preview=True %}
 
 <!-------------------------------------------------------------------- MEMORY Usage -------------------------------------------------------------------->
 
 	{% searchmanager 
 	id="search-memory" 
-	search='| tstats `TOP_Linux_mem($frameID$,$OStype$,$hostname$,$timefilter$,$Command$,$PID$)` | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | stats $statsmode$(Used_Mem_MB) as "Used_Memory_MB" by Command | eval Used_Memory_MB=round(Used_Memory_MB,2)'|token_safe 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ PID=$valuespid$ | dedup _time,PID,Command,ResText,ResData,hostname | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=round(((ResData+ResText)/1024),0) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | stats $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command | eval Used_Memory_MB=round(Used_Memory_MB,2)'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
@@ -241,19 +344,25 @@
 	preview=True %}
 	
 	{% postprocessmanager 
+	id="search-memory-top30" 
+	managerid="search-memory" 
+	search="| sort - Used_Memory_MB | fields Command,Used_Memory_MB | head 30" %}
+	
+	{% postprocessmanager 
 	id="search-table-memory" 
 	managerid="search-memory" 
-	search="| sort - Used_Memory_MB" %}
+	search="| sort - Used_Memory" %}
 
 	{% searchmanager 
-	id="search-memory-byhosts" 
-	search='| tstats `TOP_Linux_mem($frameID$,$OStype$,$hostname$,$timefilter$,$Command$,$PID$)` | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,hostname,Command | where Used_Mem_MB>0 | stats $statsmode$(Used_Mem_MB) as "Used_Memory_MB" by hostname,Command | eval Used_Memory_MB=round(Used_Memory_MB,2) | sort - Used_Memory_MB'|token_safe 
+	id="timesearch-memory" 
+	search='index=nmon sourcetype=nmon_data type=TOP hostname=$valueshostname$ Command=$valuescommand$ PID=$valuespid$ | dedup _time,PID,Command,ResText,ResData,hostname | stats count(Command) As count, avg(ResText) As ResText, sum(ResData) As ResData by _time,hostname,Command | eval Used_Mem_MB=round(((ResData+ResText)/1024),0) | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command | where Used_Mem_MB>0 | timechart span=$valuesspan$ useother=f limit=20 $valuesstats$(Used_Mem_MB) as "Used_Memory_MB" by Command'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
 	auto_cancel=60
 	preview=True %}
 
+	
 {% endblock managers %}
 
 {% block js %}
@@ -274,48 +383,41 @@
             DropdownView
         		){				
 
+		var myChart = mvc.Components.getInstance("d3chart-cpu");
+			myChart.settings.set("setup", function(chart){
+
+    		chart.xAxis.tickFormat(function(d) { return d3.time.format('%b %d %H:%M')(new Date(d)); });
+
+    		// other settings on chart
+
+		});
+
+		var myChart = mvc.Components.getInstance("d3chart-memory");
+			myChart.settings.set("setup", function(chart){
+
+    		chart.xAxis.tickFormat(function(d) { return d3.time.format('%b %d %H:%M')(new Date(d)); });
+
+    		// other settings on chart
+
+		});
+
 		var choices = [
         {label: " Max", value: "max"},
         {label: " Average", value: "avg"},
+        {label: " Min", value: "min"}        
         ] 
  
 		// Assign them to the button group
 		splunkjs.mvc.Components.getInstance("stats-dropdown").settings.set("choices", choices);
 		
 		var choices = [
-        {label: " Any OS", value: "*"},		
-        {label: " Linux", value: "Linux"}
+        {label: " Linux", value: "| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]"},
+        {label: " Inactive", value: ""}                
         ] 
  
 		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("osfilter-dropdown").settings.set("choices", choices);
-
-		var choices = [
-        {label: " Any", value: "*"}
-        ] 
- 
-		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("frameid-dropdown").settings.set("choices", choices);					
+		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);				
 		
-		var choices = [
-        {label: " ALL Hosts", value: "*"}
-        ] 
- 
-		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("hosts-dropdown").settings.set("choices", choices);					
-		
-		var choices = [
-        {label: " No Filter", value: "No_Filter"},
-        {label: " Day BusinessDays 8h-19h", value: "Day_BusinessDays_8h-19h"},
-        {label: " Day WeekEnd 8h-19h", value: "Day_WeekEnd_8h-19h"},
-        {label: " Day AllDays 8h-19h", value: "Day_AllDays_8h-19h"},        
-        {label: " Night BusinessDays 19h-8h", value: "Night_BusinessDays_19h-8h"},
-        {label: " Night WeekEnd 19h-8h", value: "Night_WeekEnd_19h-8h"},
-        {label: " Night AllDays 19h-8h", value: "Night_AllDays_19h-8h"}
-        ] 
- 
-		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("filtertime-dropdown").settings.set("choices", choices);
 		
     });
 </script>

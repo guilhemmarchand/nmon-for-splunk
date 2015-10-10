@@ -1,262 +1,163 @@
-<form stylesheet="ui_simple.css">
-    <label>UI JFSFILE, Percentage Usage of FileSystems</label>
-    <description>User Interface for the JFSFILE monitor</description>
-
-    <fieldset autoRun="false" submitButton="false">
-
-        <input type="time" token="timerange" searchWhenChanged="true">
-            <label>Time Range:</label>
-            <default>
-                <earliestTime>-24h</earliestTime>
-                <latestTime>now</latestTime>
-            </default>
-        </input>
-
-        <input type="dropdown" token="osfilter" searchWhenChanged="true">
-            <label>Filter OS Type:</label>
-            <default>*</default>
-            <prefix>JFS.OStype="</prefix>
-            <suffix>"</suffix>
-            <choice value="*">Any OS</choice>
-            <choice value="AIX">AIX</choice>
-            <choice value="Linux">Linux</choice>
-            <choice value="Solaris">Solaris</choice>
-        </input>
-
-        <input type="multiselect" token="frameID" searchWhenChanged="true">
-            <label>Frame IDs:</label>
-            <!-- Populating Data Model Search -->
-            <search id="frameIDSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) ($osfilter$) groupby "JFS.frameID" prestats=true
-| stats dedup_splitvals=t count AS count by "JFS.frameID"
-| sort limit=0 "JFS.frameID"
-| fields - _span
-| fillnull count</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <valuePrefix>JFS.frameID="</valuePrefix>
-            <valueSuffix>"</valueSuffix>
-            <delimiter> OR </delimiter>
-            <choice value="*">Any</choice>
-            <default>*</default>
-            <fieldForLabel>JFS.frameID</fieldForLabel>
-            <fieldForValue>JFS.frameID</fieldForValue>
-        </input>
-
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-            <label>Optional: Filter hosts populating</label>
-            <default>*</default>
-        </input>
-
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
-            <label>Hosts Selection:</label>
-            <!-- Populating Data Model Search -->
-            <search id="HostsbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "JFS.hostname", "JFS.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "JFS.hostname", "JFS.device"
-| sort limit=0 "JFS.hostname"
-| fields - _span
-| fillnull Count | fields JFS.hostname | dedup JFS.hostname | sort JFS.hostname</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <valuePrefix>JFS.hostname="</valuePrefix>
-            <valueSuffix>"</valueSuffix>
-            <delimiter> OR </delimiter>
-            <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>JFS.hostname</fieldForLabel>
-            <fieldForValue>JFS.hostname</fieldForValue>
-        </input>
-
-        <input type="multiselect" token="device" searchWhenChanged="true">
-            <label>FS Selection:</label>
-            <!-- Populating Data Model Search -->
-            <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "JFS.hostname", "JFS.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "JFS.hostname", "JFS.device"
-| sort limit=0 "JFS.hostname"
-| fields - _span
-| fillnull Count | fields JFS.device | dedup JFS.device | sort JFS.device</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <valuePrefix>JFS.device="</valuePrefix>
-            <valueSuffix>"</valueSuffix>
-            <delimiter> OR </delimiter>
-            <choice value="*">ALL FS</choice>
-            <default>*</default>
-            <fieldForLabel>JFS.device</fieldForLabel>
-            <fieldForValue>JFS.device</fieldForValue>
-        </input>
-
-        <input type="text" token="fsfilter" searchWhenChanged="true">
-            <label>Filter FileSystems by pattern:</label>
-            <default>*</default>
-            <prefix>JFS.device="</prefix>
-            <suffix>"</suffix>
-        </input>
-
-        <input type="dropdown" token="aggregate" searchWhenChanged="true">
-            <label>Aggregate:</label>
-            <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time, JFS.hostname, JFS.device | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time | eval JFS.hostname=&quot;aggreg_hostname&quot; | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
-            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time, JFS.hostname, JFS.device | eval JFS.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time | eval JFS.hostname=&quot;aggreg_hostname&quot; | eval JFS.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
-            <default>fields *</default>
-        </input>
-
-        <input type="dropdown" token="statsmode" searchWhenChanged="true">
-            <label>Stats mode:</label>
-            <default>max</default>
-            <choice value="max">Max</choice>
-            <choice value="avg">Avg</choice>
-            <choice value="min">Min</choice>
-            <choice value="median">Median</choice>
-            <choice value="mode">Mode</choice>
-            <choice value="range">Range</choice>
-        </input>
-
-        <input type="checkbox" token="charting" searchWhenChanged="true">
-            <label>Charting:</label>
-            <default>fields *</default>
-            <choice value="fields *">On</choice>
-        </input>
-
-    </fieldset>
-
-    <row>
-        <panel>
-            <table>
-                <search id="tablestats">
-                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
-| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+<form stylesheet="singlevalue.css,ui_simple.css">
+  <label>NMON - JFSFILE, Percentage Usage of FileSystems</label>
+  <description/>
+  <fieldset autoRun="false" submitButton="false">
+    <input type="time" token="timerange" searchWhenChanged="true">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default></default>
+      <choice value="">Any OS</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+    </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=JFSFILE $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="device" searchWhenChanged="true">
+      <label>Select Filesystems:</label>
+      <choice value="*">ALL FILESYSTEM</choice>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="device" fieldForValue="device">
+        <![CDATA[index=nmon sourcetype=nmon_data type=JFSFILE $hostname$ | stats count by device | dedup device | sort device]]>
+      </populatingSearch>
+      <valuePrefix>device="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="text" token="fsfilter" searchWhenChanged="true">
+      <label>Filter FileSystems by pattern:</label>
+      <default>*</default>
+      <prefix>device="</prefix>
+      <suffix>"</suffix>      
+    </input>
+    <input type="radio" token="aggregate" searchWhenChanged="true">
+      <label>Aggregate:</label>
+      <choice value="fields *">Single Series</choice>
+      <choice value="stats avg(value) As value by _time,hostname | setfields device=aggregated_device">Average by Time interval, host</choice>
+      <choice value="stats avg(value) As value by _time | setfields hostname=aggregated_host | setfields device=aggregated_device">Average by Time interval</choice>
+      <choice value="stats max(value) As value by _time,hostname | setfields device=aggregated_device">Max by Time interval, host</choice>
+      <choice value="stats max(value) As value by _time | setfields hostname=aggregated_host | setfields device=aggregated_device">Max by Time interval</choice>
+      <default>fields *</default>
+    </input>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>JFSFILE - Usage Percentage of Filesystems</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="JFSFILE" $hostname$ $device$ | search $fsfilter$
 | $aggregate$
-| rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
-| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
-| sort limit=0 "hostname"
-| eval value=round(value,2)
-| fields hostname,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
-                <format type="sparkline" field="sparkline">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
-            </table>
-        </panel>
-    </row>
-
-    <row depends="$charting$">
-        <panel>
-            <title>Charting parameters:</title>
-            <input type="dropdown" token="chart" searchWhenChanged="true">
-                <label>Select a type of chart:</label>
-                <default>line</default>
-                <choice value="area">Area</choice>
-                <choice value="line">Line</choice>
-                <choice value="column">Column</choice>
-                <choice value="bar">Bar</choice>
-            </input>
-            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
-                <label>Missing Data:</label>
-                <default>gaps</default>
-                <choice value="gaps">Gaps</choice>
-                <choice value="connect">Connect</choice>
-                <choice value="zero">Zero</choice>
-            </input>
-            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-                <label>Select a stacking mode:</label>
-                <default>unstacked</default>
-                <choice value="stacked">stacked (lines excluded)</choice>
-                <choice value="stacked100">100% stacked (lines excluded)</choice>
-                <choice value="unstacked">unstacked</choice>
-            </input>
-            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-                <label>Legend placement:</label>
-                <default>bottom</default>
-                <choice value="bottom">Bottom</choice>
-                <choice value="top">Top</choice>
-                <choice value="left">left</choice>
-                <choice value="right">right</choice>
-                <choice value="center">center</choice>
-                <choice value="none">none</choice>
-            </input>
-            <input type="dropdown" token="span" searchWhenChanged="true">
-                <label>Span:</label>
-                <default>`inline_customspan`</default>
-                <choice value="`inline_customspan`">auto</choice>
-                <choice value="span=1m">1 minute</choice>
-                <choice value="span=2m">2 minutes</choice>
-                <choice value="span=3m">3 minutes</choice>
-                <choice value="span=4m">4 minutes</choice>
-                <choice value="span=5m">5 minutes</choice>
-                <choice value="span=10m">10 minutes</choice>
-                <choice value="span=15m">15 minutes</choice>
-                <choice value="span=30m">30 minutes</choice>
-                <choice value="span=1h">1 hour</choice>
-                <choice value="span=2h">2 hours</choice>
-                <choice value="span=12h">12 hours</choice>
-                <choice value="span=4h">4 hours</choice>
-                <choice value="span=1d">1 day</choice>
-                <choice value="span=2d">2 days</choice>
-                <choice value="span=1w">7 days</choice>
-                <choice value="span=1mon">1 month</choice>
-            </input>
-        </panel>
-    </row>
-
-    <row depends="$charting$">
-        <panel>
-            <chart>
-                <search id="timechart">
-                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
-| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+| stats max(value) As max_value, avg(value) As avg_value, min(value) As min_value, sparkline(max(value)) As sparkline by hostname, device
+| eval avg_value=round(avg_value,2) | sort hostname, device</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+        <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="radio" token="chart" searchWhenChanged="true">
+        <label>Select a type of chart:</label>
+        <default>line</default>
+        <choice value="area">Area</choice>
+        <choice value="line">Line (recommended)</choice>
+        <choice value="column">Column</choice>
+        <choice value="bar">Bar</choice>
+      </input>
+      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked</choice>
+        <choice value="unstacked">unstacked (recommended)</choice>
+      </input>
+      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+        <label>Missing Data:</label>
+        <default>gaps</default>
+        <choice value="gaps">Gaps</choice>
+        <choice value="connect">Connect</choice>
+        <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+        <label>Legend placement:</label>
+        <default>bottom</default>
+        <choice value="bottom">Bottom</choice>
+        <choice value="top">Top</choice>
+        <choice value="left">left</choice>
+        <choice value="right">right</choice>
+        <choice value="center">center</choice>
+        <choice value="none">none</choice>
+      </input>
+      <chart>
+        <title>JFSFILE - Usage Percentage of Filesystems</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="JFSFILE" $hostname$ $device$ | search $fsfilter$
 | $aggregate$
-| $charting$
-| rename JFS.hostname AS hostname, JFS.device AS device, JFS.value AS value
-| bucket _time $span$
+| bucket _time `inline_customspan(type=JFSFILE,$hostname$)`
 | stats $statsmode$(value) As value by _time,hostname,device
 | eval s1="value"
-| makemv s1
+| makemv s1 
 | mvexpand s1
 | eval yval=case(s1=="value",value)
-| eval series=hostname+":"+device
+| eval series=hostname+":"+device+":"+s1
 | xyseries _time,series,yval
-| makecontinuous _time $span$</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
-                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">$charting.legend.placement$</option>
-                <option name="height">680px</option>
-                <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">% Used</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisY.maximumNumber">100</option>
-            </chart>
-        </panel>
-    </row>
+| makecontinuous _time `inline_customspan(type=JFSFILE,$hostname$)`</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">% Used</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisY.maximumNumber">100</option>
+      </chart>
+    </panel>
+  </row>
 </form>

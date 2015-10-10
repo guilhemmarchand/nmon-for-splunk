@@ -8,7 +8,7 @@ require([
 
     // Translations from rangemap results to CSS class
     var ICONS = {
-        equal: 'equal-sign-48px',
+        equal: 'blue_equals_48px',
         increase: 'arrow_red_increase_48px',
         decrease: 'arrow_green_decrease_48px'
     };

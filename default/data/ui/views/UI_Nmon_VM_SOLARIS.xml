@@ -1,9 +1,6 @@
-<form stylesheet="ui_simple.css" script="link_switcher.js, autodiscover.js">
-  <label>UI VM, Solaris Virtual Memory Statistics (Solaris)</label>
-  <description>User Interface for the VM monitor on Solaris Systems</description>
-
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON - VM, Solaris Virtual Memory Statistics (Solaris)</label>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>Time Range:</label>
       <default>
@@ -11,151 +8,83 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
-    <input type="dropdown" token="timefilter" searchWhenChanged="true">
-      <label>Time Filtering:</label>
-      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-      <default>No_Filter</default>
-    </input>
-
-    <input type="dropdown" token="osfilter" searchWhenChanged="true">
+      <input type="dropdown" token="timefilter" searchWhenChanged="true">
+        <label>Time Filtering:</label>
+        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+        <default>No_Filter</default>
+      </input>
+    <input type="radio" token="osfilter" searchWhenChanged="true">
       <label>Filter OS Type:</label>
-      <default>Solaris</default>
-      <prefix>Solaris.OStype="</prefix>
-      <suffix>"</suffix>
-      <choice value="Solaris">Solaris</choice>
+      <default>| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]</default>
+      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+      <choice value="">Inactive</choice>
     </input>
-
-    <input type="multiselect" token="frameID" searchWhenChanged="true">
-      <label>Frame IDs:</label>
-      <!-- Populating Data Model Search -->
-      <search>
-        <query>| tstats count AS Count from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) ($osfilter$) groupby "Solaris.frameID" prestats=true
-| stats dedup_splitvals=t count AS Count by "Solaris.frameID"
-| sort limit=0 "Solaris.frameID"
-| fields Solaris.frameID, Count</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-      </search>
-      <valuePrefix>Solaris.frameID="</valuePrefix>
-      <valueSuffix>"</valueSuffix>
-      <delimiter> OR </delimiter>
-      <choice value="*">Any</choice>
-      <default>*</default>
-      <fieldForLabel>Solaris.frameID</fieldForLabel>
-      <fieldForValue>Solaris.frameID</fieldForValue>
-    </input>
-
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
       <default>*</default>
-    </input>
-
+    </input>    
     <input type="multiselect" token="hostname" searchWhenChanged="true">
       <label>Hosts Selection:</label>
-      <!-- Populating Data Model Search -->
-      <search>
-        <query>| tstats count AS Count from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) ($frameID$) (Solaris.hostname=$hostname-prefilter$) ($osfilter$) groupby "Solaris.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "Solaris.hostname"
-| sort limit=0 "Solaris.hostname"
-| fields Solaris.hostname, Count</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-      </search>
-      <valuePrefix>Solaris.hostname="</valuePrefix>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=VM $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
       <valueSuffix>"</valueSuffix>
       <delimiter> OR </delimiter>
-      <fieldForLabel>Solaris.hostname</fieldForLabel>
-      <fieldForValue>Solaris.hostname</fieldForValue>
     </input>
-
-    <input type="dropdown" token="statsmode" searchWhenChanged="true">
-      <label>Select a stats mode:</label>
-      <default>max</default>
-      <choice value="max">Max</choice>
-      <choice value="avg">Avg</choice>
-      <choice value="min">Min</choice>
-      <choice value="median">Median</choice>
-      <choice value="mode">Mode</choice>
-      <choice value="range">Range</choice>
-    </input>
-
-    <input type="checkbox" token="charting" searchWhenChanged="true">
-      <label>Charting:</label>
-      <default>fields *</default>
-      <choice value="fields *">On</choice>
-    </input>
-
+      <input type="dropdown" token="statsmode" searchWhenChanged="true">
+        <label>Select a stats mode:</label>
+        <default>max</default>
+        <choice value="max">Max</choice>
+        <choice value="avg">Avg</choice>
+        <choice value="min">Min</choice>
+        <choice value="median">Median</choice>
+        <choice value="mode">Mode</choice>
+        <choice value="range">Range</choice>
+      </input>
   </fieldset>
-
-  <search id="Global">
-    <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Solaris)` groupby _time, "Solaris.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.hostname"
-| $charting$
-| timechart $span$ useother=f limit=0 `VM_Solaris($statsmode$)` by Solaris.hostname
-| rename Solaris.* AS *</query>
-    <earliest>$timerange.earliest$</earliest>
-    <latest>$timerange.latest$</latest>
-  </search>
-
-  <!-- Information panel -->
-
-  <row>
-    <panel>
-      <html>
-
-        <div class="imgheader">
-          <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-          <h4>Metrics information:</h4>
-        </div>
-
-        <div class="list">
-          <lu>
-            <li><b>minfaults:</b> (pages/s) minor faults, Same as 'vmstat.mf'</li>
-            <li><b>majfaults:</b> (pages/s) major faults</li>
-            <li><b>pgin:</b> (pages/s) pagein</li>
-            <li><b>pgout:</b> (pages/s) pageins</li>
-            <li><b>scans:</b> (pages/s) pages examined by pageout daemon, Same as 'vmstat.sr'</li>
-            <li><b>reclaims:</b> (pages/s) pages freed by daemon or auto, Same as 'vmstat.re'</li>
-          </lu>
-        </div>
-
-        <div class="list">
-          <lu>
-            <li><b>pgpgin:</b> (KB/s) pages paged in, Same as 'vmstat.pi'</li>
-            <li><b>pgpgout:</b>	(KB/s) pages paged out, Same as 'vmstat.po'</li>
-            <li><b>pswpin:</b> (KB/s) pages swapped in and out, Same as 'vmstat.si'</li>
-            <li><b>pswpout:</b>	(KB/s) pages swapped in and out, Same as 'vmstat.so'</li>
-            <li><b>pgfree:</b> (KB/s) pages freed by daemon or auto, Same as 'vmstat.fr'</li>
-          </lu>
-          <br />
-        </div>
-
-      </html>
-    </panel>
-  </row>
-
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
+| timechart `inline_customspan(type=VM,$hostname$)`
+$statsmode$(minfaults) As minfaults,
+$statsmode$(majfaults) As majfaults,
+$statsmode$(pgin) As pgin,
+$statsmode$(pgout) As pgout,
+$statsmode$(scans) As scans,
+$statsmode$(reclaims) As reclaims,
+$statsmode$(pgpgin) As pgpgin,
+$statsmode$(pgpgout) As pgpgout,
+$statsmode$(pswpin) As pswpin,
+$statsmode$(pswpout) As pswpout,
+$statsmode$(pgfree) As pgfree by hostname</searchTemplate>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
   <row>
     <panel>
       <table>
         <title>Table Stats</title>
-        <search>
-          <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris
-where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Solaris)` groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.frameID", "Solaris.hostname"
-| rename Solaris.* AS *
-| stats $statsmode$(*) AS * by frameID, hostname</query>
-          <earliest>$timerange.earliest$</earliest>
-          <latest>$timerange.latest$</latest>
-        </search>
+        <searchString>index="nmon" sourcetype="nmon_data" type="VM" $hostname$ | `$timefilter$`
+| stats
+$statsmode$(minfaults) As minfaults,
+$statsmode$(majfaults) As majfaults,
+$statsmode$(pgin) As pgin,
+$statsmode$(pgout) As pgout,
+$statsmode$(scans) As scans,
+$statsmode$(reclaims) As reclaims,
+$statsmode$(pgpgin) As pgpgin,
+$statsmode$(pgpgout) As pgpgout,
+$statsmode$(pswpin) As pswpin,
+$statsmode$(pswpout) As pswpout,
+$statsmode$(pgfree) As pgfre by hostname</searchString>
+<earliestTime>$timerange.earliest$</earliestTime>
+<latestTime>$timerange.latest$</latestTime>
+        <earliestTime>$earliest$</earliestTime>
+        <latestTime>$latest$</latestTime>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
@@ -164,31 +93,28 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
       </table>
     </panel>
   </row>
-
-  <row depends="$charting$">
+  <row>
     <panel>
-      <title>Charting parameters:</title>
-      <input type="dropdown" token="chart" searchWhenChanged="true">
+      <input type="radio" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
         <choice value="area">Area</choice>
-        <choice value="line">Line</choice>
+        <choice value="line">Line (recommended)</choice>
         <choice value="column">Column</choice>
         <choice value="bar">Bar</choice>
       </input>
-      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked</choice>
+        <choice value="unstacked">unstacked (recommended)</choice>
+      </input>
+      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
         <label>Missing Data:</label>
         <default>gaps</default>
         <choice value="gaps">Gaps</choice>
         <choice value="connect">Connect</choice>
         <choice value="zero">Zero</choice>
-      </input>
-      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked (lines excluded)</choice>
-        <choice value="stacked100">100% stacked (lines excluded)</choice>
-        <choice value="unstacked">unstacked</choice>
       </input>
       <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
         <label>Legend placement:</label>
@@ -200,42 +126,14 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
         <choice value="center">center</choice>
         <choice value="none">none</choice>
       </input>
-      <input type="dropdown" token="span" searchWhenChanged="true">
-        <label>Span:</label>
-        <default>`inline_customspan`</default>
-        <choice value="`inline_customspan`">auto</choice>
-        <choice value="span=1m">1 minute</choice>
-        <choice value="span=2m">2 minutes</choice>
-        <choice value="span=3m">3 minutes</choice>
-        <choice value="span=4m">4 minutes</choice>
-        <choice value="span=5m">5 minutes</choice>
-        <choice value="span=10m">10 minutes</choice>
-        <choice value="span=15m">15 minutes</choice>
-        <choice value="span=30m">30 minutes</choice>
-        <choice value="span=1h">1 hour</choice>
-        <choice value="span=2h">2 hours</choice>
-        <choice value="span=12h">12 hours</choice>
-        <choice value="span=4h">4 hours</choice>
-        <choice value="span=1d">1 day</choice>
-        <choice value="span=2d">2 days</choice>
-        <choice value="span=1w">7 days</choice>
-        <choice value="span=1mon">1 month</choice>
-      </input>
-    </panel>
-  </row>
-
-  <row depends="$charting$">
-    <panel>
       <html>
-        <!-- Placeholder/container for the link switcher to appear -->
-        <div class="link-switcher" data-items="link1,link2,link3,link4,link5,link6">Select a view:<!--Links go here-->
-        </div>
-      </html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link1,link2,link3,link4,link5,link6">Select a view:<!--Links go here-->
+      </div>
+    </html>
       <chart id="link1">
         <title>(pages/s) Minor faults and major faults</title>
-        <search base="Global">
-          <query>fields _time,*minfaults*,*majfaults*</query>
-        </search>
+        <searchPostProcess>fields _time,*minfaults*,*majfaults*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -249,16 +147,14 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
+        <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
       </chart>
       <chart id="link2">
         <title>(pages/s) Pages IN and OUT</title>
-        <search base="Global">
-          <query>fields _time,*pgin*,*pgout*</query>
-        </search>
+        <searchPostProcess>fields _time,*pgin*,*pgout*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -272,16 +168,14 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
+        <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
       </chart>
       <chart id="link3">
         <title>(pages/s) Pages examined and freed by pageout daemon</title>
-        <search base="Global">
-          <query>fields _time,*scans*,*reclaims*</query>
-        </search>
+        <searchPostProcess>fields _time,*scans*,*reclaims*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -295,16 +189,14 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
+        <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
       </chart>
       <chart id="link4">
         <title>(KB/s) Pages paged IN and OUT</title>
-        <search base="Global">
-          <query>fields _time,*pgpgin*,*pgpgout*</query>
-        </search>
+        <searchPostProcess>fields _time,*pgpgin*,*pgpgout*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -318,16 +210,14 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
+        <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">Pages/second</option>
       </chart>
       <chart id="link5">
         <title>(KB/s) Pages swapped IN and OUT</title>
-        <search base="Global">
-          <query>fields _time,*pswpin*,*pswpout*</query>
-        </search>
+        <searchPostProcess>fields _time,*pswpin*,*pswpout*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -341,16 +231,14 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
+        <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">KB/Sec</option>
       </chart>
       <chart id="link6">
         <title>(KB/s) Pages freed by daemon or auto</title>
-        <search base="Global">
-          <query>fields _time,*pgfree*</query>
-        </search>
+        <searchPostProcess>fields _time,*pgfree*</searchPostProcess>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -364,7 +252,7 @@ where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) (
         <option name="charting.layout.splitSeries">0</option>
         <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
         <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680px</option>
+        <option name="height">450px</option>
         <option name="charting.axisTitleX.text">Time</option>
         <option name="charting.axisY.minimumNumber">0</option>
         <option name="charting.axisTitleY.text">KB/Sec</option>

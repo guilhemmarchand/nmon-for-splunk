@@ -1,9 +1,6 @@
-<form stylesheet="ui_simple.css">
-  <label>UI UARG, Linux Search Commands Arguments</label>
-  <description>User Interface for the TOP monitor on Linux Systems</description>
-
+<form stylesheet="singlevalue.css,ui_simple.css">
+  <label>NMON - UARG, Linux Search Commands Arguments</label>
   <fieldset autoRun="false" submitButton="false">
-
     <input type="time" token="timerange" searchWhenChanged="true">
       <label>TimeRange:</label>
       <default>
@@ -11,56 +8,44 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-
-    <input type="dropdown" token="osfilter" searchWhenChanged="true">
-      <label>Filter OS Type:</label>
-      <default>Linux</default>
-      <choice value="*">Any OS</choice>
-      <choice value="Linux">Linux</choice>
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Type of OS filter:</label>
+      <default>| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]</default>
+      <choice value="">Any OS</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
     </input>
-
-    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-      <label>Optional: Filter hosts populating</label>
-      <default>*</default>
-    </input>
-
-    <input type="multiselect" token="hostname" searchWhenChanged="true">
-      <label>Hosts Selection:</label>
-      <!-- Populating Data Model Search -->
-      <search id="baseSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_UARG where (nodename = UARG) (UARG.hostname="$hostname-prefilter$") (UARG.OStype="$osfilter$") groupby "UARG.hostname" prestats=true | stats dedup_splitvals=t count AS Count by "UARG.hostname" | sort limit=0 "UARG.hostname" | fields - _span | rename "UARG.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-      </search>
-      <valuePrefix>hostname="</valuePrefix>
-      <valueSuffix>"</valueSuffix>
-      <delimiter> OR </delimiter>
-      <choice value="*">ALL Hosts</choice>
-      <fieldForLabel>hostname</fieldForLabel>
-      <fieldForValue>hostname</fieldForValue>
-    </input>
-
     <input type="text" token="ProgName" searchWhenChanged="true">
       <label>Optional: Filter Command name</label>
       <prefix>ProgName="</prefix>
       <suffix>"</suffix>
       <default>*</default>
     </input>
-
     <input type="text" token="PID" searchWhenChanged="true">
       <label>Optional: Filter PIDs</label>
       <prefix>PID="</prefix>
       <suffix>"</suffix>
       <default>*</default>
     </input>
-
     <input type="text" token="FullCommand" searchWhenChanged="true">
       <label>Optional: Filter FullCommand</label>
       <prefix>FullCommand="</prefix>
       <suffix>"</suffix>
       <default>*</default>
     </input>
-
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=UARG $ProgName$ $PID$ $FullCommand$ $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <choice value="*">ALL HOSTS</choice>
+    </input>
   </fieldset>
   <row>
     <panel>

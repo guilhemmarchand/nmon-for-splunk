@@ -1,377 +1,234 @@
-<form stylesheet="ui_simple.css" script="link_switcher.js, autodiscover.js">
-    <label>UI PROC, Kernel Internal Statistics</label>
-    <description>User Interface for the PROC monitor</description>
-
-    <fieldset autoRun="false" submitButton="false">
-
-        <input type="time" token="timerange" searchWhenChanged="true">
-            <label>Time Range:</label>
-            <default>
-                <earliestTime>-24h</earliestTime>
-                <latestTime>now</latestTime>
-            </default>
-        </input>
-
-        <input type="dropdown" token="timefilter" searchWhenChanged="true">
-            <label>Time Filtering:</label>
-            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-            <default>No_Filter</default>
-        </input>
-
-        <input type="dropdown" token="osfilter" searchWhenChanged="true">
-            <label>Filter OS Type:</label>
-            <default>*</default>
-            <prefix>PROC.OStype="</prefix>
-            <suffix>"</suffix>
-            <choice value="*">Any OS</choice>
-            <choice value="AIX">AIX</choice>
-            <choice value="Linux">Linux</choice>
-            <choice value="Solaris">Solaris</choice>
-        </input>
-
-        <input type="multiselect" token="frameID" searchWhenChanged="true">
-            <label>Frame IDs:</label>
-            <!-- Populating Data Model Search -->
-            <search id="frameIDSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_PROC where (nodename = PROC) ($osfilter$) groupby "PROC.frameID" prestats=true
-| stats dedup_splitvals=t count AS count by "PROC.frameID"
-| sort limit=0 "PROC.frameID"
-| fields - _span
-| fillnull count | fields "PROC.frameID"</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <valuePrefix>PROC.frameID="</valuePrefix>
-            <valueSuffix>"</valueSuffix>
-            <delimiter> OR </delimiter>
-            <choice value="*">Any</choice>
-            <default>*</default>
-            <fieldForLabel>PROC.frameID</fieldForLabel>
-            <fieldForValue>PROC.frameID</fieldForValue>
-        </input>
-
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-            <label>Optional: Filter hosts populating</label>
-            <default>*</default>
-        </input>
-
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
-            <label>Hosts Selection:</label>
-            <!-- Populating Data Model Search -->
-            <search id="hostsSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "PROC.hostname" prestats=true
-| stats dedup_splitvals=t count AS count by "PROC.hostname"
-| sort limit=0 "PROC.hostname"
-| fields - _span
-| fillnull count | fields "PROC.hostname"</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <valuePrefix>PROC.hostname="</valuePrefix>
-            <valueSuffix>"</valueSuffix>
-            <delimiter> OR </delimiter>
-            <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>PROC.hostname</fieldForLabel>
-            <fieldForValue>PROC.hostname</fieldForValue>
-        </input>
-
-        <input type="dropdown" token="statsmode" searchWhenChanged="true">
-            <label>Select a stats mode:</label>
-            <default>max</default>
-            <choice value="max">Max</choice>
-            <choice value="avg">Avg</choice>
-            <choice value="min">Min</choice>
-            <choice value="median">Median</choice>
-            <choice value="mode">Mode</choice>
-            <choice value="range">Range</choice>
-        </input>
-
-        <input type="checkbox" token="charting" searchWhenChanged="true">
-            <label>Charting:</label>
-            <default>fields *</default>
-            <choice value="fields *">On</choice>
-        </input>
-
-    </fieldset>
-
-    <search id="baseSearch">
-        <query>| tstats
-max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
-max("PROC.fork") AS fork max("PROC.exec") AS exec
-from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.frameID", "PROC.hostname" prestats=true
-| stats dedup_splitvals=t max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
-max("PROC.fork") AS fork max("PROC.exec") AS exec by _time, "PROC.frameID", "PROC.hostname"
-| rename "PROC.frameID" AS "frameID", "PROC.hostname" AS "hostname"
+<form stylesheet="singlevalue.css,ui_simple.css" script="link_switcher.js, autodiscover.js">
+  <label>NMON - PROC, Kernel Internal Statistics</label>
+  <description/>
+  <fieldset autoRun="false" submitButton="false">
+    <input type="time" token="timerange" searchWhenChanged="true">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>-24h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="dropdown" token="timefilter" searchWhenChanged="true">
+      <label>Time Filtering:</label>
+      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+      <default>No_Filter</default>
+    </input>
+    <input type="radio" token="osfilter" searchWhenChanged="true">
+      <label>Filter OS Type:</label>
+      <default></default>
+      <choice value="">Any OS</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+    </input>
+    <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+      <label>Optional: Filter hosts populating</label>
+      <prefix>hostname="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>    
+    <input type="multiselect" token="hostname" searchWhenChanged="true">
+      <label>Hosts Selection:</label>
+      <populatingSearch earliest="$timerange.earliest$" latest="$timerange.latest$" fieldForLabel="hostname" fieldForValue="hostname">index=nmon sourcetype=nmon_data type=PROC $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</populatingSearch>
+      <valuePrefix>hostname="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="dropdown" token="statsmode" searchWhenChanged="true">
+      <label>Select a stats mode:</label>
+      <default>max</default>
+      <choice value="max">Max</choice>
+      <choice value="avg">Avg</choice>
+      <choice value="min">Min</choice>
+      <choice value="median">Median</choice>
+      <choice value="mode">Mode</choice>
+      <choice value="range">Range</choice>
+    </input>
+  </fieldset>
+  <searchTemplate>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$`
 | stats
 $statsmode$(Runnable) As "RunQueue", sparkline($statsmode$(Runnable)) As "spk_RunQueue",
 $statsmode$(Swap_in) As "Swap_in", sparkline($statsmode$(Swap_in)) As "spk_Swap_in",
 $statsmode$(pswitch) As "pswitch/sec", sparkline($statsmode$(pswitch)) As "spk_pswitch/sec",
 $statsmode$(syscall) As "syscall/sec", sparkline($statsmode$(syscall)) As "spk_syscall/sec",
 $statsmode$(fork) As "fork/sec", sparkline($statsmode$(fork)) As "spk_fork/sec",
-$statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" by frameID,hostname</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-    </search>
-
-    <!-- Information panel -->
-
-    <row>
-        <panel>
-            <html>
-
-                <div class="imgheader">
-                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-                    <h4>Metrics information:</h4>
-                </div>
-
-                <div class="list">
-                    <lu>
-                        <li><b>runqueue:</b> Average number of threads that are ready to run but are waiting for an available processor</li>
-                        <li><b>swapin:</b> Number of processes in swap queue per second in the interval</li>
-                        <li><b>pswitch:</b> Number of processor switches per second in the interval</li>
-                    </lu>
-                </div>
-
-                <div class="list">
-                    <lu>
-                        <li><b>syscall:</b> Number of system calls per second in the interval</li>
-                        <li><b>exec:</b> Number of execs per second in the interval</li>
-                        <li><b>fork:</b> Number of forks per second in the interval</li>
-                    </lu>
-                </div>
-
-            </html>
-        </panel>
-    </row>
-
-    <row>
-        <panel>
-            <table>
-                <title>Kernel Threads in run queue and to be paged - Table Stats</title>
-                <search base="baseSearch">
-                    <query>fields frameID,hostname,"RunQueue","Swap_in","spk_RunQueue","spk_Swap_in"</query>
-                </search>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
-                <format type="sparkline" field="spk_RunQueue">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
-                <format type="sparkline" field="spk_Swap_in">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
-            </table>
-        </panel>
-    </row>
-    <row>
-        <panel>
-            <table>
-                <title>Context switches, System / Fork / Exec calls - Table Stats</title>
-                <search base="baseSearch">
-                    <query>fields frameID,hostname,"pswitch/sec","syscall/sec","fork/sec","exec/sec","spk_pswitch/sec","spk_syscall/sec","spk_fork/sec","spk_exec/sec"</query>
-                </search>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
-                <format type="sparkline" field="spk_pswitch/sec">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
-                <format type="sparkline" field="spk_syscall/sec">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
-                <format type="sparkline" field="spk_fork/sec">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
-                <format type="sparkline" field="spk_exec/sec">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
-            </table>
-        </panel>
-    </row>
-
-    <row depends="$charting$">
-        <panel>
-            <title>Charting parameters:</title>
-            <input type="dropdown" token="chart" searchWhenChanged="true">
-                <label>Select a type of chart:</label>
-                <default>line</default>
-                <choice value="area">Area</choice>
-                <choice value="line">Line</choice>
-                <choice value="column">Column</choice>
-                <choice value="bar">Bar</choice>
-            </input>
-            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
-                <label>Missing Data:</label>
-                <default>gaps</default>
-                <choice value="gaps">Gaps</choice>
-                <choice value="connect">Connect</choice>
-                <choice value="zero">Zero</choice>
-            </input>
-            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-                <label>Select a stacking mode:</label>
-                <default>unstacked</default>
-                <choice value="stacked">stacked (lines excluded)</choice>
-                <choice value="stacked100">100% stacked (lines excluded)</choice>
-                <choice value="unstacked">unstacked</choice>
-            </input>
-            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-                <label>Legend placement:</label>
-                <default>bottom</default>
-                <choice value="bottom">Bottom</choice>
-                <choice value="top">Top</choice>
-                <choice value="left">left</choice>
-                <choice value="right">right</choice>
-                <choice value="center">center</choice>
-                <choice value="none">none</choice>
-            </input>
-            <input type="dropdown" token="span" searchWhenChanged="true">
-                <label>Span:</label>
-                <default>`inline_customspan`</default>
-                <choice value="`inline_customspan`">auto</choice>
-                <choice value="span=1m">1 minute</choice>
-                <choice value="span=2m">2 minutes</choice>
-                <choice value="span=3m">3 minutes</choice>
-                <choice value="span=4m">4 minutes</choice>
-                <choice value="span=5m">5 minutes</choice>
-                <choice value="span=10m">10 minutes</choice>
-                <choice value="span=15m">15 minutes</choice>
-                <choice value="span=30m">30 minutes</choice>
-                <choice value="span=1h">1 hour</choice>
-                <choice value="span=2h">2 hours</choice>
-                <choice value="span=12h">12 hours</choice>
-                <choice value="span=4h">4 hours</choice>
-                <choice value="span=1d">1 day</choice>
-                <choice value="span=2d">2 days</choice>
-                <choice value="span=1w">7 days</choice>
-                <choice value="span=1mon">1 month</choice>
-            </input>
-        </panel>
-    </row>
-
-    <row depends="$charting$">
-        <panel>
-            <title>Charting parameters:</title>
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
-                </div>
-            </html>
-            <chart id="link10">
-                <title>Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
-                <search id="timechart">
-                    <query>| tstats $statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in from datamodel=NMON_Data_PROC where (nodename = PROC)
-(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.hostname" prestats=true $span$
-| timechart $span$ useother=f limit=0
-$statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in by "PROC.hostname"</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
-                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">$charting.legend.placement$</option>
-                <option name="height">680px</option>
-                <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisTitleY.text">Rates per Second</option>
-            </chart>
-            <chart id="link11">
-                <title>Context switches and system calls (pswitch, syscall)</title>
-                <search>
-                    <query>| tstats $statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall from datamodel=NMON_Data_PROC where (nodename = PROC)
-(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.hostname" prestats=true $span$
-| timechart $span$ useother=f limit=0
-$statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall by "PROC.hostname"</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
-                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">$charting.legend.placement$</option>
-                <option name="height">680px</option>
-                <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisTitleY.text">Rates per Second</option>
-            </chart>
-            <chart id="link12">
-                <title>Fork and Exec system calls (fork, exec)</title>
-                <search>
-                    <query>| tstats $statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC)
-(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.hostname" prestats=true $span$
-| timechart $span$ useother=f limit=0
-$statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec by "PROC.hostname"</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
-                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">$charting.legend.placement$</option>
-                <option name="height">680px</option>
-                <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisTitleY.text">Rates per Second</option>
-            </chart>
-        </panel>
-    </row>
+$statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" by hostname</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
+  <row>
+    <panel>
+      <table>
+        <title>Kernel Threads in run queue and to be paged - Table Stats</title>
+        <searchPostProcess>fields hostname, "RunQueue", "Swap_in", "spk_RunQueue", "spk_Swap_in"</searchPostProcess>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="spk_RunQueue">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_Swap_in">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Context switches, System / Fork / Exec calls - Table Stats</title>
+        <searchPostProcess>fields hostname, "pswitch/sec","syscall/sec","fork/sec","exec/sec","spk_pswitch/sec","spk_syscall/sec","spk_fork/sec","spk_exec/sec"</searchPostProcess>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+        <format type="sparkline" field="spk_pswitch/sec">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_syscall/sec">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_fork/sec">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+        <format type="sparkline" field="spk_exec/sec">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="height">25px</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="radio" token="chart" searchWhenChanged="true">
+        <label>Select a type of chart:</label>
+        <default>line</default>
+        <choice value="area">Area</choice>
+        <choice value="line">Line (recommended)</choice>
+        <choice value="column">Column</choice>
+        <choice value="bar">Bar</choice>
+      </input>
+      <input type="radio" token="chart.stackingmode" searchWhenChanged="true">
+        <label>Select a stacking mode:</label>
+        <default>unstacked</default>
+        <choice value="stacked">stacked</choice>
+        <choice value="unstacked">unstacked (recommended)</choice>
+      </input>
+      <input type="radio" token="charting.chart.nullValueMode" searchWhenChanged="true">
+        <label>Missing Data:</label>
+        <default>gaps</default>
+        <choice value="gaps">Gaps</choice>
+        <choice value="connect">Connect</choice>
+        <choice value="zero">Zero</choice>
+      </input>
+      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+        <label>Legend placement:</label>
+        <default>bottom</default>
+        <choice value="bottom">Bottom</choice>
+        <choice value="top">Top</choice>
+        <choice value="left">left</choice>
+        <choice value="right">right</choice>
+        <choice value="center">center</choice>
+        <choice value="none">none</choice>
+      </input>
+      <html>
+      <!-- Placeholder/container for the link switcher to appear -->
+      <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
+      </div>
+    </html>
+      <chart id="link10">
+        <title>Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$` | timechart `inline_customspan(type=PROC,$hostname$)` limit=0 useother=f $statsmode$(Runnable) As "RunQueue", $statsmode$(Swap_in) As "Swap_in" by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Rates per Second</option>
+      </chart>
+      <chart id="link11">
+        <title>Context switches and system calls (pswitch, syscall)</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$` | timechart `inline_customspan(type=PROC,$hostname$)` limit=0 useother=f $statsmode$(pswitch) As "pswitch/sec", $statsmode$(syscall) As "syscall/sec" by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Rates per Second</option>
+      </chart>
+      <chart id="link12">
+        <title>Fork and Exec system calls (fork, exec)</title>
+        <searchString>index="nmon" sourcetype="nmon_data" type="PROC" $hostname$ | `$timefilter$` | timechart `inline_customspan(type=PROC,$hostname$)` limit=0 useother=f $statsmode$(fork) As "pswitch/sec", $statsmode$(exec) As "exec/sec" by hostname</searchString>
+        <earliestTime>$timerange.earliest$</earliestTime>
+        <latestTime>$timerange.latest$</latestTime>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">$chart$</option>
+        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">$charting.legend.placement$</option>
+        <option name="height">450px</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Rates per Second</option>
+      </chart>
+    </panel>
+  </row>
 </form>

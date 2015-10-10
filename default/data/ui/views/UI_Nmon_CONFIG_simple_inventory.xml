@@ -1,11 +1,24 @@
-<form stylesheet="ui_simple.css">
-  <label>UI CONFIG, Inventory Data for All OS</label>
-  <description>User Interface for Inventory Data Summary (All Operating Systems)</description>
+<form stylesheet="Home.css,singlevalue.css,ui_simple.css">
+  <label>NMON CONFIG, Simple Inventory</label>
+  <description/>
   <fieldset autoRun="true" submitButton="false">
+    <input token="timerange" type="time" searchWhenChanged="true">
+      <label>Time Range:</label>
+      <default>
+        <earliestTime>-24h@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="radio" token="datasource" searchWhenChanged="true">
+      <label>Data Source:</label>
+      <choice value="inputlookup nmon_inventory">Based on Nmon Inventory Lookup</choice>
+      <choice value="search `nmon_config` | stats values(OStype) As OStype, values(AIX_Machine_SerialNumber) As AIX_Machine_SerialNumber, values(AIX_virtualcpus) As AIX_virtualcpus, values(AIX_logicalcores) As AIX_logicalcores,  values(AIX_entitled) As entitled, values(OStype) As OStype, values(AIX_processor_mode) As AIX_processor_mode, values(AIX_processor_clockspeed) As AIX_processor_clockspeed, values(AIX_cpu_type) As AIX_cpu_type, values(AIX_kernel_type) As AIX_kernel_type, values(AIX_plateform_firmware_level) As AIX_plateform_firmware_level, values(AIX_PoolID) As AIX_PoolID, values(AIX_system_installed_CPUs) As AIX_system_installed_CPUs, values(AIX_system_active_CPUs) As AIX_system_active_CPUs, values(AIX_PoolCPUs) As AIX_PoolCPUs, values(Linux_memory_MB) As Linux_memory_MB, values(Linux_swap_MB) As Linux_swap_MB, values(Linux_distribution) As Linux_distribution, values(Linux_kernelversion) As Linux_kernelversion, values(OStype) As OStype, values(Solaris_version) As Solaris_version, values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed, values(Processor) As Processor, values(cpu_cores) As cpu_cores, values(nmon_version) As nmon_version by hostname | fillnull value=Undeterminated">Based on Nmon Raw Data</choice>
+      <default>inputlookup nmon_inventory</default>
+    </input>
   </fieldset>
-  <search id="Global">
-    <query>| inputlookup nmon_inventory</query>
-  </search>  
+  <searchTemplate>| $datasource$</searchTemplate>
+  <earliestTime>$timerange.earliest$</earliestTime>
+  <latestTime>$timerange.latest$</latestTime>
   <row>
     <html>
       <div style="text-align: center;">
@@ -18,93 +31,71 @@
   </row>
   <row>
     <single>
-    	<search base="Global">
-        <query>inputlookup nmon_inventory | stats dc(hostname) As count</query>
-      </search>
-      <option name="afterLabel">Hosts known</option>
+      <searchPostProcess>$datasource$ | stats dc(hostname) As count</searchPostProcess>
+      <option name="afterLabel">Hosts known within this period</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">ANY OS</option>
       <option name="linkView">search</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">| inputlookup nmon_inventory</option>
+      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | stats count by hostname</option>
     </single>
   </row>
   <row>
   <panel>
     <single>
-    	<search base="Global">    
-        <query>search OStype="AIX" | stats dc(hostname) As count</query>
-		</search>      
+      <searchPostProcess>search OStype="AIX" | stats dc(hostname) As count</searchPostProcess>
       <option name="afterLabel">Hosts</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">AIX</option>
       <option name="linkView">search</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">| inputlookup nmon_inventory | search OStype=AIX
-| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</option>
+      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | search OStype="AIX" | stats count by hostname</option>
     </single>
-    <html>    
-		<div class="customlink">
-			<img src="../../static/app/nmon/icons/grey_theme/link.png"/>
-			<a href="UI_Nmon_CONFIG_simple_inventory_AIX" target="_blank">
-			  <h3>Link: Access to AIX dedicated Inventory</h3>
-         </a>	         				
-		</div>
+    <html>
+    	<div>
+    		<a href="UI_Nmon_CONFIG_simple_inventory_AIX" target="_blank">Go to AIX dedicated Inventory</a>
+    	</div>	
     </html>
    </panel>
    <panel> 
     <single>
-    	<search base="Global">    
-        <query>search OStype="Linux" | stats dc(hostname) As count</query>
-		</search>
+      <searchPostProcess>search OStype="Linux" | stats dc(hostname) As count</searchPostProcess>
       <option name="afterLabel">Hosts</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">LINUX</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Linux
-|fields hostname,OStype,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</option>
+      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | search OStype="Linux" | stats count by hostname</option>
     </single>
     <html>
-		<div class="customlink">
-			<img src="../../static/app/nmon/icons/grey_theme/link.png"/>
-			<a href="UI_Nmon_CONFIG_simple_inventory_LINUX" target="_blank">
-			  <h3>Link: Access to Linux dedicated Inventory</h3>
-         </a>	         				
-		</div>
+    	<div>
+    		<a href="UI_Nmon_CONFIG_simple_inventory_LINUX" target="_blank">Go to Linux dedicated Inventory</a>
+    	</div>	
     </html>
    </panel>
    <panel> 
     <single>
-    	<search base="Global">    
-        <query>search OStype="Solaris" | stats dc(hostname) As count</query>
-		</search>      
+      <searchPostProcess>search OStype="Solaris" | stats dc(hostname) As count</searchPostProcess>
       <option name="afterLabel">Hosts</option>
       <option name="beforeLabel">Found</option>
       <option name="underLabel">SOLARIS</option>
       <option name="drilldown">all</option>
       <option name="linkFields">result</option>
-      <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Solaris
-| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</option>
+      <option name="linkSearch">`nmon_config` earliest="-24h@h" latest="now" | search OStype="Solaris" | stats count by hostname</option>
     </single>
     <html>
-		<div class="customlink">
-			<img src="../../static/app/nmon/icons/grey_theme/link.png"/>
-			<a href="UI_Nmon_CONFIG_simple_inventory_SOLARIS" target="_blank">
-			  <h3>Link: Access to Solaris dedicated Inventory</h3>
-         </a>	         				
-		</div>
+    	<div>
+    		<a href="UI_Nmon_CONFIG_simple_inventory_SOLARIS" target="_blank">Go to Solaris dedicated Inventory</a>
+    	</div>	
     </html>
    </panel>
   </row>
   <row>
     <chart>
       <title>Operating System</title>
-		<search base="Global">
-        <query>stats count by OStype</query>
-      </search>
+      <searchPostProcess>stats count by OStype</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -122,9 +113,7 @@
     </chart>
     <table>
       <title>Table Stats</title>
-    	<search base="Global">      
-        <query>| top limit=0 OStype | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-		</search>
+      <searchPostProcess>| top limit=0 OStype | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</searchPostProcess>
     </table>
   </row>
   <row grouping="1,1,1">
@@ -155,9 +144,7 @@
   <row grouping="1,1,1">
     <chart>
       <title>AIX Version</title>
-    	<search base="Global">
-        <query>search OStype="AIX" | stats count by AIX_LEVEL</query>
-		</search>
+      <searchPostProcess>search OStype="AIX" | stats count by AIX_LEVEL</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -175,9 +162,7 @@
     </chart>
     <chart>
       <title>Linux Distribution</title>
-		<search base="Global">
-        <query>search OStype="Linux" | stats count by Linux_distribution</query>
-		</search>
+      <searchPostProcess>search OStype="Linux" | stats count by Linux_distribution</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -195,9 +180,7 @@
     </chart>
     <chart>
       <title>Solaris Version</title>
-    	<search base="Global">      
-        <query>search OStype="Solaris" | stats count by Solaris_version</query>
-		</search>
+      <searchPostProcess>search OStype="Solaris" | stats count by Solaris_version</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -217,9 +200,7 @@
   <row grouping="1,1,1">
     <chart>
       <title>Processor</title>
-    	<search base="Global">      
-        <query>search OStype="AIX" | stats count by Processor</query>
-		</search>
+      <searchPostProcess>search OStype="AIX" | stats count by Processor</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -237,9 +218,7 @@
     </chart>
     <chart>
       <title>Processor</title>
-    	<search base="Global">		
-        <query>search OStype="Linux" | stats count by Processor</query>
-      </search>
+      <searchPostProcess>search OStype="Linux" | stats count by Processor</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -257,9 +236,7 @@
     </chart>
     <chart>
       <title>Processor</title>
-		<search base="Global">
-        <query>search OStype="Solaris" | stats count by Processor</query>
-		</search>
+      <searchPostProcess>search OStype="Solaris" | stats count by Processor</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -279,9 +256,7 @@
   <row grouping="1,1,1">
     <chart>
       <title>CPU cores Capacity</title>
-    	<search base="Global">      
-        <query>search OStype="AIX" | stats count by AIX_logicalcores</query>
-		</search>
+      <searchPostProcess>search OStype="AIX" | stats count by AIX_logicalcores</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -299,9 +274,7 @@
     </chart>
     <chart>
       <title>CPU cores Capacity</title>
-    	<search base="Global">
-        <query>search OStype="Linux" | stats count by cpu_cores</query>
-      </search>  
+      <searchPostProcess>search OStype="Linux" | stats count by cpu_cores</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -319,9 +292,7 @@
     </chart>
     <chart>
       <title>CPU cores Capacity</title>
-    	<search base="Global">
-        <query>search OStype="Solaris" | stats count by cpu_cores</query>
-		</search>
+      <searchPostProcess>search OStype="Solaris" | stats count by cpu_cores</searchPostProcess>
       <option name="charting.axisTitleX.visibility">visible</option>
       <option name="charting.axisTitleY.visibility">visible</option>
       <option name="charting.axisX.scale">linear</option>
@@ -348,8 +319,7 @@
   <row>
     <table>
       <title>Full AIX Configuration</title>
-    	<search base="Global">
-        <query>search OStype="AIX" | stats
+      <searchPostProcess>search OStype="AIX" | stats
 values(AIX_Machine_SerialNumber) As Machine_SerialNumber,
 values(AIX_virtualcpus) As virtualcpus,
 values(AIX_logicalcores) As logicalcores, 
@@ -367,33 +337,32 @@ values(AIX_system_installed_CPUs) As system_installed_CPUs,
 values(AIX_system_active_CPUs) As system_active_CPUs,
 values(AIX_LEVEL) As os_version,
 values(AIX_PoolCPUs) As PoolCPUs by hostname
-| fillnull value=Undeterminated</query>
-		</search>
+| fillnull value=Undeterminated</searchPostProcess>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
     </table>
   </row>
   <row>
     <table>
       <title>Full Linux Configuration</title>
-    	<search base="Global">
-        <query>search OStype="Linux" | stats
+      <searchPostProcess>search OStype="Linux" | stats
 values(cpu_cores) As cpu_cores,
 values(OStype) As OStype,
 values(Processor) As Processor,
 values(Linux_memory_MB) As Linux_memory_MB,
 values(Linux_swap_MB) As Linux_swap_MB,
-values(Linux_vendor) AS Linux_vendor,
 values(Linux_distribution) As Linux_distribution,
 values(Linux_kernelversion) As Linux_kernelversion,
 values(nmon_version) As nmon_version by hostname
-| fillnull value=Undeterminated | fillnull value=Undeterminated</query>
-		</search>
+| fillnull value=Undeterminated | fillnull value=Undeterminated</searchPostProcess>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
     </table>
   </row>
   <row>
     <table>
       <title>Full Solaris Configuration</title>
-    	<search base="Global">
-        <query>search OStype="Solaris" | stats
+      <searchPostProcess>search OStype="Solaris" | stats
 values(cpu_cores) As cpu_cores,
 values(OStype) As OStype,
 values(Solaris_sunOS_version) As Solaris_sunOS_version,
@@ -401,8 +370,9 @@ values(Solaris_version) As Solaris_version,
 values(Processor) As Processor,
 values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed,
 values(nmon_version) As nmon_version by hostname
-| fillnull value=Undeterminated</query>
-		</search>
+| fillnull value=Undeterminated</searchPostProcess>
+      <earliestTime>$timerange.earliest$</earliestTime>
+      <latestTime>$timerange.latest$</latestTime>
     </table>
   </row>
 </form>

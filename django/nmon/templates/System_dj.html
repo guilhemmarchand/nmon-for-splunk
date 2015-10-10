@@ -17,7 +17,7 @@
 	
 	<div class="customimgheader">
 	
-	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.svg" alt="Nmon"/>	
+	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.png" alt="Nmon"/>	
 	<h1>NMON Application Internal Statistics</h1>
 
 	</div>
@@ -25,11 +25,14 @@
 {% endblock heading %}
 
 {% block usage%}
-
-   <div class="input input-timerangepicker" id="timerange">
-   	<label>Time Range:</label>
-		{% timerange id="main-timerange" managerid="search" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}
-   </div>
+		
+	<p></p>
+	{% timerange id="main-timerange" 
+	managerid="search" 
+	preset="Last 24 hours"
+   earliest_time="$earlyval$"|token_safe
+   latest_time="$lateval$"|token_safe %}                
+	<p></p>                
 	
 {% endblock usage%}
 
@@ -356,7 +359,7 @@
 
 	{% searchmanager
 		id="nmon_processing"
-		search='| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2) | eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration") | eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)'|token_safe
+		search='`nmon_processing_stats`'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
@@ -365,7 +368,7 @@
 
 	{% searchmanager
 		id="nmon_processing_countnmon"
-		search='| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1'|token_safe
+		search='index=nmon sourcetype=nmon_processing | stats count by hostname,source | stats count'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
@@ -374,7 +377,7 @@
 
 	{% searchmanager
 		id="nmon_processing_size_bytime"
-		search='| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_bytes) AS "sum_size_MB" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval sum_size_MB=round((sum_size_MB/1000/1000),2)'|token_safe
+		search='`nmon_processing_stats_by_time` | timechart sum(sum_size_MB) As sum_size_MB'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
@@ -383,7 +386,7 @@
 
 	{% searchmanager
 		id="nmon_processing_elapsed_bytime"
-		search='| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)'|token_safe
+		search='`nmon_processing_stats_by_time` | timechart avg(avg_elapsed_in_seconds) As avg_elapsed_in_seconds'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True
@@ -392,7 +395,7 @@
 
 	{% searchmanager
 		id="nmon_processing_errors"
-		search='| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1'|token_safe
+		search='`nmon_processing` error | stats count As nbr_errors'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		preview=True

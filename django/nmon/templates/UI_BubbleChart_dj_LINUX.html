@@ -7,20 +7,12 @@
 {% block css %}
 {{block.super}}
 <style type="text/css">
-
 #bubble1{
    height: 600px;
 }
 #d3chart1{
    height: 600px;
 }
-
-.html h3 {
-	font-size: 12px;
-	font-weight: normal;
-	line-height: 16px;
-}
-
 </style>
 {% endblock css %}
 
@@ -29,7 +21,7 @@
 
 	<div class="customimgheader">
 	
-	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.svg" alt="Nmon"/>	
+	<img src="{{STATIC_URL}}/nmon/logos/NMON_simplelogo.png" alt="Nmon"/>	
 	<h1>NMON TOP Hosts, Higher CPU Load Hosts </h1>
 
 	</div>        
@@ -54,35 +46,72 @@
 
     {% block usage%}
 
-        <div class="input input-timerangepicker" id="timerange">
-            <label>Time Range:</label>
-    			  {% timerange id="timerange" managerid="search1" preset="Last 24 hours" earliest_time="$earlyval$"|token_safe latest_time="$lateval$"|token_safe %}
-        </div>
+        <table class="table table-striped table-bordered">
 
-        <div class="input input-dropdown" id="filtertime-dropdown">
-            <label>Time Filtering:</label>
-				  {% dropdown id="filtertime-dropdown" default="No_Filter" value="$timefilter$"|token_safe %}
-        </div>
 
-        <div class="input input-dropdown" id="osfilter-dropdown">
-            <label>Filter OS Type:</label>
-              {% dropdown id="osfilter-dropdown" default="Linux" value="$OStype$"|token_safe%}
-        </div>
+            <tr>
+                <td>
+				
+				<p></p>
+                <h2>TimeRange:</h2>
+                </td>
+                <td>
+					<p></p>
+    				{% timerange id="timerange" 
+					managerid="search1" 
+        			preset="Last 24 hours"
+        			earliest_time="$earlyval$"|token_safe
+        			latest_time="$lateval$"|token_safe %}                
+					<p></p>                
+                </td>
+            </tr>
 
-        <div class="input input-dropdown" id="frameid-dropdown">
-            <label>Frame IDs:</label>
-					{% dropdown id="frameid-dropdown" managerid="frameid-populate" valueField="CPU.frameID" default="*" value="$frameID$"|token_safe %}
-        </div>
+            <tr>
+                <td>
+					 <p></p>
+                <h2>Time Filtering:</h2>
+                </td>
+                <td>
+                	<p></p>
+						{% dropdown id="filtertime-dropdown" width="200" default="No_Filter" value="$valuesfiltertime$"|token_safe %}
+						<p></p>                
+                </td>
+            </tr>		
 
-        <div class="input input-text" id="hosts-textinput">
-            <label>Optional: Filter hosts populating</label>
-					{% textinput id="hosts-textinput" value="$hostname$"|token_safe default="*" %}
-        </div>
+            <tr>
+                <td>
+					<p></p>
+					<h2>Optional: Filter hosts</h2>
+				</td>
+					<td>
 
-        <div class="input input-dropdown" id="stats-dropdown">
-            <label>Stats mode:</label>
-					{% dropdown id="stats-dropdown" default="avg" value="$statsmode$"|token_safe %}
-        </div>
+                <p></p>                
+                <h2>Filter OS Type:</h2>
+                <p></p>                
+                {% radiogroup id="osfilter-radiogroup" default="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]" value="$valuesosfilter$"|token_safe%}
+
+					<h2>Hosts Filtering:</h2>					
+
+					<p></p>
+					<p>Multiple patterns can be used including wildwards and logical operators,ex: SP* OR SQ*</p>					
+					
+					{% textinput id="hosts-textinput" value="$valueshosts$"|token_safe default="*" %}	
+
+				</td>
+            </tr>			
+	
+            <tr>
+                <td>
+					<p></p>
+					<h2>Select a Stats Mode:</h2>
+                </td>
+                <td>
+					<p></p>
+					{% dropdown id="stats-dropdown" width="250" default="avg" value="$valuesstats$"|token_safe %}	
+				</td>
+            </tr>
+
+        </table>
 		
     {% endblock usage%}
 
@@ -113,39 +142,33 @@
 	
 {% block managers %}
     
-	{% searchmanager
-		id="frameid-populate" search='| tstats count AS count from datamodel=NMON_Data_CPU where (CPU.OStype="$OStype$") (CPU.hostname="$hostname$") groupby "CPU.frameID", "CPU.hostname" prestats=true | stats dedup_splitvals=t count AS Count by "CPU.frameID", "CPU.hostname" | fields "CPU.frameID" | dedup "CPU.frameID" | sort "CPU.frameID"'|token_safe
-		earliest_time="$earlyval$"|token_safe
-		latest_time="$lateval$"|token_safe
-		cache=False
-		auto_cancel=60
-		preview=True %}	
-    
 	{% searchmanager 
-		id="search1" search='| tstats `CPU_ALL($statsmode$,$frameID$,$OStype$,$hostname$,$timefilter$)` | sort - usage | head 100'|token_safe 
-		earliest_time="$earlyval$"|token_safe
-		latest_time="$lateval$"|token_safe
-		auto_cancel=60
-		cache=False
-		preview=True %}
+	id="search1"
+	search='index=nmon sourcetype=nmon_data $valueshosts$ type=CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT) $valuesosfilter$ | `$valuesfiltertime$` | stats $valuesstats$(usage) As usage by hostname | sort - usage | head 100'|token_safe 
+	earliest_time="$earlyval$"|token_safe
+	latest_time="$lateval$"|token_safe
+	auto_cancel=60
+	cache=False
+	preview=True %}
 	
 	{% searchmanager 
-		id="search2" search='| tstats `CPU_ALL($statsmode$,$frameID$,$OStype$,$hostname$,$timefilter$)` | fields frameID,hostname,usage,*'|token_safe 
-		earliest_time="$earlyval$"|token_safe
-		latest_time="$lateval$"|token_safe
-		auto_cancel=60
-		cache=False
-		preview=True %}
+	id="search2" 
+	search='index=nmon sourcetype=nmon_data $valueshosts$ type=CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT) $valuesosfilter$ | `$valuesfiltertime$` | stats $valuesstats$(usage) As usage by hostname'|token_safe 
+	earliest_time="$earlyval$"|token_safe
+	latest_time="$lateval$"|token_safe
+	auto_cancel=60
+	cache=False
+	preview=True %}
 	
 	{% postprocessmanager 
-		id="post1" 
-		managerid="search2" 
-		search="| eval usage_PCT=if(isnull(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields hostname,usage | head 20" %}
+	id="post1" 
+	managerid="search2" 
+	search="| sort - usage | fields hostname,usage | head 20" %}
 	
 	{% postprocessmanager 
-		id="post2" 
-		managerid="search2" 
-		search="| eval usage=round(usage, 3) | eval usage_PCT=round(usage_PCT, 3) | sort frameID,hostname" %}
+	id="post2" 
+	managerid="search2" 
+	search="| sort hostname" %}
 	
 	
 {% endblock managers %}
@@ -177,14 +200,6 @@
 		splunkjs.mvc.Components.getInstance("stats-dropdown").settings.set("choices", choices);
 		
 		var choices = [
-        {label: " Any OS", value: "*"},		
-        {label: " Linux", value: "Linux"}
-        ] 
- 
-		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("osfilter-dropdown").settings.set("choices", choices);
-		
-		var choices = [
         {label: " No Filter", value: "No_Filter"},
         {label: " Day BusinessDays 8h-19h", value: "Day_BusinessDays_8h-19h"},
         {label: " Day WeekEnd 8h-19h", value: "Day_WeekEnd_8h-19h"},
@@ -198,11 +213,12 @@
 		splunkjs.mvc.Components.getInstance("filtertime-dropdown").settings.set("choices", choices);
 		
 		var choices = [
-        {label: " Any", value: "*"}
+        {label: " Linux", value: "| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]"},
+        {label: " Inactive", value: ""}                
         ] 
  
 		// Assign them to the button group
-		splunkjs.mvc.Components.getInstance("frameid-dropdown").settings.set("choices", choices);		
+		splunkjs.mvc.Components.getInstance("osfilter-radiogroup").settings.set("choices", choices);				
 		
 		
     });
