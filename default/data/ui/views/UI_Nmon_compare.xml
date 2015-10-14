@@ -1,352 +1,352 @@
 <form script="single_trend.js,table_icons_rangemap.js" stylesheet="ui_simple.css,single_trend_transposed.css,table_decorations.css">
-  <label>UI Comparison - Comparing various usage statistics between two different periods</label>
-  <description>User Comparison Interface to determine the evolution of different monitors</description>
-  
-  <row>
+    <label>UI Comparison - Comparing various usage statistics between two different periods</label>
+    <description>User Comparison Interface to determine the evolution of different monitors</description>
 
-    <panel>
-    <title>Select Period 1 (earliest period)</title>
-    
-      <input type="time" token="TimeRange1" searchWhenChanged="true">
-        <label>Time Range:</label>
-        <default>
-          <earliestTime>-1d@d</earliestTime>
-          <latestTime>@d</latestTime>
-        </default>
-      </input>
-      <input type="dropdown" token="TimeFilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>
-    </panel>
+    <row>
 
-    <panel>
-    <title>Select Period 2 (latest period)</title>
+        <panel>
+            <title>Select Period 1 (earliest period)</title>
 
-      <input type="time" token="TimeRange2" searchWhenChanged="true">
-        <label>Time Range:</label>
-        <default>
-          <earliestTime>@d</earliestTime>
-          <latestTime>+1d@d</latestTime>
-        </default>
-      </input>
-      <input type="dropdown" token="TimeFilter" searchWhenChanged="true">
-        <label>Time Filtering:</label>
-        <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-        <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-        <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-        <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-        <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-        <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-        <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-        <default>No_Filter</default>
-      </input>
+            <input type="time" token="TimeRange1" searchWhenChanged="true">
+                <label>Time Range:</label>
+                <default>
+                    <earliestTime>-1d@d</earliestTime>
+                    <latestTime>@d</latestTime>
+                </default>
+            </input>
+            <input type="dropdown" token="TimeFilter" searchWhenChanged="true">
+                <label>Time Filtering:</label>
+                <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+                <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+                <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+                <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+                <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+                <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+                <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+                <default>No_Filter</default>
+            </input>
+        </panel>
 
-    </panel>
+        <panel>
+            <title>Select Period 2 (latest period)</title>
 
-  </row>
+            <input type="time" token="TimeRange2" searchWhenChanged="true">
+                <label>Time Range:</label>
+                <default>
+                    <earliestTime>@d</earliestTime>
+                    <latestTime>+1d@d</latestTime>
+                </default>
+            </input>
+            <input type="dropdown" token="TimeFilter" searchWhenChanged="true">
+                <label>Time Filtering:</label>
+                <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+                <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+                <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+                <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+                <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+                <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+                <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+                <default>No_Filter</default>
+            </input>
 
-  <row>
+        </panel>
 
-    <panel>
-	 <title>Statistics Parameters</title>
-	 
-     <input type="checkbox" token="chartactivate" searchWhenChanged="true">
-       <label>Charting:</label>
-       <choice value="fields *">Activated</choice>
-       <default>fields *</default>
-     </input>
+    </row>
 
-     <input type="dropdown" token="osfilter" searchWhenChanged="true">
-       <label>Filter OS Type:</label>
-       <default></default>
-       <choice value="">Any OS</choice>
-       <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-       <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-       <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
-     </input>
+    <row>
 
-      <input type="dropdown" token="monitor" searchWhenChanged="true">
-        <label>Monitor:</label>
-        <choice value="CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)">CPU_ALL - CPU Usage in %</choice>
-        <choice value="LPAR | eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)">LPAR - Partitions CPU Usage</choice>
-        <choice value="LPAR PoolIdle&gt;0 | eval usage=round((poolCPUs-PoolIdle),2) | where usage&gt;0 AND usage&lt;poolCPUs | eval pct_usage=round(((poolCPUs-PoolIdle)*poolCPUs/100),2)">LPAR - Pools CPU Usage</choice>
-        <choice value="NET device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1m | stats sum(rate) As usage by _time,hostname | setfields device=Network_All">NET - Global Network Activity</choice>
-        <choice value="NET device!=&quot;lo*&quot; | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=Network_All">NETPACKET - Global Network Packets</choice>
-        <choice value="DISKXFER device=* | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=IOPS">DISKXFER - Global I/Os per sec</choice>
-        <choice value="MEM | `MEM_eval` | eval usage=Real_used_PCT">MEM - Real Mem Pct usage</choice>
-        <choice value="MEM | `MEM_eval` | eval usage=Virtual_used_PCT">MEM - Paging Mem Pct usage</choice>
-        <default>CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)</default>
-      </input>
+        <panel>
+            <title>Statistics Parameters</title>
 
-      <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-        <label>Optional: Filter hosts populating</label>
-        <prefix>hostname="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>      
+            <input type="checkbox" token="chartactivate" searchWhenChanged="true">
+                <label>Charting:</label>
+                <choice value="fields *">Activated</choice>
+                <default>fields *</default>
+            </input>
 
-      <input type="multiselect" token="hostname" searchWhenChanged="true">
-        <label>Hosts Selection:</label>
-        <search>
-          <query>index=nmon sourcetype=nmon_data $hostname-prefilter$ type=$monitor$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
-          <earliest>$TimeRange1.earliest$</earliest>
-        	 <latest>$TimeRange2.latest$</latest>
-        </search>
-        <valuePrefix>hostname="</valuePrefix>
-        <valueSuffix>"</valueSuffix>
-        <delimiter> OR </delimiter>
-        <fieldForLabel>hostname</fieldForLabel>
-        <fieldForValue>hostname</fieldForValue>
-        <choice value="*">ALL Hosts</choice>
-      </input>
+            <input type="dropdown" token="osfilter" searchWhenChanged="true">
+                <label>Filter OS Type:</label>
+                <default></default>
+                <choice value="">Any OS</choice>
+                <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
+                <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
+                <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+            </input>
 
-      <input type="dropdown" token="statsmode" searchWhenChanged="true">
-        <label>Select a stats mode:</label>
-        <default>max</default>
-        <choice value="max">Max</choice>
-        <choice value="avg">Avg</choice>
-        <choice value="min">Min</choice>
-        <choice value="median">Median</choice>
-        <choice value="mode">Mode</choice>
-        <choice value="range">Range</choice>
-      </input>
+            <input type="dropdown" token="monitor" searchWhenChanged="true">
+                <label>Monitor:</label>
+                <choice value="CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)">CPU_ALL - CPU Usage in %</choice>
+                <choice value="LPAR | eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)">LPAR - Partitions CPU Usage</choice>
+                <choice value="LPAR PoolIdle&gt;0 | eval usage=round((poolCPUs-PoolIdle),2) | where usage&gt;0 AND usage&lt;poolCPUs | eval pct_usage=round(((poolCPUs-PoolIdle)*poolCPUs/100),2)">LPAR - Pools CPU Usage</choice>
+                <choice value="NET device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1m | stats sum(rate) As usage by _time,hostname | setfields device=Network_All">NET - Global Network Activity</choice>
+                <choice value="NET device!=&quot;lo*&quot; | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=Network_All">NETPACKET - Global Network Packets</choice>
+                <choice value="DISKXFER device=* | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=IOPS">DISKXFER - Global I/Os per sec</choice>
+                <choice value="MEM | `MEM_eval` | eval usage=Real_used_PCT">MEM - Real Mem Pct usage</choice>
+                <choice value="MEM | `MEM_eval` | eval usage=Virtual_used_PCT">MEM - Paging Mem Pct usage</choice>
+                <default>CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)</default>
+            </input>
 
-    </panel>
+            <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+                <label>Optional: Filter hosts populating</label>
+                <prefix>hostname="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
 
-  </row>
+            <input type="multiselect" token="hostname" searchWhenChanged="true">
+                <label>Hosts Selection:</label>
+                <search>
+                    <query>index=nmon sourcetype=nmon_data $hostname-prefilter$ type=$monitor$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange2.latest$</latest>
+                </search>
+                <valuePrefix>hostname="</valuePrefix>
+                <valueSuffix>"</valueSuffix>
+                <delimiter> OR </delimiter>
+                <fieldForLabel>hostname</fieldForLabel>
+                <fieldForValue>hostname</fieldForValue>
+                <choice value="*">ALL Hosts</choice>
+            </input>
 
-  <row>
-    <panel>
+            <input type="dropdown" token="statsmode" searchWhenChanged="true">
+                <label>Select a stats mode:</label>
+                <default>max</default>
+                <choice value="max">Max</choice>
+                <choice value="avg">Avg</choice>
+                <choice value="min">Min</choice>
+                <choice value="median">Median</choice>
+                <choice value="mode">Mode</choice>
+                <choice value="range">Range</choice>
+            </input>
 
-      <single>
-		  <search>
-		    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+        </panel>
+
+    </row>
+
+    <row>
+        <panel>
+
+            <single>
+                <search>
+                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period1*
 | append
 [ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
-| `$TimeFilter$` 
-| stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
-| fields hostname,usage_period2* ] | stats values(*) AS * by hostname 
-| `eval_compare` 
-| stats avg(usage_period1) As trend1, avg(usage_period2) As trend2 | eval trend1=round(trend1,2) | eval trend2=round(trend2,2) 
+| `$TimeFilter$`
+| stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
+| fields hostname,usage_period2* ] | stats values(*) AS * by hostname
+| `eval_compare`
+| stats avg(usage_period1) As trend1, avg(usage_period2) As trend2 | eval trend1=round(trend1,2) | eval trend2=round(trend2,2)
 | transpose | sort - column | fields row* | rename "row 1" As value</query>
-          <earliest>$TimeRange1.earliest$</earliest>
-        	 <latest>$TimeRange1.latest$</latest>
-		  </search>
-        <option name="drilldown">none</option>
-        <option name="field">value</option>
-        <option name="underLabel">GLOBAL TREND EVOLUTION OVER PERIOD 1</option>
-        <option name="linkView">search</option>
-        <option name="beforeLabel">Period 2:</option>
-        <option name="afterLabel">Usage</option>
-      </single>
-      
-      <table id="table1">
-        <title>Table Stats</title>
-		  <search>
-		    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
-| `$TimeFilter$` 
-| stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname 
-| fields hostname,usage_period1* 
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange1.latest$</latest>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="field">value</option>
+                <option name="underLabel">GLOBAL TREND EVOLUTION OVER PERIOD 1</option>
+                <option name="linkView">search</option>
+                <option name="beforeLabel">Period 2:</option>
+                <option name="afterLabel">Usage</option>
+            </single>
+
+            <table id="table1">
+                <title>Table Stats</title>
+                <search>
+                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+| `$TimeFilter$`
+| stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
+| fields hostname,usage_period1*
 | append
 [ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
-| `$TimeFilter$` 
-| stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
+| `$TimeFilter$`
+| stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period2* ] | stats values(*) AS * by hostname
 | `eval_compare`</query>
-          <earliest>$TimeRange1.earliest$</earliest>
-        	 <latest>$TimeRange1.latest$</latest>		  
-		  </search>
-        <option name="height">680px</option>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange1.latest$</latest>
+                </search>
+                <option name="height">680px</option>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
 
-    </panel>
-  </row>
-  
-  <row depends="$chartactivate$">
-    <panel>
-      <title>Charting parameters:</title>
-      <input type="dropdown" token="chart" searchWhenChanged="true">
-        <label>Select a type of chart:</label>
-        <default>line</default>
-        <choice value="area">Area</choice>
-        <choice value="line">Line</choice>
-        <choice value="column">Column</choice>
-        <choice value="bar">Bar</choice>
-      </input>
-      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
-        <label>Missing Data:</label>
-        <default>gaps</default>
-        <choice value="gaps">Gaps</choice>
-        <choice value="connect">Connect</choice>
-        <choice value="zero">Zero</choice>
-      </input>
-      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked (lines excluded)</choice>
-        <choice value="stacked100">100% stacked (lines excluded)</choice>
-        <choice value="unstacked">unstacked</choice>
-      </input>
-      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-        <label>Legend placement:</label>
-        <default>bottom</default>
-        <choice value="bottom">Bottom</choice>
-        <choice value="top">Top</choice>
-        <choice value="left">left</choice>
-        <choice value="right">right</choice>
-        <choice value="center">center</choice>
-        <choice value="none">none</choice>
-      </input>
-      <input type="dropdown" token="span" searchWhenChanged="true">
-        <label>Span:</label>
-        <default>`inline_customspan`</default>
-        <choice value="`inline_customspan`">auto</choice>
-		  <choice value="span=1m">1 minute</choice>
-		  <choice value="span=2m">2 minutes</choice>
-		  <choice value="span=3m">3 minutes</choice>
-		  <choice value="span=4m">4 minutes</choice>
-		  <choice value="span=5m">5 minutes</choice>
-		  <choice value="span=10m">10 minutes</choice>
-		  <choice value="span=15m">15 minutes</choice>
-		  <choice value="span=30m">30 minutes</choice>
-		  <choice value="span=1h">1 hour</choice>
-		  <choice value="span=2h">2 hours</choice>
-		  <choice value="span=12h">12 hours</choice>
-		  <choice value="span=4h">4 hours</choice>
-		  <choice value="span=1d">1 day</choice>
-		  <choice value="span=2d">2 days</choice>
-		  <choice value="span=1w">7 days</choice>
-		  <choice value="span=1mon">1 month</choice>
-      </input>      
-    </panel>
-  </row>  
+        </panel>
+    </row>
 
-  <row depends="$chartactivate$">
-    <panel>
-    <title>Combined Chart (Time line period 1)</title>    
-      <chart>
-			<search>
-			  <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
-| $chartactivate$ 
-| `$TimeFilter$` 
-| timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname 
-| fields _time,usage_period1* 
-| appendcols 
-[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$ 
-| `$TimeFilter$` 
-| timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname 
+    <row depends="$chartactivate$">
+        <panel>
+            <title>Charting parameters:</title>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`inline_customspan`</default>
+                <choice value="`inline_customspan`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$chartactivate$">
+        <panel>
+            <title>Combined Chart (Time line period 1)</title>
+            <chart>
+                <search>
+                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+| $chartactivate$
+| `$TimeFilter$`
+| timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
+| fields _time,usage_period1*
+| appendcols
+[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+| `$TimeFilter$`
+| timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields usage_period2* ]</query>
-           <earliest>$TimeRange1.earliest$</earliest>
-        	  <latest>$TimeRange1.latest$</latest>			
-			</search>        
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Usage</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisY2.enabled">false</option>
-        <option name="charting.axisY2.scale">inherit</option>
-      </chart>
-    </panel>
-  </row>
-  <row depends="$chartactivate$">
-    <panel>
-    <title>Chart Period 1</title>    
-      <chart>
-		  <search>
-		    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
-| $chartactivate$ 
-| `$TimeFilter$` 
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange1.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Usage</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$chartactivate$">
+        <panel>
+            <title>Chart Period 1</title>
+            <chart>
+                <search>
+                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+| $chartactivate$
+| `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname</query>
-          <earliest>$TimeRange1.earliest$</earliest>
-        	 <latest>$TimeRange1.latest$</latest>			
-		  </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Usage</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisY2.enabled">false</option>
-        <option name="charting.axisY2.scale">inherit</option>
-      </chart>
-    </panel>
-    <panel>
-    <title>Chart Period 2</title>
-      <chart>
-		  <search>
-		    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
-| $chartactivate$ 
-| `$TimeFilter$` 
-| timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname</query>		  
-          <earliest>$TimeRange2.earliest$</earliest>
-        	 <latest>$TimeRange2.latest$</latest>
-		  </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">Usage</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisY2.enabled">false</option>
-        <option name="charting.axisY2.scale">inherit</option>
-      </chart>
-    </panel>
-  </row>
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange1.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Usage</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+        </panel>
+        <panel>
+            <title>Chart Period 2</title>
+            <chart>
+                <search>
+                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+| $chartactivate$
+| `$TimeFilter$`
+| timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname</query>
+                    <earliest>$TimeRange2.earliest$</earliest>
+                    <latest>$TimeRange2.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Usage</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+        </panel>
+    </row>
 </form>

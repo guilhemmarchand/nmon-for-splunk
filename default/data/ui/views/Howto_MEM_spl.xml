@@ -1,359 +1,356 @@
 <form stylesheet="howto.css,ui_simple.css" hideEdit="True">
-  <label>HOWTO MEM: Generate stats and charts with Splunk Processing Language (SPL)</label>
-  <description>This collection of request samples will help you generating your own reports, dashboards and alerts for Nmon Performance data using the native Splunk Processing Language</description>
+	<label>HOWTO MEM: Generate stats and charts with Splunk Processing Language (SPL)</label>
+	<description>This collection of request samples will help you generating your own reports, dashboards and alerts for Nmon Performance data using the native Splunk Processing Language</description>
 
-  <row>
-    <panel>
-    
-      <html>
+	<row>
+		<panel>
 
-      <div class="imgheader">
-      	<img src="../../static/app/nmon/icons/grey_theme/memory.png" alt="Memory"/>
-			<h2><a href="UI_data_dictionary?form.osfilter=AIX%3Dtrue&amp;form.osfilter=Linux%3Dtrue&amp;form.osfilter=Solaris%3Dtrue&amp;form.itemfilter=MEMORY%20STATISTICS" target="_blank">Real and Virtual Memory Statistics</a></h2>		
-		</div>
-      
-      <br />
-      <br />
-      
-      </html>
-      
-   </panel>
+			<html>
 
-    <panel>
-    <title>Optionally preset frameID and/or hostname and press Enter:</title>
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/memory.png" alt="Memory"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=AIX%3Dtrue&amp;form.osfilter=Linux%3Dtrue&amp;form.osfilter=Solaris%3Dtrue&amp;form.itemfilter=MEMORY%20STATISTICS" target="_blank">Real and Virtual Memory Statistics</a></h2>
+				</div>
 
-    <input type="text" token="frameID" searchWhenChanged="true">
-      <label>frameID:</label>
-      <default>*</default>
-    </input>      
-    
-    <input type="text" token="hostname" searchWhenChanged="true">
-      <label>Hostname:</label>
-      <default>*</default>
-    </input>      
-      
-   </panel>
+			</html>
 
-  </row>
-  
-  <row>
-    <panel>
-    <title>Time oriented and statistics oriented charts:</title>      
+		</panel>
 
-	   <html>
+		<panel>
+			<title>Optionally preset frameID and/or hostname and press Enter:</title>
 
-		<div>
-		  <h2>Time Oriented Charts:</h2>
-		  <br />
-		</div>		
+			<input type="text" token="frameID" searchWhenChanged="true">
+				<label>frameID:</label>
+				<default>*</default>
+			</input>
 
-		<div style="text-align: left;">
-		  <br />
-		  <img src="../../static/app/nmon/various/mini/minichart.png" alt="minichart"/>
-		  <br />
-		  <br />
-		</div>
-				
-		<div>
-		  <h2>Average Percentage Real and Virtual Memory Usage over last 24 hours in a line chart by server names (auto span definition using custom macro)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+			<input type="text" token="hostname" searchWhenChanged="true">
+				<label>Hostname:</label>
+				<default>*</default>
+			</input>
+
+		</panel>
+
+	</row>
+
+	<row>
+		<panel>
+			<title>Time oriented and statistics oriented charts:</title>
+
+			<html>
+
+				<div>
+					<h2>Time Oriented Charts:</h2>
+					<br />
+				</div>
+
+				<div style="text-align: left;">
+					<br />
+					<img src="../../static/app/nmon/various/mini/minichart.png" alt="minichart"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Average Percentage Real and Virtual Memory Usage over last 24 hours in a line chart by server names (auto span definition using custom macro)</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | timechart `inline_customspan` avg(Real_used_PCT) AS Real_used_PCT, avg(Virtual_used_PCT) AS Virtual_used_PCT by hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT%2C%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>
 
-		<div>
-		  <h2>Average Real Memory Usage and Total Real Memory in MB over last 24 hours in a line chart by server names (auto span definition using custom macro)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT%2C%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Average Real Memory Usage and Total Real Memory in MB over last 24 hours in a line chart by server names (auto span definition using custom macro)</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | timechart `inline_customspan` avg(Real_used_MB) AS Real_used_MB, avg(Real_total_MB) AS Real_total_MB by hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_MB)%20AS%20Real_used_MB%2C%20avg(Real_total_MB)%20AS%20Real_total_MB%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=MB" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Average Virtual Memory Usage and Total Virtual Memory in MB over last 24 hours in a line chart by server names (auto span definition using custom macro)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_MB)%20AS%20Real_used_MB%2C%20avg(Real_total_MB)%20AS%20Real_total_MB%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=MB" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Average Virtual Memory Usage and Total Virtual Memory in MB over last 24 hours in a line chart by server names (auto span definition using custom macro)</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | timechart `inline_customspan` avg(Virtual_used_MB) AS Virtual_used_MB, avg(Virtual_total_MB) AS Virtual_total_MB by hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Virtual_used_MB)%20AS%20Virtual_used_MB%2C%20avg(Virtual_total_MB)%20AS%20Virtual_total_MB%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=MB" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Average Percentage usage of Real and Virtual Memory over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) with auto span (custom macro span definition) in a line chart by server names</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Virtual_used_MB)%20AS%20Virtual_used_MB%2C%20avg(Virtual_total_MB)%20AS%20Virtual_total_MB%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=MB" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Average Percentage usage of Real and Virtual Memory over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) with auto span (custom macro span definition) in a line chart by server names</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
 | timechart `inline_customspan` avg(Real_used_PCT) AS Real_used_PCT, avg(Virtual_used_PCT) AS Virtual_used_PCT by hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT%2C%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-30d%40d&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Compare Average Real Memory usage of yesterday versus today in a line chart of a specific server (time reference of yesterday)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT%2C%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT%20by%20hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-30d%40d&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Compare Average Real Memory usage of yesterday versus today in a line chart of a specific server (time reference of yesterday)</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | timechart `inline_customspan` avg(Real_used_PCT) AS Real_used_PCT_yesterday
 | appendcols [ search index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$ earliest="@d" latest="now"
 | `MEM_allOS` | timechart `inline_customspan` avg(Real_used_PCT) AS Real_used_PCT_today | fields - _time ]</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT_yesterday%0A%7C%20appendcols%20%5B%20search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%20earliest%3D&quot;%40d&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT_today%20%7C%20fields%20-%20_time%20%5D&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-1d%40d&amp;latest=%40d&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Compare Average Virtual Memory usage of yesterday versus today in a line chart of a specific server (time reference of yesterday)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT_yesterday%0A%7C%20appendcols%20%5B%20search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%20earliest%3D&quot;%40d&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Real_used_PCT)%20AS%20Real_used_PCT_today%20%7C%20fields%20-%20_time%20%5D&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-1d%40d&amp;latest=%40d&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Compare Average Virtual Memory usage of yesterday versus today in a line chart of a specific server (time reference of yesterday)</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | timechart `inline_customspan` avg(Virtual_used_PCT) AS Virtual_used_PCT_yesterday
 | appendcols [ search index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$ earliest="@d" latest="now"
 | `MEM_allOS` | timechart `inline_customspan` avg(Virtual_used_PCT) AS Virtual_used_PCT_today | fields - _time ]</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT_yesterday%0A%7C%20appendcols%20%5B%20search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%20earliest%3D&quot;%40d&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT_today%20%7C%20fields%20-%20_time%20%5D&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-1d%40d&amp;latest=%40d&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>
 
-		<div>
-		  <h2>Stats oriented Charts:</h2>
-		  <br />
-		</div>
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT_yesterday%0A%7C%20appendcols%20%5B%20search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%20earliest%3D&quot;%40d&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%20%7C%20timechart%20%60inline_customspan%60%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT_today%20%7C%20fields%20-%20_time%20%5D&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-1d%40d&amp;latest=%40d&amp;display.visualizations.charting.axisTitleY.text=%25%20Memory" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
 
-		<div style="text-align: left;">
-		  <br />
-		  <img src="../../static/app/nmon/various/mini/minigauge.png" alt="minichart"/>
-		  <br />
-		  <br />
-		</div>
+				<div>
+					<h2>Stats oriented Charts:</h2>
+					<br />
+				</div>
 
-		<div>
-		  <h2>Gauge chart of average Real Memory Usage in Percentage over last 24 hours</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div style="text-align: left;">
+					<br />
+					<img src="../../static/app/nmon/various/mini/minigauge.png" alt="minichart"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Gauge chart of average Real Memory Usage in Percentage over last 24 hours</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | stats avg(Real_used_PCT) AS avg | eval avg=round(avg, 2)</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Real_used_PCT)%20AS%20avg%20%7C%20eval%20avg%3Dround(avg%2C%202)&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=radialGauge" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>
 
-		<div>
-		  <h2>Gauge chart of average Virtual Memory Usage in Percentage over last 24 hours</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Real_used_PCT)%20AS%20avg%20%7C%20eval%20avg%3Dround(avg%2C%202)&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=radialGauge" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Gauge chart of average Virtual Memory Usage in Percentage over last 24 hours</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | stats avg(Virtual_used_PCT) AS avg | eval avg=round(avg, 2)</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Virtual_used_PCT)%20AS%20avg%20%7C%20eval%20avg%3Dround(avg%2C%202)&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=radialGauge" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>
 
-		<div style="text-align: left;">
-		  <img src="../../static/app/nmon/various/mini/minicolumn.png" alt="minicolumn"/>
-		  <br />
-		  <br />
-		</div>
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Virtual_used_PCT)%20AS%20avg%20%7C%20eval%20avg%3Dround(avg%2C%202)&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=radialGauge" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
 
-		<div>
-		  <h2>Column chart of TOP 10 average Real Memory Usage in Percentage over last 24 hours</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div style="text-align: left;">
+					<img src="../../static/app/nmon/various/mini/minicolumn.png" alt="minicolumn"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Column chart of TOP 10 average Real Memory Usage in Percentage over last 24 hours</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | stats avg(Real_used_PCT) AS avg by hostname | sort - avg | head 10
 | eval xlabel=""
 | chart useother=f limit=0 values(avg) AS "Avg Real Mem %" by xlabel,hostname | rename xlabel AS "TOP 10 Real Mem % usage"</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Real_used_PCT)%20AS%20avg%20by%20hostname%20%7C%20sort%20-%20avg%20%7C%20head%2010%0A%7C%20eval%20xlabel%3D&quot;&quot;%0A%7C%20chart%20useother%3Df%20limit%3D0%20values(avg)%20AS%20&quot;Avg%20Real%20Mem%20%25&quot;%20by%20xlabel%2Chostname%20%7C%20rename%20xlabel%20AS%20&quot;TOP%2010%20Real%20Mem%20%25%20usage&quot;&amp;earliest=%40y&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.axisY.maximumNumber=100" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>
 
-		<div>
-		  <h2>Column chart of TOP 10 average Virtual Memory Usage in Percentage over last 24 hours</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Real_used_PCT)%20AS%20avg%20by%20hostname%20%7C%20sort%20-%20avg%20%7C%20head%2010%0A%7C%20eval%20xlabel%3D&quot;&quot;%0A%7C%20chart%20useother%3Df%20limit%3D0%20values(avg)%20AS%20&quot;Avg%20Real%20Mem%20%25&quot;%20by%20xlabel%2Chostname%20%7C%20rename%20xlabel%20AS%20&quot;TOP%2010%20Real%20Mem%20%25%20usage&quot;&amp;earliest=%40y&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.axisY.maximumNumber=100" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Column chart of TOP 10 average Virtual Memory Usage in Percentage over last 24 hours</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS` | stats avg(Virtual_used_PCT) AS avg by hostname | sort - avg | head 10
 | eval xlabel=""
 | chart useother=f limit=0 values(avg) AS "Avg Virtual Mem %" by xlabel,hostname | rename xlabel AS "TOP 10 Virtual Mem % usage"</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Virtual_used_PCT)%20AS%20avg%20by%20hostname%20%7C%20sort%20-%20avg%20%7C%20head%2010%0A%7C%20eval%20xlabel%3D&quot;&quot;%0A%7C%20chart%20useother%3Df%20limit%3D0%20values(avg)%20AS%20&quot;Avg%20Virtual%20Mem%20%25&quot;%20by%20xlabel%2Chostname%20%7C%20rename%20xlabel%20AS%20&quot;TOP%2010%20Virtual%20Mem%20%25%20usage&quot;&amp;earliest=%40y&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.axisY.maximumNumber=100" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>
 
-    </html>
-    
-    </panel>
-  </row>
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%20%7C%20stats%20avg(Virtual_used_PCT)%20AS%20avg%20by%20hostname%20%7C%20sort%20-%20avg%20%7C%20head%2010%0A%7C%20eval%20xlabel%3D&quot;&quot;%0A%7C%20chart%20useother%3Df%20limit%3D0%20values(avg)%20AS%20&quot;Avg%20Virtual%20Mem%20%25&quot;%20by%20xlabel%2Chostname%20%7C%20rename%20xlabel%20AS%20&quot;TOP%2010%20Virtual%20Mem%20%25%20usage&quot;&amp;earliest=%40y&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.axisY.maximumNumber=100" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
 
-  <row>
-    <panel>
-    <title>Table Statistics:</title>      
+			</html>
 
-	   <html>
+		</panel>
+	</row>
 
-		<div style="text-align: left;">
-		  <br />
-		  <img src="../../static/app/nmon/various/mini/minitable.png" alt="minitable"/>
-		  <br />
-		  <br />
-		</div>
+	<row>
+		<panel>
+			<title>Table Statistics:</title>
 
-		<div>
-		  <h2>Min / Average / Max and Average sparkline Real Memory Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostname</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+			<html>
+
+				<div style="text-align: left;">
+					<br />
+					<img src="../../static/app/nmon/various/mini/minitable.png" alt="minitable"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max and Average sparkline Real Memory Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostname</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | stats min(Real_used_PCT) AS "Min % Real Mem", avg(Real_used_PCT) AS "Avg % Real Mem", max(Real_used_PCT) AS "Max % Real Mem", sparkline(avg(Real_used_PCT)) As sparkline by frameID,hostname
 | eval "Avg % Real Mem"=round('Avg % Real Mem',2)</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%2C%20sparkline(avg(Real_used_PCT))%20As%20sparkline%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Min / Average / Max and Average sparkline Virtual Memory Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostname</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%2C%20sparkline(avg(Real_used_PCT))%20As%20sparkline%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max and Average sparkline Virtual Memory Usage in Percentage over last 24 hours ordered and sorted by frame ID, hostname</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | stats min(Virtual_used_PCT) AS "Min % Virtual Mem", avg(Virtual_used_PCT) AS "Avg % Virtual Mem", max(Virtual_used_PCT) AS "Max % Virtual Mem", sparkline(avg(Virtual_used_PCT)) As sparkline by frameID,hostname
 | eval "Avg % Virtual Mem"=round('Avg % Virtual Mem',2)</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20min(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%2C%20sparkline(avg(Virtual_used_PCT))%20As%20sparkline%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Average Real and Virtual Memory Usage in Percentage with sparkline over last 24 hours ordered and sorted by frame ID, hostname</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
-| `MEM_allOS`
-| stats avg(Real_used_PCT) AS Real_used_PCT, avg(Virtual_used_PCT) AS Virtual_used_PCT, sparkline(avg(Real_used_PCT)) As spk_Real_used_PCT, sparkline(avg(Virtual_used_PCT)) As spk_Virtual_used_PCT by frameID,hostname
-| eval Real_used_PCT=round(Real_used_PCT,2) | eval Virtual_used_PCT=round(Virtual_used_PCT,2)</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Real_used_PCT)%20AS%20Real_used_PCT%2C%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT%2C%20sparkline(avg(Real_used_PCT))%20As%20spk_Real_used_PCT%2C%20sparkline(avg(Virtual_used_PCT))%20As%20spk_Virtual_used_PCT%20by%20frameID%2Chostname%0A%7C%20eval%20Real_used_PCT%3Dround(Real_used_PCT%2C2)%20%7C%20eval%20Virtual_used_PCT%3Dround(Virtual_used_PCT%2C2)&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20min(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%2C%20sparkline(avg(Virtual_used_PCT))%20As%20sparkline%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
 				</div>
-         <br />
-		</div>		
-		
-		<div>
-		  <h2>Min / Average / Max of Real Memory Usage in Percentage over last 30 days for Business days only (monday to friday, 24hrs / 24hrs) ordered and sorted by frame ID, hostname</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+
+				<div>
+					<h2>Average Real and Virtual Memory Usage in Percentage with sparkline over last 24 hours ordered and sorted by frame ID, hostname</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+						| `MEM_allOS`
+						| stats avg(Real_used_PCT) AS Real_used_PCT, avg(Virtual_used_PCT) AS Virtual_used_PCT, sparkline(avg(Real_used_PCT)) As spk_Real_used_PCT, sparkline(avg(Virtual_used_PCT)) As spk_Virtual_used_PCT by frameID,hostname
+						| eval Real_used_PCT=round(Real_used_PCT,2) | eval Virtual_used_PCT=round(Virtual_used_PCT,2)</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Real_used_PCT)%20AS%20Real_used_PCT%2C%20avg(Virtual_used_PCT)%20AS%20Virtual_used_PCT%2C%20sparkline(avg(Real_used_PCT))%20As%20spk_Real_used_PCT%2C%20sparkline(avg(Virtual_used_PCT))%20As%20spk_Virtual_used_PCT%20by%20frameID%2Chostname%0A%7C%20eval%20Real_used_PCT%3Dround(Real_used_PCT%2C2)%20%7C%20eval%20Virtual_used_PCT%3Dround(Virtual_used_PCT%2C2)&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max of Real Memory Usage in Percentage over last 30 days for Business days only (monday to friday, 24hrs / 24hrs) ordered and sorted by frame ID, hostname</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | eval date_wday=lower(strftime('_time', "%A")) | search (date_wday!="sunday" date_wday!="saturday")
 | stats min(Real_used_PCT) AS "Min % Real Mem", avg(Real_used_PCT) AS "Avg % Real Mem", max(Real_used_PCT) AS "Max % Real Mem"
 min(Virtual_used_PCT) AS "Min % Virtual Mem", avg(Virtual_used_PCT) AS "Avg % Virtual Mem", max(Virtual_used_PCT) AS "Max % Virtual Mem" by frameID,hostname
-| eval "Avg % Real Mem"=round('Avg % Real Mem',2)		  
-| eval "Avg % Virtual Mem"=round('Avg % Virtual Mem',2) 
+| eval "Avg % Real Mem"=round('Avg % Real Mem',2)
+| eval "Avg % Virtual Mem"=round('Avg % Virtual Mem',2)
 | sort frameID,hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%0Amin(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)%09%09%20%20%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)%20%0A%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Min / Average / Max of Real Memory Usage in Percentage over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) ordered and sorted by frame ID, hostname</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%0Amin(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)%09%09%20%20%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)%20%0A%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max of Real Memory Usage in Percentage over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) ordered and sorted by frame ID, hostname</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
 | stats min(Real_used_PCT) AS "Min % Real Mem", avg(Real_used_PCT) AS "Avg % Real Mem", max(Real_used_PCT) AS "Max % Real Mem"
 min(Virtual_used_PCT) AS "Min % Virtual Mem", avg(Virtual_used_PCT) AS "Avg % Virtual Mem", max(Virtual_used_PCT) AS "Max % Virtual Mem" by frameID,hostname
-| eval "Avg % Real Mem"=round('Avg % Real Mem',2)		  
-| eval "Avg % Virtual Mem"=round('Avg % Virtual Mem',2) 
+| eval "Avg % Real Mem"=round('Avg % Real Mem',2)
+| eval "Avg % Virtual Mem"=round('Avg % Virtual Mem',2)
 | sort frameID,hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%0Amin(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)%09%09%20%20%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)%20%0A%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Min / Average / Max of Real Memory Usage in Percentage over last 30 days for non Working hours Business days only (monday to friday, 19h to 08h) ordered and sorted by frame ID, hostname</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%0Amin(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)%09%09%20%20%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)%20%0A%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max of Real Memory Usage in Percentage over last 30 days for non Working hours Business days only (monday to friday, 19h to 08h) ordered and sorted by frame ID, hostname</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (local_time&gt;="1900" AND local_time&lt;="2359") OR (local_time&gt;="0000" AND local_time&lt;="0800") AND (date_wday!="sunday" date_wday!="saturday")
 | stats min(Real_used_PCT) AS "Min % Real Mem", avg(Real_used_PCT) AS "Avg % Real Mem", max(Real_used_PCT) AS "Max % Real Mem"
 min(Virtual_used_PCT) AS "Min % Virtual Mem", avg(Virtual_used_PCT) AS "Avg % Virtual Mem", max(Virtual_used_PCT) AS "Max % Virtual Mem" by frameID,hostname
-| eval "Avg % Real Mem"=round('Avg % Real Mem',2)		  
-| eval "Avg % Virtual Mem"=round('Avg % Virtual Mem',2) 
+| eval "Avg % Real Mem"=round('Avg % Real Mem',2)
+| eval "Avg % Virtual Mem"=round('Avg % Virtual Mem',2)
 | sort frameID,hostname</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(local_time&gt;%3D&quot;1900&quot;%20AND%20local_time&lt;%3D&quot;2359&quot;)%20OR%20(local_time&gt;%3D&quot;0000&quot;%20AND%20local_time&lt;%3D&quot;0800&quot;)%20AND%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%0Amin(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)%09%09%20%20%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)%20%0A%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Compare Average Real Memory Usage in Percentage of current month versus previous month ordered and sorted by hostname</h2>			
-		  <pre>
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(local_time&gt;%3D&quot;1900&quot;%20AND%20local_time&lt;%3D&quot;2359&quot;)%20OR%20(local_time&gt;%3D&quot;0000&quot;%20AND%20local_time&lt;%3D&quot;0800&quot;)%20AND%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%0A%7C%20stats%20min(Real_used_PCT)%20AS%20&quot;Min%20%25%20Real%20Mem&quot;%2C%20avg(Real_used_PCT)%20AS%20&quot;Avg%20%25%20Real%20Mem&quot;%2C%20max(Real_used_PCT)%20AS%20&quot;Max%20%25%20Real%20Mem&quot;%0Amin(Virtual_used_PCT)%20AS%20&quot;Min%20%25%20Virtual%20Mem&quot;%2C%20avg(Virtual_used_PCT)%20AS%20&quot;Avg%20%25%20Virtual%20Mem&quot;%2C%20max(Virtual_used_PCT)%20AS%20&quot;Max%20%25%20Virtual%20Mem&quot;%20by%20frameID%2Chostname%0A%7C%20eval%20&quot;Avg%20%25%20Real%20Mem&quot;%3Dround(%27Avg%20%25%20Real%20Mem%27%2C2)%09%09%20%20%0A%7C%20eval%20&quot;Avg%20%25%20Virtual%20Mem&quot;%3Dround(%27Avg%20%25%20Virtual%20Mem%27%2C2)%20%0A%7C%20sort%20frameID%2Chostname&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Compare Average Real Memory Usage in Percentage of current month versus previous month ordered and sorted by hostname</h2>
+					<pre>
 index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$ earliest="-1mon@mon" latest="@mon"
 | `MEM_allOS`
 | stats avg(Real_used_PCT) As usage_period1 by hostname
@@ -362,19 +359,19 @@ search index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$host
 | `MEM_allOS`
 | stats avg(Real_used_PCT) As usage_period2 by hostname ] | stats values(*) AS * by hostname
 | `eval_compare`</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;-1mon%40mon&quot;%20latest%3D&quot;%40mon&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Real_used_PCT)%20As%20usage_period1%20by%20hostname%0A%7C%20append%20%5B%0Asearch%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;%40mon&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Real_used_PCT)%20As%20usage_period2%20by%20hostname%20%5D%20%7C%20stats%20values(*)%20AS%20*%20by%20hostname%0A%7C%20%60eval_compare%60&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
-		
-		<div>
-		  <h2>Compare Average Virtual Memory Usage in Percentage of current month versus previous month ordered and sorted by hostname</h2>			
-		  <pre>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;-1mon%40mon&quot;%20latest%3D&quot;%40mon&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Real_used_PCT)%20As%20usage_period1%20by%20hostname%0A%7C%20append%20%5B%0Asearch%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;%40mon&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Real_used_PCT)%20As%20usage_period2%20by%20hostname%20%5D%20%7C%20stats%20values(*)%20AS%20*%20by%20hostname%0A%7C%20%60eval_compare%60&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Compare Average Virtual Memory Usage in Percentage of current month versus previous month ordered and sorted by hostname</h2>
+					<pre>
 index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$ earliest="-1mon@mon" latest="@mon"
 | `MEM_allOS`
 | stats avg(Virtual_used_PCT) As usage_period1 by hostname
@@ -383,75 +380,75 @@ search index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$host
 | `MEM_allOS`
 | stats avg(Virtual_used_PCT) As usage_period2 by hostname ] | stats values(*) AS * by hostname
 | `eval_compare`</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;-1mon%40mon&quot;%20latest%3D&quot;%40mon&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Virtual_used_PCT)%20As%20usage_period1%20by%20hostname%0A%7C%20append%20%5B%0Asearch%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;%40mon&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Virtual_used_PCT)%20As%20usage_period2%20by%20hostname%20%5D%20%7C%20stats%20values(*)%20AS%20*%20by%20hostname%0A%7C%20%60eval_compare%60&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-     </html>
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;-1mon%40mon&quot;%20latest%3D&quot;%40mon&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Virtual_used_PCT)%20As%20usage_period1%20by%20hostname%0A%7C%20append%20%5B%0Asearch%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D*FRAME*%20hostname%3D*test*%20earliest%3D&quot;%40mon&quot;%20latest%3D&quot;now&quot;%0A%7C%20%60MEM_allOS%60%0A%7C%20stats%20avg(Virtual_used_PCT)%20As%20usage_period2%20by%20hostname%20%5D%20%7C%20stats%20values(*)%20AS%20*%20by%20hostname%0A%7C%20%60eval_compare%60&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
 
-    </panel>
-  </row>
+			</html>
 
-  <row>
-    <panel>
-    <title>Alerting:</title>      
+		</panel>
+	</row>
 
-	   <html>
+	<row>
+		<panel>
+			<title>Alerting:</title>
 
-		<div style="text-align: left;">
-		  <br />
-		  <img src="../../static/app/nmon/various/mini/minisingle.png" alt="minisingle"/>
-		  <br />
-		  <br />
-		</div>
+			<html>
 
-		<div>
-		  <h2>Use transaction to find servers having an average Real Memory usage higher than 90% for a minimal contiguous period of 5 minutes</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div style="text-align: left;">
+					<br />
+					<img src="../../static/app/nmon/various/mini/minisingle.png" alt="minisingle"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Use transaction to find servers having an average Real Memory usage higher than 90% for a minimal contiguous period of 5 minutes</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | where Real_used_PCT>90
 | transaction hostname Real_used_PCT maxpause=5m | where duration&gt;300
 | fields _time,frameID,hostname,duration,Real_used_PCT,Real_used_MB,Real_free_MB,Real_total_MB | stats values(*) AS * by _time,hostname
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
 | fields _time,frameID,hostname,duration*,Real_used_PCT,Real_used_MB,Real_free_MB,Real_total_MB</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20where%20Real_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Real_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Use transaction to find servers having an average Virtual Memory usage higher than 90% for a minimal contiguous period of 5 minutes</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20where%20Real_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Real_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Use transaction to find servers having an average Virtual Memory usage higher than 90% for a minimal contiguous period of 5 minutes</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | where Virtual_used_PCT>90
 | transaction hostname Virtual_used_PCT maxpause=5m | where duration&gt;300
 | fields _time,frameID,hostname,duration,Virtual_used_PCT,Virtual_used_MB,Virtual_free_MB,Virtual_total_MB | stats values(*) AS * by _time,hostname
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
 | fields _time,frameID,hostname,duration*,Virtual_used_PCT,Virtual_used_MB,Virtual_free_MB,Virtual_total_MB</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20where%20Virtual_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Virtual_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
 
-		<div>
-		  <h2>Use transaction to find servers having an average Real Memory usage higher than 90% for a minimal contiguous period of 5 minutes, restricted to Open hours and Business days (monday to friday, 08h to 19h)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20where%20Virtual_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Virtual_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Use transaction to find servers having an average Real Memory usage higher than 90% for a minimal contiguous period of 5 minutes, restricted to Open hours and Business days (monday to friday, 08h to 19h)</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
@@ -460,19 +457,19 @@ search index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$host
 | fields _time,frameID,hostname,duration,Real_used_PCT,Real_used_MB,Real_free_MB,Real_total_MB | stats values(*) AS * by _time,hostname
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
 | fields _time,frameID,hostname,duration*,Real_used_PCT,Real_used_MB,Real_free_MB,Real_total_MB</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20Real_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Real_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>		
-		
-		<div>
-		  <h2>Use transaction to find servers having an average Virtual Memory usage higher than 90% for a minimal contiguous period of 5 minutes, restricted to Open hours and Business days (monday to friday, 08h to 19h)</h2>			
-		  <pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20Real_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Real_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CReal_used_PCT%2CReal_used_MB%2CReal_free_MB%2CReal_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Use transaction to find servers having an average Virtual Memory usage higher than 90% for a minimal contiguous period of 5 minutes, restricted to Open hours and Business days (monday to friday, 08h to 19h)</h2>
+					<pre>index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$hostname$
 | `MEM_allOS`
 | eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
 | search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
@@ -481,20 +478,20 @@ search index=nmon sourcetype=nmon_data type=MEM frameID=$frameID$ hostname=$host
 | fields _time,frameID,hostname,duration,Virtual_used_PCT,Virtual_used_MB,Virtual_free_MB,Virtual_total_MB | stats values(*) AS * by _time,hostname
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
 | fields _time,frameID,hostname,duration*,Virtual_used_PCT,Virtual_used_MB,Virtual_free_MB,Virtual_total_MB</pre>
-		</div>		
-            
-		<div>
-				<div class="cat_title">				
-				  <a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20Virtual_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Virtual_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
-				  </a>
 				</div>
-         <br />
-		</div>			
-		
-	  </html>
 
-	</panel>
-	
-  </row>	
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DMEM%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20%60MEM_allOS%60%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20Virtual_used_PCT&gt;90%0A%7C%20transaction%20hostname%20Virtual_used_PCT%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chostname%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chostname%2Cduration*%2CVirtual_used_PCT%2CVirtual_used_MB%2CVirtual_free_MB%2CVirtual_total_MB&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+			</html>
+
+		</panel>
+
+	</row>
 
 </form>
