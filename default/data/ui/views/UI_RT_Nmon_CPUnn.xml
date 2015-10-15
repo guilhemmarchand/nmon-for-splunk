@@ -16,7 +16,7 @@
       <label>Filter OS Type:</label>
       <default>*</default>
       <prefix>OStype is "</prefix>
-      <suffix>"</suffix>      
+      <suffix>"</suffix>
       <choice value="*">Any OS</choice>
       <choice value="AIX">AIX</choice>
       <choice value="Linux">Linux</choice>
@@ -57,22 +57,22 @@
 
   </fieldset>
 
-<!-- Base Searches for PostProcessing -->
+  <!-- Base Searches for PostProcessing -->
 
   <search id="populate">
     <query>| pivot NMON_Data_CPU CPUnn count(CPUnn) AS "count" SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     <earliest>$timerange.earliest$</earliest>
-    <latest>$timerange.latest$</latest>  
+    <latest>$timerange.latest$</latest>
   </search>
-     
+
   <search id="tablestats">
-    <query>| pivot NMON_Data_CPU CPUnn max(cpu_PCT) AS "Max CPU %" avg(cpu_PCT) AS "Avg CPU %" min(cpu_PCT) AS "Min CPU %" avg(Idle_PCT) AS "Avg Idle %" avg(Sys_PCT) AS "Avg Sys %" avg(User_PCT) AS "Avg User %" avg(Wait_PCT) AS "Avg Wait %" 
+    <query>| pivot NMON_Data_CPU CPUnn max(cpu_PCT) AS "Max CPU %" avg(cpu_PCT) AS "Avg CPU %" min(cpu_PCT) AS "Min CPU %" avg(Idle_PCT) AS "Avg Idle %" avg(Sys_PCT) AS "Avg Sys %" avg(User_PCT) AS "Avg User %" avg(Wait_PCT) AS "Avg Wait %"
 SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW logical_core AS logical_core FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     <earliest>$timerange.earliest$</earliest>
-    <latest>$timerange.latest$</latest>  
+    <latest>$timerange.latest$</latest>
   </search>
-  
-<!-- ################################ -->  
+
+  <!-- ################################ -->
 
   <row>
     <panel>
@@ -123,7 +123,7 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW logical_core 
     </panel>
     <panel>
       <chart>
-		  <title>Minimal load</title>
+        <title>Minimal load</title>
         <search base="tablestats">
           <query>fields "Min CPU %" | rename "Min CPU %" AS value | eval value=round(value,2) | gauge value</query>
         </search>
@@ -148,18 +148,18 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID SPLITROW logical_core 
 
   <row>
     <panel>
-      <table>	
-		  <search base="tablestats">
-		    <query>| foreach "* %" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>		  
-		  </search>
+      <table>
+        <search base="tablestats">
+          <query>| foreach "* %" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
+        </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
         <option name="count">10</option>
-		  <drilldown target="search">
-			<link>
-			<![CDATA[
+        <drilldown target="search">
+          <link>
+            <![CDATA[
 /app/nmon/search?earliest=$timerange.earliest$&latest=$timerange.latest$&q=| pivot NMON_Data_CPU CPUnn max(cpu_PCT) AS max_cpu_PCT avg(cpu_PCT) AS avg_cpu_PCT min(cpu_PCT) AS min_cpu_PCT avg(Idle_PCT) AS avg_Idle_PCT avg(Sys_PCT) AS avg_Sys_PCT avg(User_PCT) AS avg_User_PCT avg(Wait_PCT) AS avg_Wait_PCT 
 SPLITROW frameID AS frameID SPLITROW hostname AS hostname SPLITROW logical_core AS logical_core FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $click.value$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
 			]]></link>
@@ -167,22 +167,22 @@ SPLITROW frameID AS frameID SPLITROW hostname AS hostname SPLITROW logical_core 
       </table>
     </panel>
   </row>
-  
+
   <row>
     <panel>
       <title>Charting parameters:</title>
-		<input type="dropdown" token="period" searchWhenChanged="true">
-		  <label>Period:</label>
-		  <default>minute</default>
-		  <choice value="auto">Auto</choice>
-		  <choice value="second">Secondes</choice>
-		  <choice value="minute">Minutes</choice>
-		  <choice value="hour">Hours</choice>
-		  <choice value="day">Days</choice>
-		  <choice value="month">Months</choice>
-		  <choice value="year">Years</choice>
-		</input>
-    	<input type="dropdown" token="cpumode" searchWhenChanged="true">
+      <input type="dropdown" token="period" searchWhenChanged="true">
+        <label>Period:</label>
+        <default>minute</default>
+        <choice value="auto">Auto</choice>
+        <choice value="second">Secondes</choice>
+        <choice value="minute">Minutes</choice>
+        <choice value="hour">Hours</choice>
+        <choice value="day">Days</choice>
+        <choice value="month">Months</choice>
+        <choice value="year">Years</choice>
+      </input>
+      <input type="dropdown" token="cpumode" searchWhenChanged="true">
         <label>Show CPU load by:</label>
         <default>avg(cpu_PCT) AS cpu_PCT</default>
         <choice value="avg(cpu_PCT) AS cpu_PCT">Avg Global CPU % Usage</choice>
@@ -228,12 +228,12 @@ SPLITROW frameID AS frameID SPLITROW hostname AS hostname SPLITROW logical_core 
   <row>
     <panel>
       <chart>
-  			<search id="timechart">
-    		  <query>| pivot NMON_Data_CPU CPUnn $cpumode$ 
+        <search id="timechart">
+          <query>| pivot NMON_Data_CPU CPUnn $cpumode$
 SPLITROW _time AS _time PERIOD $period$ SPLITCOL logical_core FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-  		  </search>  
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -257,9 +257,9 @@ SPLITROW _time AS _time PERIOD $period$ SPLITCOL logical_core FILTER $osfilter$ 
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisY2.enabled">false</option>
         <option name="charting.axisY2.scale">inherit</option>
-		  <drilldown target="search">
-			<link>
-			<![CDATA[
+        <drilldown target="search">
+          <link>
+            <![CDATA[
 /app/nmon/search?earliest=$earliest$&latest=$latest$&q=| pivot NMON_Data_CPU CPUnn $cpumode$ 
 SPLITROW _time AS _time PERIOD $period$ SPLITCOL logical_core FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
 			]]></link>

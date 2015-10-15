@@ -36,7 +36,7 @@
     <input type="dropdown" token="hostname" searchWhenChanged="true">
       <label>Host Selection:</label>
       <search base="populate">
-      <!-- Populating Data Model Search -->
+        <!-- Populating Data Model Search -->
         <query>search frameID=$frameID$ hostname="$hostname-prefilter$" | stats count by hostname | sort hostname | dedup hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -69,22 +69,22 @@
     </input>
 
   </fieldset>
-  
+
   <!-- Base Searches for PostProcessing -->
 
   <search id="populate">
     <query>| pivot NMON_Data_CPU LPAR count(LPAR) AS "count" SPLITROW frameID AS frameID SPLITROW hostname AS hostname SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     <earliest>$timerange.earliest$</earliest>
-    <latest>$timerange.latest$</latest>  
+    <latest>$timerange.latest$</latest>
   </search>
 
   <search id="Global">
-    <query>| pivot NMON_Data_CPU LPAR max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs" 
-SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+    <query>| pivot NMON_Data_CPU LPAR max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs"
+      SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     <earliest>$timerange.earliest$</earliest>
     <latest>$timerange.latest$</latest>
   </search>
-      
+
   <row>
     <panel>
 
@@ -124,32 +124,32 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $ho
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">row</option>
         <option name="count">10</option>
-		  <drilldown target="search">
-			<link>
-			<![CDATA[
+        <drilldown target="search">
+          <link>
+            <![CDATA[
 /app/nmon/search?earliest=$timerange.earliest$&latest=$timerange.latest$&q=| pivot NMON_Data_CPU LPAR max($monitor$) AS "max_usage" avg($monitor$) AS "avg_usage" min($monitor$) AS "min_usage" max(entitled) AS "entitled" max(virtualCPUs) AS "virtualCPUs" 
 SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $click.value$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
 			]]></link>
-        </drilldown>        
+        </drilldown>
       </table>
-      
+
     </panel>
   </row>
-  
+
   <row>
     <panel>
       <title>Charting parameters:</title>
-		<input type="dropdown" token="period" searchWhenChanged="true">
-		  <label>Period:</label>
-		  <default>minute</default>
-		  <choice value="auto">Auto</choice>
-		  <choice value="second">Secondes</choice>
-		  <choice value="minute">Minutes</choice>
-		  <choice value="hour">Hours</choice>
-		  <choice value="day">Days</choice>
-		  <choice value="month">Months</choice>
-		  <choice value="year">Years</choice>
-		</input>      
+      <input type="dropdown" token="period" searchWhenChanged="true">
+        <label>Period:</label>
+        <default>minute</default>
+        <choice value="auto">Auto</choice>
+        <choice value="second">Secondes</choice>
+        <choice value="minute">Minutes</choice>
+        <choice value="hour">Hours</choice>
+        <choice value="day">Days</choice>
+        <choice value="month">Months</choice>
+        <choice value="year">Years</choice>
+      </input>
       <input type="dropdown" token="addmonitor" searchWhenChanged="true">
         <label>LPAR additional Series:</label>
         <default>none</default>
@@ -157,7 +157,7 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $ho
         <choice value="max(entitled) AS entitled">Entitled</choice>
         <choice value="max(virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
         <choice value="max(entitled) As entitled max(virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
-      </input>      
+      </input>
       <input type="dropdown" token="chart" searchWhenChanged="true">
         <label>Select a type of chart:</label>
         <default>line</default>
@@ -192,16 +192,16 @@ SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER hostname is $ho
       </input>
     </panel>
   </row>
-    
+
   <row>
     <panel>
       <chart>
-  			<search id="timechart">
-    		  <query>| pivot NMON_Data_CPU LPAR $statsmode$($monitor$) $addmonitor$ 
+        <search id="timechart">
+          <query>| pivot NMON_Data_CPU LPAR $statsmode$($monitor$) $addmonitor$
 SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
-    		  <earliest>$timerange.earliest$</earliest>
-    		  <latest>$timerange.latest$</latest>  
-  		  </search> 
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
         <option name="charting.axisTitleX.visibility">visible</option>
         <option name="charting.axisTitleY.visibility">visible</option>
         <option name="charting.axisX.scale">linear</option>
@@ -224,15 +224,15 @@ SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $ho
         <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.axisY2.enabled">false</option>
         <option name="charting.axisY2.scale">inherit</option>
-		  <drilldown target="search">
-			<link>
-			<![CDATA[
+        <drilldown target="search">
+          <link>
+            <![CDATA[
 /app/nmon/search?earliest=$earliest$&latest=$latest$&q=| pivot NMON_Data_CPU LPAR $statsmode$($monitor$) $addmonitor$ 
 SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
 			]]></link>
-        </drilldown>			        
+        </drilldown>
       </chart>
     </panel>
   </row>
-  
+
 </form>
