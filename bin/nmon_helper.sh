@@ -35,8 +35,9 @@
 #										- Estimate time in epoch when the current iteration will end
 #										- Start a new nmon process 4 minutes before the current ends to let the new process time to start collecting
 #										- Duplicated events management is operated by nmon2csv converters
+# 2015/10/14, Guilhem Marchand:         - Use $SPLUNK_HOME/var/run/nmon for temp directory instead of /tmp
 
-# Version 1.3.09
+# Version 1.3.10
 
 # For AIX / Linux / Solaris
 
@@ -799,10 +800,10 @@ else
 		PIDAGE=$EPOCHTEST
 
 		# Use perl to get PID file age in seconds (perl will be portable to every system)
-		perl -e "\$mtime=(stat(\"$PIDFILE\"))[9]; \$cur_time=time();  print \$cur_time - \$mtime;" >/tmp/nmon_helper.sh.tmp.$$	
+		perl -e "\$mtime=(stat(\"$PIDFILE\"))[9]; \$cur_time=time();  print \$cur_time - \$mtime;" > ${APP_VAR}/nmon_helper.sh.tmp.$$
 	
-		PIDAGE=`cat /tmp/nmon_helper.sh.tmp.$$`
-		rm /tmp/nmon_helper.sh.tmp.$$
+		PIDAGE=`cat ${APP_VAR}/nmon_helper.sh.tmp.$$`
+		rm ${APP_VAR}/nmon_helper.sh.tmp.$$
 
 		# Estimate the end time of current Nmon binary less 4 minutes (enough time for new nmon process to start collecting)
 		# Use expr for portability with sh
