@@ -36,6 +36,7 @@
 #										- Start a new nmon process 4 minutes before the current ends to let the new process time to start collecting
 #										- Duplicated events management is operated by nmon2csv converters
 # 2015/10/14, Guilhem Marchand:         - Use $SPLUNK_HOME/var/run/nmon for temp directory instead of /tmp
+#                                       - Removed deactivation of CPUnn for Solaris, Manage UARG Solaris collection (new with Sarmon 1.11)
 
 # Version 1.3.10
 
@@ -481,8 +482,17 @@ case $UNAME in
 	SunOS )
 		NMONNOSAFILE=1 # Do not generate useless sa files
 		export NMONNOSAFILE
-		NMONEXCLUDECPUN=1 # Do not generate CPUnn data, this reduces Nmon volume of data and isn't used in the App
-		export NMONEXCLUDECPUN
+
+		# Manage UARG activation, default is on (1)
+		NMONUARG_VALUE=${Solaris_UARG}
+		if [ ! -z ${NMONUARG_VALUE} ]; then
+
+			if [ ${NMONUARG_VALUE} -eq 1 ]; then
+			NMONUARG=1
+			export NMONUARG
+			fi
+
+		fi
 
 		# Manage VxVM volume statistics activation, default is off (0)
 		NMONVXVM_VALUE=${Solaris_VxVM}
