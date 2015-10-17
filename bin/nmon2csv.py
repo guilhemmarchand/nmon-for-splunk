@@ -110,6 +110,9 @@
 #										  - Manage ref, config id and per section status files per host to allow
 # managing hot data from central shares
 #                                         - Added support for CPUnn (CPU usage per logical core)
+# - 10/17/2015, V1.1.13: Guilhem Marchand:
+#                                         - Manage CPUnn update for Sarmon, allows taking in charge CPUnn in all cases
+#                                         - Manage UARG for Sarmon (new in V1.11)
 
 # Load libs
 
@@ -128,7 +131,7 @@ import optparse
 import glob
 
 # Converter version
-nmon2csv_version = '1.1.12'
+nmon2csv_version = '1.1.13'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -1230,15 +1233,7 @@ def standard_section_fn(section):
     num_cols_header = 0
 
     # Sequence to search for
-    if section == 'CPUnn':
-        if OStype in ("AIX", "Solaris"):
-            # CPU01 is the first core of system, will always be present
-            seq = 'CPU01' + ',' + 'T'
-        elif OStype in ("Linux"):
-            # CPU001 is the first core of system, will always be present
-            seq = 'CPU001' + ',' + 'T'
-    else:
-        seq = str(section) + ',' + 'T'
+    seq = str(section) + ',' + 'T'
 
     for line in data:
 
@@ -1247,6 +1242,11 @@ def standard_section_fn(section):
 
             # increment
             count += 1
+
+    # Virtually always activates CPUnn
+    if section == 'CPUnn':
+        # increment
+        count += 1
 
     if count >= 1:
 
@@ -1274,18 +1274,23 @@ def standard_section_fn(section):
                     # csv header
 
                     # Extract header excluding data that always has Txxxx for timestamp reference
+                    # For CPUnn, search for first core
                     if section == "CPUnn":
-                        if OStype in ("AIX", "Solaris"):
-                            # CPU01 is the first core of system, will always be present
-                            myregex = '(' + 'CPU01' + ')\,([^T].+)'
-                        elif OStype in ("Linux"):
-                            myregex = '(' + 'CPU001' + ')\,([^T].+)'
+                        myregex = '(' + 'CPU01' + ')\,([^T].+)'
                     else:
                         myregex = '(' + section + ')\,([^T].+)'
 
+                    # Search for header
                     fullheader_match = re.search(myregex, line)
 
                     # Standard header extraction
+
+                    # For CPUnn, if first core were not found using CPU01, search for CPU001
+                    if section == "CPUnn":
+                        if not fullheader_match:
+                            myregex = '(' + 'CPU001' + ')\,([^T].+)'
+                            fullheader_match = re.search(myregex, line)
+
                     if fullheader_match:
                         fullheader = fullheader_match.group(2)
 
@@ -1846,7 +1851,6 @@ def uarg_section_fn(section):
             myregex = r'^' + 'UARG,.Time' + '|ZZZZ.+'
             find_section = re.match(myregex, line)
             if find_section:
-
                 line = subpcttopreplace(line)
                 line = subreplace(line)
 
@@ -1873,10 +1877,11 @@ def uarg_section_fn(section):
                         # Specifically for UARG, set OS type based on header fields
                         os_match = re.search(r'PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand', header)
 
+                        # Since V1.11, sarmon for Solaris implements UARG the same way Linux does
                         if os_match:
                             oslevel = 'AIX'
                         else:
-                            oslevel = 'Linux'
+                            oslevel = 'Linux_or_Solaris'
 
                         # increment
                         count += 1
@@ -1930,7 +1935,7 @@ def uarg_section_fn(section):
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                 .strftime('%s')
 
-            if oslevel == 'Linux':  # Linux OS specific header
+            if oslevel == 'Linux_or_Solaris':  # Linux and Solaris OS specific header
 
                 # Extract Data
                 perfdata_match = re.match('^UARG,T\d+,([0-9]*),([a-zA-Z\-/_:\.0-9]*),(.+)\n', line)
@@ -2046,7 +2051,7 @@ def uarg_section_fn(section):
 
 # End for
 
-if OStype in ('AIX', 'Linux', 'Unknown'):
+if OStype in ('AIX', 'Linux', 'Solaris', 'Unknown'):
     for section in uarg_section:
         uarg_section_fn(section)
 

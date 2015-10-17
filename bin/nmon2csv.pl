@@ -68,8 +68,11 @@
 #										  				- Manage ref, config id and per section status files per host to allow
 # 														managing hot data from central shares
 #                                         - Added support for CPUnn (CPU usage per logical core)
+# Guilhem Marchand 10/17/2015, V1.2.13:
+#                                         - Manage UARG for Solaris introduced with Sarmon v1.11
 
-$version = "1.2.11";
+
+$version = "1.2.13";
 
 use Time::Local;
 use Time::HiRes;
@@ -1355,9 +1358,9 @@ foreach $FILENAME (@nmon_files) {
 ####################################################################################################
 
     # UARG Section (specific)
-    # Applicable for OStype AIX, Linux or Unknown
+    # Applicable for OStype AIX, Linux, Solaris or Unknown
 
-    if ( $OStype eq "AIX" || $OStype eq "Linux" || $OStype eq "Unknown" ) {
+    if ( $OStype eq "AIX" || $OStype eq "Linux" || $OStype eq "Solaris" || $OStype eq "Unknown" ) {
 
         my $sanity_check = 0;
 
