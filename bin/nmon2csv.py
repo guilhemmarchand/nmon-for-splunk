@@ -1285,8 +1285,13 @@ def standard_section_fn(section):
 
                     # Standard header extraction
 
-                    # For CPUnn, if first core were not found using CPU01, search for CPU001
+                    # For CPUnn, if first core were not found using CPU01, search for CPU000 (Solaris) and
+                    # CPU001 (Linux)
                     if section == "CPUnn":
+                        if not fullheader_match:
+                            myregex = '(' + 'CPU000' + ')\,([^T].+)'
+                            fullheader_match = re.search(myregex, line)
+
                         if not fullheader_match:
                             myregex = '(' + 'CPU001' + ')\,([^T].+)'
                             fullheader_match = re.search(myregex, line)
@@ -1879,9 +1884,9 @@ def uarg_section_fn(section):
 
                         # Since V1.11, sarmon for Solaris implements UARG the same way Linux does
                         if os_match:
-                            oslevel = 'AIX'
+                            oslevel = 'AIX_or_Solaris'
                         else:
-                            oslevel = 'Linux_or_Solaris'
+                            oslevel = 'Linux'
 
                         # increment
                         count += 1
@@ -1935,7 +1940,7 @@ def uarg_section_fn(section):
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                 .strftime('%s')
 
-            if oslevel == 'Linux_or_Solaris':  # Linux and Solaris OS specific header
+            if oslevel == 'Linux':  # Linux OS specific header
 
                 # Extract Data
                 perfdata_match = re.match('^UARG,T\d+,([0-9]*),([a-zA-Z\-/_:\.0-9]*),(.+)\n', line)
@@ -1972,7 +1977,7 @@ def uarg_section_fn(section):
                             section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
                             ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
 
-            if oslevel == 'AIX':  # AIX OS specific header
+            if oslevel == 'AIX_or_Solaris':  # AIX and Solaris OS specific header
 
                 # Extract Data
                 perfdata_match = re.match(
