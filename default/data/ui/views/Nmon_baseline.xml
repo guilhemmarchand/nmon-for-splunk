@@ -1,0 +1,272 @@
+<form stylesheet="standard.css,ui_simple.css,hide_timeindicator.css" script="link_switcher.js, autodiscover.js">
+    <label>NMON Baseline Analysis</label>
+    <description>Analyse main system key metrics against the baseline to determine derivation anomalies</description>
+    <fieldset autoRun="false" submitButton="false">
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliest>@d</earliest>
+                <latest>+1d@d</latest>
+            </default>
+        </input>
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>*</default>
+            <choice value="*">Any OS</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+        <input type="dropdown" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.OStype=$osfilter$) groupby "CPU.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.frameID"
+| sort limit=0 "CPU.frameID"
+| fields - _span | fillnull Count | fields "CPU.frameID"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>CPU.frameID</fieldForLabel>
+            <fieldForValue>CPU.frameID</fieldForValue>
+        </input>
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+        <input type="dropdown" token="hostname" searchWhenChanged="true">
+            <label>Host:</label>
+            <!-- Populating Data Model Search -->
+            <search id="baseSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID="$frameID$") (CPU.hostname="$hostname-prefilter$") (CPU.OStype="$osfilter$") groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.hostname"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname
+| fillnull Count
+| fields hostname, Count</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <fieldForLabel>hostname</fieldForLabel>
+            <fieldForValue>hostname</fieldForValue>
+        </input>
+    </fieldset>
+    <!-- Information panel -->
+
+    <row>
+        <panel>
+            <html>
+
+                <div class="imgheader">
+                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+                    <h4>Signification of the baseline: Using system key metrics with an historical analysis to determine expected system resources usage</h4>
+                </div>
+
+                <div class="list">
+
+                    <lu>
+                        <li><b>Days of week analysis:</b> Evaluate the metric usage against days of week, eg: compare monday values against each available mondays stored within the baseline collection</li>
+                        <li><b>Minute accuracy:</b> Each baseline data points represents the average value of each historical value points evaluated with a per minute accuracy</li>
+                        <li><b>Future charting:</b> Baseline macros are able to chart in the future if you choose adapted time ranges, by default the period starts at beginning of day and ends at midnight, allowing charting in the future</li>
+                        <li><b>Reliability:</b> The baseline data gets better and more accurate over time, several months of data are required to get good results. The More stable your servers are (eg. Production servers), the more reliable will be the baseline data</li>
+                        <li><b>Customizing baseline evaluation:</b> The evaluation of the baseline can easily be customized to exclude specific periods from the evaluation to improve baseline accuracy, such as bank holiday, identified Disaster Recovery Tests or Exercises, ask your Splunk admin</li>
+                    </lu>
+                </div>
+
+            </html>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <input type="dropdown" token="baseline" searchWhenChanged="true">
+                <label>Type of Baseline:</label>
+                <default>full</default>
+                <choice value="simple">Simple baseline</choice>
+                <choice value="full">Full baseline (lower/predicted/upper)</choice>
+            </input>
+            <input type="dropdown" token="statsmode" searchWhenChanged="true">
+                <label>Stats mode:</label>
+                <default>avg</default>
+                <choice value="max">Max</choice>
+                <choice value="avg">Avg</choice>
+            </input>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>CPU Percentage Usage vs baseline</title>
+            <chart>
+                <search>
+                    <query>| `nmon_cpu_pct_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.axisTitleY.text">% CPUs</option>
+                <option name="height">450px</option>
+                <option name="charting.fieldColors">{"baseline_avg_cpu": 0xF69D1F,"cpu_PCT": 0x259FF8}</option>
+                <option name="charting.chart.overlayFields">baseline_avg_cpu</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Real Memory Percentage Usage vs baseline</title>
+            <chart>
+                <search>
+                    <query>| `nmon_real_mem_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.axisTitleY.text">% Real Mem</option>
+                <option name="height">450px</option>
+                <option name="charting.fieldColors">{"baseline_avg_real_mem": 0xF69D1F,"avg_real_mem": 0x259FF8}</option>
+                <option name="charting.chart.overlayFields">baseline_avg_real_mem</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Virtual Memory Percentage Usage vs baseline</title>
+            <chart>
+                <search>
+                    <query>| `nmon_virtual_mem_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.axisTitleY.text">% Virtual Mem</option>
+                <option name="height">450px</option>
+                <option name="charting.fieldColors">{"baseline_avg_virtual_mem": 0xF69D1F,"avg_virtual_mem": 0x259FF8}</option>
+                <option name="charting.chart.overlayFields">baseline_avg_virtual_mem</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Number of I/O per sec vs baseline</title>
+            <chart>
+                <search>
+                    <query>| `nmon_iops_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.axisTitleY.text">Nbr I/O per sec</option>
+                <option name="height">450px</option>
+                <option name="charting.fieldColors">{"baseline_disk_iops": 0xF69D1F,"disk_iops": 0x259FF8}</option>
+                <option name="charting.chart.overlayFields">baseline_disk_iops</option>
+            </chart>
+        </panel>
+    </row>
+</form>
