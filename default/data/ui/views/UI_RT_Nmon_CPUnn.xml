@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css">
+<form stylesheet="ui_simple.css,panel_decoration.css">
   <label>UI RT CPUnn, Real Time CPU Percentage load Analysis per logical core</label>
   <description>Simplified Real Time capable User Interface for the CPUnn monitor</description>
 
@@ -170,7 +170,7 @@ SPLITROW frameID AS frameID SPLITROW hostname AS hostname SPLITROW logical_core 
 
   <row>
     <panel>
-      <title>Charting parameters:</title>
+      <title>Charting parameters</title>
       <input type="dropdown" token="period" searchWhenChanged="true">
         <label>Period:</label>
         <default>minute</default>
@@ -225,47 +225,48 @@ SPLITROW frameID AS frameID SPLITROW hostname AS hostname SPLITROW logical_core 
     </panel>
   </row>
 
-  <row>
-    <panel>
-      <chart>
-        <search id="timechart">
-          <query>| pivot NMON_Data_CPU CPUnn $cpumode$
+    <row>
+        <panel id="cpu">
+            <title>CPU Logical Core statistics</title>
+            <chart>
+                <search id="timechart">
+                    <query>| pivot NMON_Data_CPU CPUnn $cpumode$
 SPLITROW _time AS _time PERIOD $period$ SPLITCOL logical_core FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
-          <earliest>$timerange.earliest$</earliest>
-          <latest>$timerange.latest$</latest>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="height">680px</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisTitleY.text">% CPUs</option>
-        <option name="charting.axisY.minimumNumber">0</option>
-        <option name="charting.axisY.maximumNumber">100</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
-        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
-        <option name="charting.axisY2.enabled">false</option>
-        <option name="charting.axisY2.scale">inherit</option>
-        <drilldown target="search">
-          <link>
-            <![CDATA[
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">% CPUs</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <drilldown target="search">
+                    <link>
+                        <![CDATA[
 /app/nmon/search?earliest=$earliest$&latest=$latest$&q=| pivot NMON_Data_CPU CPUnn $cpumode$ 
 SPLITROW _time AS _time PERIOD $period$ SPLITCOL logical_core FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
 			]]></link>
-        </drilldown>
-      </chart>
-    </panel>
-  </row>
+                </drilldown>
+            </chart>
+        </panel>
+    </row>
 
 </form>
