@@ -27,7 +27,7 @@
             <label>Frame IDs:</label>
             <!-- Populating Data Model Search -->
             <search id="frameIDSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSINODE) ($osfilter$) groupby "JFS.frameID" prestats=true
+                <query>| tstats count AS count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSINODE) (JFS.value&gt;=0) ($osfilter$) groupby "JFS.frameID" prestats=true
 | stats dedup_splitvals=t count AS count by "JFS.frameID"
 | sort limit=100 "JFS.frameID"
 | fields - _span
@@ -53,7 +53,7 @@
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="HostsbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSINODE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "JFS.hostname", "JFS.device" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSINODE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "JFS.hostname", "JFS.device" prestats=true
 | stats dedup_splitvals=t count AS Count by "JFS.hostname", "JFS.device"
 | sort limit=0 "JFS.hostname"
 | fields - _span
@@ -73,7 +73,7 @@
             <label>FS Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "JFS.hostname", "JFS.device" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "JFS.hostname", "JFS.device" prestats=true
 | stats dedup_splitvals=t count AS Count by "JFS.hostname", "JFS.device"
 | sort limit=0 "JFS.hostname"
 | fields - _span
@@ -100,9 +100,9 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time, JFS.hostname, JFS.device | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time, JFS.hostname | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
             <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time | eval JFS.hostname=&quot;aggreg_hostname&quot; | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
-            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time, JFS.hostname, JFS.device | eval JFS.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time, JFS.hostname | eval JFS.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
             <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time | eval JFS.hostname=&quot;aggreg_hostname&quot; | eval JFS.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
             <default>fields *</default>
         </input>
@@ -131,7 +131,7 @@
             <table>
                 <search id="tablestats">
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSINODE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
+where (nodename = JFS.JFSINODE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
 | $aggregate$
 | rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
@@ -223,7 +223,7 @@ where (nodename = JFS.JFSINODE) (JFS.hostname=$hostname-prefilter$) ($frameID$) 
             <chart>
                 <search id="timechart">
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSINODE) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$)
+where (nodename = JFS.JFSINODE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$)
 groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
 | $aggregate$
