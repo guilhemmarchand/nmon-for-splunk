@@ -15,8 +15,10 @@
 #                                         - Restrict to Python 2.7.x to use nmon2csv.py
 # - 10/14/2015, V1.0.03: Guilhem Marchand:
 #                                         - Use $SPLUNK_HOME/var/run/nmon for temp directory instead of /tmp
+# - 10/28/2015, V1.0.04: Guilhem Marchand:
+#                                         - Fixed temp directory lacking creation if dir does not yet exist
 
-# Version 1.0.03
+# Version 1.0.04
 
 # For AIX / Linux / Solaris
 
@@ -30,16 +32,19 @@ if [ -z "${SPLUNK_HOME}" ]; then
 fi
 
 # Set tmp directory
-tmp=${SPLUNK_HOME}/var/run/nmon
+APP_VAR=${SPLUNK_HOME}/var/run/nmon
 
-# Use /tmp for stdin storing, verify it is writable
-if [ ! -w ${tmp} ]; then
-	echo "`date`, ERROR, /tmp is not writable, write permission is required"
+# Verify it exists
+if [ ! -d ${APP_VAR} ]; then
+    mkdir -p ${APP_VAR}
 	exit 1
 fi
 
 # silently remove tmp file (testing exists before rm seems to cause trouble on some old OS)
-rm -f ${tmp}/nmon2csv.temp.*
+rm -f ${APP_VAR}/nmon2csv.temp.*
+
+# Set nmon_temp
+nmon_temp=${APP_VAR}/nmon2csv.temp.$$
 
 # Defined which APP we are running from (nmon / TA-nmon / PA-nmon)
 if [ -d "$SPLUNK_HOME/etc/apps/nmon" ]; then
@@ -66,7 +71,7 @@ fi
 
 # Store stdin
 while read line ; do
-	echo "$line" >> ${tmp}/nmon2csv.temp.$$
+	echo "$line" >> ${nmon_temp}
 done
 
 # Python is the default choice, if it is not available launch the Perl version
@@ -80,20 +85,20 @@ if [ $? -eq 0 ]; then
 	case $python_subversion in
 	
 	*" 2.7"*)
-		cat ${tmp}/nmon2csv.temp.$$ | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.py ;;
+		cat ${nmon_temp} | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.py ;;
 		
 	*)
-		cat ${tmp}/nmon2csv.temp.$$ | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl
+		cat ${nmon_temp} | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl
 	
 	esac
 
 else
 
-	cat ${tmp}/nmon2csv.temp.$$ | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl
+	cat ${nmon_temp} | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl
 
 fi
 
 # Remove temp
-rm -f ${tmp}/nmon2csv.temp.$$
+rm -f ${nmon_temp}
 
 exit 0
