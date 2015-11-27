@@ -37,8 +37,9 @@
 #										- Duplicated events management is operated by nmon2csv converters
 # 2015/10/14, Guilhem Marchand:         - Use $SPLUNK_HOME/var/run/nmon for temp directory instead of /tmp
 #                                       - Removed deactivation of CPUnn for Solaris, Manage UARG Solaris collection (new with Sarmon 1.11)
+# 2015/11/11, Guilhem Marchand:         - sarmon binaries are now stored in a dedicated directory under bin
 
-# Version 1.3.10
+# Version 1.3.11
 
 # For AIX / Linux / Solaris
 
@@ -427,10 +428,10 @@ if [ ! -x "$NMON" ];then
 	case $? in
 	0 )
 		# arch is sparc
-		NMON="$APP/bin/sarmon_bin_sparc/sadc" ;;
+		NMON="$APP/bin/solaris/sarmon/sarmon_bin_sparc/sadc" ;;
 	* )
 		# arch is x86
-		NMON="$APP/bin/sarmon_bin_i386/sadc" ;;
+		NMON="$APP/bin/solaris/sarmon/sarmon_bin_i386/sadc" ;;
 	esac
 
 fi
