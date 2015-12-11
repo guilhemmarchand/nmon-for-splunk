@@ -38,8 +38,9 @@
 # 2015/10/14, Guilhem Marchand:         - Use $SPLUNK_HOME/var/run/nmon for temp directory instead of /tmp
 #                                       - Removed deactivation of CPUnn for Solaris, Manage UARG Solaris collection (new with Sarmon 1.11)
 # 2015/11/11, Guilhem Marchand:         - sarmon binaries are now stored in a dedicated directory under bin
+# 2015/12/11, Guilhem Marchand:         - path changes introduced with release 1.3.11 can generates duplicated processes due to ps truncation limits
 
-# Version 1.3.11
+# Version 1.3.12
 
 # For AIX / Linux / Solaris
 
@@ -555,7 +556,22 @@ case $UNAME in
 
 	SunOS)
 
-		PIDs=`ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+        # In main priority, use pgrep (no truncation trouble), pgrep should always be available
+        # whether running on Solaris 10 or 11
+        if [ -x /usr/bin/pgrep ]; then
+            PIDs=`pgrep -f ${NMON}`
+        # Second priority, use BSD ps command with the appropriated syntax (mainly for Solaris 10)
+        elif [ -x /usr/ucb/ps ]; then
+            PIDs=`/usr/ucb/ps auxww | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+        # Last, use the ps command with BSD style syntax (no -) for Solaris 11 and later
+        # Solaris 10 cannot use BSD syntax with native ps, hopefully previous options should have been found !
+        else
+            if grep 'Solaris 10' /etc/release >/dev/null; then
+                PIDs=`/usr/ucb/ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+            else
+                PIDs=`/usr/ucb/ps auxww | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+            fi
+        fi
 
 		for p in ${PIDs}; do
 
