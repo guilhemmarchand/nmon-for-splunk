@@ -432,7 +432,7 @@ if [ ! -x "$NMON" ];then
 		NMON="$APP/bin/sarmon_bin_sparc/sadc" ;;
 	* )
 		# arch is x86
-		NMON="$APP/bin/sarmon/sarmon_bin_i386/sadc" ;;
+		NMON="$APP/bin/sarmon_bin_i386/sadc" ;;
 	esac
 
 fi
