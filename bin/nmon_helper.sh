@@ -567,7 +567,7 @@ case $UNAME in
         # Solaris 10 cannot use BSD syntax with native ps, hopefully previous options should have been found !
         else
             if grep 'Solaris 10' /etc/release >/dev/null; then
-                PIDs=`/usr/ucb/ps -ef | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
+                PIDs=`/usr/ucb/ps -ef | grep sarmon | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
             else
                 PIDs=`/usr/ucb/ps auxww | grep ${NMON} | grep -v grep | grep -v nmon_helper.sh | awk '{print $2}'`
             fi
