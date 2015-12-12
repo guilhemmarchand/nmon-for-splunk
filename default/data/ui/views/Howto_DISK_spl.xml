@@ -76,20 +76,13 @@
 					<h2>DISKXFER: Average Number of IOPS (Number of Input / Output operations per second on disks) in mutli-series mode per server/device over last 24 hours (with protection against data duplicates)</h2>
 					<pre>index=nmon sourcetype=nmon_data type=DISKXFER frameID=$frameID$ hostname=$hostname$ device=$device$
 | dedup _time,frameID,hostname,device,value
-| bucket _time `inline_customspan`
-| stats avg(value) As value by _time,hostname,device
-| eval s1="value"
-| makemv s1
-| mvexpand s1
-| eval yval=case(s1=="value",value)
-| eval series=hostname+":"+device
-| xyseries _time,series,yval
-| makecontinuous _time `inline_customspan`</pre>
+| eval key=hostname+":"+device
+| timechart `inline_customspan` limit=0 useother=f avg(value) AS value by key</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search index%3Dnmon sourcetype%3Dnmon_data type%3DDISKXFER frameID%3D$frameID$ hostname%3D$hostname$ device%3D$device$%0A| dedup _time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A| bucket _time `inline_customspan`%0A| stats avg(value) As value by _time%2Chostname%2Cdevice%0A| eval s1%3D&quot;value&quot;%0A| makemv s1 %0A| mvexpand s1%0A| eval yval%3Dcase(s1%3D%3D&quot;value&quot;%2Cvalue)%0A| eval series%3Dhostname%2B&quot;%3A&quot;%2Bdevice%0A| xyseries _time%2Cseries%2Cyval%0A| makecontinuous _time `inline_customspan`&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=I%2FO per sec" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DDISKXFER%20frameID%3D$frameID$ hostname%3D$hostname$ device%3D$device$%0A| dedup%20_time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A%7C%20eval%20key%3Dhostname%2B&quot;%3A&quot;%2Bdevice%0A%7C%20timechart%20%60inline_customspan%60%20limit%3D0%20useother%3Df%20avg(value)%20AS%20value%20by%20key&amp;display.page.search.mode=smart&amp;earliest=-60m%40m&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.axisTitleY.text=I%2FO per sec" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
@@ -115,20 +108,14 @@
 					<h2>DISKBUSY: Percentage of time Busy Disk aggregated in mutli-series mode per server/device over last 24 hours (with protection against data duplicates)</h2>
 					<pre>index=nmon sourcetype=nmon_data type=DISKBUSY frameID=$frameID$ hostname=$hostname$ device=$device$
 | dedup _time,frameID,hostname,device,value
-| bucket _time `inline_customspan`
-| stats avg(value) As value by _time,hostname,device
-| eval s1="value"
-| makemv s1
-| mvexpand s1
-| eval yval=case(s1=="value",value)
-| eval series=hostname+":"+device
-| xyseries _time,series,yval
-| makecontinuous _time `inline_customspan`</pre>
+| dedup _time,frameID,hostname,device,value
+| eval key=hostname+":"+device
+| timechart `inline_customspan` limit=0 useother=f avg(value) As value by key</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search index%3Dnmon sourcetype%3Dnmon_data type%3DDISKBUSY frameID%3D$frameID$ hostname%3D$hostname$ device%3D$device$%0A| dedup _time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A| bucket _time `inline_customspan`%0A| stats avg(value) As value by _time%2Chostname%2Cdevice%0A| eval s1%3D&quot;value&quot;%0A| makemv s1 %0A| mvexpand s1%0A| eval yval%3Dcase(s1%3D%3D&quot;value&quot;%2Cvalue)%0A| eval series%3Dhostname%2B&quot;%3A&quot;%2Bdevice%0A| xyseries _time%2Cseries%2Cyval%0A| makecontinuous _time `inline_customspan`&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=%25 Busy" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DDISKBUSY%20frameID%3D$frameID$%20hostname%3D$hostname$%20device%3D$device$%0A%7C%20dedup%20_time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A%7C%20eval%20key%3Dhostname%2B&quot;%3A&quot;%2Bdevice%0A%7C%20timechart%20%60inline_customspan%60%20limit%3D0%20useother%3Df%20avg(value)%20As%20value%20by%20key&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=%25%20Busy" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
@@ -155,7 +142,7 @@
 
 				<div>
 					<h2>DISKBSIZE: Disk Average data transfer size (KBytes per transfer) aggregated per server over last 24 hours (with protection against data duplicates)</h2>
-					<pre>index=nmon sourcetype=nmon_data type=DISKBUSY frameID=$frameID$ hostname=$hostname$ device=$device$
+					<pre>index=nmon sourcetype=nmon_data type=DISKBSIZE frameID=$frameID$ hostname=$hostname$ device=$device$
 | dedup _time,frameID,hostname,device,value
 | bucket _time span=1m
 | stats avg(value) AS value by _time,frameID,hostname
@@ -164,7 +151,7 @@
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search index%3Dnmon sourcetype%3Dnmon_data type%3DDISKBUSY frameID%3D$frameID$ hostname%3D$hostname$ device%3D$device$%0A| dedup _time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A| bucket _time span%3D1m%0A| stats avg(value) AS value by _time%2CframeID%2Chostname%0A| timechart `inline_customspan` avg(value) AS &quot;data_transfer&quot; by hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=KBytes per transfer" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search index%3Dnmon sourcetype%3Dnmon_data type%3DDISKBSIZE frameID%3D$frameID$ hostname%3D$hostname$ device%3D$device$%0A| dedup _time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A| bucket _time span%3D1m%0A| stats avg(value) AS value by _time%2CframeID%2Chostname%0A| timechart `inline_customspan` avg(value) AS &quot;data_transfer&quot; by hostname&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=KBytes per transfer" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
@@ -172,22 +159,15 @@
 
 				<div>
 					<h2>DISKBSIZE: Disk Average data transfer size (KBytes per transfer) per server/device in a multi-series chart over last 24 hours (with protection against data duplicates)</h2>
-					<pre>index=nmon sourcetype=nmon_data type=DISKBUSY frameID=$frameID$ hostname=$hostname$ device=$device$
+					<pre>index=nmon sourcetype=nmon_data type=DISKBSIZE frameID=$frameID$ hostname=$hostname$ device=$device$
 | dedup _time,frameID,hostname,device,value
-| bucket _time `inline_customspan`
-| stats avg(value) As value by _time,hostname,device
-| eval s1="value"
-| makemv s1
-| mvexpand s1
-| eval yval=case(s1=="value",value)
-| eval series=hostname+":"+device
-| xyseries _time,series,yval
-| makecontinuous _time `inline_customspan`</pre>
+| eval key=hostname+":"+device
+| timechart `inline_customspan` limit=0 useother=f avg(value) As value by key</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search index%3Dnmon sourcetype%3Dnmon_data type%3DDISKBUSY frameID%3D$frameID$ hostname%3D$hostname$ device%3D$device$%0A| dedup _time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A| bucket _time `inline_customspan`%0A| stats avg(value) As value by _time%2Chostname%2Cdevice%0A| eval s1%3D&quot;value&quot;%0A| makemv s1 %0A| mvexpand s1%0A| eval yval%3Dcase(s1%3D%3D&quot;value&quot;%2Cvalue)%0A| eval series%3Dhostname%2B&quot;%3A&quot;%2Bdevice%0A| xyseries _time%2Cseries%2Cyval%0A| makecontinuous _time `inline_customspan`&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=KBytes per transfer" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20index%3Dnmon%20sourcetype%3Dnmon_data%20type%3DDISKBSIZE%20frameID%3D$frameID$%20hostname%3D$hostname$%20device%3D$device$%0A%7C%20dedup%20_time%2CframeID%2Chostname%2Cdevice%2Cvalue%0A%7C%20eval%20key%3Dhostname%2B&quot;%3A&quot;%2Bdevice%0A%7C%20timechart%20%60inline_customspan%60%20limit%3D0%20useother%3Df%20avg(value)%20As%20value%20by%20key&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now&amp;display.visualizations.charting.axisTitleY.text=KBytes%20per%20transfer" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
