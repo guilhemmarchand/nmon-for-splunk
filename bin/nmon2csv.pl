@@ -145,7 +145,7 @@ Available options are:
 @Solaris_static_section = ("PROCSOL");
 
 # Some specific sections per OS
-@AIX_static_section = ("LPAR", "POOL");
+@AIX_static_section = ("LPAR", "POOLS");
 
 # This is the TOP section which contains Performance data of top processes
 # It has a specific structure and requires specific treatment
