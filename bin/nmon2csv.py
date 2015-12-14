@@ -113,6 +113,8 @@
 # - 10/17/2015, V1.1.13: Guilhem Marchand:
 #                                         - Manage CPUnn update for Sarmon, allows taking in charge CPUnn in all cases
 #                                         - Manage UARG for Sarmon (new in V1.11)
+# - 12/14/2015, V1.1.14: Guilhem Marchand:
+#                                         - Added support for POOL monitor (AIX only)
 
 # Load libs
 
@@ -131,7 +133,7 @@ import optparse
 import glob
 
 # Converter version
-nmon2csv_version = '1.1.13'
+nmon2csv_version = '1.1.14'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -155,7 +157,7 @@ static_section = ["CPUnn", "CPU_ALL", "FILE", "MEM", "PAGE", "MEMNEW", "MEMUSE",
 Solaris_static_section = ["PROCSOL"]
 
 # Some specific sections per OS
-AIX_static_section = ["LPAR"]
+AIX_static_section = ["LPAR", "POOL"]
 
 # This is the TOP section which contains Performance data of top processes
 # It has a specific structure and requires specific treatment

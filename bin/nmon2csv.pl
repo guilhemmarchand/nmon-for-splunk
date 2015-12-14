@@ -70,9 +70,10 @@
 #                                         - Added support for CPUnn (CPU usage per logical core)
 # Guilhem Marchand 10/17/2015, V1.2.13:
 #                                         - Manage UARG for Solaris introduced with Sarmon v1.11
+# Guilhem Marchand 12/14/2015, V1.2.14:
+#                                         - Added support for POOL monitor (AIX only)
 
-
-$version = "1.2.13";
+$version = "1.2.14";
 
 use Time::Local;
 use Time::HiRes;
@@ -144,7 +145,7 @@ Available options are:
 @Solaris_static_section = ("PROCSOL");
 
 # Some specific sections per OS
-@AIX_static_section = ("LPAR");
+@AIX_static_section = ("LPAR", "POOL");
 
 # This is the TOP section which contains Performance data of top processes
 # It has a specific structure and requires specific treatment
