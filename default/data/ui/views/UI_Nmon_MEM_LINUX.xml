@@ -55,7 +55,7 @@
 
         <input type="text" token="hostname-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
-            <prefix>"</prefix>
+            <prefix>MEM.hostname="</prefix>
             <suffix>"</suffix>
             <default>*</default>
         </input>
@@ -64,7 +64,7 @@
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "MEM.hostname" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) groupby "MEM.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "MEM.hostname"
 | sort limit=0 "MEM.hostname"
 | fields - _span | fillnull Count | fields "MEM.hostname"</query>
