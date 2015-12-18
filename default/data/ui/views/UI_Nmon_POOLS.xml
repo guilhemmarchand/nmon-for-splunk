@@ -1,0 +1,334 @@
+<form stylesheet="ui_simple.css,panel_decoration.css">
+    <label>UI POOLS, IBM Pseries POOLS statistics</label>
+    <description>User Interface for the POOLS monitor and IBM PSeries Pools usage statistics</description>
+
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+
+        </input>
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+
+        <input type="radio" token="appfilter" searchWhenChanged="true">
+            <label>Filter Invalid APP:</label>
+            <default>POOLS.pool_busy_time!=0</default>
+            <choice value="POOLS.pool_busy_time!=0">True</choice>
+            <choice value="POOLS.pool_busy_time=*">False</choice>
+        </input>
+
+        <input type="multiselect" token="Pool_id" searchWhenChanged="true">
+            <label>Pool IDs: (0 for DefaultPool)</label>
+            <!-- Populating Data Model Search -->
+            <search id="PoolidSearch">
+                <query>| tstats count AS count from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) groupby "POOLS.Pool_id" prestats=true
+| stats dedup_splitvals=t count AS count by "POOLS.Pool_id"
+| sort limit=0 "POOLS.Pool_id"
+| fields - _span | fillnull count | fields "POOLS.Pool_id"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>POOLS.Pool_id="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>POOLS.Pool_id</fieldForLabel>
+            <fieldForValue>POOLS.Pool_id</fieldForValue>
+        </input>
+
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) ($Pool_id$) ($appfilter$) groupby "POOLS.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "POOLS.frameID"
+| sort limit=0 "POOLS.frameID"
+| fields - _span | fillnull Count | fields "POOLS.frameID"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>POOLS.frameID="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>POOLS.frameID</fieldForLabel>
+            <fieldForValue>POOLS.frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+
+        <input type="multiselect" token="hostname" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="baseSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) ($Pool_id$) ($appfilter$) (POOLS.hostname=$hostname-prefilter$) ($frameID$) groupby "POOLS.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "POOLS.hostname"
+| sort limit=0 "POOLS.hostname" | fields - _span
+| fillnull Count | fields POOLS.hostname, Count</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>POOLS.hostname=</valuePrefix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>POOLS.hostname</fieldForLabel>
+            <fieldForValue>POOLS.hostname</fieldForValue>
+        </input>
+
+        <input type="dropdown" token="aggregate" searchWhenChanged="true">
+            <label>Aggregate:</label>
+            <choice value="fields *">Single Series</choice>
+            <choice value="stats avg(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval POOLS.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
+            <choice value="stats avg(*) AS * by _time,POOLS.frameID | eval POOLS.hostname='POOLS.frameID'">Average by Time interval,frameID</choice>
+            <choice value="stats max(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval POOLS.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
+            <choice value="stats max(*) AS * by _time,POOLS.frameID | eval POOLS.hostname='POOLS.frameID'">Max by Time interval,frameID</choice>
+            <choice value="stats sum(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval POOLS.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>
+            <choice value="stats sum(*) AS * by _time,POOLS.frameID | eval POOLS.hostname='POOLS.frameID'">Sum by Time interval,frameID</choice>
+            <default>fields *</default>
+        </input>
+
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Stats mode:</label>
+            <default>max</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+
+        <input type="dropdown" token="monitor" searchWhenChanged="true">
+            <label>Show CPU load by:</label>
+            <default>POOLS.pool_busy_time</default>
+            <choice value="POOLS.pool_busy_time">pool_busy_time</choice>
+            <choice value="POOLS.shcpu_busy_time">shcpu_busy_time</choice>
+        </input>
+
+        <input type="checkbox" token="charting" searchWhenChanged="true">
+            <label>Charting:</label>
+            <default>fields *</default>
+            <choice value="fields *">On</choice>
+        </input>
+
+    </fieldset>
+
+    <!-- Global Search -->
+
+    <search id="Global">
+        <query>| tstats max("POOLS.max_pool_capacity") AS "max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "Pool_id" from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS)
+(POOLS.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)` groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true `inline_customspan`
+| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS "max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "Pool_id" by _time, "POOLS.frameID", "POOLS.hostname"
+| $aggregate$
+| sort limit=0 _time
+| stats min($monitor$) As min_usage, avg($monitor$) As avg_usage, max($monitor$) As max_usage, values(Pool_id) AS Pool_id max(entitled_pool_capacity) AS entitled_pool_capacity max(max_pool_capacity) AS max_pool_capacity, sparkline($statsmode$($monitor$)) As sparkline by POOLS.frameID, POOLS.hostname
+| rename POOLS.* AS *
+| sort limit=0 frameID | eval avg_usage=round(avg_usage,2)</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <!-- Information panel -->
+
+    <row>
+        <panel>
+            <html>
+
+                <div class="imgheader">
+                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+                    <h4>Main Metrics information:</h4>
+                </div>
+
+                <div class="list">
+                    <lu>
+                        <li><b>max/avg/min_usage:</b> Virtual CPU statistics of the Pool the partition belongs to</li>
+                        <li><b>Pool ID:</b> POOL Identifier that the lpar belongs to (the DefaultPool will always have a 0 ID)</li>
+                        <li><b>max_pool_capacity:</b> Max Number of Virtual Processor affected to the Pool the lpar belongs to</li>
+                        <li><b>entitled_pool_capacity:</b> Entitled (minimal guarantee) Number of Virtual Processor affected to the Pool the lpar belongs to</li>
+                    </lu>
+                </div>
+
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+
+            <single>
+                <search base="Global">
+                    <query>stats max(max_usage) AS max</query>
+                </search>
+                <option name="underLabel">Maximum Load</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single>
+                <search base="Global">
+                    <query>stats avg(avg_usage) AS avg | eval avg=round(avg,2)</query>
+                </search>
+                <option name="underLabel">Average Load</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single>
+                <search base="Global">
+                    <query>stats min(min_usage) AS min</query>
+                </search>
+                <option name="underLabel">Minimal Load</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <table>
+                <search base="Global">
+                    <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| fields frameID, hostname, min_usage, avg_usage, max_usage, Pool_id, entitled_pool_capacity, max_pool_capacity, sparkline</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <format type="sparkline" field="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25px</option>
+                </format>
+            </table>
+
+        </panel>
+    </row>
+
+    <row depends="$charting$">
+        <panel id="settings">
+            <title>Charting parameters</title>
+            <input type="dropdown" token="addindicator" searchWhenChanged="true">
+                <label>Pool additional Series:</label>
+                <default>none</default>
+                <choice value="">none</choice>
+                <choice value="max(POOLS.max_pool_capacity) AS max_pool_capacity">max_pool_capacity</choice>
+                <choice value="max(POOLS.entitled_pool_capacity) AS entitled_pool_capacity">entitled_pool_capacity</choice>
+                <choice value="max(POOLS.entitled_pool_capacity) AS entitled_pool_capacity, max(POOLS.max_pool_capacity) AS max_pool_capacity">max_pool_capacity / entitled_pool_capacity</choice>
+            </input>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`inline_customspan`</default>
+                <choice value="`inline_customspan`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$charting$">
+        <panel id="cpu">
+            <title>Shared Pool CPU statistics</title>
+            <chart>
+                <search id="timechart">
+                    <query>| tstats max("POOLS.max_pool_capacity") AS "POOLS.max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "POOLS.entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "POOLS.Pool_id"
+from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) (POOLS.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)`
+groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS "POOLS.max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "POOLS.entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "POOLS.Pool_id" by _time, "POOLS.frameID", "POOLS.hostname"
+| sort limit=0 _time
+| $aggregate$
+| $charting$
+| timechart $span$ useother=f limit=0 $statsmode$($monitor$) As usage $addindicator$ by POOLS.hostname</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Virtual CPUs</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+        </panel>
+    </row>
+
+</form>
