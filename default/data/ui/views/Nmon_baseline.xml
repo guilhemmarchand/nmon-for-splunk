@@ -2,6 +2,7 @@
     <label>NMON Baseline Analysis</label>
     <description>Analyse main system key metrics against the baseline to determine derivation anomalies</description>
     <fieldset autoRun="false" submitButton="false">
+
         <input type="time" token="timerange" searchWhenChanged="true">
             <label>Time Range:</label>
             <default>
@@ -9,6 +10,7 @@
                 <latest>+1d@d</latest>
             </default>
         </input>
+
         <input type="dropdown" token="osfilter" searchWhenChanged="true">
             <label>Filter OS Type:</label>
             <default>*</default>
@@ -88,6 +90,12 @@
                 <choice value="simple">Simple baseline</choice>
                 <choice value="full">Full baseline (lower/predicted/upper)</choice>
             </input>
+            <input type="dropdown" token="baselinemode" searchWhenChanged="true">
+                <label>Charting the future:</label>
+                <default>_future</default>
+                <choice value="_future">True</choice>
+                <choice value="">False</choice>
+            </input>
             <input type="dropdown" token="statsmode" searchWhenChanged="true">
                 <label>Stats mode:</label>
                 <default>avg</default>
@@ -136,7 +144,7 @@
             </input>
             <chart>
                 <search>
-                    <query>| `nmon_cpu_pct_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <query>| `nmon_cpu_pct_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)`</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -168,7 +176,7 @@
                 <option name="charting.axisY.minimumNumber">$cpu_scale$</option>
                 <option name="charting.axisY.maximumNumber">$cpu_scaleend$</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_cpu_pct_$baseline$_baseline($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_avg_cpu</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_cpu_pct_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_avg_cpu</link>
                 </drilldown>
             </chart>
         </panel>
@@ -188,7 +196,7 @@
             </input>
             <chart>
                 <search>
-                    <query>| `nmon_real_mem_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <query>| `nmon_real_mem_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)`</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -220,7 +228,7 @@
                 <option name="charting.axisY.minimumNumber">$realmem_scale$</option>
                 <option name="charting.axisY.maximumNumber">$realmem_scaleend$</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_real_mem_$baseline$_baseline($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_avg_real_mem</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_real_mem_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_avg_real_mem</link>
                 </drilldown>
             </chart>
         </panel>
@@ -240,7 +248,7 @@
             </input>
             <chart>
                 <search>
-                    <query>| `nmon_virtual_mem_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <query>| `nmon_virtual_mem_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)`</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -272,7 +280,7 @@
                 <option name="charting.axisY.minimumNumber">$virtualmem_scale$</option>
                 <option name="charting.axisY.maximumNumber">$virtualmem_scaleend$</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_virtual_mem_$baseline$_baseline($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_avg_virtual_mem</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_virtual_mem_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_avg_virtual_mem</link>
                 </drilldown>
             </chart>
         </panel>
@@ -287,7 +295,7 @@
             </input>
             <chart>
                 <search>
-                    <query>| `nmon_iops_$baseline$_baseline($hostname$,$statsmode$)`</query>
+                    <query>| `nmon_iops_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)`</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -318,7 +326,7 @@
                 <option name="charting.chart.overlayFields">baseline_disk_iops</option>
                 <option name="charting.axisY.minimumNumber">$iopsmem_scale$</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_iops_$baseline$_baseline($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_disk_iops</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=%7C%20%60nmon_iops_$baseline$_baseline$baselinemode$($hostname$,$statsmode$)%60&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart.overlayFields=baseline_disk_iops</link>
                 </drilldown>
             </chart>
         </panel>
