@@ -345,7 +345,7 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
 
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link1,link2,link3,link4">Select a view:<!--Links go here-->
+                <div class="link-switcher" data-items="link1,link2,link3,link4,link5">Select a view:<!--Links go here-->
                 </div>
             </html>
 
@@ -484,6 +484,45 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.poolCPUs") AS "poolCPUs" max("CPU.LPAR.Pool_usage") AS "pool_usage" by _time, "CPU.hostname"
 | timechart span=1m max(pool_usage) AS "max_pool_usage" max(poolCPUs) As poolCPUs</link>
+                </drilldown>
+            </chart>
+
+            <chart id="link5">
+                <title>POOLS, Pools extended statistics</title>
+                <search>
+                    <query>| tstats max("POOLS.max_pool_capacity") AS max_pool_capacity max("POOLS.entitled_pool_capacity") AS entitled_pool_capacity max("POOLS.pool_busy_time") AS pool_busy_time
+from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) (POOLS.$hostname$) (POOLS.pool_busy_time!=0)
+groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS max_pool_capacity max("POOLS.entitled_pool_capacity") AS entitled_pool_capacity max("POOLS.pool_busy_time") AS pool_busy_time
+by _time, "POOLS.frameID", "POOLS.hostname"
+| timechart $span$ max(pool_busy_time) As pool_busy_time max(entitled_pool_capacity) AS entitled_pool_capacity, max(max_pool_capacity) AS max_pool_capacity</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Virtual CPUs</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("POOLS.max_pool_capacity") AS max_pool_capacity max("POOLS.entitled_pool_capacity") AS entitled_pool_capacity max("POOLS.pool_busy_time") AS pool_busy_time
+from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) (POOLS.$hostname$) (POOLS.pool_busy_time!=0)
+groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS max_pool_capacity max("POOLS.entitled_pool_capacity") AS entitled_pool_capacity max("POOLS.pool_busy_time") AS pool_busy_time
+by _time, "POOLS.frameID", "POOLS.hostname"
+| timechart `inline_customspan` max(pool_busy_time) As pool_busy_time max(entitled_pool_capacity) AS entitled_pool_capacity, max(max_pool_capacity) AS max_pool_capacity</link>
                 </drilldown>
             </chart>
 
