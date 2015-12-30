@@ -39,8 +39,9 @@
 #                                       - Removed deactivation of CPUnn for Solaris, Manage UARG Solaris collection (new with Sarmon 1.11)
 # 2015/11/11, Guilhem Marchand:         - sarmon binaries are now stored in a dedicated directory under bin
 # 2015/12/11, Guilhem Marchand:         - path changes introduced with release 1.3.11 can generates duplicated processes due to ps truncation limits
+# 2015/12/29, Guilhem Marchand:         - Evolution to manage sh cluster deployment: prevents text file busy error during bundle publication by running binaries from var instead of app directory
 
-# Version 1.3.12
+# Version 1.3.13
 
 # For AIX / Linux / Solaris
 
@@ -91,7 +92,46 @@ APP_VAR=$SPLUNK_HOME/var/run/nmon
 # Which type of OS are we running
 UNAME=`uname`
 
-# set defaults values for interval and snapshot and source nmon.conf 
+update_var_bin () {
+cp -p ${APP}/default/app.conf ${APP_VAR}/app.conf
+cp -rp ${APP}/bin ${APP_VAR}/
+}
+# Only relevant for Linux and Solaris, binaries caching management
+case $UNAME in
+
+Linux | SunOS )
+
+# To prevents binaries overwrites during upgrades and sh cluster deployment issues, cache the bin directory
+# Binaries will be launched from the cache directory
+if [ -d ${APP_VAR}/bin ]; then
+
+    # the bin directory has been already cached, verify if an update is required
+    if [ -f ${APP_VAR}/app.conf ]; then
+
+        diff ${APP}/default/app.conf ${APP_VAR}/app.conf >/dev/null
+
+            # if return code does not equal to 0, update is required
+            if [ $? -ne 0 ]; then
+                update_var_bin
+            fi
+
+    else
+
+        # no app.conf found, force copy of app.conf and update
+        update_var_bin
+    fi
+
+else
+
+    # the bin directory has not been cached already
+    update_var_bin
+
+fi
+
+;;
+esac
+
+# set defaults values for interval and snapshot and source nmon.conf
 
 # Refresh interval in seconds, Nmon will this value to refresh data each X seconds
 # Default to 60 seconds
@@ -279,15 +319,15 @@ if [ ! -x "$NMON" ];then
 	
 		# Try the most accurate
 		
-		if [ -f $APP/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion} ]; then
+		if [ -f $APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion} ]; then
 		
-			NMON="$APP/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}"
+			NMON="$APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}"
 			
 		# try the mainversion
 		
-		elif [ -f ${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion} ]; then
+		elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion} ]; then
 		
-			NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 		
 		fi
 		
@@ -304,7 +344,7 @@ if [ ! -x "$NMON" ];then
 		
 				linux_vendor="rhel"
 				linux_mainversion="$version"
-				NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"					
+				NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 				
 			fi
 			
@@ -320,14 +360,14 @@ if [ ! -x "$NMON" ];then
 			linux_vendor="sles"
 			# Get the main version only
 			linux_mainversion=`grep 'VERSION =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
-			NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 		
 		elif 	grep "openSUSE" /etc/SuSE-release >/dev/null; then
 		
 			linux_vendor="opensuse"
 			# Get the main version only
 			linux_mainversion=`grep 'VERSION =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
-			NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 					
 		fi
 	
@@ -344,7 +384,7 @@ if [ ! -x "$NMON" ];then
 		
 					linux_vendor="debian"
 					linux_mainversion="$version"
-					NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+					NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 
 				fi
 		
@@ -358,7 +398,7 @@ if [ ! -x "$NMON" ];then
 		
 					linux_vendor="ubuntu"
 					linux_mainversion="$version"
-					NMON="${APP}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+					NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 
 				fi
 		
@@ -384,7 +424,7 @@ if [ ! -x "$NMON" ];then
 		else
 		
 			# Try switching to embedded generic
-			NMON="${APP}/bin/linux/generic/nmon_linux_${ARCH}"
+			NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}"
 	
 		fi	
 	
@@ -394,10 +434,10 @@ if [ ! -x "$NMON" ];then
 	
 	if [ ! -x ${NMON} ]; then
 
-		if [ -x ${APP}/bin/linux/generic/nmon_linux_${ARCH} ]; then
+		if [ -x ${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH} ]; then
 		
 			# Try switching to embedded generic
-			NMON="${APP}/bin/linux/generic/nmon_linux_${ARCH}"
+			NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}"
 
 		else
 			
@@ -429,10 +469,10 @@ if [ ! -x "$NMON" ];then
 	case $? in
 	0 )
 		# arch is sparc
-		NMON="$APP/bin/sarmon_bin_sparc/sadc" ;;
+		NMON="$APP_VAR/bin/sarmon_bin_sparc/sadc" ;;
 	* )
 		# arch is x86
-		NMON="$APP/bin/sarmon_bin_i386/sadc" ;;
+		NMON="$APP_VAR/bin/sarmon_bin_i386/sadc" ;;
 	esac
 
 fi
