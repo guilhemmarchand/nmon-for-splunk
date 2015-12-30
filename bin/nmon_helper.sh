@@ -89,6 +89,9 @@ fi
 # Var directory for data generation
 APP_VAR=$SPLUNK_HOME/var/run/nmon
 
+# Create directory if not existing already
+[ ! -d $APP_VAR ] && { mkdir -p $APP_VAR; }
+
 # Which type of OS are we running
 UNAME=`uname`
 
