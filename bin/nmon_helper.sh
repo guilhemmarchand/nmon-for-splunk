@@ -92,9 +92,10 @@ APP_VAR=$SPLUNK_HOME/var/run/nmon
 # Which type of OS are we running
 UNAME=`uname`
 
+# Silently update bin content to run directory (see after this)
 update_var_bin () {
-cp -p ${APP}/default/app.conf ${APP_VAR}/app.conf
-cp -rp ${APP}/bin ${APP_VAR}/
+cp -p ${APP}/default/app.conf ${APP_VAR}/app.conf > /dev/null 2>&1
+cp -rp ${APP}/bin ${APP_VAR}/ > /dev/null 2>&1
 }
 # Only relevant for Linux and Solaris, binaries caching management
 case $UNAME in
