@@ -17,8 +17,10 @@
 #                                         - Use $SPLUNK_HOME/var/run/nmon for temp directory instead of /tmp
 # - 10/28/2015, V1.0.04: Guilhem Marchand:
 #                                         - Fixed temp directory lacking creation if dir does not yet exist
+# - 01/15/2016, V1.0.05: Guilhem Marchand:
+#                                         - Send arguments from sh wrapper to nmon2csv parsers
 
-# Version 1.0.04
+# Version 1.0.06
 
 # For AIX / Linux / Solaris
 
@@ -69,6 +71,9 @@ fi
 #############		Main Program 			############
 ####################################################################
 
+# Store arguments sent to script
+userargs=$@
+
 # Store stdin
 while read line ; do
 	echo "$line" >> ${nmon_temp}
@@ -85,10 +90,10 @@ if [ $? -eq 0 ]; then
 	case $python_subversion in
 	
 	*" 2.7"*)
-		cat ${nmon_temp} | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.py ;;
+		cat ${nmon_temp} | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.py ${userargs} ;;
 		
 	*)
-		cat ${nmon_temp} | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl
+		cat ${nmon_temp} | ${SPLUNK_HOME}/bin/splunk cmd ${APP}/bin/nmon2csv.pl ${userargs} ;;
 	
 	esac
 
