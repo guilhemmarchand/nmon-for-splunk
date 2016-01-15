@@ -930,10 +930,16 @@ print("NMON ID:", idnmon)
 
 # Show real time / cold data message
 if realtime:
-    msg = 'ANALYSIS: Assuming Nmon realtime data'
+    if options.mode == 'realtime':
+        msg = "ANALYSIS: Enforcing realtime mode using --mode option"
+    else:
+        msg = 'ANALYSIS: Assuming Nmon realtime data'
     print(msg)
 elif colddata:
-    msg = 'ANALYSIS: Assuming Nmon cold data'
+    if options.mode == 'colddata':
+        msg = "ANALYSIS: Enforcing colddata mode using --mode option"
+    else:
+        msg = 'ANALYSIS: Assuming Nmon cold data'
     print(msg)
 
 # Open reference file for reading, if exists already
