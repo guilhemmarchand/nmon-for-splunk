@@ -115,6 +115,9 @@
 #                                         - Manage UARG for Sarmon (new in V1.11)
 # - 12/14/2015, V1.1.14: Guilhem Marchand:
 #                                         - Added support for POOL monitor (AIX only)
+# - 01/16/2015, V1.1.15: Guilhem Marchand:
+#                                         - OStype is now generated at parsing level for immediate
+#                                           availability in Splunk
 
 # Load libs
 
@@ -133,7 +136,7 @@ import optparse
 import glob
 
 # Converter version
-nmon2csv_version = '1.1.14'
+nmon2csv_version = '1.1.15'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -1322,9 +1325,9 @@ def standard_section_fn(section):
                             count += 1
 
                             # Write header
-                            final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' 'logical_cpus' + ',' +\
-                                           'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' +\
-                                           ',' + header + '\n'
+                            final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'OStype' + ',' +\
+                                           'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' +\
+                                           ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'
 
                             # Number of separators in final header
                             num_cols_header = final_header.count(',')
@@ -1358,9 +1361,9 @@ def standard_section_fn(section):
                                 count += 1
 
                                 # Write header
-                                final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' \
-                                               + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' +\
-                                               'snapshots' + ',' + header + '\n'
+                                final_header = 'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'OStype' + ',' +\
+                                               'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' +\
+                                               'interval' + ',' + 'snapshots' + ',' + header + '\n'
 
                                 # Number of separators in final header
                                 num_cols_header = final_header.count(',')
@@ -1436,13 +1439,15 @@ def standard_section_fn(section):
 
                                 # final_perfdata
                                 if section == 'CPUnn':
-                                    final_perfdata = perfdatatype + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus +\
-                                                     ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL +\
-                                                     ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                                    final_perfdata = perfdatatype + ',' + SN + ',' + HOSTNAME + ',' +\
+                                                     OStype + ',' + logical_cpus + ',' + virtual_cpus + ',' +\
+                                                     ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +\
+                                                     perfdata + '\n'
                                 else:
-                                    final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' +\
-                                                     virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' +\
-                                                     SNAPSHOTS + ',' + perfdata + '\n'
+                                    final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' +\
+                                                     OStype + ',' + logical_cpus + ',' + virtual_cpus + ',' +\
+                                                     ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +\
+                                                     perfdata + '\n'
 
                                 # Analyse the first line of data: Compare number of fields in data with number of fields
                                 # in header
@@ -1490,13 +1495,15 @@ def standard_section_fn(section):
 
                             # final_perfdata
                             if section == 'CPUnn':
-                                final_perfdata = perfdatatype + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus +\
-                                                 ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL +\
-                                                 ',' + SNAPSHOTS + ',' + perfdata + '\n'
+                                final_perfdata = perfdatatype + ',' + SN + ',' + HOSTNAME + ',' +\
+                                                 OStype + ',' + logical_cpus + ',' + virtual_cpus + ',' +\
+                                                 ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +\
+                                                 perfdata + '\n'
                             else:
-                                final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' +\
-                                                 virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' +\
-                                                 SNAPSHOTS + ',' + perfdata + '\n'
+                                final_perfdata = section + ',' + SN + ',' + HOSTNAME + ',' +\
+                                                 OStype + ',' + logical_cpus + ',' + virtual_cpus + ',' +\
+                                                 ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +\
+                                                 perfdata + '\n'
 
                             # Analyse the first line of data: Compare number of fields in data with number of fields
                             # in header
@@ -1677,9 +1684,9 @@ def top_section_fn(section):
 
                             # Write header
                             currsection.write(
-                                'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' +
-                                ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' +
-                                ',' + header + '\n'),
+                                'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'OStype' + ',' +
+                                'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' +
+                                'snapshots' + ',' + header + '\n'),
 
                     # Extract timestamp
 
@@ -1741,8 +1748,9 @@ def top_section_fn(section):
 
                             # Write perf data
                             currsection.write(
-                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
-                                ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                                section + ',' + SN + ',' + HOSTNAME + ',' + OStype + ',' + logical_cpus +
+                                ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' +
+                                SNAPSHOTS + ',' + perfdata + '\n'),
                         else:
                             if debug:
                                 print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp +
@@ -1756,8 +1764,9 @@ def top_section_fn(section):
 
                         # Write perf data
                         currsection.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
-                            ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                            section + ',' + SN + ',' + HOSTNAME + ',' + OStype + ',' + logical_cpus +
+                            ',' + virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' +
+                            SNAPSHOTS + ',' + perfdata + '\n'),
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
@@ -1901,8 +1910,9 @@ def uarg_section_fn(section):
 
                         # Write header
                         membuffer.write(
-                            'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'logical_cpus' + ',' +
-                            'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' + 'snapshots' + ',' + header + '\n'),
+                            'type' + ',' + 'serialnum' + ',' + 'hostname' + ',' + 'OStype' + ',' +
+                            'logical_cpus' + ',' + 'virtual_cpus' + ',' + 'ZZZZ' + ',' + 'interval' + ',' +
+                            'snapshots' + ',' + header + '\n'),
 
                 # Extract timestamp
 
@@ -1972,8 +1982,9 @@ def uarg_section_fn(section):
 
                             # Write perf data
                             membuffer.write(
-                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
-                                ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                                section + ',' + SN + ',' + HOSTNAME + ',' + OStype + ',' + logical_cpus + ',' +
+                                virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +
+                                perfdata + '\n'),
 
                     elif colddata:
 
@@ -1982,8 +1993,9 @@ def uarg_section_fn(section):
 
                         # Write perf data
                         membuffer.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
-                            ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                            section + ',' + SN + ',' + HOSTNAME + ',' + OStype + ',' + logical_cpus + ',' +
+                            virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +
+                            perfdata + '\n'),
 
             if oslevel == 'AIX_or_Solaris':  # AIX and Solaris OS specific header
 
@@ -2018,8 +2030,9 @@ def uarg_section_fn(section):
 
                             # Write perf data
                             membuffer.write(
-                                section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
-                                ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                                section + ',' + SN + ',' + HOSTNAME + ',' + OStype + ',' + logical_cpus + ',' +
+                                virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +
+                                perfdata + '\n'),
                         else:
                             if debug:
                                 print ("DEBUG, " + section + " ignoring event " + ZZZZ_timestamp +
@@ -2033,8 +2046,9 @@ def uarg_section_fn(section):
 
                         # Write perf data
                         membuffer.write(
-                            section + ',' + SN + ',' + HOSTNAME + ',' + logical_cpus + ',' + virtual_cpus + ',' +
-                            ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' + perfdata + '\n'),
+                            section + ',' + SN + ',' + HOSTNAME + ',' + OStype + ',' + logical_cpus + ',' +
+                            virtual_cpus + ',' + ZZZZ_timestamp + ',' + INTERVAL + ',' + SNAPSHOTS + ',' +
+                            perfdata + '\n'),
 
         # Verify that the number of lines is at least 2 lines which should be the case if we are here (header + data)
         # In any case, don't allow empty files to kept in repository
@@ -2350,7 +2364,8 @@ def dynamic_section_fn(section):
 
                 writer = csv.writer(currsection)
                 writer.writerow(
-                    ['type', 'serialnum', 'hostname', 'interval', 'snapshots', 'ZZZZ', 'device', 'value'])
+                    ['type', 'serialnum', 'hostname', 'OStype', 'interval', 'snapshots', 'ZZZZ', 'device',
+                     'value'])
 
                 # increment
                 count += 1
@@ -2361,7 +2376,7 @@ def dynamic_section_fn(section):
                         # increment
                         count += 1
 
-                        row = [section, SN, HOSTNAME, INTERVAL, SNAPSHOTS, ZZZZ, device, value]
+                        row = [section, SN, HOSTNAME, OStype, INTERVAL, SNAPSHOTS, ZZZZ, device, value]
                         writer.writerow(row)
 
                         # End for
@@ -2717,8 +2732,8 @@ def solaris_wlm_section_fn(section):
 
                 writer = csv.writer(currsection)
                 writer.writerow(
-                    ['type', 'serialnum', 'hostname', 'logical_cpus', 'interval', 'snapshots', 'ZZZZ', 'device',
-                     'value'])
+                    ['type', 'serialnum', 'hostname', 'OStype', 'logical_cpus', 'interval', 'snapshots',
+                     'ZZZZ', 'device', 'value'])
 
                 # increment
                 count += 1
@@ -2729,7 +2744,8 @@ def solaris_wlm_section_fn(section):
                         # increment
                         count += 1
 
-                        row = [section, SN, HOSTNAME, logical_cpus, INTERVAL, SNAPSHOTS, ZZZZ, device, value]
+                        row = [section, SN, HOSTNAME, OStype, logical_cpus, INTERVAL, SNAPSHOTS,
+                               ZZZZ, device, value]
                         writer.writerow(row)
 
                         # End for

@@ -72,8 +72,11 @@
 #                                         - Manage UARG for Solaris introduced with Sarmon v1.11
 # Guilhem Marchand 12/14/2015, V1.2.14:
 #                                         - Added support for POOL monitor (AIX only)
+# Guilhem Marchand 01/16/2015, V1.2.15:
+#                                         - OStype is now generated at parsing level for immediate
+#                                           availability in Splunk
 
-$version = "1.2.14";
+$version = "1.2.15";
 
 use Time::Local;
 use Time::HiRes;
@@ -2184,7 +2187,7 @@ sub static_sections_insert {
     my $fieldsheadercount = @c;
 
     print INSERT (
-qq|type,serialnum,hostname,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\n|
+qq|type,serialnum,hostname,OStype,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\n|
     );
     $count++;
 
@@ -2258,7 +2261,7 @@ qq|type,serialnum,hostname,logical_cpus,virtual_cpus,ZZZZ,interval,snapshots,$x\
                 if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                     print INSERT (
-qq|$comma"$datatype","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
+qq|$comma"$datatype","$SN","$HOSTNAME","$OStype","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
                     );
                     $count++;
 
@@ -2279,7 +2282,7 @@ qq|$comma"$datatype","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIM
             elsif ( $colddata eq "True" ) {
 
                 print INSERT (
-qq|$comma"$datatype","$SN","$HOSTNAME","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
+qq|$comma"$datatype","$SN","$HOSTNAME","$OStype","$logical_cpus","$virtual_cpus","$DATETIME{@cols[1]}","$INTERVAL","$SNAPSHOTS",$x|
                 );
                 $count++;
 
@@ -2456,10 +2459,10 @@ sub variable_sections_insert {
     @devices = split( /,/, $rawdata[0] );
 
     print INSERT (
-        qq|type,serialnum,hostname,interval,snapshots,ZZZZ,device,value|);
+        qq|type,serialnum,hostname,OStype,interval,snapshots,ZZZZ,device,value|);
 
     # Count the number fields in header
-    my $header = "type,serialnum,hostname,interval,snapshots,ZZZZ,device,value";
+    my $header = "type,serialnum,hostname,OStype,interval,snapshots,ZZZZ,device,value";
     my @c = $header =~ /,/g;
     my $fieldsheadercount = @c;
 
@@ -2487,7 +2490,7 @@ sub variable_sections_insert {
             if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                 print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
                 );
 
                 $count++;
@@ -2507,7 +2510,7 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$co
         elsif ( $colddata eq "True" ) {
 
             print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
             );
 
             $count++;
@@ -2517,7 +2520,7 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$co
         for ( $j = 3 ; $j < @cols ; $j++ ) {
 
             $finaldata =
-"$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]";
+"$key,$SN,$HOSTNAME,$OStype,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]";
 
 # If the timestamp could not be found, there is a data anomaly and the section is not consistent
             if ( not $DATETIME{ $cols[1] } ) {
@@ -2562,7 +2565,7 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$co
                     if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                         print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
                         );
                         $count++;
                     }
@@ -2572,7 +2575,7 @@ qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$c
                 elsif ( $colddata eq "True" ) {
 
                     print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
                     );
                     $count++;
                 }
@@ -2750,12 +2753,12 @@ sub solaris_wlm_section_fn {
     @devices = split( /,/, $rawdata[0] );
 
     print INSERT (
-qq|type,serialnum,hostname,logical_cpus,interval,snapshots,ZZZZ,device,value|
+qq|type,serialnum,hostname,OStype,logical_cpus,interval,snapshots,ZZZZ,device,value|
     );
 
     # Count the number fields in header
     my $header =
-"type,serialnum,hostname,logical_cpus,interval,snapshots,ZZZZ,device,value";
+"type,serialnum,hostname,OStype,logical_cpus,interval,snapshots,ZZZZ,device,value";
     my @c = $header =~ /,/g;
     my $fieldsheadercount = @c;
 
@@ -2783,7 +2786,7 @@ qq|type,serialnum,hostname,logical_cpus,interval,snapshots,ZZZZ,device,value|
             if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                 print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
                 );
 
                 $count++;
@@ -2803,7 +2806,7 @@ qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$
         elsif ( $colddata eq "True" ) {
 
             print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[2],$cols[2]|
             );
 
             $count++;
@@ -2813,7 +2816,7 @@ qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$
         for ( $j = 3 ; $j < @cols ; $j++ ) {
 
             $finaldata =
-"$key,$SN,$HOSTNAME,$INTERVAL,$logical_cpus,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]";
+"$key,$SN,$HOSTNAME,$OStype,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]";
 
 # If the timestamp could not be found, there is a data anomaly and the section is not consistent
             if ( not $DATETIME{ $cols[1] } ) {
@@ -2858,7 +2861,7 @@ qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$
                     if ( $ZZZZ_epochtime > $last_epoch_filter ) {
 
                         print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
                         );
                         $count++;
                     }
@@ -2868,7 +2871,7 @@ qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$
                 elsif ( $colddata eq "True" ) {
 
                     print INSERT (
-qq|\n$key,$SN,$HOSTNAME,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
+qq|\n$key,$SN,$HOSTNAME,$OStype,$logical_cpus,$INTERVAL,$SNAPSHOTS,$DATETIME{$cols[1]},$devices[$j],$cols[$j]|
                     );
                     $count++;
                 }
