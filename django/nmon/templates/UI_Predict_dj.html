@@ -370,7 +370,7 @@
 	<!-- Populate dropdown (main search) -->
 	
 	{% searchmanager
-		id="hostname-populate" search='index=nmon hostname=$valueshosts$ sourcetype=nmon_data type=$valuesmonitor$ | stats count by hostname $valuesosfilter$'|token_safe
+		id="hostname-populate" search='`nmon_index` hostname=$valueshosts$ sourcetype=nmon_data type=$valuesmonitor$ | stats count by hostname $valuesosfilter$'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe	
 		cache=True
@@ -381,7 +381,7 @@
     
 	{% searchmanager 
 		id="main-search" 
-		search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict lower30=low upper30=high future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | `predict_manualinteract($manualtime_period1$,$manualcpus_period1$)`  | `predict_manualinteract($manualtime_period2$,$manualcpus_period2$)` | `predict_manualinteract($manualtime_period3$,$manualcpus_period3$)` | `predict_manualinteract($manualtime_period4$,$manualcpus_period4$)`'|token_safe
+		search='eventtype=nmon:performance hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict lower30=low upper30=high future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | `predict_manualinteract($manualtime_period1$,$manualcpus_period1$)`  | `predict_manualinteract($manualtime_period2$,$manualcpus_period2$)` | `predict_manualinteract($manualtime_period3$,$manualcpus_period3$)` | `predict_manualinteract($manualtime_period4$,$manualcpus_period4$)`'|token_safe
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe
 		auto_cancel=60
@@ -391,7 +391,7 @@
 
 	{% searchmanager
 		id="single-info"
-		search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | fields hostname'|token_safe 
+		search='eventtype=nmon:performance hostname=$valueshostname$ type=$valuesmonitor$ | head 1 | fields hostname'|token_safe 
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe 
 		auto_cancel=60 %}
@@ -416,7 +416,7 @@
 
 	{% searchmanager 
 		id="single-rateavg" 
-		search='index=nmon sourcetype=nmon_data hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | `predict_manualinteract($manualtime_period1$,$manualcpus_period1$)`  | `predict_manualinteract($manualtime_period2$,$manualcpus_period2$)` | `predict_manualinteract($manualtime_period3$,$manualcpus_period3$)` | `predict_manualinteract($manualtime_period4$,$manualcpus_period4$)` | stats avg(usage) As usage | join [ search index=nmon hostname=$valueshostname$ earliest="$earlyval$" latest="$lateval$" type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | `predict_manualinteract($manualtime_period1$,$manualcpus_period1$)`  | `predict_manualinteract($manualtime_period2$,$manualcpus_period2$)` | `predict_manualinteract($manualtime_period3$,$manualcpus_period3$)` | `predict_manualinteract($manualtime_period4$,$manualcpus_period4$)` | where isnull(usage) | stats avg(Predict) As avg_projection ] | eval rate=((avg_projection-usage)/usage)*100 | eval rate=round(rate,2)'|token_safe 
+		search='eventtype=nmon:performance hostname=$valueshostname$ type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | `predict_manualinteract($manualtime_period1$,$manualcpus_period1$)`  | `predict_manualinteract($manualtime_period2$,$manualcpus_period2$)` | `predict_manualinteract($manualtime_period3$,$manualcpus_period3$)` | `predict_manualinteract($manualtime_period4$,$manualcpus_period4$)` | stats avg(usage) As usage | join [ search `nmon_index` hostname=$valueshostname$ earliest="$earlyval$" latest="$lateval$" type=$valuesmonitor$ | `$valuesfiltertime$` | timechart span=$span$ $valuesstats$(usage) As usage | predict usage As Predict future_timespan=$future_timespan$ algorithm=$algorithm$ holdback=$holdback$ | `predict_manualinteract($manualtime_period1$,$manualcpus_period1$)`  | `predict_manualinteract($manualtime_period2$,$manualcpus_period2$)` | `predict_manualinteract($manualtime_period3$,$manualcpus_period3$)` | `predict_manualinteract($manualtime_period4$,$manualcpus_period4$)` | where isnull(usage) | stats avg(Predict) As avg_projection ] | eval rate=((avg_projection-usage)/usage)*100 | eval rate=round(rate,2)'|token_safe 
 		earliest_time="$earlyval$"|token_safe
 		latest_time="$lateval$"|token_safe 
 		auto_cancel=60 %}

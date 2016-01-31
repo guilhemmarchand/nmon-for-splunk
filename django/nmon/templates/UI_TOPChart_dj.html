@@ -184,7 +184,7 @@
     	
 	{% searchmanager 
 	id="search-cpu" 
-	search='index=nmon type=$valuesmonitor$ | stats $valuesstats$(usage) As usage, $valuesstats$(pct_usage) As pct_usage, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | fields hostname,usage,pct_usage,*'|token_safe 
+	search='`nmon_index` type=$valuesmonitor$ | stats $valuesstats$(usage) As usage, $valuesstats$(pct_usage) As pct_usage, max(entitled) As entitled, max(virtualCPUs) As virtualCPUs by hostname | fields hostname,usage,pct_usage,*'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
@@ -205,7 +205,7 @@
     
 	{% searchmanager 
 	id="search-memory" 
-	search='index="nmon" sourcetype="nmon_data" type="MEM" | `MEM_eval` | stats $valuesstats$(Real_free_MB) As Real_free_MB, $valuesstats$(Real_used_MB) As Real_used_MB, $valuesstats$(Real_total_MB) As Real_total_MB, $valuesstats$(Real_used_PCT) As Real_used_PCT by hostname'|token_safe 
+	search='eventtype=nmon:performance type="MEM" | `MEM_eval` | stats $valuesstats$(Real_free_MB) As Real_free_MB, $valuesstats$(Real_used_MB) As Real_used_MB, $valuesstats$(Real_total_MB) As Real_total_MB, $valuesstats$(Real_used_PCT) As Real_used_PCT by hostname'|token_safe 
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
@@ -226,7 +226,7 @@
     
 	{% searchmanager 
 	id="search-swap" 
-	search='index="nmon" sourcetype="nmon_data" type="MEM" | `MEM_eval` | stats $valuesstats$(Virtual_free_MB) As Virtual_free_MB, $valuesstats$(Virtual_used_MB) As Virtual_used_MB, $valuesstats$(Virtual_total_MB) As Virtual_total_MB, $valuesstats$(Virtual_used_PCT) As Virtual_used_PCT by hostname'|token_safe
+	search='eventtype=nmon:performance type="MEM" | `MEM_eval` | stats $valuesstats$(Virtual_free_MB) As Virtual_free_MB, $valuesstats$(Virtual_used_MB) As Virtual_used_MB, $valuesstats$(Virtual_total_MB) As Virtual_total_MB, $valuesstats$(Virtual_used_PCT) As Virtual_used_PCT by hostname'|token_safe
 	earliest_time="$earlyval$"|token_safe
 	latest_time="$lateval$"|token_safe
 	cache=False
