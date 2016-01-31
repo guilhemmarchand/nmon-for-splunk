@@ -96,7 +96,7 @@
             <input type="multiselect" token="hostname" searchWhenChanged="true">
                 <label>Hosts Selection:</label>
                 <search>
-                    <query>index=nmon sourcetype=nmon_data $hostname-prefilter$ type=$monitor$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
+                    <query>eventtype=nmon:performance $hostname-prefilter$ type=$monitor$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange2.latest$</latest>
                 </search>
@@ -128,12 +128,12 @@
 
             <single>
                 <search>
-                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period1*
 | append
-[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period2* ] | stats values(*) AS * by hostname
@@ -154,12 +154,12 @@
             <table id="table1">
                 <title>Table Stats</title>
                 <search>
-                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period1*
 | append
-[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period2* ] | stats values(*) AS * by hostname
@@ -242,13 +242,13 @@
             <title>Combined Chart (Time line period 1)</title>
             <chart>
                 <search>
-                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | $chartactivate$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields _time,usage_period1*
 | appendcols
-[ search index="nmon" sourcetype="nmon_data" earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields usage_period2* ]</query>
@@ -284,7 +284,7 @@
             <title>Chart Period 1</title>
             <chart>
                 <search>
-                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | $chartactivate$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname</query>
@@ -318,7 +318,7 @@
             <title>Chart Period 2</title>
             <chart>
                 <search>
-                    <query>index="nmon" sourcetype="nmon_data" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
 | $chartactivate$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname</query>

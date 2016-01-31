@@ -14,9 +14,9 @@
   </input>
   <chart>
     <search>
-      <query>index=nmon sourcetype=nmon_data type=CPU_ALL $frameID$ $hostname$
+      <query>eventtype=nmon:performance type=CPU_ALL $frameID$ $hostname$
 | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS usage_yesterday
-| appendcols [ search index=nmon sourcetype=nmon_data type=CPU_ALL $frameID$ $hostname$ earliest="@d" latest="+1d@d"
+| appendcols [ search eventtype=nmon:performance type=CPU_ALL $frameID$ $hostname$ earliest="@d" latest="+1d@d"
 | eval cpu_PCT=round((Sys_PCT+User_PCT+Wait_PCT),2) | timechart span=5m avg(cpu_PCT) AS usage_today | fields - _time ]</query>
       <earliest>-1d@d</earliest>
       <latest>@d</latest>

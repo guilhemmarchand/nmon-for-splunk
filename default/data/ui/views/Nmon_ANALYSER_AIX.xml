@@ -137,7 +137,7 @@ last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Proc
             </html>
             <single>
                 <search>
-                    <query>index="nmon" sourcetype="nmon_data" type="CPU_ALL" OR type="LPAR" $hostname$ | head 100
+                    <query>eventtype=nmon:performance type="CPU_ALL" OR type="LPAR" $hostname$ | head 100
 | stats count by type | sort - type | head 1
 | eval datasource=case(match(type, "LPAR"), "LPAR (Virtual Processor usage)", match(type, "CPU_ALL"), "CPU_ALL (Percentage usage)") | stats values(datasource) As datasource</query>
                     <earliest>$timerange.earliest$</earliest>

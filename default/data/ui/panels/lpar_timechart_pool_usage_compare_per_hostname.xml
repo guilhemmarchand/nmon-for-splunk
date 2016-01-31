@@ -14,10 +14,10 @@
   </input>
   <chart>
     <search>
-      <query>index=nmon sourcetype=nmon_data type=LPAR $frameID$ $hostname$
+      <query>eventtype=nmon:performance type=LPAR $frameID$ $hostname$
 | eval Pool_usage=round((poolCPUs-PoolIdle),2)
 | timechart `inline_customspan` max(Pool_usage) AS Pool_usage_yesterday
-| appendcols [ search index=nmon sourcetype=nmon_data type=LPAR $frameID$ $hostname$ earliest="@d" latest="now"
+| appendcols [ search eventtype=nmon:performance type=LPAR $frameID$ $hostname$ earliest="@d" latest="now"
 | eval Pool_usage=round((poolCPUs-PoolIdle),2)
 | timechart `inline_customspan` max(Pool_usage) AS Pool_usage_today | fields - _time ]</query>
       <earliest>-1d@d</earliest>

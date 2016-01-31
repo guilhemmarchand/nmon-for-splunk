@@ -21,7 +21,7 @@
   </input>
   <table>
     <search>
-      <query>index=nmon sourcetype=nmon_data type=NET $frameID$ $hostname$
+      <query>eventtype=nmon:performance type=NET $frameID$ $hostname$
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | stats avg(value) AS value by frameID,hostname,traffic_type | eval value=round(value, 2) | eval value=traffic_type + " " + value + " KBps" | fields frameID,hostname,value
 | makemv value | mvcombine value | rename value AS "Inbound / Outbound KBps Network Traffic"</query>

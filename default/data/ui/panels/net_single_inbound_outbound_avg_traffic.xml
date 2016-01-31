@@ -21,7 +21,7 @@
   </input>
   <single>
     <search>
-      <query>index=nmon sourcetype=nmon_data type=NET $frameID$ $hostname$ device!=*lo*
+      <query>eventtype=nmon:performance type=NET $frameID$ $hostname$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | chart avg(value) AS value by traffic_type | eval value=round(value, 2) | eval value=traffic_type + " " + value + " KBps" | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value</query>
       <earliest>$timerange.earliest$</earliest>

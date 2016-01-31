@@ -47,7 +47,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
     </search>
 
     <search id="nmon_collect_errors">
-        <query>index="nmon" sourcetype="nmon_collect" error | stats count As nbr_errors</query>
+        <query>eventtype=nmon:collect error | stats count As nbr_errors</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -55,7 +55,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
     <!-- Event Count -->
 
     <search id="eventcount_search">
-        <query>| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</query>
+        <query>| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -196,7 +196,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                 </search>
                 <option name="underLabel">Errors found in Data Collect</option>
                 <option name="linkView">search</option>
-                <option name="linkSearch">index="nmon" sourcetype="nmon_collect" error | stats count As nbr_errors</option>
+                <option name="linkSearch">eventtype=nmon:collect error | stats count As nbr_errors</option>
                 <option name="linkFields">result</option>
             </single>
 
@@ -362,7 +362,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                 <option name="underLabel">NMON INDEX SIZE</option>
                 <option name="afterLabel">MB</option>
                 <option name="linkView">search</option>
-                <option name="linkSearch">| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</option>
+                <option name="linkSearch">| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</option>
                 <option name="linkFields">result</option>
             </single>
 
@@ -374,7 +374,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                 <option name="underLabel">NMON EVENTS COUNT</option>
                 <option name="afterLabel">Millions</option>
                 <option name="linkView">search</option>
-                <option name="linkSearch">| eventcount summarize=false report_size=true index="nmon" | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</option>
+                <option name="linkSearch">| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</option>
                 <option name="linkFields">result</option>
             </single>
 

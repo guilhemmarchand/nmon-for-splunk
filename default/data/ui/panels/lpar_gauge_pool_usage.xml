@@ -21,9 +21,9 @@
   </input>
   <chart>
     <search>
-      <query>index=nmon sourcetype=nmon_data type=LPAR $frameID$ $hostname$
+      <query>eventtype=nmon:performance type=LPAR $frameID$ $hostname$
 | eval Pool_usage=round((poolCPUs-PoolIdle),2)
-| gauge avg(Pool_usage) AS Pool_usage [ search index=nmon sourcetype=nmon_data type=LPAR $frameID$ $hostname$
+| gauge avg(Pool_usage) AS Pool_usage [ search eventtype=nmon:performance type=LPAR $frameID$ $hostname$
 | stats max(poolCPUs) AS max
 | eval first=0 | eval second=(max*0.50) | eval third=(max*0.75) | eval fourth=max
 | eval second=round(second,0) | eval third=round(third,0) | eval fourth=round(fourth,0) | eval range=first+" "+second+" "+third+" "+fourth | return $range ]</query>
