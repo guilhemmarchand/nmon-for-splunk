@@ -70,6 +70,33 @@ FIELDALIAS-frameID = serialnum AS frameID
 
 # LOOKUP-PSERIES = my_lookup_table serialnum AS serialnum OUTPUT PSERIES AS frameID
 
+#####################
+# CIM normalization #
+#####################
+
+# When applicabe, be CIMP compliant (see: http://docs.splunk.com/Documentation/CIM/4.3.1/User/Performance)
+EVAL-hypervisor_id = if(isnotnull(frameID), frameID, serialnum)
+
+# CIM normalization for common cpu metrics
+
+EVAL-cpu_load_percent = (Sys_PCT+User_PCT+Wait_PCT)
+FIELDALIAS-cpu_load_user = User_PCT as cpu_user_percent
+
+# CIM normalization for common memory metrics
+
+# Total memory available in MB (for AIX / Linux / Solaris)
+EVAL-mem = case(isnotnull(Real_total_MB), Real_total_MB, isnotnull(memtotal), memtotal)
+EVAL-mem_free = case(isnotnull(Real_free_MB), Real_free_MB, isnotnull(memfree), memfree)
+EVAL-mem_used = case(isnotnull(Real_total_MB), (Real_total_MB-Real_free_MB), isnotnull(memtotal), (memtotal-memfree))
+
+# Total virtual memory available in MB (for AIX / Linux / Solaris)
+EVAL-swap = case(isnotnull(Virtual_total_MB), Virtual_total_MB, isnotnull(swaptotal), swaptotal)
+EVAL-swap_free = case(isnotnull(Virtual_free_MB), Virtual_free_MB, isnotnull(swapfree), swapfree)
+EVAL-swap_used = case(isnotnull(Virtual_total_MB), (Virtual_total_MB-Virtual_free_MB), isnotnull(swaptotal), (swaptotal-swapfree))
+
+# CIM normalization for common network statistics
+EVAL-thruput = case(type=="NET", (value*1000))
+
 ###########################################
 #			nmon processing stanza				#
 ###########################################
@@ -78,25 +105,33 @@ FIELDALIAS-frameID = serialnum AS frameID
 
 TIME_FORMAT=%d-%m-%Y %H:%M:%S
 
-EXTRACT-splunk_home = (?i).+Splunk\sRoot\sDirectory\s\(\$SPLUNK_HOME\)\:\s(?P<splunk_home>[a-zA-Z0-9\/\\\-\_\.\:]+)\s
-EXTRACT-operating_system = (?i).+Guest\sOperating\sSystem\:\s(?P<operating_system>[a-zA-Z0-9]+)\s
-EXTRACT-python_version = (?i).+Python\sversion\:\s(?P<python_version>[a-zA-Z0-9\.]+)\s
-EXTRACT-perl_version = (?i).+Perl\sversion\:\s(?P<perl_version>[a-zA-Z0-9\.]+)\s
+# Deactivate KV
+KV_MODE = none
+
+# For TA-nmon
+EXTRACT-splunk_home = (?i).+\w*\sRoot\sDirectory\s\(\$SPLUNK_HOME\)\:\s{0,}(?P<splunk_home>[a-zA-Z0-9\/\\\-\_\.\:]+)\s
+
+# For nmon-logger
+EXTRACT-nmon_home = (?i).+\w*\sRoot\sDirectory\s\(\$NMON_VAR\)\:\s{0,}(?P<nmon_var>[a-zA-Z0-9\/\\\-\_\.\:]+)\s
+
+EXTRACT-operating_system = (?i).+Guest\sOperating\sSystem\:\s{0,}(?P<operating_system>[a-zA-Z0-9]+)\s
+EXTRACT-python_version = (?i).+Python\sversion\:\s{0,}(?P<python_version>[a-zA-Z0-9\.]+)\s
+EXTRACT-perl_version = (?i).+Perl\sversion\:\s{0,}(?P<perl_version>[a-zA-Z0-9\.]+)\s
 EVAL-converter_inuse = case(isnotnull(python_version), "Python", isnotnull(perl_version), "Perl")
 EVAL-interpreter_version = case(isnotnull(python_version), python_version, isnotnull(perl_version), perl_version)
-EXTRACT-nmon2csv_version = (?i).+nmon2csv\sversion\:\s(?P<nmon2csv_version>[0-9\.]+)\s
-EXTRACT-hostname = (?i).+HOSTNAME\:\s(?P<hostname>[a-zA-Z0-9\-\_\.]+)\s
-EXTRACT-nbr_lines = (?i).+Reading\sNMON\sdata:\s(?P<nbr_lines>\d+)\slines
+EXTRACT-nmon2csv_version = (?i).+nmon2csv\sversion\:\s{0,}(?P<nmon2csv_version>[0-9\.]+)\s
+EXTRACT-hostname = (?i).+HOSTNAME\:\s{0,}(?P<hostname>[a-zA-Z0-9\-\_\.]+)
+EXTRACT-nbr_lines = (?i).+Reading\sNMON\sdata:\s{0,}(?P<nbr_lines>\d+)\slines
 EXTRACT-size_in_bytes = (?i).+lines\s(?P<size_in_bytes>\d+)\sbytes
-EXTRACT-elapsed_in_seconds = (?i).+Elapsed\stime\swas\:\s(?P<elapsed_in_seconds>\d+\.\d+)\sseconds
-EXTRACT-Nmon_version = (?i).+NMON\sVERSION\:\s(?P<Nmon_version>[a-zA-Z0-9\-\_\.\s]+)\s
-EXTRACT-Time_of_Nmon_data = (?i).+TIME\sof\sNmon\sData\:\s(?P<Time_of_Nmon_Data>[0-9\:\.]+)\s
-EXTRACT-Date_of_Nmon_data = (?i).+DATE\sof\sNmon\sData\:\s(?P<Date_of_Nmon_Data>[a-zA-Z0-9\-\/]+)\s
-EXTRACT-INTERVAL = (?i).+INTERVAL\:\s(?P<INTERVAL>\d+)\s
-EXTRACT-SNAPSHOTS = (?i).+SNAPSHOTS\:\s(?P<SNAPSHOTS>\d+)\s
-EXTRACT-logical_cpus = (?i).+logical_cpus\:\s(?P<logical_cpus>\d+)\s
-EXTRACT-virtual_cpus = (?i).+virtual_cpus\:\s(?P<virtual_cpus>\d+)\s
-EXTRACT-Nmon_ID = (?i).+NMON\sID\:\s(?P<Nmon_ID>[a-zA-Z0-9\-\:\,\_\.]+)\s
+EXTRACT-elapsed_in_seconds = (?i).+Elapsed\stime\swas\:\s{0,}(?P<elapsed_in_seconds>\d+\.\d+)\sseconds
+EXTRACT-Nmon_version = (?i).+NMON\sVERSION\:\s{0,}(?P<Nmon_version>[a-zA-Z0-9\-\_\.\s]+)\s
+EXTRACT-Time_of_Nmon_data = (?i).+TIME\sof\sNmon\sData\:\s{0,}(?P<Time_of_Nmon_Data>[0-9\:\.]+)\s
+EXTRACT-Date_of_Nmon_data = (?i).+DATE\sof\sNmon\sData\:\s{0,}(?P<Date_of_Nmon_Data>[a-zA-Z0-9\-\/]+)\s
+EXTRACT-INTERVAL = (?i).+INTERVAL\:\s{0,}(?P<INTERVAL>\d+)\s
+EXTRACT-SNAPSHOTS = (?i).+SNAPSHOTS\:\s{0,}(?P<SNAPSHOTS>\d+)\s
+EXTRACT-logical_cpus = (?i).+logical_cpus\:\s{0,}(?P<logical_cpus>\d+)\s
+EXTRACT-virtual_cpus = (?i).+virtual_cpus\:\s{0,}(?P<virtual_cpus>\d+)\s
+EXTRACT-Nmon_ID = (?i).+NMON\sID\:\s{0,}(?P<Nmon_ID>[a-zA-Z0-9\-\:\,\_\.]+)\s
 
 ###########################################
 #			nmon config stanza					#
@@ -112,13 +147,21 @@ TIME_FORMAT=%d-%b-%Y:%H:%M
 TIME_PREFIX=CONFIG,
 TRUNCATE=0
 
+# Deactivate KV
+KV_MODE = none
+
 EXTRACT-hostname = (?i)AAA,host,(?P<hostname>[a-zA-Z0-9\-\_\.]+)\s
 
 # Overwritting default host field based on event data for nmon_data sourcetype (useful when managing Nmon central shares)
 TRANSFORMS-hostfield=nmon_config_hostoverride
 
-# Overwritting default host field based on event data for nmon_data sourcetype (useful when managing Nmon central shares)
-TRANSFORMS-hostfield=nmon_config_hostoverride
+# Perform basic extractions
+# Full extractions can be performed by calling associated macros, or using the data model
+EXTRACT-OS = (?i),OS,(?P<OS>[^,]+)\s{0,}
+EXTRACT-AIX_LEVEL = AAA,AIX,(?P<AIX_LEVEL>[a-zA-Z0-9\-\_\.]+)\s
+EXTRACT-Linux_LEVEL = AAA,OS,Linux,(?P<Linux_LEVEL>[^,]+),
+EXTRACT-Solaris_LEVEL = AAA,OS,Solaris,(?P<Solaris_LEVEL>[^,]+),
+EVAL-OStype = case(OS == "Linux", "Linux", OS == "Solaris", "Solaris", isnotnull(AIX_LEVEL), "AIX", isnull(OS), "Unknown")
 
 ###########################################
 #			SA-Eventgen								#
@@ -294,6 +337,9 @@ SHOULD_LINEMERGE=true
 TIME_FORMAT=%s
 TIME_PREFIX=timestamp="
 TRUNCATE=0
+
+# Deactivate KV
+KV_MODE = none
 
 # Rewrite host Metadata using standard syslog rewrite
 TRANSFORMS = syslog-host
