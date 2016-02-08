@@ -14,6 +14,7 @@
 # Guilhem Marchand 2015/03/11, /dev/null redirection for python version check step
 # Guilhem Marchand 2015/03/20, python subversion check correction
 # Guilhem Marchand 2015/07/27, hotfix for using the PA-nmon to generate Performance data in standalone indexers
+# Guilhem Marchand 2016/02/08, /dev/null redirection improvement for the which python check
 
 # Version 1.0.06
 
@@ -55,7 +56,7 @@ fi
 userargs=$@
 
 # Python is the default choice, if it is not available launch the Perl version
-PYTHON=`which python` >/dev/null 2>&1
+PYTHON=`which python >/dev/null 2>&1`
 
 if [ $? -eq 0 ]; then
 

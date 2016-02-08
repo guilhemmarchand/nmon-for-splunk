@@ -19,6 +19,9 @@
 #                                         - Fixed temp directory lacking creation if dir does not yet exist
 # - 01/15/2016, V1.0.05: Guilhem Marchand:
 #                                         - Send arguments from sh wrapper to nmon2csv parsers
+# - 02/08/2016, V1.0.06: Guilhem Marchand:
+#                                         - /dev/null redirection improvement for the which python check
+
 
 # Version 1.0.06
 
@@ -80,7 +83,7 @@ while read line ; do
 done
 
 # Python is the default choice, if it is not available launch the Perl version
-PYTHON=`which python` >/dev/null 2>&1
+PYTHON=`which python >/dev/null 2>&1`
 
 if [ $? -eq 0 ]; then
 
