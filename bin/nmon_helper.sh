@@ -40,8 +40,9 @@
 # 2015/11/11, Guilhem Marchand:         - sarmon binaries are now stored in a dedicated directory under bin
 # 2015/12/11, Guilhem Marchand:         - path changes introduced with release 1.3.11 can generates duplicated processes due to ps truncation limits
 # 2015/12/29, Guilhem Marchand:         - Evolution to manage sh cluster deployment: prevents text file busy error during bundle publication by running binaries from var instead of app directory
+# 2016/02/13, Guilhem Marchand:         - Error in SUSE Linux identification over /etc/SuSE-release (bad pattern)
 
-# Version 1.3.13
+# Version 1.3.14
 
 # For AIX / Linux / Solaris
 
@@ -359,7 +360,7 @@ if [ ! -x "$NMON" ];then
 	
 		# sles
 		
-		if grep "SUSE Linux Entreprise Server" /etc/SuSE-release >/dev/null; then
+		if grep "SUSE Linux Enterprise Server" /etc/SuSE-release >/dev/null; then
 		
 			linux_vendor="sles"
 			# Get the main version only
