@@ -41,6 +41,7 @@
 # 2015/12/11, Guilhem Marchand:         - path changes introduced with release 1.3.11 can generates duplicated processes due to ps truncation limits
 # 2015/12/29, Guilhem Marchand:         - Evolution to manage sh cluster deployment: prevents text file busy error during bundle publication by running binaries from var instead of app directory
 # 2016/02/13, Guilhem Marchand:         - Error in SUSE Linux identification over /etc/SuSE-release (bad pattern)
+# 2016/02/14, Guilhem Marchand:         - Support for Archlinux with embedded binaries (x86 & x86_64)
 
 # Version 1.3.14
 
@@ -335,7 +336,15 @@ if [ ! -x "$NMON" ];then
 			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 		
 		fi
-		
+
+		# try the linux_vendor
+
+		elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor} ]; then
+
+			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}"
+
+		fi
+
 	# So bad, no os-release, probably old linux, things becomes a bit harder
 	
 	# rhel, starting rhel 6, the /etc/os-release should be available but we will check for older version to newer
