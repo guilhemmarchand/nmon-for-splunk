@@ -335,8 +335,6 @@ if [ ! -x "$NMON" ];then
 		
 			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 		
-		fi
-
 		# try the linux_vendor
 
 		elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor} ]; then
