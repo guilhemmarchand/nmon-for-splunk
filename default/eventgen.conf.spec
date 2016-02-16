@@ -205,26 +205,6 @@ token.0.token = \d*-\d*-\d{4}\s\d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp
 token.0.replacement = %d-%m-%Y %H:%M:%S
 
-[Solaris_MEM_sample]
-interval = 15
-earliest = -15s
-backfill = -1h
-latest = now
-count = 100
-hourOfDayRate = { "0": 0.8, "1": 1.0, "2": 0.9, "3": 0.7, "4": 0.5, "5": 0.4, "6": 0.4, "7": 0.4, "8": 0.4, "9": 0.4, "10": 0.4, "11": 0.4, "12": 0.4, "13": 0.4, "14": 0.4, "15": 0.4, "16": 0.4, "17": 0.4, "18": 0.4, "19": 0.4, "20": 0.4, "21": 0.4, "22": 0.5, "23": 0.6 }
-dayOfWeekRate = { "0": 0.7, "1": 0.7, "2": 0.7, "3": 0.5, "4": 0.5, "5": 1.0, "6": 1.0 }
-randomizeCount = 0.2
-randomizeEvents = true
-mode = sample
-sampletype = csv
-spoolFile = Solaris_MEM_sample.csv
-outputMode = spool
-spoolDir = $SPLUNK_HOME/etc/apps/nmon/samples/spool/csv_repository
-## Replace timestamp
-token.0.token = \d*-\d*-\d{4}\s\d{2}:\d{2}:\d{2}
-token.0.replacementType = timestamp
-token.0.replacement = %d-%m-%Y %H:%M:%S
-
 [Solaris_TOP_sample]
 interval = 15
 earliest = -15s
