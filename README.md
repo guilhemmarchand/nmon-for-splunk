@@ -28,7 +28,7 @@ http://nmonsplunk.wikidot.com
 
 http://nmonsplunk.wikidot.com/about-support
 
-## NMON is short for Nigel's Performance Monitor and is available on AIX, Solaris (With Sarmon), Linux and ARM Systems.
+### NMON is short for Nigel's Performance Monitor and is available on AIX, Solaris (With Sarmon), Linux and ARM Systems.
 
 ### NMON Splunk App has been designed to massively collect, convert, index and analyse NMON Metrics Data, providing an Enterprise class Application. 
 
