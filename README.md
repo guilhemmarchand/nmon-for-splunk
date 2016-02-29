@@ -16,26 +16,26 @@ limitations under the License.
 
 ## Welcome in Splunk for NMON, Performance Monitor for Unix and Linux Systems
 
-### This application is also officially available on Splunk Base:
+#### This application is also officially available on Splunk Base:
 
 https://splunkbase.splunk.com/app/1753/
 
-### The documentation for Nmon Performance Monitor is available online at:
+#### The documentation for Nmon Performance Monitor is available online at:
 
 http://nmonsplunk.wikidot.com
 
-### To get support:
+#### To get support:
 
 http://nmonsplunk.wikidot.com/about-support
 
-### NMON is short for Nigel's Performance Monitor and is available on AIX, Solaris (With Sarmon), Linux and ARM Systems.
+#### NMON is short for Nigel's Performance Monitor and is available on AIX, Solaris (With Sarmon), Linux and ARM Systems.
 
-### NMON Splunk App has been designed to massively collect, convert, index and analyse NMON Metrics Data, providing an Enterprise class Application. 
+#### NMON Splunk App has been designed to massively collect, convert, index and analyse NMON Metrics Data, providing an Enterprise class Application. 
 
 * AIX / Linux / Solaris hosts can Collect (local or Forwarders) / Convert / Index / Analyse.
 * Mac OS X and Windows hosts can Collect (Forwarders only) Convert / Index / Analyse.
 
-### NMON Performance does Global / Summary Analysis per Host, Analysis per type of metric (CPU usage, Memory, I/O...), Predictive, Comparison Analysis, Inventory Collect and Analysis, and more.
+#### NMON Performance does Global / Summary Analysis per Host, Analysis per type of metric (CPU usage, Memory, I/O...), Predictive, Comparison Analysis, Inventory Collect and Analysis, and more.
 
 
 ![screen1](./docs/img/screen001.png)
