@@ -24,12 +24,12 @@ http://nmonsplunk.wikidot.com
 
 http://nmonsplunk.wikidot.com/about-support
 
-![screen1](./docs/screen001.png)
+![screen1](./docs/img/screen001.png)
 
-![screen2](./docs/screen002.png)
+![screen2](./docs/img/screen002.png)
 
-![screen3](./docs/screen003.png)
+![screen3](./docs/img/screen003.png)
 
-![screen4](./docs/screen004.png)
+![screen4](./docs/img/screen004.png)
 
-![screen5](./docs/screen005.png)
+![screen5](./docs/img/screen005.png)
