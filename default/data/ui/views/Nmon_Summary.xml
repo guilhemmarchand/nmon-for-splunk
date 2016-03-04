@@ -1,4 +1,4 @@
-<form stylesheet="standard.css,ui_simple.css,hide_timeindicator.css,panel_decoration.css" script="link_switcher.js, autodiscover.js">
+<form stylesheet="standard.css,ui_simple.css,hide_timeindicator.css,panel_decoration.css,table_data_bar.css" script="link_switcher.js,autodiscover.js,table_data_bar.js">
     <label>NMON Summary Light Analysis</label>
     <fieldset autoRun="false" submitButton="false">
 
@@ -841,6 +841,32 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
             </chart>
 
         </panel>
-
     </row>
+
+    <row>
+        <panel id="fs">
+            <title>File System Percent utilization</title>
+            <table id="tablebar">
+                <search>
+                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.device"
+| rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by "device"
+| sort limit=0 device | rename device AS "Mount point"
+| eval value=round(value,2)
+| fields "Mount point",max_value, avg_value, min_value, UsedPct | eval avg_value=round(avg_value,2)
+| rename max_value AS "Max value in period (%)", avg_value AS "Average value in period (%)", min_value AS "Min value in Period (%)"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+    </row>
+
 </form>

@@ -1,4 +1,4 @@
-<form stylesheet="standard.css,ui_simple.css,hide_timeindicator.css" script="link_switcher.js, autodiscover.js">
+<form stylesheet="standard.css,ui_simple.css,hide_timeindicator.css,table_data_bar.css" script="link_switcher.js,autodiscover.js,table_data_bar.js">
     <label>NMON Analyser SOLARIS</label>
 
     <fieldset autoRun="false" submitButton="false">
@@ -2058,12 +2058,34 @@ where (nodename = DISKWAITTM) (DISKWAITTM.$hostname$) (DISKWAITTM.value&gt;0) gr
 
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link55">Select a view:<!--Links go here-->
+                <div class="link-switcher" data-items="tablebar,link55">Select a view:<!--Links go here-->
                 </div>
             </html>
 
+            <table id="tablebar">
+                <title>JFSFILE, Percentage Usage of file-systems (summary)</title>
+                <search>
+                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.$hostname$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.device"
+| rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by "device"
+| sort limit=0 device | rename device AS "Mount point"
+| eval value=round(value,2)
+| fields "Mount point",max_value, avg_value, min_value, UsedPct | eval avg_value=round(avg_value,2)
+| rename max_value AS "Max value in period (%)", avg_value AS "Average value in period (%)", min_value AS "Min value in Period (%)"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">20</option>
+            </table>
+
             <chart id="link55">
-                <title>JFSFILE, Percentage Usage of File-systems</title>
+                <title>JFSFILE, Percentage Usage of file-systems (evolution over time)</title>
                 <search>
                     <query>| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS
 where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" prestats=true $span$

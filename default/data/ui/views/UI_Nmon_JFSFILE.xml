@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css,panel_decoration.css">
+<form stylesheet="ui_simple.css,panel_decoration.css,table_data_bar.css" script="table_data_bar.js">
     <label>UI JFSFILE, Percentage Usage of FileSystems</label>
     <description>User Interface for the JFSFILE monitor</description>
 
@@ -128,17 +128,17 @@
 
     <row>
         <panel>
-            <table>
-                <search id="tablestats">
+            <table id="tablebar">
+                <search>
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
 where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
 | $aggregate$
 | rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
-| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by  "hostname", "device"
 | sort limit=0 "hostname"
 | eval value=round(value,2)
-| fields hostname,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
+| fields hostname,device,max_value, avg_value, min_value, UsedPct | eval avg_value=round(avg_value,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -147,12 +147,6 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilt
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
-                <format type="sparkline" field="sparkline">
-                    <option name="lineColor">#5379af</option>
-                    <option name="fillColor">#CCDDFF</option>
-                    <option name="lineWidth">1</option>
-                    <option name="height">25px</option>
-                </format>
             </table>
         </panel>
     </row>
@@ -218,9 +212,9 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilt
 
     <row depends="$charting$">
         <panel id="fs">
-            <title>File systems statistics</title>
+            <title>File systems utilization evolution over time</title>
             <chart>
-                <search id="timechart">
+                <search>
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
 where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
