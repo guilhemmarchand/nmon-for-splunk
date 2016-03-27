@@ -1,0 +1,148 @@
+<form>
+  <label>UPTIME evolution over time</label>
+  <description>Uptime evolution over time, evaluated in days</description>
+  <row>
+    <panel>
+      <input type="time" token="timerange" searchWhenChanged="true">
+        <label>Time Range:</label>
+        <default>
+          <earliestTime>-1y@d</earliestTime>
+          <latestTime>now</latestTime>
+        </default>
+      </input>
+      <input type="dropdown" token="frameID" searchWhenChanged="true">
+        <label>Frame IDs:</label>
+        <!-- Populating Data Model Search -->
+        <search id="frameIDSearch">
+          <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID="*")
+groupby "CPU.frameID", "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS count by "CPU.frameID"
+| rename "CPU.frameID" AS "frameID" | fields frameID | sort frameID</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <fieldForLabel>frameID</fieldForLabel>
+        <fieldForValue>frameID</fieldForValue>
+      </input>
+      <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <label>Optional: Filter hosts populating</label>
+        <default>*</default>
+      </input>
+      <input type="dropdown" token="hostname" searchWhenChanged="true">
+        <label>Host:</label>
+        <!-- Populating Data Model Search -->
+        <search id="baseSearch">
+          <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID=$frameID$) (CPU.hostname=$hostname-prefilter$)
+groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS count by "CPU.hostname"
+| rename "CPU.hostname" AS hostname
+| fields hostname | sort hostname</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
+        <fieldForLabel>hostname</fieldForLabel>
+        <fieldForValue>hostname</fieldForValue>
+        <prefix>hostname="</prefix>
+        <suffix>"</suffix>
+      </input>
+    </panel>
+  </row>
+  <search id="GlobalSearch" ref="Linux OS - Last known uptime by host">
+    <query>| pivot NMON_Config Nmon_Config latest(uptime) AS last_known_uptime FILTER uptime is "*" SPLITROW _time AS _time PERIOD auto SPLITROW host AS host SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval epoch=strftime(_time, "%s") | sort - epoch | dedup host
+| eval reporting_date=strftime(epoch, "%m/%d/%Y %H:%M")
+| eval now=now()
+| eval last_known_uptime=(last_known_uptime+(now-epoch))
+| sort host
+| eval "Date of last system startup (mm/dd/Y HH:MM)"=strftime((now()-last_known_uptime), "%m/%d/%Y %H:%M")
+| eval "uptime (human duration)"=tostring(last_known_uptime, "duration")
+| fields host,last_known_uptime,"uptime (human duration)","Date of last system startup (mm/dd/Y HH:MM)",reporting_date | fields - _time
+| rename last_known_uptime AS "uptime (in seconds)", reporting_date AS "Last reporting date (mm/dd/Y HH:MM)"
+| rename host AS hostname | search $hostname$</query>
+    <earliest>-7d@h</earliest>
+    <latest>now</latest>
+  </search>
+  <row>
+    <panel>
+      <single>
+        <search base="GlobalSearch">
+          <query>fields "Date of last system startup (mm/dd/Y HH:MM)"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="underLabel">SYSTEM STARTUP DATE</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <option name="linkView">search</option>
+      </single>
+      <single>
+        <search base="GlobalSearch">
+          <query>fields "uptime (human duration)"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="trendInterval">auto</option>
+        <option name="underLabel">UPTIME DURATION (dd:HH:MM:SS)</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+        <option name="linkView">search</option>
+      </single>
+      <chart>
+        <search>
+          <query>| tstats latest("Nmon_Config.uptime") AS uptime latest("Nmon_Config.event_epoch") AS event_epoch from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby _time, "Nmon_Config.hostname" prestats=true span=1d
+| bucket _time span=1d
+| stats dedup_splitvals=t latest("Nmon_Config.uptime") AS uptime latest("Nmon_Config.event_epoch") AS event_epoch by _time, "Nmon_Config.hostname"| rename "Nmon_Config.hostname" AS hostname
+| eval uptime=(uptime/86400)
+| timechart span=1d limit=0 useother=f min(uptime) AS uptime by hostname</query>
+          <earliest>$timerange.earliest$</earliest>
+          <latest>$timerange.latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">Days</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.text">uptime in days</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">400px</option>
+      </chart>
+    </panel>
+  </row>
+</form>
