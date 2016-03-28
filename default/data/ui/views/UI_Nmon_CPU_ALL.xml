@@ -331,6 +331,16 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$click
     <row depends="$charting$">
         <panel id="cpu">
             <title>CPU percentage usage statistics</title>
+            <input type="checkbox" token="cpu_scale" searchWhenChanged="true">
+                <label></label>
+                <default>0</default>
+                <choice value="0">Starts scale at 0 %</choice>
+            </input>
+            <input type="checkbox" token="cpu_scaleend" searchWhenChanged="true">
+                <label></label>
+                <default>100</default>
+                <choice value="100">Ends scale at 100 %</choice>
+            </input>
             <chart>
                 <search id="timechart">
                     <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)`
@@ -365,8 +375,8 @@ by "CPU.hostname"</query>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisTitleY.text">% CPUs</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisY.maximumNumber">100</option>
+                <option name="charting.axisY.minimumNumber">$cpu_scale$</option>
+                <option name="charting.axisY.maximumNumber">$cpu_scaleend$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
