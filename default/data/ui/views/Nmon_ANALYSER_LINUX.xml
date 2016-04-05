@@ -1,4 +1,4 @@
-<form stylesheet="standard.css,ui_simple.css,hide_timeindicator.css,table_data_bar.css" script="link_switcher.js,autodiscover.js,table_data_bar.js">
+<form stylesheet="ui_simple.css,hide_timeindicator.css,table_data_bar.css" script="autodiscover.js,table_data_bar.js">
     <label>NMON Analyser LINUX</label>
 
     <!-- Information panel -->
@@ -815,14 +815,33 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
     <row>
         <panel>
 
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link30,link31,link32">Select a view:<!--Links go here-->
-                </div>
-            </html>
+            <input type="link" token="proc_linkinput">
+                <label></label>
+                <choice value="proc_chart1">PROC, Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</choice>
+                <choice value="proc_chart2">PROC, Context switches and system calls (pswitch, syscall)</choice>
+                <choice value="proc_chart3">PROC, Fork and Exec system calls (fork, exec)</choice>
+                <default>proc_chart1</default>
+                <change>
+                    <condition value="proc_chart1">
+                        <set token="proc_chart1">true</set>
+                        <unset token="proc_chart2"></unset>
+                        <unset token="proc_chart3"></unset>
+                    </condition>
+                    <condition value="proc_chart2">
+                        <set token="proc_chart2">true</set>
+                        <unset token="proc_chart1"></unset>
+                        <unset token="proc_chart3"></unset>
+                    </condition>
+                    <condition value="proc_chart3">
+                        <set token="proc_chart3">true</set>
+                        <unset token="proc_chart2"></unset>
+                        <unset token="proc_chart1"></unset>
+                    </condition>
+                </change>
+            </input>
 
-            <chart id="link30">
-                <title>PROC, Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
+            <chart depends="$proc_chart1$">
+                <title></title>
                 <search base="PROC">
                     <query>fields _time,Runnable,Swap_in</query>
                 </search>
@@ -850,8 +869,8 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
                 </drilldown>
             </chart>
 
-            <chart id="link31">
-                <title>PROC, Context switches and system calls (pswitch, syscall) </title>
+            <chart depends="$proc_chart2$">
+                <title></title>
                 <search base="PROC">
                     <query>fields _time,pswitch,syscall</query>
                 </search>
@@ -879,8 +898,8 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
                 </drilldown>
             </chart>
 
-            <chart id="link32">
-                <title>PROC, Fork and Exec system calls (fork, exec)</title>
+            <chart depends="$proc_chart3$">
+                <title></title>
                 <search base="PROC">
                     <query>fields _time,fork,exec</query>
                 </search>
@@ -922,14 +941,195 @@ groupby _time, "Linux.hostname" prestats=true $span$
     <row>
         <panel>
 
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link351,link352,link353,link354,link355,link356,link357,link358,link359,link360,link361,link362,link363">Select a view:<!--Links go here-->
-                </div>
-            </html>
-
-            <chart id="link351">
-                <title>VM, Pages dirty, under writeback or unstable</title>
+            <input type="link" token="vm_linkinput">
+                <label></label>
+                <choice value="vm_chart1">VM, Pages dirty, under writeback or unstable</choice>
+                <choice value="vm_chart2">VM, Pages allocated to page tables, mapped by files or allocated by the kernel slab allocator</choice>
+                <choice value="vm_chart3">VM, Pageins and pageouts (since last boot)</choice>
+                <choice value="vm_chart4">VM, swapins and swapouts (since last boot)</choice>
+                <choice value="vm_chart5">VM, Page allocations per zone (since last boot)</choice>
+                <choice value="vm_chart6">VM, Page frees, activations and deactivations (since last boot)</choice>
+                <choice value="vm_chart7">VM, Minor and major page faults (since last boot)</choice>
+                <choice value="vm_chart8">VM, Page refills (per zone, since last boot)</choice>
+                <choice value="vm_chart9">VM, Page steals (per zone, since last boot)</choice>
+                <choice value="vm_chart10">VM, Pages scanned by kswapd daemon (per zone, since last boot)</choice>
+                <choice value="vm_chart11">VM, Pages reclaimed directly (per zone, since last boot)</choice>
+                <choice value="vm_chart12">VM, Miscellaneous statistics</choice>
+                <default>vm_chart1</default>
+                <change>
+                    <condition value="vm_chart1">
+                        <set token="vm_chart1">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart2">
+                        <set token="vm_chart2">true</set>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart3">
+                        <set token="vm_chart3">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart4">
+                        <set token="vm_chart4">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart5">
+                        <set token="vm_chart5">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart6">
+                        <set token="vm_chart6">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart7">
+                        <set token="vm_chart7">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart8">
+                        <set token="vm_chart8">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart9">
+                        <set token="vm_chart9">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart10">
+                        <set token="vm_chart10">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart11">
+                        <set token="vm_chart11">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart1"></unset>
+                        <unset token="vm_chart12"></unset>
+                    </condition>
+                    <condition value="vm_chart12">
+                        <set token="vm_chart12">true</set>
+                        <unset token="vm_chart2"></unset>
+                        <unset token="vm_chart3"></unset>
+                        <unset token="vm_chart4"></unset>
+                        <unset token="vm_chart5"></unset>
+                        <unset token="vm_chart6"></unset>
+                        <unset token="vm_chart7"></unset>
+                        <unset token="vm_chart8"></unset>
+                        <unset token="vm_chart9"></unset>
+                        <unset token="vm_chart10"></unset>
+                        <unset token="vm_chart11"></unset>
+                        <unset token="vm_chart1"></unset>
+                    </condition>
+                </change>
+            </input>
+            
+            <chart depends="$vm_chart1$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*nr_dirty*,*nr_writeback*,*nr_unstable*</query>
                 </search>
@@ -957,8 +1157,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link352">
-                <title>VM, Pages allocated to page tables, mapped by files or allocated by the kernel slab allocator</title>
+            <chart depends="$vm_chart2$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*nr_page_table_pages*,*nr_mapped*,*nr_slab*</query>
                 </search>
@@ -986,8 +1186,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link353">
-                <title>VM, Pageins and pageouts (since last boot)</title>
+            <chart depends="$vm_chart3$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgpgin*,*pgpgout*</query>
                 </search>      <option name="charting.axisTitleX.visibility">visible</option>
@@ -1014,37 +1214,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link354">
-                <title>VM, Pageins and pageouts (since last boot)</title>
-                <search base="VM">
-                    <query>fields _time,*pgpgin*,*pgpgout*</query>
-                </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">bottom</option>
-                <option name="height">680px</option>
-                <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisTitleY.text">Number of Pages</option>
-                <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$)
-groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
-                </drilldown>
-            </chart>
-
-            <chart id="link355">
-                <title>VM, swapins and swapouts (since last boot)</title>
+            <chart depends="$vm_chart4$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pswpin*,*pswpout*</query>
                 </search>
@@ -1072,8 +1243,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link356">
-                <title>VM, Page allocations per zone (since last boot)</title>
+            <chart depends="$vm_chart5$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgalloc_high*,*pgalloc_normal*,*pgalloc_dma32*,*pgalloc_dma*</query>
                 </search>
@@ -1101,8 +1272,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link357">
-                <title>VM, Page frees, activations and deactivations (since last boot)</title>
+            <chart depends="$vm_chart6$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgfree*,*pgactivate*,*pgdeactivate*</query>
                 </search>
@@ -1130,8 +1301,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link358">
-                <title>VM, Minor and major page faults (since last boot)</title>
+            <chart depends="$vm_chart7$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgfault*,*pgmajfault*</query>
                 </search>
@@ -1159,8 +1330,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link359">
-                <title>VM, Page refills (per zone, since last boot):</title>
+            <chart depends="$vm_chart8$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgrefill_high*,*pgrefill_normal*,*pgrefill_dma32*,*pgrefill_dma*</query>
                 </search>
@@ -1188,8 +1359,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link360">
-                <title>VM, Page steals (per zone, since last boot)</title>
+            <chart depends="$vm_chart9$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgsteal_high*,*pgsteal_normal*,*pgsteal_dma32*,*pgsteal_dma*</query>
                 </search>
@@ -1217,8 +1388,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link361">
-                <title>VM, Pages scanned by kswapd daemon (per zone, since last boot)</title>
+            <chart depends="$vm_chart10$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgscan_kswapd_high*,*pgscan_kswapd_normal*,*pgscan_kswapd_dma32*,*pgscan_kswapd_dma*</query>
                 </search>
@@ -1246,8 +1417,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link362">
-                <title>VM, Pages reclaimed directly (per zone, since last boot)</title>
+            <chart depends="$vm_chart11$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pgscan_direct_high*,*pgscan_direct_normal*,*pgscan_direct_dma32*,*pgscan_direct_dma*</query>
                 </search>
@@ -1275,8 +1446,8 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <chart id="link363">
-                <title>VM, Miscellaneous statistics</title>
+            <chart depends="$vm_chart12$">
+                <title></title>
                 <search base="VM">
                     <query>fields _time,*pginodesteal*,*slabs_scanned*,*kswapd_steal*,*kswapd_inodesteal*,*pageoutrun*,*allocstall*,*pgrotated*,*nr_bounce*</query>
                 </search>
@@ -1349,14 +1520,43 @@ max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max
     <row>
         <panel>
 
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link40,link41,link42,link43">Select a view:<!--Links go here-->
-                </div>
-            </html>
-
-            <chart id="link40">
-                <title>MEM, Memory used (% usage)</title>
+            <input type="link" token="mem_linkinput">
+                <label></label>
+                <choice value="mem_chart1">MEM, Memory used (% usage)</choice>
+                <choice value="mem_chart2">MEM, Memory used (MB usage)</choice>
+                <choice value="mem_chart3">MEM, Swap used (% usage)</choice>
+                <choice value="mem_chart4">MEM, Swap used (usage in MB)</choice>
+                <default>mem_chart1</default>
+                <change>
+                    <condition value="mem_chart1">
+                        <set token="mem_chart1">true</set>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart4"></unset>
+                    </condition>
+                    <condition value="mem_chart2">
+                        <set token="mem_chart2">true</set>
+                        <unset token="mem_chart1"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart4"></unset>
+                    </condition>
+                    <condition value="mem_chart3">
+                        <set token="mem_chart3">true</set>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart1"></unset>
+                        <unset token="mem_chart4"></unset>
+                    </condition>
+                    <condition value="mem_chart4">
+                        <set token="mem_chart4">true</set>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart1"></unset>
+                    </condition>
+                </change>
+            </input>
+            
+            <chart depends="$mem_chart1$">
+                <title></title>
                 <search base="MEM_real">
                     <query>fields _time,*_PCT | fields - memfree_PCT | rename *_PCT AS "* (%)" | eval limit=100</query>
                 </search>
@@ -1394,8 +1594,8 @@ max("MEM.inactive_PCT") AS inactive_PCT | fields _time,*_PCT</link>
                 </drilldown>
             </chart>
 
-            <chart id="link41">
-                <title>MEM, Memory used (MB usage)</title>
+            <chart depends="$mem_chart2$">
+                <title></title>
                 <search base="MEM_real">
                     <query>fields _time,*_MB | fields - memfree_MB | rename *_MB AS "* (MB)"</query>
                 </search>
@@ -1432,8 +1632,8 @@ max("MEM.inactive_PCT") AS inactive_PCT | fields _time,*_PCT</link>
                 </drilldown>
             </chart>
 
-            <chart id="link42">
-                <title>MEM, Swap used (% usage)</title>
+            <chart depends="$mem_chart3$">
+                <title></title>
                 <search base="MEM_swap">
                     <query>fields _time,*_PCT | fields - swapfree_PCT | rename *_PCT AS "* (%)" | eval limit=100</query>
                 </search>
@@ -1467,8 +1667,8 @@ max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max
                 </drilldown>
             </chart>
 
-            <chart id="link43">
-                <title>MEM, Swap used (usage in MB)</title>
+            <chart depends="$mem_chart4$">
+                <title></title>
                 <search base="MEM_swap">
                     <query>fields _time,*_MB | fields - swapfree_MB | rename *_MB AS "* (MB)"</query>
                 </search>
@@ -1517,14 +1717,56 @@ max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max
     <row>
         <panel>
 
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link50,link51,link52,link53,link54">Select a view:<!--Links go here-->
-                </div>
-            </html>
-
-            <chart id="link50">
-                <title>DISKBSIZE, Average data transfer size</title>
+            <input type="link" token="disk_linkinput">
+                <label></label>
+                <choice value="disk_chart1">DISKBSIZE, Average data transfer size</choice>
+                <choice value="disk_chart2">DISKBUSY, Disk Busy Activity</choice>
+                <choice value="disk_chart3">DISKREAD, Disk Read Data Rate</choice>
+                <choice value="disk_chart4">DISKWRITE, Disk Write Data Rate</choice>
+                <choice value="disk_chart5">DISKXFER, Disk I/O Operations per second (IOPS)</choice>
+                <default>disk_chart1</default>
+                <change>
+                    <condition value="disk_chart1">
+                        <set token="disk_chart1">true</set>
+                        <unset token="disk_chart2"></unset>
+                        <unset token="disk_chart3"></unset>
+                        <unset token="disk_chart4"></unset>
+                        <unset token="disk_chart5"></unset>
+                    </condition>
+                    <condition value="disk_chart2">
+                        <set token="disk_chart2">true</set>
+                        <unset token="disk_chart1"></unset>
+                        <unset token="disk_chart3"></unset>
+                        <unset token="disk_chart4"></unset>
+                        <unset token="disk_chart5"></unset>
+                    </condition>
+                    <condition value="disk_chart3">
+                        <set token="disk_chart3">true</set>
+                        <unset token="disk_chart1"></unset>
+                        <unset token="disk_chart2"></unset>
+                        <unset token="disk_chart4"></unset>
+                        <unset token="disk_chart5"></unset>
+                    </condition>
+                    <condition value="disk_chart4">
+                        <set token="disk_chart4">true</set>
+                        <unset token="disk_chart1"></unset>
+                        <unset token="disk_chart2"></unset>
+                        <unset token="disk_chart3"></unset>
+                        <unset token="disk_chart5"></unset>
+                    </condition>
+                    <condition value="disk_chart5">
+                        <set token="disk_chart5">true</set>
+                        <unset token="disk_chart1"></unset>
+                        <unset token="disk_chart2"></unset>
+                        <unset token="disk_chart3"></unset>
+                        <unset token="disk_chart4"></unset>
+                    </condition>
+                </change>
+            </input>
+            
+            
+            <chart depends="$disk_chart1$">
+                <title></title>
                 <search>
                     <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE
 where (nodename = DISKBSIZE) (DISKBSIZE.$hostname$) groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
@@ -1564,8 +1806,8 @@ where (nodename = DISKBSIZE) (DISKBSIZE.$hostname$) groupby _time, "DISKBSIZE.ho
                 </drilldown>
             </chart>
 
-            <chart id="link51">
-                <title>DISKBUSY, Disk Busy Activity</title>
+            <chart depends="$disk_chart2$">
+                <title></title>
                 <search>
                     <query>| tstats max("DISKBUSY.value") AS value from datamodel=NMON_Data_DISKBUSY
 where (nodename = DISKBUSY) (DISKBUSY.$hostname$) groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1m
@@ -1603,8 +1845,8 @@ where (nodename = DISKBUSY) (DISKBUSY.$hostname$) groupby _time, "DISKBUSY.hostn
                 </drilldown>
             </chart>
 
-            <chart id="link52">
-                <title>DISKREAD, Disk Read Data Rate</title>
+            <chart depends="$disk_chart3$">
+                <title></title>
                 <search id="timechart_read">
                     <query>| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE
 where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKREAD) (DISKREADWRITE.$hostname$)
@@ -1644,8 +1886,8 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
                 </drilldown>
             </chart>
 
-            <chart id="link53">
-                <title>DISKWRITE, Disk Write Data Rate</title>
+            <chart depends="$disk_chart4$">
+                <title></title>
                 <search id="timechart_write">
                     <query>| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE
 where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKWRITE) (DISKREADWRITE.$hostname$)
@@ -1685,8 +1927,8 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
                 </drilldown>
             </chart>
 
-            <chart id="link54">
-                <title>DISKXFER, Disk I/O Operations per second (IOPS)</title>
+            <chart depends="$disk_chart5$">
+                <title></title>
                 <search>
                     <query>| tstats max("DISKXFER.value") AS value from datamodel=NMON_Data_DISKXFER
 where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
