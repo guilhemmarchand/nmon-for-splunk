@@ -42,8 +42,9 @@
 # 2015/12/29, Guilhem Marchand:         - Evolution to manage sh cluster deployment: prevents text file busy error during bundle publication by running binaries from var instead of app directory
 # 2016/02/13, Guilhem Marchand:         - Error in SUSE Linux identification over /etc/SuSE-release (bad pattern)
 # 2016/02/14, Guilhem Marchand:         - Support for Archlinux with embedded binaries (x86 & x86_64)
+# 2016/04/12, Guilhem Marchand:         - centOS OS and version detection if no os-release available (https://github.com/guilhemmarchand/nmon-for-splunk/issues/31)
 
-# Version 1.3.14
+# Version 1.3.15
 
 # For AIX / Linux / Solaris
 
@@ -344,9 +345,22 @@ if [ ! -x "$NMON" ];then
 		fi
 
 	# So bad, no os-release, probably old linux, things becomes a bit harder
-	
-	# rhel, starting rhel 6, the /etc/os-release should be available but we will check for older version to newer
-	# This shall not be updated in the future as the /etc/os-release is now available by default
+
+	# centOS, OS and version detection
+    elif [ -f /etc/centos-release ]; then
+
+       for version in 5 6 7; do
+           if grep "CentOS release $version" /etc/centos-release >/dev/null; then
+
+               linux_vendor="centos"
+               linux_mainversion="$version"
+                NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+
+           fi
+
+        done
+
+    # rhel, OS and version detection
 	elif [ -f /etc/redhat-release ]; then
 
 		for version in 4 5 6 7; do
