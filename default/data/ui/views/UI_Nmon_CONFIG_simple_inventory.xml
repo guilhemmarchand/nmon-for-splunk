@@ -1,410 +1,411 @@
-<form script="panel_resize.js" stylesheet="ui_simple.css">
-  <label>UI CONFIG, Inventory Data for All OS</label>
-  <description>User Interface for Inventory Data Summary (All Operating Systems)</description>
-  <fieldset autoRun="true" submitButton="false">
-  </fieldset>
-  <search id="Global">
-    <query>| inputlookup nmon_inventory</query>
-  </search>
-  <row>
-    <html>
-      <div style="text-align: center;">
-        <img src="../../static/app/nmon/icons/grey_theme/inventory.png" alt="Inventory"/>
-      </div>
-      <div class="custom">
-        <h1>Inventory Summary</h1>
-      </div>
-    </html>
-  </row>
-  <row>
-    <single>
-      <search base="Global">
-        <query>inputlookup nmon_inventory | stats dc(hostname) As count</query>
-      </search>
-      <option name="afterLabel">Hosts known</option>
-      <option name="beforeLabel">Found</option>
-      <option name="underLabel">ANY OS</option>
-      <option name="linkView">search</option>
-      <option name="drilldown">all</option>
-      <option name="linkFields">result</option>
-      <option name="linkSearch">| inputlookup nmon_inventory</option>
-    </single>
-  </row>
-  <row>
-    <panel>
-      <single>
-        <search base="Global">
-          <query>search OStype="AIX" | stats dc(hostname) As count</query>
-        </search>
-        <option name="afterLabel">Hosts</option>
-        <option name="beforeLabel">Found</option>
-        <option name="underLabel">AIX</option>
-        <option name="linkView">search</option>
-        <option name="drilldown">all</option>
-        <option name="linkFields">result</option>
-        <option name="linkSearch">| inputlookup nmon_inventory | search OStype=AIX
-| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</option>
-      </single>
-      <html>
-        <div class="customlink">
-          <img src="../../static/app/nmon/icons/grey_theme/link.png"/>
-          <a href="UI_Nmon_CONFIG_simple_inventory_AIX" target="_blank">
-            <h3>Link: Access to AIX dedicated Inventory</h3>
-          </a>
-        </div>
-      </html>
-    </panel>
-    <panel>
-      <single>
-        <search base="Global">
-          <query>search OStype="Linux" | stats dc(hostname) As count</query>
-        </search>
-        <option name="afterLabel">Hosts</option>
-        <option name="beforeLabel">Found</option>
-        <option name="underLabel">LINUX</option>
-        <option name="drilldown">all</option>
-        <option name="linkFields">result</option>
-        <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Linux
-| fields hostname,OStype,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</option>
-      </single>
-      <html>
-        <div class="customlink">
-          <img src="../../static/app/nmon/icons/grey_theme/link.png"/>
-          <a href="UI_Nmon_CONFIG_simple_inventory_LINUX" target="_blank">
-            <h3>Link: Access to Linux dedicated Inventory</h3>
-          </a>
-        </div>
-      </html>
-    </panel>
-    <panel>
-      <single>
-        <search base="Global">
-          <query>search OStype="Solaris" | stats dc(hostname) As count</query>
-        </search>
-        <option name="afterLabel">Hosts</option>
-        <option name="beforeLabel">Found</option>
-        <option name="underLabel">SOLARIS</option>
-        <option name="drilldown">all</option>
-        <option name="linkFields">result</option>
-        <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Solaris
-| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</option>
-      </single>
-      <html>
-        <div class="customlink">
-          <img src="../../static/app/nmon/icons/grey_theme/link.png"/>
-          <a href="UI_Nmon_CONFIG_simple_inventory_SOLARIS" target="_blank">
-            <h3>Link: Access to Solaris dedicated Inventory</h3>
-          </a>
-        </div>
-      </html>
-    </panel>
-  </row>
-  <row>
-    <chart>
-      <title>Operating System</title>
-      <search base="Global">
-        <query>stats count by OStype</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>| top limit=0 OStype | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-      </search>
-    </table>
-  </row>
-  <row grouping="1,1,1">
-    <html>
-      <br/>
-      <div style="text-align: center;">
-        <img src="../../static/app/nmon/logos/OS/colors/AIX_72px.png" alt="AIX"/>
-        <br/>
-        <br/>
-      </div>
-    </html>
-    <html>
-      <div style="text-align: center;">
-        <img src="../../static/app/nmon/logos/OS/blackandwhite/linux_alt_128px.png" alt="Linux"/>
-        <br/>
-        <br/>
-      </div>
-    </html>
-    <html>
-      <br/>
-      <div style="text-align: center;">
-        <img src="../../static/app/nmon/logos/OS/colors/solaris_128px.png" alt="Solaris"/>
-        <br/>
-        <br/>
-      </div>
-    </html>
-  </row>
-  <row grouping="1,1,1">
-    <chart>
-      <title>AIX Version</title>
-      <search base="Global">
-        <query>search OStype="AIX" | stats count by AIX_LEVEL</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <chart>
-      <title>Linux Distribution</title>
-      <search base="Global">
-        <query>search OStype="Linux" | stats count by Linux_distribution</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <chart>
-      <title>Solaris Version</title>
-      <search base="Global">
-        <query>search OStype="Solaris" | stats count by Solaris_version</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-  </row>
-  <row grouping="1,1,1">
-    <chart>
-      <title>Processor</title>
-      <search base="Global">
-        <query>search OStype="AIX" | stats count by Processor</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <chart>
-      <title>Processor</title>
-      <search base="Global">
-        <query>search OStype="Linux" | stats count by Processor</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <chart>
-      <title>Processor</title>
-      <search base="Global">
-        <query>search OStype="Solaris" | stats count by Processor</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-  </row>
-  <row grouping="1,1,1">
-    <chart>
-      <title>CPU cores Capacity</title>
-      <search base="Global">
-        <query>search OStype="AIX" | stats count by AIX_logicalcores</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <chart>
-      <title>CPU cores Capacity</title>
-      <search base="Global">
-        <query>search OStype="Linux" | stats count by cpu_cores</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <chart>
-      <title>CPU cores Capacity</title>
-      <search base="Global">
-        <query>search OStype="Solaris" | stats count by cpu_cores</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300px</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-  </row>
-  <row>
-    <html>
-      <div class="custom">
-        <h1>Full OS Information</h1>
-      </div>
-    </html>
-  </row>
-  <row>
-    <table>
-      <title>Full AIX Configuration</title>
-      <search base="Global">
-        <query>search OStype="AIX" | stats
-values(AIX_Machine_SerialNumber) As Machine_SerialNumber,
-values(AIX_virtualcpus) As virtualcpus,
-values(AIX_logicalcores) As logicalcores,
-values(AIX_entitled) As entitled,
-values(OStype) As OStype,
-values(Processor) As Processor,
-values(AIX_processor_mode) As processor_mode,
-values(AIX_processor_clockspeed) As processor_clockspeed,
-values(AIX_cpu_type) As cpu_type,
-values(AIX_kernel_type) As kernel_type,
-values(AIX_plateform_firmware_level) As plateform_firmware_level,
-values(nmon_version) As nmon_version,
-values(AIX_PoolID) As PoolID,
-values(AIX_system_installed_CPUs) As system_installed_CPUs,
-values(AIX_system_active_CPUs) As system_active_CPUs,
-values(AIX_LEVEL) As os_version,
-values(AIX_PoolCPUs) As PoolCPUs by hostname
-| fillnull value=Undeterminated</query>
-      </search>
-    </table>
-  </row>
-  <row>
-    <table>
-      <title>Full Linux Configuration</title>
-      <search base="Global">
-        <query>search OStype="Linux" | stats
-values(cpu_cores) As cpu_cores,
-values(OStype) As OStype,
-values(Processor) As Processor,
-values(Linux_memory_MB) As Linux_memory_MB,
-values(Linux_swap_MB) As Linux_swap_MB,
-values(Linux_vendor) AS Linux_vendor,
-values(Linux_distribution) As Linux_distribution,
-values(Linux_kernelversion) As Linux_kernelversion,
-values(nmon_version) As nmon_version by hostname
-| fillnull value=Undeterminated
-| rename "Linux_*" AS *</query>
-      </search>
-    </table>
-  </row>
-  <row>
-    <table>
-      <title>Full Solaris Configuration</title>
-      <search base="Global">
-        <query>search OStype="Solaris" | stats
-values(cpu_cores) As cpu_cores,
-values(OStype) As OStype,
-values(Solaris_sunOS_version) As Solaris_sunOS_version,
-values(Solaris_version) As Solaris_version,
-values(Processor) As Processor,
-values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed,
-values(nmon_version) As nmon_version by hostname
-| fillnull value=Undeterminated
-| rename "Solaris_*" AS *</query>
-      </search>
-    </table>
-  </row>
+<form stylesheet="ui_simple.css">
+    <label>UI CONFIG, Inventory Data for All OS</label>
+    <description>User Interface for Inventory Data Summary (All Operating Systems)</description>
+    <fieldset autoRun="true" submitButton="false">
+    </fieldset>
+    <search id="Global">
+        <query>| inputlookup nmon_inventory</query>
+    </search>
+    <row>
+        <html>
+            <div style="text-align: center;">
+                <img src="../../static/app/nmon/icons/grey_theme/inventory.png" alt="Inventory"/>
+            </div>
+            <div class="custom">
+                <h1>Inventory Summary</h1>
+            </div>
+        </html>
+    </row>
+    <row>
+        <single>
+            <search base="Global">
+                <query>inputlookup nmon_inventory | stats dc(hostname) As count</query>
+            </search>
+            <option name="afterLabel">Hosts known</option>
+            <option name="beforeLabel">Found</option>
+            <option name="underLabel">ANY OS</option>
+            <option name="linkView">search</option>
+            <option name="drilldown">all</option>
+            <option name="linkFields">result</option>
+            <option name="linkSearch">| inputlookup nmon_inventory</option>
+        </single>
+    </row>
+    <row>
+        <panel>
+            <single>
+                <search base="Global">
+                    <query>search OStype="AIX" | stats dc(hostname) As count</query>
+                </search>
+                <option name="afterLabel">Hosts</option>
+                <option name="beforeLabel">Found</option>
+                <option name="underLabel">AIX</option>
+                <option name="linkView">search</option>
+                <option name="drilldown">all</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| inputlookup nmon_inventory | search OStype=AIX
+                    | fields hostname,OStype,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</option>
+            </single>
+            <html>
+                <div class="customlink">
+                    <img src="../../static/app/nmon/icons/grey_theme/link.png"/>
+                    <a href="UI_Nmon_CONFIG_simple_inventory_AIX" target="_blank">
+                        <h3>Link: Access to AIX dedicated Inventory</h3>
+                    </a>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <single>
+                <search base="Global">
+                    <query>search OStype="Linux" | stats dc(hostname) As count</query>
+                </search>
+                <option name="afterLabel">Hosts</option>
+                <option name="beforeLabel">Found</option>
+                <option name="underLabel">LINUX</option>
+                <option name="drilldown">all</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Linux
+                    | fields hostname,OStype,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</option>
+            </single>
+            <html>
+                <div class="customlink">
+                    <img src="../../static/app/nmon/icons/grey_theme/link.png"/>
+                    <a href="UI_Nmon_CONFIG_simple_inventory_LINUX" target="_blank">
+                        <h3>Link: Access to Linux dedicated Inventory</h3>
+                    </a>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <single>
+                <search base="Global">
+                    <query>search OStype="Solaris" | stats dc(hostname) As count</query>
+                </search>
+                <option name="afterLabel">Hosts</option>
+                <option name="beforeLabel">Found</option>
+                <option name="underLabel">SOLARIS</option>
+                <option name="drilldown">all</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Solaris
+                    | fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</option>
+            </single>
+            <html>
+                <div class="customlink">
+                    <img src="../../static/app/nmon/icons/grey_theme/link.png"/>
+                    <a href="UI_Nmon_CONFIG_simple_inventory_SOLARIS" target="_blank">
+                        <h3>Link: Access to Solaris dedicated Inventory</h3>
+                    </a>
+                </div>
+            </html>
+        </panel>
+    </row>
+    <row>
+        <chart>
+            <title>Operating System</title>
+            <search base="Global">
+                <query>stats count by OStype</query>
+            </search>
+            <option name="charting.axisTitleX.visibility">visible</option>
+            <option name="charting.axisTitleY.visibility">visible</option>
+            <option name="charting.axisX.scale">linear</option>
+            <option name="charting.axisY.scale">linear</option>
+            <option name="charting.chart">pie</option>
+            <option name="charting.chart.nullValueMode">gaps</option>
+            <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+            <option name="charting.chart.stackMode">default</option>
+            <option name="charting.chart.style">minimal</option>
+            <option name="charting.drilldown">all</option>
+            <option name="height">300px</option>
+            <option name="charting.layout.splitSeries">0</option>
+            <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+            <option name="charting.legend.placement">right</option>
+        </chart>
+        <table>
+            <title>Table Stats</title>
+            <search base="Global">
+                <query>| top limit=0 OStype | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+            </search>
+        </table>
+    </row>
+    <row>
+        <panel>
+            <chart>
+                <title>AIX Version</title>
+                <search base="Global">
+                    <query>search OStype="AIX" | stats count by AIX_LEVEL</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Linux Distribution</title>
+                <search base="Global">
+                    <query>search OStype="Linux" | stats count by Linux_distribution</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Solaris Version</title>
+                <search base="Global">
+                    <query>search OStype="Solaris" | stats count by Solaris_version</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <chart>
+                <title>Processor</title>
+                <search base="Global">
+                    <query>search OStype="AIX" | stats count by Processor</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Processor</title>
+                <search base="Global">
+                    <query>search OStype="Linux" | stats count by Processor</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Processor</title>
+                <search base="Global">
+                    <query>search OStype="Solaris" | stats count by Processor</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <chart>
+                <title>CPU cores Capacity</title>
+                <search base="Global">
+                    <query>search OStype="AIX" | stats count by AIX_logicalcores</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>CPU cores Capacity</title>
+                <search base="Global">
+                    <query>search OStype="Linux" | stats count by cpu_cores</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>CPU cores Capacity</title>
+                <search base="Global">
+                    <query>search OStype="Solaris" | stats count by cpu_cores</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300px</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Full OS Information</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <table>
+                <title>Full AIX Configuration</title>
+                <search base="Global">
+                    <query>search OStype="AIX" | stats
+                        values(AIX_Machine_SerialNumber) As Machine_SerialNumber,
+                        values(AIX_virtualcpus) As virtualcpus,
+                        values(AIX_logicalcores) As logicalcores,
+                        values(AIX_entitled) As entitled,
+                        values(OStype) As OStype,
+                        values(Processor) As Processor,
+                        values(AIX_processor_mode) As processor_mode,
+                        values(AIX_processor_clockspeed) As processor_clockspeed,
+                        values(AIX_cpu_type) As cpu_type,
+                        values(AIX_kernel_type) As kernel_type,
+                        values(AIX_plateform_firmware_level) As plateform_firmware_level,
+                        values(nmon_version) As nmon_version,
+                        values(AIX_PoolID) As PoolID,
+                        values(AIX_system_installed_CPUs) As system_installed_CPUs,
+                        values(AIX_system_active_CPUs) As system_active_CPUs,
+                        values(AIX_LEVEL) As os_version,
+                        values(AIX_PoolCPUs) As PoolCPUs by hostname
+                        | fillnull value=Undeterminated</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <table>
+                <title>Full Linux Configuration</title>
+                <search base="Global">
+                    <query>search OStype="Linux" | stats
+                        values(cpu_cores) As cpu_cores,
+                        values(OStype) As OStype,
+                        values(Processor) As Processor,
+                        values(Linux_memory_MB) As Linux_memory_MB,
+                        values(Linux_swap_MB) As Linux_swap_MB,
+                        values(Linux_vendor) AS Linux_vendor,
+                        values(Linux_distribution) As Linux_distribution,
+                        values(Linux_kernelversion) As Linux_kernelversion,
+                        values(nmon_version) As nmon_version by hostname
+                        | fillnull value=Undeterminated
+                        | rename "Linux_*" AS *</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <table>
+                <title>Full Solaris Configuration</title>
+                <search base="Global">
+                    <query>search OStype="Solaris" | stats
+                        values(cpu_cores) As cpu_cores,
+                        values(OStype) As OStype,
+                        values(Solaris_sunOS_version) As Solaris_sunOS_version,
+                        values(Solaris_version) As Solaris_version,
+                        values(Processor) As Processor,
+                        values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed,
+                        values(nmon_version) As nmon_version by hostname
+                        | fillnull value=Undeterminated
+                        | rename "Solaris_*" AS *</query>
+                </search>
+            </table>
+        </panel>
+    </row>
 </form>
