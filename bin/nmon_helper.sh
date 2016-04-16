@@ -43,8 +43,9 @@
 # 2016/02/13, Guilhem Marchand:         - Error in SUSE Linux identification over /etc/SuSE-release (bad pattern)
 # 2016/02/14, Guilhem Marchand:         - Support for Archlinux with embedded binaries (x86 & x86_64)
 # 2016/04/12, Guilhem Marchand:         - centOS OS and version detection if no os-release available (https://github.com/guilhemmarchand/nmon-for-splunk/issues/31)
+# 2016/04/16, Guilhem Marchand          - Linux binaries management - cp alias on some systems prevents binaries cache upgrade to proceed #32
 
-# Version 1.3.15
+# Version 1.3.16
 
 # For AIX / Linux / Solaris
 
@@ -99,9 +100,10 @@ APP_VAR=$SPLUNK_HOME/var/run/nmon
 UNAME=`uname`
 
 # Silently update bin content to run directory (see after this)
+# Note: on some systems, cp is an alias to cp -i which would prevent this from working as expected
 update_var_bin () {
-cp -p ${APP}/default/app.conf ${APP_VAR}/app.conf > /dev/null 2>&1
-cp -rp ${APP}/bin ${APP_VAR}/ > /dev/null 2>&1
+\cp -pf ${APP}/default/app.conf ${APP_VAR}/app.conf > /dev/null 2>&1
+\cp -rpf ${APP}/bin ${APP_VAR}/ > /dev/null 2>&1
 }
 # Only relevant for Linux and Solaris, binaries caching management
 case $UNAME in
