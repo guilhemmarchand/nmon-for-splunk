@@ -44,6 +44,7 @@
 # 2016/02/14, Guilhem Marchand:         - Support for Archlinux with embedded binaries (x86 & x86_64)
 # 2016/04/12, Guilhem Marchand:         - centOS OS and version detection if no os-release available (https://github.com/guilhemmarchand/nmon-for-splunk/issues/31)
 # 2016/04/16, Guilhem Marchand          - Linux binaries management - cp alias on some systems prevents binaries cache upgrade to proceed #32
+# 2016/04/17, Guilhem Marchand          - Improve the PID file age determination by switching from Python to Perl command depending on interpreter available
 
 # Version 1.3.16
 
@@ -388,15 +389,29 @@ if [ ! -x "$NMON" ];then
 			linux_vendor="sles"
 			# Get the main version only
 			linux_mainversion=`grep 'VERSION =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
-			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
-		
-		elif 	grep "openSUSE" /etc/SuSE-release >/dev/null; then
+            linux_subversion=`grep 'PATCHLEVEL =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
+
+            # try the most accurate
+            if [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}${linux_subversion} ]; then
+                    NMON=" ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}${linux_subversion}"
+            else
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+            fi
+
+		elif grep "openSUSE" /etc/SuSE-release >/dev/null; then
 		
 			linux_vendor="opensuse"
 			# Get the main version only
 			linux_mainversion=`grep 'VERSION =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
-			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
-					
+            linux_subversion=`grep 'PATCHLEVEL =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
+
+            # try the most accurate
+            if [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}${linux_subversion} ]; then
+                    NMON=" ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}${linux_subversion}"
+            else
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+            fi
+
 		fi
 	
 	elif [ -f /etc/issue ]; then
@@ -420,7 +435,7 @@ if [ ! -x "$NMON" ];then
 
 		elif grep "Ubuntu" /etc/issue >/dev/null; then
 
-			for version in 6 7 8 9 10 11 12 13 14; do
+			for version in 6 7 8 9 10 11 12 13 14 15; do
 	
 				if grep "Ubuntu $version" /etc/issue >/dev/null; then
 		
@@ -894,9 +909,21 @@ else
 		EPOCHTEST="946684800"
 		PIDAGE=$EPOCHTEST
 
-		# Use perl to get PID file age in seconds (perl will be portable to every system)
-		perl -e "\$mtime=(stat(\"$PIDFILE\"))[9]; \$cur_time=time();  print \$cur_time - \$mtime;" > ${APP_VAR}/nmon_helper.sh.tmp.$$
-	
+        # Verify Python availability
+        PYTHON=`which python >/dev/null 2>&1`
+
+        if [ $? -eq 0 ]; then
+
+            # Use Python to get PID file age in seconds
+            python -c "import os; import time; now = time.strftime(\"%s\"); print(int(int(now)-(os.path.getmtime('$PIDFILE'))))" > ${APP_VAR}/nmon_helper.sh.tmp.$$
+
+        else
+
+            # Use Perl to get PID file age in seconds
+            perl -e "\$mtime=(stat(\"$PIDFILE\"))[9]; \$cur_time=time();  print \$cur_time - \$mtime;" > ${APP_VAR}/nmon_helper.sh.tmp.$$
+
+        fi
+
 		PIDAGE=`cat ${APP_VAR}/nmon_helper.sh.tmp.$$`
 		rm ${APP_VAR}/nmon_helper.sh.tmp.$$
 
