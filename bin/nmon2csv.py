@@ -115,9 +115,11 @@
 #                                         - Manage UARG for Sarmon (new in V1.11)
 # - 12/14/2015, V1.1.14: Guilhem Marchand:
 #                                         - Added support for POOL monitor (AIX only)
-# - 01/16/2015, V1.1.15: Guilhem Marchand:
+# - 01/16/2016, V1.1.15: Guilhem Marchand:
 #                                         - OStype is now generated at parsing level for immediate
 #                                           availability in Splunk
+# - 04/21/2016, V1.1.16: Guilhem Marchand:
+#                                         - PowerLinux update: manage the LPAR section
 
 # Load libs
 
@@ -136,7 +138,7 @@ import optparse
 import glob
 
 # Converter version
-nmon2csv_version = '1.1.15'
+nmon2csv_version = '1.1.16'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -159,8 +161,8 @@ static_section = ["CPUnn", "CPU_ALL", "FILE", "MEM", "PAGE", "MEMNEW", "MEMUSE",
 # Some specific sections per OS
 Solaris_static_section = ["PROCSOL"]
 
-# Some specific sections per OS
-AIX_static_section = ["LPAR", "POOLS"]
+# Some specfic sections for micro partitions (AIX or Power Linux)
+LPAR_static_section = ["LPAR", "POOLS"]
 
 # This is the TOP section which contains Performance data of top processes
 # It has a specific structure and requires specific treatment
@@ -1567,10 +1569,9 @@ def standard_section_fn(section):
 for section in static_section:
     standard_section_fn(section)
 
-# These are AIX specific static sections, search for this only if Nmon file comes from AIX, or if the OStype
-# couldn't be identified
-if OStype in ("AIX", "Unknown"):
-    for section in AIX_static_section:
+# These sections are specific for Micro Partitions, can be AIX or PowerLinux
+if OStype in ("AIX", "Linux", "Unknown"):
+    for section in LPAR_static_section:
         standard_section_fn(section)
 
 # Solaris specific

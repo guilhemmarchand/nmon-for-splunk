@@ -72,11 +72,13 @@
 #                                         - Manage UARG for Solaris introduced with Sarmon v1.11
 # Guilhem Marchand 12/14/2015, V1.2.14:
 #                                         - Added support for POOL monitor (AIX only)
-# Guilhem Marchand 01/16/2015, V1.2.15:
+# Guilhem Marchand 01/16/2016, V1.2.15:
 #                                         - OStype is now generated at parsing level for immediate
 #                                           availability in Splunk
+# - 04/21/2016, V1.1.16: Guilhem Marchand:
+#                                         - PowerLinux update: manage the LPAR section
 
-$version = "1.2.15";
+$version = "1.2.16";
 
 use Time::Local;
 use Time::HiRes;
@@ -147,8 +149,8 @@ Available options are:
 # Some specific sections per OS
 @Solaris_static_section = ("PROCSOL");
 
-# Some specific sections per OS
-@AIX_static_section = ("LPAR", "POOLS");
+# Some specfic sections for micro partitions (AIX or Power Linux)
+@LPAR_static_section = ("LPAR", "POOLS");
 
 # This is the TOP section which contains Performance data of top processes
 # It has a specific structure and requires specific treatment
@@ -1037,10 +1039,10 @@ foreach $FILENAME (@nmon_files) {
 
     }    # end foreach
 
-    # AIX Specific
-    if ( $OStype eq "AIX" || $OStype eq "Unknown" ) {
+    # These sections are specific for Micro Partitions, can be AIX or PowerLinux
+    if ( $OStype eq "AIX" || $OStype eq "Linux" || $OStype eq "Unknown" ) {
 
-        foreach $key (@AIX_static_section) {
+        foreach $key (@LPAR_static_section) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
             $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
