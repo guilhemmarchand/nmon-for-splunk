@@ -161,7 +161,7 @@
     <!-- Base Searches for PostProcessing -->
 
     <search id="tablestats">
-        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true
+        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
 | $aggregate$
 | stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname", "CPU.CPUnn.logical_core"
@@ -173,7 +173,7 @@
     </search>
 
     <search id="gaugestats">
-        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true
+        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.cpu_PCT") AS CPU.cpu_PCT by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
 | $aggregate$
 | stats max("CPU.cpu_PCT") AS max, avg("CPU.cpu_PCT") AS avg, min("CPU.cpu_PCT") AS min by "CPU.hostname"</query>
@@ -274,7 +274,7 @@
                 </format>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)`
-from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true
+from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
 | $aggregate$
 | stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname", "CPU.CPUnn.logical_core"

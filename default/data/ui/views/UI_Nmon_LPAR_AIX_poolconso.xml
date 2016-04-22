@@ -136,7 +136,7 @@
 
     <search id="Global">
         <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR)
-(CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", "CPU.hostname" prestats=true `inline_customspan`
+(CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
 | $aggregate$
 | sort limit=0 _time
