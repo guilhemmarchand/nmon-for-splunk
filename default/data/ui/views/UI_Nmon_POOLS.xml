@@ -136,7 +136,7 @@
 
     <search id="Global">
         <query>| tstats max("POOLS.max_pool_capacity") AS "max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "Pool_id" from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS)
-(POOLS.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)` groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true `inline_customspan`
+(POOLS.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)` groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS "max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "Pool_id" by _time, "POOLS.frameID", "POOLS.hostname"
 | $aggregate$
 | sort limit=0 _time
