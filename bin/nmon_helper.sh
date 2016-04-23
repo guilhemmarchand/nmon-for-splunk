@@ -44,7 +44,7 @@
 # 2016/02/14, Guilhem Marchand:         - Support for Archlinux with embedded binaries (x86 & x86_64)
 # 2016/04/12, Guilhem Marchand:         - centOS OS and version detection if no os-release available (https://github.com/guilhemmarchand/nmon-for-splunk/issues/31)
 # 2016/04/16, Guilhem Marchand          - Linux binaries management - cp alias on some systems prevents binaries cache upgrade to proceed #32
-# 2016/04/17, Guilhem Marchand          - Improve the PID file age determination by switching from Python to Perl command depending on interpreter available
+# 2016/04/23, Guilhem Marchand          - Improve the PID file age determination by switching from Perl to Python command depending on interpreter available
 
 # Version 1.3.16
 
@@ -909,23 +909,30 @@ else
 		EPOCHTEST="946684800"
 		PIDAGE=$EPOCHTEST
 
-        # Verify Python availability
-        PYTHON=`which python >/dev/null 2>&1`
+        # Verify Perl availability (Perl will be more commonly available than Python)
+        PERL=`which perl >/dev/null 2>&1`
 
         if [ $? -eq 0 ]; then
 
-            # Use Python to get PID file age in seconds
-            python -c "import os; import time; now = time.strftime(\"%s\"); print(int(int(now)-(os.path.getmtime('$PIDFILE'))))" > ${APP_VAR}/nmon_helper.sh.tmp.$$
+            # Use Perl to get PID file age in seconds
+            perl -e "\$mtime=(stat(\"$PIDFILE\"))[9]; \$cur_time=time();  print \$cur_time - \$mtime;" > ${APP_VAR}/nmon_helper.sh.tmp.$$
 
         else
 
-            # Use Perl to get PID file age in seconds
-            perl -e "\$mtime=(stat(\"$PIDFILE\"))[9]; \$cur_time=time();  print \$cur_time - \$mtime;" > ${APP_VAR}/nmon_helper.sh.tmp.$$
+            # Use Python to get PID file age in seconds
+            python -c "import os; import time; now = time.strftime(\"%s\"); print(int(int(now)-(os.path.getmtime('$PIDFILE'))))" > ${APP_VAR}/nmon_helper.sh.tmp.$$
 
         fi
 
 		PIDAGE=`cat ${APP_VAR}/nmon_helper.sh.tmp.$$`
 		rm ${APP_VAR}/nmon_helper.sh.tmp.$$
+
+        case $PIDAGE in
+        "")
+                echo "`date`, ${HOST} WARN: failed to eval the age of the current pid file, gaps may occur between nmon processes run."
+                PIDAGE=0
+                ;;
+        esac
 
 		# Estimate the end time of current Nmon binary less 4 minutes (enough time for new nmon process to start collecting)
 		# Use expr for portability with sh
