@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css,panel_decoration.css" script="link_switcher.js, autodiscover.js">
+<form stylesheet="ui_simple.css,panel_decoration.css,hover.css" script="autodiscover.js">
     <label>UI MEM, Linux Memory and Swap Usage</label>
     <description>User Interface for the MEM monitor</description>
 
@@ -81,7 +81,7 @@
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
             <label>Select a stats mode:</label>
-            <default>max</default>
+            <default>avg</default>
             <choice value="max">Max</choice>
             <choice value="avg">Avg</choice>
             <choice value="min">Min</choice>
@@ -98,40 +98,6 @@
 
     </fieldset>
 
-    <search id="Global">
-        <query>| tstats
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT
-from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT
-by _time, "MEM.frameID", "MEM.hostname" | sort limit=0 "MEM.hostname"
-| fields - _span
-| rename "MEM.hostname" AS hostname "MEM.frameID" AS "frameID"
-| stats dedup_splitvals=t
-$statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT
-$statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("buffers_MB") AS buffers_MB $statsmode$("buffers_PCT") AS buffers_PCT $statsmode$("cached_MB") AS cached_MB
-$statsmode$("cached_PCT") AS cached_PCT $statsmode$("active_MB") AS active_MB $statsmode$("active_PCT") AS active_PCT $statsmode$("inactive_MB") AS inactive_MB
-$statsmode$("inactive_PCT") AS inactive_PCT $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB
-$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB $statsmode$("swapcached_MB") AS swapcached_MB $statsmode$("swapcached_PCT") AS swapcached_PCT
-by frameID, hostname | sort limit=0 frameID,hostname
-| fields frameID, hostname, memused_MB, memused_PCT, memfree_MB, memfree_PCT, memtotal_MB, buffers_MB, buffers_PCT, cached_MB, cached_PCT, active_MB, active_PCT,
-inactive_MB, inactive_PCT, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT, swaptotal_MB, swapcached_MB, swapcached_PCT
-| foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
-| foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-    </search>
-
     <!-- Information panel -->
 
     <row>
@@ -140,111 +106,290 @@ inactive_MB, inactive_PCT, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT,
 
                 <div class="imgheader">
                     <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-                    <h4>Metrics information:  <a href="/app/nmon/Howto_MEM_spl" target="_blank">(Open the Howto build Nmon statistics for MEM)</a></h4>
+                    <h4><a data-toggle="modal" data-target="#Help_modal">Help, information and related links</a></h4>
                 </div>
 
-                <div class="list">
-                    <lu>
-                        <li><b>memused:</b> Total amount of physical RAM used</li>
-                        <li><b>memfree:</b> Total amount of physical RAM left unused by the system</li>
-                        <li><b>memtotal:</b> Total amount of physical RAM</li>
-                        <li><b>buffers:</b> The amount of physical RAM, used for file buffers</li>
-                    </lu>
-                </div>
+                <!-- Modal -->
+                <div class="modal custom-modal-60 fade" id="Help_modal" tabindex="-1" role="dialog" aria-labelledby="Help_modal_Label">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"></span></button>
+                                <div style="text-align: left;">
+                                    <h4 class="modal-title" id="Help_modal_Label">HELP Window</h4>
+                                </div>
+                            </div>
+                            <div class="modal-body">
 
-                <div class="list">
-                    <lu>
-                        <li><b>cached:</b> The amount of physical RAM, used as cache memory</li>
-                        <li><b>active:</b> The total amount of buffer or page cache memory, that is in active use. This is memory that has been recently used and is usually not reclaimed for other purposes</li>
-                        <li><b>inactive:</b> The total amount of buffer or page cache memory, that are free and available. This is memory that has not been recently used and can be reclaimed for other purposes</li>
-                        <li><b>swapused:</b> The total amount of swap used</li>
-                    </lu>
-                </div>
+                                <div style="text-align: center;">
+                                    <img src="../../static/app/nmon/logos/OS/colors/linux_72px.png" alt="Linux"/>
+                                    <h1>Linux Memory statistics</h1>
+                                </div>
 
-                <div class="list">
-                    <lu>
-                        <li><b>swapfree:</b> The total amount of swap free</li>
-                        <li><b>swaptotal:</b> The total amount of swap available</li>
-                        <li><b>swapcached:</b> The amount of swap, used as cache memory</li>
-                    </lu>
-                    <br />
+                                <div>
+                                    <br />
+                                    <br />
+                                    <i>Effective fields: Effective statistics will deduce buffers and cached memory, This amount of memory can be freed by the kernel if it is required by the system or programs.</i>
+                                    <br />
+                                    <i>Available units: All fields (but total fields) are available in volume (Megabytes) or in percentage.</i>
+
+                                </div>
+
+                                <div style="text-align: left;">
+
+                                    <h1>Physical memory statistics:</h1>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>memused:</b> Total amount of physical RAM used</li>
+                                            <li><b>memfree:</b> Total amount of physical RAM left unused by the system</li>
+                                            <li><b>memtotal:</b> Total amount of physical RAM</li>
+                                        </lu>
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>buffers:</b> The amount of physical RAM, used for file buffers</li>
+                                            <li><b>cached:</b> The amount of physical RAM, used as cache memory</li>
+                                            <br />
+                                        </lu>
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>active:</b> The total amount of buffer or page cache memory, that is in active use. This is memory that has been recently used and is usually not reclaimed for other purposes</li>
+                                            <li><b>inactive:</b> The total amount of buffer or page cache memory, that are free and available. This is memory that has not been recently used and can be reclaimed for other purposes</li>
+                                        </lu>
+                                    </div>
+
+
+                                    <br />
+                                    <br />
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>mem_used_effective:</b> Total amount of physical RAM used, deducing buffers and cached</li>
+                                            <li><b>mem_free_effective:</b> Total amount of physical RAM left unused by the system, deducing buffers and cached</li>
+                                        </lu>
+                                    </div>
+
+                                    <h1>Swap memory statistics:</h1>
+
+                                    <div class="list" style="display: inline-block">
+                                        <lu>
+                                            <li><b>swapfree:</b> The total amount of swap free</li>
+                                            <li><b>swapused:</b> The total amount of swap used</li>
+                                            <li><b>swaptotal:</b> The total amount of swap available</li>
+                                            <li><b>swapcached:</b> The amount of swap, used as cache memory</li>
+                                        </lu>
+                                    </div>
+
+
+                                    <div class="list" style="display: inline-block">
+                                        <lu>
+                                            <li><b>swap_used_effective:</b> The total amount of swap used, deducing swap cached</li>
+                                            <li><b>swap_free_effective:</b> The total amount of swap free, deducing swap cached</li>
+                                            <br />
+                                            <br />
+                                        </lu>
+                                    </div>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related links:</h1>
+                                </div>
+
+                                <div class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:memory%20type%3DMEM" class="tryitbtn">Explore RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="Howto_MEM_spl" class="tryitbtn">HOWTO Interface »
+                                    </a>
+
+                                    <a target="_blank" href="UI_data_dictionary?form.osfilter=Linux%3Dtrue" class="tryitbtn">Linux Data Dictionnary »
+                                    </a>
+
+                                    <a target="_blank" href="Nmon_baseline?form.osfilter=Linux" class="tryitbtn">Baseline Interface »
+                                    </a>
+
+                                    <a target="_blank" href="../../../dj/en-us/nmon/UI_TOPChart_dj_LINUX" class="tryitbtn">TOP Dashboard »
+                                    </a>
+
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
 
             </html>
         </panel>
     </row>
 
+    <!-- Base Searches for PostProcessing -->
+
+    <search id="gaugestats">
+        <query>| tstats `memory_linux_dm` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)` groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm` by _time, "MEM.frameID", "MEM.hostname"
+| stats max(mem_used_effective_PCT) AS max_mem, avg(mem_used_effective_PCT) AS avg_mem
+max(swap_used_effective_PCT) AS max_swap, avg(swap_used_effective_PCT) AS avg_swap by MEM.hostname</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="Global">
+        <query>| tstats `memory_linux_dm`
+from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`  groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm` by _time, "MEM.frameID", "MEM.hostname"
+| rename "MEM.*" AS "*"
+| stats dedup_splitvals=t $statsmode$("*") AS * by frameID, hostname
+| sort limit=0 frameID,hostname
+| foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
+| foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="chartstats">
+        <query>| tstats `memory_linux_dm($statsmode$)`
+from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`  groupby _time, "MEM.frameID", "MEM.hostname" prestats=true $span$
+| timechart $span$ useother=f limit=0 dedup_splitvals=t `memory_linux_dm($statsmode$)` by "MEM.hostname"
+| $charting$</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="chartstats_bydeployment">
+        <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)` groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+| stats sum(*MB) AS "*MB", avg(*PCT) AS "*PCT" by _time
+| timechart $span$ dedup_splitvals=t $statsmode$(*) AS *
+| $charting$</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+
+    <!-- ################################ -->
+
     <row>
         <panel>
-            <title>Memory parameters</title>
-            <input type="radio" token="memmode" searchWhenChanged="true">
-                <label>Memory Usage by:</label>
+            <chart>
+                <title>Max effective memory % usage</title>
+                <search base="gaugestats">
+                    <query>stats max(max_mem) AS max | eval max=round(max,2) | gauge max</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">140px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Average effective memory % usage</title>
+                <search base="gaugestats">
+                    <query>stats avg(avg_mem) AS avg | eval avg=round(avg,2) | gauge avg</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">140px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Max effective swap % usage</title>
+                <search base="gaugestats">
+                    <query>stats max(max_swap) AS max | eval max=round(max,2) | gauge max</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">140px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Average effective swap % usage</title>
+                <search base="gaugestats">
+                    <query>stats avg(avg_swap) AS avg | eval avg=round(avg,2) | gauge avg</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">140px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="memory1">
+            <title>Memory table stats</title>
+            <input type="dropdown" token="memmode" searchWhenChanged="true">
+                <label></label>
                 <default>fields _time,frameID,hostname,*_PCT*</default>
                 <choice value="fields _time,frameID,hostname,*_PCT*">Usage in percentage (%)</choice>
                 <choice value="fields _time,frameID,hostname,*_MB*">Activity in Data Volume (MB)</choice>
             </input>
-            <input type="checkbox" token="memfilter" searchWhenChanged="true">
-                <label>Memory - Filter monitors:</label>
-                <choice value="memused*">memused</choice>
-                <choice value="memfree*">memfree</choice>
-                <choice value="memtotal*">memtotal</choice>
-                <choice value="buffer*">buffers</choice>
-                <choice value="cached*">cached</choice>
-                <choice value="active*">active</choice>
-                <choice value="inactive*">inactive</choice>
-                <delimiter>,</delimiter>
-                <default>memused*,memfree*,memtotal*,buffer*,cached*,active*,inactive*</default>
-            </input>
-            <input type="checkbox" token="swapfilter" searchWhenChanged="true">
-                <label>Swap - Filter monitors:</label>
-                <choice value="swapused*">swapused</choice>
-                <choice value="swapfree*">swapfree</choice>
-                <choice value="swaptotal*">swaptotal</choice>
-                <choice value="swapcached*">swapcached</choice>
-                <delimiter>,</delimiter>
-                <default>swapused*,swapfree*,swaptotal*</default>
-            </input>
-            <html>
-            </html>
-        </panel>
-    </row>
-
-    <row>
-        <panel>
             <table>
-                <title>MEM - Memory Table Stats</title>
+                <title></title>
                 <search base="Global">
-                    <query>eval memfree_MB=round(memfree_MB,0)
-| eval memused_MB=round(memused_MB,0)
-| eval memtotal_MB=round(memtotal_MB,0)
-| eval buffers_MB=round(buffers_MB,0)
-| eval cached_MB=round(cached_MB,0)
-| eval active_MB=round(active_MB,0)
-| eval inactive_MB=round(inactive_MB,0)
-| $memmode$ | fields - _time
-| rename memfree_MB As "memfree (MB)", memused_MB As "memused (MB)", memtotal_MB As "memtotal (MB)", buffers_MB As "buffers (MB)", cached_MB As "cached (MB)", active_MB As "active (MB)", inactive_MB As "inactive (MB)"
-| rename memfree_PCT As "memfree (%)", memused_PCT As "memused (%)", buffers_PCT As "buffers (%)" , cached_PCT As "cached (%)", active_PCT As "active (%)", inactive_PCT As "inactive (%)"
-| fields frameID,hostname,$memfilter$</query>
-                </search>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
-            </table>
-        </panel>
-        <panel>
-            <table>
-                <title>MEM - Swap Table Stats</title>
-                <search base="Global">
-                    <query>eval swapfree_MB=round(swapfree_MB,0)
-| eval swapused_MB=round(swapused_MB,0)
-| eval swaptotal_MB=round(swaptotal_MB,0)
-| eval swapcached_MB=round(swapcached_MB,0)
-| $memmode$ | fields - _time
-| rename swaptotal_MB As "swaptotal (MB)", swapused_MB As "swapused (MB)", swapfree_MB As "swapfree (MB)", swapcached_MB As "swapcached (MB)"
-| rename swapused_PCT As "swapused (%)", swapfree_PCT As "swapfree (%)", swapcached_PCT As "swapcached (%)",
-| fields frameID,hostname,$swapfilter$</query>
+                    <query>$memmode$ | $memmode$
+| fields - _time
+| fields frameID,hostname,"mem*total*","mem*used*","mem*free*","mem*active*","mem*inactive*","mem*buffers*","mem*cached*","swap*total*","swap*used*","swap*free*",*
+| rename "mem_*_PCT" AS "mem_* (%)", "swap_*_PCT" AS "swap_* (%)", "mem_*_MB" AS "mem_* (MB)", "swap_*_MB" AS "swap_* (MB)"</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -315,37 +460,109 @@ inactive_MB, inactive_PCT, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT,
     </row>
 
     <row depends="$charting$">
-        <panel id="memory">
-            <title>Memory statistics</title>
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
-                </div>
-            </html>
-            <chart id="link10">
-                <title>Memory Usage</title>
-                <search>
-                    <query>| tstats
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT by _time, "MEM.frameID", "MEM.hostname" | sort limit=0 "MEM.hostname"
-| fields - _span
-| $charting$
-| timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT
-$statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("buffers_MB") AS buffers_MB $statsmode$("buffers_PCT") AS buffers_PCT $statsmode$("cached_MB") AS cached_MB
-$statsmode$("cached_PCT") AS cached_PCT $statsmode$("active_MB") AS active_MB $statsmode$("active_PCT") AS active_PCT $statsmode$("inactive_MB") AS inactive_MB
-$statsmode$("inactive_PCT") AS inactive_PCT by "MEM.hostname" | $memmode$ | fields _time, $memfilter$</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
+        <panel id="memory2">
+            <title>Memory charts</title>
+
+            <input type="link" token="linkinput">
+                <label></label>
+                <choice value="chart1">Deployment: Free/Buffers/Cached memory (MB)</choice>
+                <choice value="chart2">Effective memory/swap used (%)</choice>
+                <choice value="chart3">Effective memory Used/Total available (MB)</choice>
+                <choice value="chart4">Used/Cached/Buffers memory (%)</choice>
+                <choice value="chart5">Used/Cached/Buffers/Total memory (MB)</choice>
+                <choice value="chart6">Swap Cached/Used/Total available (MB)</choice>
+                <default>chart1</default>
+                <change>
+                    <condition value="chart1">
+                        <set token="chart1">true</set>
+                        <unset token="chart2"></unset>
+                        <unset token="chart3"></unset>
+                        <unset token="chart4"></unset>
+                        <unset token="chart5"></unset>
+                        <unset token="chart6"></unset>
+                    </condition>
+                    <condition value="chart2">
+                        <set token="chart2">true</set>
+                        <unset token="chart1"></unset>
+                        <unset token="chart3"></unset>
+                        <unset token="chart4"></unset>
+                        <unset token="chart5"></unset>
+                        <unset token="chart6"></unset>
+                    </condition>
+                    <condition value="chart3">
+                        <set token="chart3">true</set>
+                        <unset token="chart1"></unset>
+                        <unset token="chart2"></unset>
+                        <unset token="chart4"></unset>
+                        <unset token="chart5"></unset>
+                        <unset token="chart6"></unset>
+                    </condition>
+                    <condition value="chart4">
+                        <set token="chart4">true</set>
+                        <unset token="chart1"></unset>
+                        <unset token="chart2"></unset>
+                        <unset token="chart3"></unset>
+                        <unset token="chart5"></unset>
+                        <unset token="chart6"></unset>
+                    </condition>
+                    <condition value="chart5">
+                        <set token="chart5">true</set>
+                        <unset token="chart1"></unset>
+                        <unset token="chart2"></unset>
+                        <unset token="chart3"></unset>
+                        <unset token="chart4"></unset>
+                        <unset token="chart6"></unset>
+                    </condition>
+                    <condition value="chart6">
+                        <set token="chart6">true</set>
+                        <unset token="chart1"></unset>
+                        <unset token="chart2"></unset>
+                        <unset token="chart3"></unset>
+                        <unset token="chart4"></unset>
+                        <unset token="chart5"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <chart depends="$chart1$">
+                <title></title>
+                <search base="chartstats_bydeployment">
+                    <query>fields _time, *mem_cached_MB*, *mem_buffers_MB*, *mem_free_MB*, *mem_used_effective_MB*, *mem_total_MB*</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.overlayFields">mem_total_MB</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.fieldColors">{"mem_total_MB": 0xe50000}</option>
+            </chart>
+            <chart depends="$chart2$">
+                <title></title>
+                <search base="chartstats">
+                    <query>fields _time, *mem_used_effective_PCT*, *swap_used_effective_PCT*</query>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -362,30 +579,14 @@ $statsmode$("inactive_PCT") AS inactive_PCT by "MEM.hostname" | $memmode$ | fiel
                 <option name="charting.legend.placement">$charting.legend.placement$</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Memory Usage</option>
+                <option name="charting.axisTitleY.text">percentage (%)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
             </chart>
-            <chart id="link11">
-                <title>Swap Usage</title>
-                <search>
-                    <query>| tstats
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT
-from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT
-by _time, "MEM.frameID", "MEM.hostname"
-| fields - _span
-| $charting$
-| timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB
-$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB $statsmode$("swapcached_MB") AS swapcached_MB $statsmode$("swapcached_PCT") AS swapcached_PCT
-by "MEM.hostname" | $memmode$ | fields _time, $swapfilter$</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
+            <chart depends="$chart3$">
+                <title></title>
+                <search base="chartstats">
+                    <query>fields _time, *mem_used_effective_MB*, *mem_total_MB*</query>
                 </search>
                 <earliestTime>$timerange.earliest$</earliestTime>
                 <latestTime>$timerange.latest$</latestTime>
@@ -404,7 +605,83 @@ by "MEM.hostname" | $memmode$ | fields _time, $swapfilter$</query>
                 <option name="charting.legend.placement">$charting.legend.placement$</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Swap Usage</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+            </chart>
+            <chart depends="$chart4$">
+                <title></title>
+                <search base="chartstats">
+                    <query>fields _time, *mem_used_PCT*, *mem_cached_PCT*, *mem_buffers_PCT*</query>
+                </search>
+                <earliestTime>$timerange.earliest$</earliestTime>
+                <latestTime>$timerange.latest$</latestTime>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">percentage (%)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+            </chart>
+            <chart depends="$chart5$">
+                <title></title>
+                <search base="chartstats">
+                    <query>fields _time, *mem_used_MB*, *mem_cached_MB*, *mem_buffers_MB*, *mem_total_MB*</query>
+                </search>
+                <earliestTime>$timerange.earliest$</earliestTime>
+                <latestTime>$timerange.latest$</latestTime>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+            </chart>
+            <chart depends="$chart6$">
+                <title></title>
+                <search base="chartstats">
+                    <query>fields _time, *swap_used_MB*, *swap_cached_MB*, *swap_total_MB*</query>
+                </search>
+                <earliestTime>$timerange.earliest$</earliestTime>
+                <latestTime>$timerange.latest$</latestTime>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
             </chart>
         </panel>
