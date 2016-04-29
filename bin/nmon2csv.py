@@ -120,6 +120,10 @@
 #                                           availability in Splunk
 # - 04/21/2016, V1.1.16: Guilhem Marchand:
 #                                         - PowerLinux update: manage the LPAR section
+# - 04/28/2016, V1.1.17: Guilhem Marchand:
+#                                         - Add new option to enforce host name value recovered from system host name
+#                                           instead of nmon value
+# (https://answers.splunk.com/answers/395601/nmon-performance-monitor-for-unix-and-linux-system-4.html)
 
 # Load libs
 
@@ -136,9 +140,10 @@ import cStringIO
 import platform
 import optparse
 import glob
+import socket
 
 # Converter version
-nmon2csv_version = '1.1.16'
+nmon2csv_version = '1.1.17'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -374,6 +379,14 @@ parser.add_option('-d', '--datadir', action='store', type='string', dest='datadi
 opmodes = ['auto', 'realtime', 'colddata']
 parser.add_option('-m', '--mode', action='store', type='choice', dest='mode', choices=opmodes,
                   help='sets the operation mode (Default: %default); supported modes: ' + ', '.join(opmodes))
+parser.add_option('--use_fqdn', action='store_true', dest='use_fqdn', help='Use the host fully qualified '
+                                                                           'domain name (fqdn) as the '
+                                                                           'hostname value instead of the'
+                                                                           ' value returned by nmon.\n'
+                                                                           '**CAUTION:** This option must not be used'
+                                                                           ' when managing nmon data generated out'
+                                                                           ' of Splunk'
+                                                                           ' (eg. central repositories)')
 parser.add_option('--dumpargs', action='store_true', dest='dumpargs',
                   help='only dump the passed arguments and exit (for debugging purposes only)')
 parser.add_option('--debug', action='store_true', dest='debug', help='Activate debug for testing purposes')
@@ -390,6 +403,12 @@ if options.debug:
     debug = True
 else:
     debug = False
+
+# Set hostname mode
+if options.use_fqdn:
+    use_fqdn = True
+else:
+    use_fqdn = False
 
 DATA_DIR = options.datadir
 CONFIG_DIR = options.configdir
@@ -562,10 +581,19 @@ OStype = "Unknown"
 for line in data:
 
     # Set HOSTNAME
-    host = re.match(r'^(AAA),(host),(.+)\n', line)
-    if host:
-        HOSTNAME = host.group(3)
-        print("HOSTNAME:", HOSTNAME)
+
+    # if the option --use_fqdn has been set, use the fully qualified domain name by the running OS
+    # The value will be equivalent to the stdout of the os "hostname -f" command
+    # CAUTION: This option must not be used to manage nmon data out of Splunk ! (eg. central repositories)
+    if use_fqdn:
+        host=socket.getfqdn()
+        if host:
+            HOSTNAME = host
+    else:
+        host = re.match(r'^(AAA),(host),(.+)\n', line)
+        if host:
+            HOSTNAME = host.group(3)
+            print("HOSTNAME:", HOSTNAME)
 
     # Set VERSION
     version = re.match(r'^(AAA),(version),(.+)\n', line)

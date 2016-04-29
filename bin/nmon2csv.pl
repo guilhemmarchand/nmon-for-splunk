@@ -75,10 +75,14 @@
 # Guilhem Marchand 01/16/2016, V1.2.15:
 #                                         - OStype is now generated at parsing level for immediate
 #                                           availability in Splunk
-# - 04/21/2016, V1.1.16: Guilhem Marchand:
+# - 04/21/2016, V1.2.16: Guilhem Marchand:
 #                                         - PowerLinux update: manage the LPAR section
+# - 04/28/2016, V1.2.17: Guilhem Marchand:
+#                                         - Add new option to enforce host name value recovered from system host name
+#                                           instead of nmon value
+# (https://answers.splunk.com/answers/395601/nmon-performance-monitor-for-unix-and-linux-system-4.html)
 
-$version = "1.2.16";
+$version = "1.2.17";
 
 use Time::Local;
 use Time::HiRes;
@@ -97,6 +101,7 @@ my $OPMODE = "";
 $result = GetOptions(
     "mode=s"  => \$OPMODE,     # string
     "version" => \$VERSION,    # flag
+    "use_fqdn"=> \$USE_FQDN,    # flag
     "help"    => \$help,       # flag
     "debug"   => \$DEBUG,      # flag
 );
@@ -124,6 +129,8 @@ Please visit: http://nmonsplunk.wikidot.com/documentation:userguide:troubleshoot
 Available options are:
 	
 --mode <realtime | colddata> :Force the script to consider the data as cold data (nmon process has over) or real time data (nmon is running)
+--use_fqdn :Use the host fully qualified domain name (fqdn) as the hostname value instead of the value returned by nmon.
+**CAUTION:** This option must not be used when managing nmon data generated out of Splunk (eg. central repositories)
 --debug :Activate debugging mode for testing purposes
 --version :Show current program version \n
 "
@@ -366,8 +373,17 @@ while ( defined( my $l = <FILE> ) ) {
     chomp $l;
 
     # Set HOSTNAME
-    if ( ( rindex $l, "AAA,host," ) > -1 ) {
-        ( my $t1, my $t2, $HOSTNAME ) = split( ",", $l );
+    # if the option --use_fqdn has been set, use the fully qualified domain name by the running OS
+    # The value will be equivalent to the stdout of the os "hostname -f" command
+    # CAUTION: This option must not be used to manage nmon data out of Splunk ! (eg. central repositories)
+
+    if ($USE_FQDN) {
+        chomp($HOSTNAME = `hostname -f`);
+    }
+    else {
+        if ( ( rindex $l, "AAA,host," ) > -1 ) {
+            ( my $t1, my $t2, $HOSTNAME ) = split( ",", $l );
+        }
     }
 
     # Set VERSION
@@ -1957,7 +1973,15 @@ sub config_extract {
 
     # Get nmon/server settings (search string, return column, delimiter)
     $AIXVER   = &get_setting( "AIX",      2, "," );
-    $HOSTNAME = &get_setting( "host",     2, "," );
+
+    # Allow hostname from OS
+    if ($USE_FQDN) {
+        chomp($HOSTNAME = `hostname -f`);
+    }
+    else {
+        $HOSTNAME = &get_setting( "host",     2, "," );
+    }
+
     $DATE     = &get_setting( "AAA,date", 2, "," );
     $TIME     = &get_setting( "AAA,time", 2, "," );
 
@@ -3029,7 +3053,15 @@ sub get_nmon_data {
     # Get nmon/server settings (search string, return column, delimiter)
     $AIXVER   = &get_setting( "AIX",      2, "," );
     $DATE     = &get_setting( "date",     2, "," );
-    $HOSTNAME = &get_setting( "host",     2, "," );
+
+    # Allow hostname os
+    if ($USE_FQDN) {
+        chomp($HOSTNAME = `hostname -f`);
+    }
+    else {
+        $HOSTNAME = &get_setting( "host",     2, "," );
+    }
+
     $INTERVAL = &get_setting( "interval", 2, "," );    # nmon sampling interval
 
     $MEMORY  = &get_setting( qq|lsconf,"Good Memory Size:|, 1, ":" );
