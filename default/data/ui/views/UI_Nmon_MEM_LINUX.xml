@@ -106,7 +106,7 @@
 
                 <div class="imgheader">
                     <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-                    <h4><a data-toggle="modal" data-target="#Help_modal">Help, information and related links</a></h4>
+                    <h4><a data-toggle="modal" data-target="#Help_modal">Help, information and related links for memory statistics</a></h4>
                 </div>
 
                 <!-- Modal -->
@@ -168,8 +168,8 @@
 
                                     <div class="list">
                                         <lu>
-                                            <li><b>mem_used_effective:</b> Total amount of physical RAM used, deducing buffers and cached</li>
-                                            <li><b>mem_free_effective:</b> Total amount of physical RAM left unused by the system, deducing buffers and cached</li>
+                                            <li><b>mem_used_effective:</b> Total amount of physical RAM used, less buffers and cached</li>
+                                            <li><b>mem_free_effective:</b> Total amount of physical RAM left unused by the system, less buffers and cached</li>
                                         </lu>
                                     </div>
 
@@ -187,8 +187,8 @@
 
                                     <div class="list" style="display: inline-block">
                                         <lu>
-                                            <li><b>swap_used_effective:</b> The total amount of swap used, deducing swap cached</li>
-                                            <li><b>swap_free_effective:</b> The total amount of swap free, deducing swap cached</li>
+                                            <li><b>swap_used_effective:</b> The total amount of swap used, less swap cached</li>
+                                            <li><b>swap_free_effective:</b> The total amount of swap free, less swap cached</li>
                                             <br />
                                             <br />
                                         </lu>
@@ -206,6 +206,9 @@
                                     </a>
 
                                     <a target="_blank" href="Howto_MEM_spl" class="tryitbtn">HOWTO Interface »
+                                    </a>
+
+                                    <a target="_blank" href="pivot?model=%2FservicesNS%2Fnobody%2Fnmon%2Fdatamodel%2Fmodel%2FNMON_Data_MEM" class="tryitbtn">MEM Pivot »
                                     </a>
 
                                     <a target="_blank" href="UI_data_dictionary?form.osfilter=Linux%3Dtrue" class="tryitbtn">Linux Data Dictionnary »
@@ -403,27 +406,12 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
     <row depends="$charting$">
         <panel id="settings">
             <title>Charting parameters</title>
-            <input type="dropdown" token="chart" searchWhenChanged="true">
-                <label>Select a type of chart:</label>
-                <default>line</default>
-                <choice value="area">Area</choice>
-                <choice value="line">Line</choice>
-                <choice value="column">Column</choice>
-                <choice value="bar">Bar</choice>
-            </input>
             <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
                 <label>Missing Data:</label>
                 <default>gaps</default>
                 <choice value="gaps">Gaps</choice>
                 <choice value="connect">Connect</choice>
                 <choice value="zero">Zero</choice>
-            </input>
-            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-                <label>Select a stacking mode:</label>
-                <default>unstacked</default>
-                <choice value="stacked">stacked (lines excluded)</choice>
-                <choice value="stacked100">100% stacked (lines excluded)</choice>
-                <choice value="unstacked">unstacked</choice>
             </input>
             <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
                 <label>Legend placement:</label>
@@ -466,11 +454,11 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
             <input type="link" token="linkinput">
                 <label></label>
                 <choice value="chart1">Deployment: Free/Buffers/Cached memory (MB)</choice>
-                <choice value="chart2">Effective memory/swap used (%)</choice>
-                <choice value="chart3">Effective memory Used/Total available (MB)</choice>
-                <choice value="chart4">Used/Cached/Buffers memory (%)</choice>
-                <choice value="chart5">Used/Cached/Buffers/Total memory (MB)</choice>
-                <choice value="chart6">Swap Cached/Used/Total available (MB)</choice>
+                <choice value="chart2">Deployment: Effective memory/swap used (%)</choice>
+                <choice value="chart3">By host: Effective memory Used/Total available (MB)</choice>
+                <choice value="chart4">By host: Used/Cached/Buffers memory (%)</choice>
+                <choice value="chart5">By host: Used/Cached/Buffers/Total memory (MB)</choice>
+                <choice value="chart6">By host: Swap Cached/Used/Total available (MB)</choice>
                 <default>chart1</default>
                 <change>
                     <condition value="chart1">
@@ -561,17 +549,17 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
             </chart>
             <chart depends="$chart2$">
                 <title></title>
-                <search base="chartstats">
+                <search base="chartstats_bydeployment">
                     <query>fields _time, *mem_used_effective_PCT*, *swap_used_effective_PCT*</query>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.stackMode">unstacked</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -594,10 +582,10 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.stackMode">unstacked</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -619,10 +607,10 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.stackMode">unstacked</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -645,10 +633,10 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.stackMode">unstacked</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -670,10 +658,10 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.stackMode">unstacked</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
