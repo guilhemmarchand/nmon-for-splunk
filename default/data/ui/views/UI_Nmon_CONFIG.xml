@@ -13,9 +13,9 @@
       <label>Type of OS:</label>
       <default></default>
       <choice value="">Any OS</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-      <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+      <choice value="AIX">AIX</choice>
+      <choice value="Linux">Linux</choice>
+      <choice value="Solaris">Solaris</choice>
     </input>
     <input type="text" token="hostname-prefilter" searchWhenChanged="true">
       <label>Optional: Filter hosts populating</label>
@@ -28,7 +28,7 @@
       <prefix>hostname="</prefix>
       <suffix>"</suffix>
       <search>
-        <query>eventtype=nmon:config $hostname-prefilter$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
+        <query>eventtype=nmon:config $hostname-prefilter$ $osfilter$ | stats count by hostname | dedup hostname | sort hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
       </search>
@@ -47,7 +47,7 @@
       <event>
         <title>Host Configuration Elements (AAA and BBB sections extracted from NMON) - Last event of selected Period</title>
         <search>
-            <query>eventtype=nmon:config $hostname$ | head 1 | search $customsearch$</query>
+            <query>eventtype=nmon:config $hostname-prefilter$ $osfilter$ $hostname$ | head 1 | search $customsearch$</query>
             <earliest>$timerange.earliest$</earliest>
             <latest>$timerange.latest$</latest>
         </search>
