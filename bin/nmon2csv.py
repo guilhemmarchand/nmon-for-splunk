@@ -124,6 +124,9 @@
 #                                         - Add new option to enforce host name value recovered from system host name
 #                                           instead of nmon value
 # (https://answers.splunk.com/answers/395601/nmon-performance-monitor-for-unix-and-linux-system-4.html)
+# - 05/05/2016, V1.1.18: Guilhem Marchand:
+#                                         - Manage Python datetime failure while parsing to epochtime, in some cases
+#                                           the epoch conversion fails, if it the case use time module.
 
 # Load libs
 
@@ -143,7 +146,7 @@ import glob
 import socket
 
 # Converter version
-nmon2csv_version = '1.1.17'
+nmon2csv_version = '1.1.18'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -244,9 +247,13 @@ now = time.strftime("%d-%m-%Y %H:%M:%S")
 
 # Current date in epoch time
 if is_windows:
-    now_epoch = time.time()
+    now_epoch = int(time.time())
 else:
     now_epoch = time.strftime("%s")
+
+    # in case datetime fails
+    if now_epoch == "%s":
+        now_epoch = int(time.time())
 
 # timestamp used to name csv files
 csv_timestamp = time.strftime("%Y%m%d%H%M%S")
@@ -835,18 +842,27 @@ timestamp_match = re.match(r'\d*-\w*-\w*\s\d*:\d*:\d*', NMON_DATE)
 if timestamp_match:
 
     if is_windows:
-        starting_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S'))
+        starting_epochtime = int(time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S')))
     else:
         starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S').strftime('%s')
+        
+        # in case datetime fails
+        if starting_epochtime == "%s":
+            starting_epochtime = int(time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S')))
+        
     starting_time = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M:%S').strftime('%d-%m-%Y %H:%M:%S')
 
 else:
     # For Nmon v9 and prior
 
     if is_windows:
-        starting_epochtime = time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S'))
+        starting_epochtime = int(time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S')))
     else:
         starting_epochtime = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S').strftime('%s')
+
+        # in case datetime fails
+        if starting_epochtime == "%s":
+            starting_epochtime = int(time.mktime(time.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S')))
 
     starting_time = datetime.datetime.strptime(NMON_DATE, '%d-%b-%Y %H:%M.%S').strftime('%d-%m-%Y %H:%M:%S')
 
@@ -875,9 +891,13 @@ for line in data:
 
         # Convert in epochtime
         if is_windows:
-            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
         else:
             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+            # in case datetime fails
+            if ZZZZ_epochtime == "%s":
+                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
     # For Nmon V9 and less
 
@@ -894,9 +914,13 @@ for line in data:
 
             # Convert in epochtime
             if is_windows:
-                ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
             else:
                 ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                # in case datetime fails
+                if ZZZZ_epochtime == "%s":
+                    ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
 # Set ending epochtime
 # noinspection PyBroadException
@@ -906,9 +930,9 @@ try:
     else:
         ZZZZ_epochtime = starting_epochtime
 except NameError:
-    logging.error("Encountered an Unexpected error while trying to analyse the ending period of this Nmon"
-                  " file, cannot continue.")
-    sys.exit(1)
+    logging.info("The ending period of this Nmon file could not be determined, most probably the nmon process has not "
+                 "yet generated any performance data, this should be resolved on next occurrence.")
+    sys.exit(0)
 except:
     logging.error("Encountered an Unexpected error while parsing this Nmon file Nmon, cannot continue")
     sys.exit(1)
@@ -1161,7 +1185,7 @@ if config_run == 0:
 
                 # Save the a combo of HOSTNAME: current_epochtime in CONFIG_REF
                 with open(CONFIG_REF, "wb") as f:
-                    f.write(HOSTNAME + ": " + now_epoch + "\n")
+                    f.write(HOSTNAME + ": " + str(now_epoch) + "\n")
 
         else:
 
@@ -1422,10 +1446,14 @@ def standard_section_fn(section):
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                         if is_windows:
-                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                         else:
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                 .strftime('%s')
+
+                            # in case datetime fails
+                            if ZZZZ_epochtime == "%s":
+                                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                     # For Nmon V9 and less
 
@@ -1441,10 +1469,15 @@ def standard_section_fn(section):
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                             if is_windows:
-                                ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                             else:
                                 ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                     .strftime('%s')
+
+                                # in case datetime fails
+                                if ZZZZ_epochtime == "%s":
+                                    ZZZZ_epochtime = int(
+                                        time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                     # Extract Data
                     if section == "CPUnn":
@@ -1588,7 +1621,7 @@ def standard_section_fn(section):
         # In realtime, Store last epoch time for this section
         if realtime:
             with open(keyref, "wb") as f:
-                f.write("last_epoch: " + ZZZZ_epochtime + "\n")
+                f.write("last_epoch: " + str(ZZZZ_epochtime) + "\n")
 
     # End for
 
@@ -1737,10 +1770,14 @@ def top_section_fn(section):
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                         if is_windows:
-                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                         else:
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                 .strftime('%s')
+
+                            # in case datetime fails
+                            if ZZZZ_epochtime == "%s":
+                                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                     # For Nmon V9 and less
 
@@ -1756,10 +1793,15 @@ def top_section_fn(section):
 
                             ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
                             if is_windows:
-                                ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                             else:
                                 ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                     .strftime('%s')
+
+                                # in case datetime fails
+                                if ZZZZ_epochtime == "%s":
+                                    ZZZZ_epochtime = int(
+                                        time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                 # Extract Data
                 perfdata_match = re.match('^TOP,([0-9]+),(T\d+),(.+)\n', line)
@@ -1811,7 +1853,7 @@ def top_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
+                    f.write("last_epoch: " + str(ZZZZ_epochtime) + "\n")
 
 # End for
 
@@ -1963,9 +2005,13 @@ def uarg_section_fn(section):
                     ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                     if is_windows:
-                        ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                        ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                     else:
                         ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        # in case datetime fails
+                        if ZZZZ_epochtime == "%s":
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                 # For Nmon V9 and less
 
@@ -1982,10 +2028,14 @@ def uarg_section_fn(section):
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                         if is_windows:
-                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                         else:
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                 .strftime('%s')
+
+                            # in case datetime fails
+                            if ZZZZ_epochtime == "%s":
+                                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
             if oslevel == 'Linux':  # Linux OS specific header
 
@@ -2090,7 +2140,7 @@ def uarg_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
+                    f.write("last_epoch: " + str(ZZZZ_epochtime) + "\n")
 
             # Open output for writing
             with open(currsection_output, "wb") as currsection:
@@ -2250,9 +2300,13 @@ def dynamic_section_fn(section):
                     ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                     if is_windows:
-                        ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                        ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                     else:
                         ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        # in case datetime fails
+                        if ZZZZ_epochtime == "%s":
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                 # For Nmon V9 and less
 
@@ -2269,10 +2323,14 @@ def dynamic_section_fn(section):
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                         if is_windows:
-                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                         else:
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')\
                                 .strftime('%s')
+
+                            # in case datetime fails
+                            if ZZZZ_epochtime == "%s":
+                                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                 # Extract Data
                 myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -2425,7 +2483,7 @@ def dynamic_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
+                    f.write("last_epoch: " + str(ZZZZ_epochtime) + "\n")
 
             # Discard memory membuffer
             membuffer.close()
@@ -2617,9 +2675,13 @@ def solaris_wlm_section_fn(section):
                     ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                     if is_windows:
-                        ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                        ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                     else:
                         ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').strftime('%s')
+
+                        # in case datetime fails
+                        if ZZZZ_epochtime == "%s":
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                 # For Nmon V9 and less
 
@@ -2636,10 +2698,14 @@ def solaris_wlm_section_fn(section):
                         ZZZZ_timestamp = ZZZZ_DATE + ' ' + ZZZZ_TIME
 
                         if is_windows:
-                            ZZZZ_epochtime = time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S'))
+                            ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
                         else:
                             ZZZZ_epochtime = datetime.datetime.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S').\
                                 strftime('%s')
+
+                            # in case datetime fails
+                            if ZZZZ_epochtime == "%s":
+                                ZZZZ_epochtime = int(time.mktime(time.strptime(ZZZZ_timestamp, '%d-%m-%Y %H:%M:%S')))
 
                 # Extract Data
                 myregex = r'^' + section + '\,(T\d+)\,(.+)\n'
@@ -2794,7 +2860,7 @@ def solaris_wlm_section_fn(section):
             # In realtime, Store last epoch time for this section
             if realtime:
                 with open(keyref, "wb") as f:
-                    f.write("last_epoch: " + ZZZZ_epochtime + "\n")
+                    f.write("last_epoch: " + str(ZZZZ_epochtime) + "\n")
 
             # Discard memory membuffer
             membuffer.close()
