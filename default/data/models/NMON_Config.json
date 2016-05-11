@@ -763,7 +763,7 @@
                 {
                     "outputFields": [
                         {
-                            "fieldName": "Linux_processor",
+                            "fieldName": "Linux_processor_lscpu",
                             "owner": "Nmon_Config",
                             "type": "string",
                             "fieldSearch": "",
@@ -771,7 +771,7 @@
                             "multivalue": false,
                             "hidden": false,
                             "editable": true,
-                            "displayName": "Linux_processor",
+                            "displayName": "Linux_processor_lscpu",
                             "comment": ""
                         }
                     ],
@@ -781,7 +781,30 @@
                     "editable": true,
                     "comment": "",
                     "calculationType": "Rex",
-                    "expression": "BBB.+,[0-9].+lscpu,.+(Model\\sname|Model|Vendor\\sID)\\s*:\\s+(?P<Linux_processor>.+)\\\""
+                    "expression": "BBB.+,[0-9].+lscpu,.+(Model\\sname|Model|Vendor\\sID)\\s*:\\s+(?P<Linux_processor_lscpu>.+)\\\""
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "Linux_processor_cpuinfo",
+                            "owner": "Nmon_Config",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "Linux_processor_cpuinfo",
+                            "comment": ""
+                        }
+                    ],
+                    "inputField": "_raw",
+                    "calculationID": "f4nl8hxy8679swfn8doyldi",
+                    "owner": "Nmon_Config",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Rex",
+                    "expression": "BBB.+,[0-9].+cpuinfo,.+(model\\sname)\\s*:\\s+(?P<Linux_processor_cpuinfo>.+)\\\""
                 },
                 {
                     "outputFields": [
@@ -1348,7 +1371,7 @@
                     "editable": true,
                     "comment": "",
                     "calculationType": "Eval",
-                    "expression": "case(isnotnull(AIX_processor), AIX_processor, isnotnull(Solaris_processor), Solaris_processor, isnotnull(Linux_processor), Linux_processor + \" (arch: \" + Linux_arch + \")\" )"
+                    "expression": "case(isnotnull(AIX_processor), AIX_processor, isnotnull(Solaris_processor), Solaris_processor, isnotnull(Linux_processor_lscpu), Linux_processor_lscpu + \" (arch: \" + Linux_arch + \")\" , isnull(Linux_processor_lscpu), Linux_processor_cpuinfo)"
                 },
                 {
                     "outputFields": [
