@@ -740,6 +740,29 @@
                 {
                     "outputFields": [
                         {
+                            "fieldName": "Linux_arch",
+                            "owner": "Nmon_Config",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "Linux_arch",
+                            "comment": ""
+                        }
+                    ],
+                    "inputField": "_raw",
+                    "calculationID": "mr5mx7xy1tkik85z07ha4te29",
+                    "owner": "Nmon_Config",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Rex",
+                    "expression": "BBB.+,[0-9].+lscpu,.+(Architecture)\\s*:\\s+(?P<Linux_arch>.+)\\\""
+                },
+                {
+                    "outputFields": [
+                        {
                             "fieldName": "Linux_processor",
                             "owner": "Nmon_Config",
                             "type": "string",
@@ -758,7 +781,7 @@
                     "editable": true,
                     "comment": "",
                     "calculationType": "Rex",
-                    "expression": "BBB.+,[0-9].+cpuinfo,.+(model\\sname|cpu)\\s*:\\s+(?P<Linux_processor>.+)\\\""
+                    "expression": "BBB.+,[0-9].+lscpu,.+(Model\\sname|Model|Vendor\\sID)\\s*:\\s+(?P<Linux_processor>.+)\\\""
                 },
                 {
                     "outputFields": [
@@ -1325,7 +1348,7 @@
                     "editable": true,
                     "comment": "",
                     "calculationType": "Eval",
-                    "expression": "case(isnotnull(AIX_processor), AIX_processor, isnotnull(Solaris_processor), Solaris_processor, isnotnull(Linux_processor), Linux_processor)"
+                    "expression": "case(isnotnull(AIX_processor), AIX_processor, isnotnull(Solaris_processor), Solaris_processor, isnotnull(Linux_processor), Linux_processor + \" (arch: \" + Linux_arch + \")\" )"
                 },
                 {
                     "outputFields": [
