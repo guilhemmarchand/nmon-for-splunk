@@ -290,22 +290,44 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
                 <choice value="cpu_all_chart1">CPU_ALL, % by category</choice>
                 <choice value="cpu_all_chart2">CPU_ALL, % global usage</choice>
                 <choice value="cpu_nn_chart1">CPUnn, % global usage by processor</choice>
+                <choice value="lpar_chart1">LPAR, PowerLinux only, Partition statistics</choice>
+                <choice value="lpar_chart2">LPAR, PowerLinux only, Pool statistics</choice>
                 <default>cpu_all_chart1</default>
                 <change>
                     <condition value="cpu_all_chart1">
                         <set token="cpu_all_chart1">true</set>
                         <unset token="cpu_all_chart2"></unset>
                         <unset token="cpu_nn_chart1"></unset>
+                        <unset token="lpar_chart1"></unset>
+                        <unset token="lpar_chart2"></unset>
                     </condition>
                     <condition value="cpu_all_chart2">
                         <set token="cpu_all_chart2">true</set>
                         <unset token="cpu_all_chart1"></unset>
                         <unset token="cpu_nn_chart1"></unset>
+                        <unset token="lpar_chart1"></unset>
+                        <unset token="lpar_chart2"></unset>
                     </condition>
                     <condition value="cpu_nn_chart1">
                         <set token="cpu_nn_chart1">true</set>
                         <unset token="cpu_all_chart1"></unset>
                         <unset token="cpu_all_chart2"></unset>
+                        <unset token="lpar_chart1"></unset>
+                        <unset token="lpar_chart2"></unset>
+                    </condition>
+                    <condition value="lpar_chart1">
+                        <set token="lpar_chart1">true</set>
+                        <unset token="cpu_all_chart1"></unset>
+                        <unset token="cpu_all_chart2"></unset>
+                        <unset token="cpu_nn_chart1"></unset>
+                        <unset token="lpar_chart2"></unset>
+                    </condition>
+                    <condition value="lpar_chart2">
+                        <set token="lpar_chart2">true</set>
+                        <unset token="cpu_all_chart1"></unset>
+                        <unset token="cpu_all_chart2"></unset>
+                        <unset token="cpu_nn_chart1"></unset>
+                        <unset token="lpar_chart1"></unset>
                     </condition>
                 </change>
             </input>
@@ -416,6 +438,108 @@ avg("CPU.User_PCT") AS "User_PCT",
 avg("CPU.Wait_PCT") AS "Wait_PCT" by "CPU.CPUnn.logical_core"</link>
                 </drilldown>
             </chart>
+
+            <chart depends="$lpar_chart1$" rejects="$show_null_lpar$">
+                <title></title>
+                <search>
+                    <query>| tstats max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
+max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.$hostname$)
+groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
+max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
+| timechart `inline_customspan` useother=f limit=0 max(lpar_vp_usage) AS lpar_vp_usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_lpar">True</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_null_lpar"/>
+                        </condition>
+                    </progress>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">VirtualCPUs</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
+max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.$hostname$)
+groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
+max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
+| timechart span=1m useother=f limit=0 max(lpar_vp_usage) AS lpar_vp_usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$lpar_chart2$" rejects="$show_null_lpar$">
+                <title></title>
+                <search>
+                    <query>| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (CPU.$hostname$)
+groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage by _time, "CPU.frameID", "CPU.hostname"
+| timechart `inline_customspan` useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by "CPU.hostname"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_lpar">True</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_null_lpar"/>
+                        </condition>
+                    </progress>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">VirtualCPUs</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (CPU.$hostname$)
+groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage by _time, "CPU.frameID", "CPU.hostname"
+| timechart span=1m useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by "CPU.hostname"</link>
+                </drilldown>
+            </chart>
+
+            <html depends="$show_null_lpar$">
+                <p style="color:blue;margin-left:30px;font-size:14px">PowerLinux Only, LPAR data is only available for PowerLinux micro-partitions on IBM Pseries</p>
+            </html>
 
         </panel>
     </row>
@@ -1488,30 +1612,11 @@ groupby _time, "Linux.hostname" prestats=true span=1m
         </html>
     </row>
 
-    <search id="MEM_real">
-        <query>| tstats
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$)
-groupby _time, "MEM.hostname" prestats=true $span$
-| timechart dedup_splitvals=t $span$
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-    </search>
-
-    <search id="MEM_swap">
-        <query>| tstats
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT
-from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby _time, "MEM.hostname" prestats=true $span$
-| timechart dedup_splitvals=t $span$
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT</query>
+    <search id="memory_stats">
+        <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$)
+groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+| timechart `inline_customspan` dedup_splitvals=t avg(*) AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -1521,10 +1626,10 @@ max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max
 
             <input type="link" token="mem_linkinput">
                 <label></label>
-                <choice value="mem_chart1">MEM, Memory used (% usage)</choice>
-                <choice value="mem_chart2">MEM, Memory used (MB usage)</choice>
-                <choice value="mem_chart3">MEM, Swap used (% usage)</choice>
-                <choice value="mem_chart4">MEM, Swap used (usage in MB)</choice>
+                <choice value="mem_chart1">MEM, Memory usage (MB) by main metrics</choice>
+                <choice value="mem_chart2">MEM, Effective memory/swap used (%)</choice>
+                <choice value="mem_chart3">MEM, Global memory/swap used (%)</choice>
+                <choice value="mem_chart4">MEM, Swap effective used/cached/free/global (MB)</choice>
                 <default>mem_chart1</default>
                 <change>
                     <condition value="mem_chart1">
@@ -1553,20 +1658,20 @@ max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max
                     </condition>
                 </change>
             </input>
-            
+
             <chart depends="$mem_chart1$">
                 <title></title>
-                <search base="MEM_real">
-                    <query>fields _time,*_PCT | fields - memfree_PCT | rename *_PCT AS "* (%)" | eval limit=100</query>
+                <search base="memory_stats">
+                    <query>fields _time, *mem_cached_MB*, *mem_buffers_MB*, *mem_free_MB*, *mem_used_effective_MB*, *mem_total_MB*</query>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">stacked</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1574,36 +1679,39 @@ max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Percentage (%)</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisY.maximumNumber">101</option>
-                <option name="charting.fieldColors">{"limit": 0xff0000}</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.overlayFields">mem_total_MB</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.fieldColors">{"mem_total_MB": 0xe50000}</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$)
-groupby _time, "MEM.hostname" prestats=true span=1m
-| timechart dedup_splitvals=t span=1m
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT | fields _time,*_PCT</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$)
+groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
                 </drilldown>
             </chart>
 
             <chart depends="$mem_chart2$">
                 <title></title>
-                <search base="MEM_real">
-                    <query>fields _time,*_MB | fields - memfree_MB | rename *_MB AS "* (MB)"</query>
+                <search base="memory_stats">
+                    <query>fields _time, *mem_used_effective_PCT*, *swap_used_effective_PCT*</query>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.nullValueMode">bottom</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
                 <option name="charting.chart.stackMode">unstacked</option>
                 <option name="charting.chart.style">shiny</option>
@@ -1613,35 +1721,28 @@ max("MEM.inactive_PCT") AS inactive_PCT | fields _time,*_PCT</link>
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+                <option name="charting.axisTitleY.text">percentage (%)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.fieldColors">{"memtotal (MB)": 0xff0000}</option>
+                <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$)
-groupby _time, "MEM.hostname" prestats=true span=1m
-| timechart dedup_splitvals=t span=1m
-max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
-max("MEM.memtotal") AS memtotal_MB max("MEM.buffers") AS buffers_MB max("MEM.buffers_PCT") AS buffers_PCT max("MEM.cached") AS cached_MB
-max("MEM.cached_PCT") AS cached_PCT max("MEM.active") AS active_MB max("MEM.active_PCT") AS active_PCT max("MEM.inactive") AS inactive_MB
-max("MEM.inactive_PCT") AS inactive_PCT | fields _time,*_PCT</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$)
+groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
                 </drilldown>
             </chart>
 
             <chart depends="$mem_chart3$">
                 <title></title>
-                <search base="MEM_swap">
-                    <query>fields _time,*_PCT | fields - swapfree_PCT | rename *_PCT AS "* (%)" | eval limit=100</query>
+                <search base="memory_stats">
+                    <query>fields _time, *mem_used_PCT*, *swap_used_PCT*</query>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.nullValueMode">bottom</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
                 <option name="charting.chart.stackMode">unstacked</option>
                 <option name="charting.chart.style">shiny</option>
@@ -1651,34 +1752,32 @@ max("MEM.inactive_PCT") AS inactive_PCT | fields _time,*_PCT</link>
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Percentage (%)</option>
+                <option name="charting.axisTitleY.text">percentage (%)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisY.maximumNumber">101</option>
-                <option name="charting.fieldColors">{"limit": 0xff0000}</option>
+                <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT
-from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby _time, "MEM.hostname" prestats=true span=1m
-| timechart dedup_splitvals=t span=1m
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT | fields _time,*_PCT</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$)
+groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
                 </drilldown>
             </chart>
 
             <chart depends="$mem_chart4$">
                 <title></title>
-                <search base="MEM_swap">
-                    <query>fields _time,*_MB | fields - swapfree_MB | rename *_MB AS "* (MB)"</query>
+                <search base="memory_stats">
+                    <query>fields _time, *swap_free_MB*, *swap_used_effective_MB*, *swap_cached_MB*, *swap_total_MB*</query>
                 </search>
+                <earliestTime>$timerange.earliest$</earliestTime>
+                <latestTime>$timerange.latest$</latestTime>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">stacked</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1686,16 +1785,25 @@ max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.overlayFields">swap_total_MB</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.fieldColors">{"swap_total_MB": 0xe50000}</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT
-from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.$hostname$) groupby _time, "MEM.hostname" prestats=true span=1m
-| timechart dedup_splitvals=t span=1m
-max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
-max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB max("MEM.swapcached") AS swapcached_MB max("MEM.swapcached_PCT") AS swapcached_PCT | fields _time,*_MB</link>
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$)
+groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
                 </drilldown>
             </chart>
 
