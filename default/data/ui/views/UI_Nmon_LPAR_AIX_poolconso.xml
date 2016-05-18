@@ -152,7 +152,7 @@
 | sort limit=0 _time
 | rename CPU.LPAR.Pool_usage AS usage
 | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id", max("CPU.poolCPUs") AS "CPU.poolCPUs", sparkline($statsmode$(usage)) As sparkline by "CPU.frameID", "CPU.hostname"
-| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname, "CPU.LPAR.Pool_id" AS "Pool ID", "CPU.poolCPUs" AS "CPUs in Pool" | sort limit=0 frameID | eval avg_usage=round(avg_usage,2)</query>
+| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname, "CPU.LPAR.Pool_id" AS "Pool ID", "CPU.poolCPUs" AS "CPUs in Pool" | sort limit=0 frameID | eval avg_usage=round(avg_usage,3)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -195,7 +195,7 @@
 
             <single>
                 <search base="Global">
-                    <query>stats avg(avg_usage) AS avg | eval avg=round(avg,2)</query>
+                    <query>stats avg(avg_usage) AS avg | eval avg=round(avg,3)</query>
                 </search>
                 <option name="underLabel">Average Load</option>
                 <option name="afterLabel">$unity_minilabel$</option>
@@ -215,7 +215,7 @@
 
             <table>
                 <search base="Global">
-                    <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | fields hostname,frameID,"Pool ID","CPUs in Pool",max_usage,avg_usage,min_usage,sparkline</query>
+                    <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 3) ] | fields hostname,frameID,"Pool ID","CPUs in Pool",max_usage,avg_usage,min_usage,sparkline</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>

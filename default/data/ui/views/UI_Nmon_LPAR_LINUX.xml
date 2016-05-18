@@ -95,6 +95,16 @@
             <default>lpar_vp_usage</default>
             <choice value="lpar_vp_usage">Usage vs VirtualCPUs</choice>
             <choice value="lpar_vp_usage_PCT">Usage vs VirtualCPUs % Usage</choice>
+            <change>
+                <condition value="lpar_vp_usage">
+                    <set token="unity_label">Virtual CPUs (nbr)</set>
+                    <set token="unity_minilabel">vCPUs</set>
+                </condition>
+                <condition value="lpar_vp_usage_PCT">
+                    <set token="unity_label">Percentage of capacity (%)</set>
+                    <set token="unity_minilabel">%</set>
+                </condition>
+            </change>
         </input>
 
         <input type="checkbox" token="charting" searchWhenChanged="true">
@@ -115,7 +125,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$ho
 | rename "CPU.hostname" AS hostname "CPU.frameID" AS frameID
 | fields _time, hostname, frameID, usage, partition_active_processors, partition_entitled_capacity
 | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors, sparkline($statsmode$(usage)) As sparkline by frameID, hostname
-| eval avg_usage=round(avg_usage,2)</query>
+| eval avg_usage=round(avg_usage,3)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -236,15 +246,17 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$ho
                     <query>stats max(max_usage) AS max</query>
                 </search>
                 <option name="underLabel">Maximum Load</option>
+                <option name="afterLabel">$unity_minilabel$</option>
                 <option name="linkView">search</option>
                 <option name="numberPrecision">0.00</option>
             </single>
 
             <single>
                 <search base="Global">
-                    <query>stats avg(avg_usage) AS avg | eval avg=round(avg,2)</query>
+                    <query>stats avg(avg_usage) AS avg | eval avg=round(avg,3)</query>
                 </search>
                 <option name="underLabel">Average Load</option>
+                <option name="afterLabel">$unity_minilabel$</option>
                 <option name="linkView">search</option>
                 <option name="numberPrecision">0.00</option>
             </single>
@@ -254,6 +266,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$ho
                     <query>stats min(min_usage) AS min</query>
                 </search>
                 <option name="underLabel">Minimal Load</option>
+                <option name="afterLabel">$unity_minilabel$</option>
                 <option name="linkView">search</option>
                 <option name="numberPrecision">0.00</option>
             </single>
@@ -283,7 +296,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 | $aggregate$
 | sort limit=0 _time
 | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs, sparkline($statsmode$(usage)) As sparkline by "CPU.frameID","CPU.hostname"
-| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | sort limit=0 frameID | eval avg_usage=round(avg_usage,2)</link>
+| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | sort limit=0 frameID | eval avg_usage=round(avg_usage,3)</link>
                 </drilldown>
             </table>
 
@@ -386,7 +399,7 @@ $statsmode$(usage) AS usage $addindicator$ by "CPU.hostname"</query>
                 <option name="charting.legend.placement">$charting.legend.placement$</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Virtual CPUs</option>
+                <option name="charting.axisTitleY.text">$unity_label$</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -401,7 +414,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true `custominline_span`
 | $indicator$
 | $aggregate$
 | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs by _time,"CPU.frameID","CPU.hostname"
-| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | eval avg_usage=round(avg_usage,2)</link>
+| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | eval avg_usage=round(avg_usage,3)</link>
                 </drilldown>
             </chart>
         </panel>
