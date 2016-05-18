@@ -1,5 +1,5 @@
 <form stylesheet="ui_simple.css,panel_decoration.css">
-    <label>UI LPAR, Micro-Partitions Virtual CPU Usage (AIX)</label>
+    <label>UI LPAR, Micro-Partitions Virtual CPU Usage (PowerLinux)</label>
     <description>User Interface for the LPAR monitor and IBM Micro-Partitions CPU usage statistics</description>
 
     <fieldset autoRun="false" submitButton="false">
@@ -28,7 +28,7 @@
             <label>Frame IDs:</label>
             <!-- Populating Data Model Search -->
             <search id="frameIDSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) groupby "CPU.frameID" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) groupby "CPU.frameID" prestats=true
 | stats dedup_splitvals=t count AS Count by "CPU.frameID"
 | sort limit=0 "CPU.frameID"
 | fields - _span | fillnull Count | fields "CPU.frameID"</query>
@@ -53,7 +53,7 @@
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) groupby "CPU.hostname" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$hostname-prefilter$) ($frameID$) groupby "CPU.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "CPU.hostname"
 | sort limit=0 "CPU.hostname" | fields - _span
 | fillnull Count | fields CPU.hostname, Count</query>
@@ -70,12 +70,12 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats avg(usage) AS usage, avg(CPU.entitled) As CPU.entitled, avg(CPU.virtual_cpus) AS CPU.virtual_cpus by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
-            <choice value="stats avg(usage) AS usage, avg(CPU.entitled) As CPU.entitled, avg(CPU.virtual_cpus) AS CPU.virtual_cpus by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Average by Time interval,frameID</choice>
-            <choice value="stats max(usage) AS usage, max(CPU.entitled) As CPU.entitled, max(CPU.virtual_cpus) AS CPU.virtual_cpus by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
-            <choice value="stats max(usage) AS usage, max(CPU.entitled) As CPU.entitled, max(CPU.virtual_cpus) AS CPU.virtual_cpus by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Max by Time interval,frameID</choice>
-            <choice value="stats sum(usage) AS usage, sum(CPU.entitled) As CPU.entitled, sum(CPU.virtual_cpus) AS CPU.virtual_cpus by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>
-            <choice value="stats sum(usage) AS usage, sum(CPU.entitled) As CPU.entitled, sum(CPU.virtual_cpus) AS CPU.virtual_cpus by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Sum by Time interval,frameID</choice>
+            <choice value="stats avg(usage) AS usage, avg(partition_entitled_capacity) As partition_entitled_capacity, avg(partition_active_processors) AS partition_active_processors by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
+            <choice value="stats avg(usage) AS usage, avg(partition_entitled_capacity) As partition_entitled_capacity, avg(partition_active_processors) AS partition_active_processors by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Average by Time interval,frameID</choice>
+            <choice value="stats max(usage) AS usage, max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) AS partition_active_processors by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
+            <choice value="stats max(usage) AS usage, max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) AS partition_active_processors by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Max by Time interval,frameID</choice>
+            <choice value="stats sum(usage) AS usage, sum(partition_entitled_capacity) As partition_entitled_capacity, sum(partition_active_processors) AS partition_active_processors by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>
+            <choice value="stats sum(usage) AS usage, sum(partition_entitled_capacity) As partition_entitled_capacity, sum(partition_active_processors) AS partition_active_processors by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Sum by Time interval,frameID</choice>
             <default>fields *</default>
         </input>
 
@@ -92,11 +92,9 @@
 
         <input type="dropdown" token="indicator" searchWhenChanged="true">
             <label>Show CPU load by:</label>
-            <default>rename CPU.lpar_vp_usage AS usage</default>
-            <choice value="rename CPU.lpar_vp_usage AS usage">Usage vs VirtualCPUs</choice>
-            <choice value="rename CPU.LPAR.lpar_vp_PCT_usage AS usage">Usage vs VirtualCPUs % Usage</choice>
-            <choice value="rename CPU.LPAR.lpar_ec_usage AS usage">Usage vs Entitled</choice>
-            <choice value="rename CPU.LPAR.lpar_ec_PCT_usage AS usage">Usage vs Entitled % usage</choice>
+            <default>lpar_vp_usage</default>
+            <choice value="lpar_vp_usage">Usage vs VirtualCPUs</choice>
+            <choice value="lpar_vp_usage_PCT">Usage vs VirtualCPUs % Usage</choice>
         </input>
 
         <input type="checkbox" token="charting" searchWhenChanged="true">
@@ -110,16 +108,14 @@
     <!-- Global Search -->
 
     <search id="Global">
-        <query>| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)`
-groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
-| eval "_time"='_time'
-| stats `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
-| $indicator$
+        <query>| tstats max("CPU.$indicator$") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
+| bucket _time span=1m | stats dedup_splitvals=t max("CPU.$indicator$") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
 | $aggregate$
-| sort limit=0 _time
-| where usage&gt;0
-| stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs, sparkline($statsmode$(usage)) As sparkline by "CPU.frameID","CPU.hostname"
-| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | sort limit=0 frameID | eval avg_usage=round(avg_usage,2)</query>
+| rename "CPU.hostname" AS hostname "CPU.frameID" AS frameID
+| fields _time, hostname, frameID, usage, partition_active_processors, partition_entitled_capacity
+| stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors, sparkline($statsmode$(usage)) As sparkline by frameID, hostname
+| eval avg_usage=round(avg_usage,2)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -149,7 +145,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 
                                 <div style="text-align: center;">
                                     <img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
-                                    <h1>CPU global percentage statistics for IBM AIX partitions</h1>
+                                    <h1>CPU global percentage statistics for IBM Power Linux partitions</h1>
                                 </div>
 
                                 <div>
@@ -168,8 +164,8 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
                                     <div class="list">
                                         <lu>
                                             <li><b>max/avg/min_usage:</b> CPU usage in Virtual CPU units / Percentage</li>
-                                            <li><b>entitled:</b> Entitled capacity of the partition</li>
-                                            <li><b>virtualCPUs:</b> Number of virtual processors in the LPAR definition</li>
+                                            <li><b>partition_entitled_capacity:</b> Entitled capacity of the partition</li>
+                                            <li><b>partition_active_processors:</b> Number of virtual processors in the LPAR definition</li>
                                         </lu>
                                     </div>
 
@@ -181,7 +177,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 
                                 <div style="text-align: center;" class="cat_title">
 
-                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:cpu%20type%3DLPAR%20OStype%3DAIX" class="tryitbtn">Explore RAW DATA »
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:cpu%20type%3DLPAR%20OStype%3DLinux" class="tryitbtn">Explore RAW DATA »
                                     </a>
 
                                     <a target="_blank" href="Howto_LPAR_partitions_spl" class="tryitbtn">HOWTO Interface »
@@ -190,7 +186,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
                                     <a target="_blank" href="Nmon_Summary" class="tryitbtn">NMON SUMMARY Interface »
                                     </a>
 
-                                    <a target="_blank" href="Nmon_ANALYSER_AIX" class="tryitbtn">NMON ANALYSER Interface »
+                                    <a target="_blank" href="Nmon_ANALYSER_LINUX" class="tryitbtn">NMON ANALYSER Interface »
                                     </a>
 
                                     <a target="_blank" href="pivot?model=%2FservicesNS%2Fnobody%2Fnmon%2Fdatamodel%2Fmodel%2FNMON_Data_CPU" class="tryitbtn">PIVOT Data model »
@@ -232,7 +228,6 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
         </panel>
     </row>
 
-
     <row>
         <panel>
 
@@ -265,7 +260,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 
             <table>
                 <search base="Global">
-                    <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | fields hostname,frameID,max_usage,avg_usage,min_usage,entitled,virtualCPUs,sparkline</query>
+                    <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 3) ] | fields hostname,frameID,max_usage,avg_usage,min_usage,*,sparkline</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -302,9 +297,9 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
                 <label>LPAR additional Series:</label>
                 <default>none</default>
                 <choice value="">none</choice>
-                <choice value="max(CPU.entitled) As entitled">Entitled</choice>
-                <choice value="max(CPU.virtualCPUs) As virtualCPUs">VirtualCPUs</choice>
-                <choice value="max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs">Entitled And VirtualCPUs</choice>
+                <choice value="max(partition_entitled_capacity) As partition_entitled_capacity">Entitled</choice>
+                <choice value="max(partition_active_processors) As partition_active_processors">VirtualCPUs</choice>
+                <choice value="max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors">Entitled And VirtualCPUs</choice>
             </input>
             <input type="dropdown" token="chart" searchWhenChanged="true">
                 <label>Select a type of chart:</label>
@@ -367,14 +362,12 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
             <title>Micro-Partitions Virtual CPUs statistics</title>
             <chart>
                 <search id="timechart">
-                    <query>| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)`
-groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
-| $indicator$
-| $aggregate$
+                    <query>| tstats max("CPU.$indicator$") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
+from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
+| bucket _time span=1m | stats dedup_splitvals=t max("CPU.$indicator$") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
 | $charting$
 | timechart $span$ useother=f limit=0
-$statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
+$statsmode$(usage) AS usage $addindicator$ by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
