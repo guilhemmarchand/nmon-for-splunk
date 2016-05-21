@@ -43,10 +43,11 @@
 # 2016/02/13, Guilhem Marchand:         - Error in SUSE Linux identification over /etc/SuSE-release (bad pattern)
 # 2016/02/14, Guilhem Marchand:         - Support for Archlinux with embedded binaries (x86 & x86_64)
 # 2016/04/12, Guilhem Marchand:         - centOS OS and version detection if no os-release available (https://github.com/guilhemmarchand/nmon-for-splunk/issues/31)
-# 2016/04/16, Guilhem Marchand          - Linux binaries management - cp alias on some systems prevents binaries cache upgrade to proceed #32
-# 2016/04/23, Guilhem Marchand          - Improve the PID file age determination by switching from Perl to Python command depending on interpreter available
+# 2016/04/16, Guilhem Marchand:         - Linux binaries management - cp alias on some systems prevents binaries cache upgrade to proceed #32
+# 2016/04/23, Guilhem Marchand:         - Improve the PID file age determination by switching from Perl to Python command depending on interpreter available
+# 2016/05/19, Guilhem Marchand:         - Fix some situation were the nmon bin in path could be ignored
 
-# Version 1.3.16
+# Version 1.3.17
 
 # For AIX / Linux / Solaris
 
@@ -461,16 +462,27 @@ if [ ! -x "$NMON" ];then
 		which nmon >/dev/null 2>&1
 		
 		if [ $? -eq 0 ]; then
-		
 			NMON=`which nmon 2>&1`
-		
 		else
-		
 			# Try switching to embedded generic
 			NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}"
-	
-		fi	
-	
+		fi
+    ;;
+
+    *)
+        if [ ! -x ${NMON} ]; then
+
+            # Look for local binary in PATH
+            which nmon >/dev/null 2>&1
+
+            if [ $? -eq 0 ]; then
+                    NMON=`which nmon 2>&1`
+            fi
+
+        fi
+
+    ;;
+
 	esac
 
 	# Finally verify we have a binary that exists and is executable
