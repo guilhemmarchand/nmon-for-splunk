@@ -68,22 +68,75 @@
                 <label>Filter OS Type:</label>
                 <default></default>
                 <choice value="">Any OS</choice>
-                <choice value="| search [ `nmon_inventory` | search OStype=AIX | stats count by hostname | fields hostname ]">AIX</choice>
-                <choice value="| search [ `nmon_inventory` | search OStype=Linux | stats count by hostname | fields hostname ]">Linux</choice>
-                <choice value="| search [ `nmon_inventory` | search OStype=Solaris | stats count by hostname | fields hostname ]">Solaris</choice>
+                <choice value="AIX">AIX</choice>
+                <choice value="Linux">Linux</choice>
+                <choice value="Solaris">Solaris</choice>
+                <prefix>OStype="</prefix>
+                <suffix>"</suffix>
             </input>
 
-            <input type="dropdown" token="monitor" searchWhenChanged="true">
+            <input type="dropdown" token="monitor_definition" searchWhenChanged="true">
                 <label>Monitor:</label>
-                <choice value="CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)">CPU_ALL - CPU Usage in %</choice>
-                <choice value="LPAR | eval usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2) | eval pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)">LPAR - Partitions CPU Usage</choice>
-                <choice value="LPAR PoolIdle&gt;0 | eval usage=round((poolCPUs-PoolIdle),2) | where usage&gt;0 AND usage&lt;poolCPUs | eval pct_usage=round(((poolCPUs-PoolIdle)*poolCPUs/100),2)">LPAR - Pools CPU Usage</choice>
-                <choice value="NET device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1m | stats sum(rate) As usage by _time,hostname | setfields device=Network_All">NET - Global Network Activity</choice>
-                <choice value="NET device!=&quot;lo*&quot; | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=Network_All">NETPACKET - Global Network Packets</choice>
-                <choice value="DISKXFER device=* | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=IOPS">DISKXFER - Global I/Os per sec</choice>
-                <choice value="MEM | `MEM_eval` | eval usage=Real_used_PCT">MEM - Real Mem Pct usage</choice>
-                <choice value="MEM | `MEM_eval` | eval usage=Virtual_used_PCT">MEM - Paging Mem Pct usage</choice>
-                <default>CPU_ALL | eval usage=(Sys_PCT+User_PCT+Wait_PCT)</default>
+                <choice value="eval usage=cpu_load_percent">CPU_ALL - CPU Usage in %</choice>
+                <choice value="eval usage=lpar_vp_usage, pct_usage=lpar_vp_usage_PCT">LPAR - Partitions CPU Usage</choice>
+                <choice value="eval usage=lpar_pool_vp_usage, pct_usage=lpar_pool_vp_usage_PCT | where usage&gt;0 AND usage&lt;poolCPUs">LPAR - Pools CPU Usage</choice>
+                <choice value="search device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1m | stats sum(rate) As usage by _time,hostname | setfields device=Network_All">NET - Global Network Activity</choice>
+                <choice value="search device!=&quot;lo*&quot; | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=Network_All">NETPACKET - Global Network Packets</choice>
+                <choice value="search device=* | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=IOPS">DISKXFER - Global I/Os per sec</choice>
+                <choice value="eval usage=mem_used_effective_PCT">MEM - Real Mem Pct usage</choice>
+                <choice value="eval usage=swap_used_effective_PCT">MEM - Paging Mem Pct usage</choice>
+                <default>eval usage=cpu_load_percent</default>
+                <change>
+                    <condition value="eval usage=cpu_load_percent">
+                        <set token="monitor_filter">CPU_ALL</set>
+                        <set token="unity_minilabel">%</set>
+                    </condition>
+                    <condition value="eval usage=lpar_vp_usage, pct_usage=lpar_vp_usage_PCT">
+                        <set token="monitor_filter">LPAR</set>
+                        <set token="unity_minilabel">vCPUs</set>
+                    </condition>
+                    <condition value="eval usage=lpar_pool_vp_usage, pct_usage=lpar_pool_vp_usage_PCT | where usage&gt;0 AND usage&lt;poolCPUs">
+                        <set token="monitor_filter">LPAR</set>
+                        <set token="unity_minilabel">vCPUs</set>
+                    </condition>
+                    <condition value="search device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1m | stats sum(rate) As usage by _time,hostname | setfields device=Network_All">
+                        <set token="monitor_filter">NET</set>
+                        <set token="unity_minilabel">Mbps</set>
+                    </condition>
+                    <condition value="search device!=&quot;lo*&quot; | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=Network_All">
+                        <set token="monitor_filter">NETPACKET</set>
+                        <set token="unity_minilabel">number of packets</set>
+                    </condition>
+                    <condition value="search device=* | bucket _time span=1m | stats sum(value) As usage by _time,hostname | setfields device=IOPS">
+                        <set token="monitor_filter">DISKXFER</set>
+                        <set token="unity_minilabel">I/O per sec</set>
+                    </condition>
+                    <condition value="eval usage=mem_used_effective_PCT">
+                        <set token="monitor_filter">MEM</set>
+                        <set token="unity_minilabel">%</set>
+                    </condition>
+                    <condition value="eval usage=swap_used_effective_PCT">
+                        <set token="monitor_filter">MEM</set>
+                        <set token="unity_minilabel">%</set>
+                    </condition>
+                </change>
+            </input>
+
+            <input type="multiselect" token="frameID" searchWhenChanged="true">
+                <label>frameID Selection:</label>
+                <search>
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $osfilter$ type=$monitor_filter$ | stats count by frameID | dedup frameID | sort frameID</query>
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange2.latest$</latest>
+                </search>
+                <default>*</default>
+                <prefix>eval frameID=if(isnull(frameID), "NC", frameID) | search </prefix>
+                <valuePrefix>frameID="</valuePrefix>
+                <valueSuffix>"</valueSuffix>
+                <delimiter> OR </delimiter>
+                <fieldForLabel>frameID</fieldForLabel>
+                <fieldForValue>frameID</fieldForValue>
+                <choice value="*">Any</choice>
             </input>
 
             <input type="text" token="hostname-prefilter" searchWhenChanged="true">
@@ -96,7 +149,7 @@
             <input type="multiselect" token="hostname" searchWhenChanged="true">
                 <label>Hosts Selection:</label>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ type=$monitor$ | stats count by hostname | dedup hostname | sort hostname $osfilter$</query>
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $osfilter$ type=$monitor_filter$ | $frameID$ | stats count by hostname | dedup hostname | sort hostname</query>
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange2.latest$</latest>
                 </search>
@@ -110,7 +163,7 @@
 
             <input type="dropdown" token="statsmode" searchWhenChanged="true">
                 <label>Select a stats mode:</label>
-                <default>max</default>
+                <default>avg</default>
                 <choice value="max">Max</choice>
                 <choice value="avg">Avg</choice>
                 <choice value="min">Min</choice>
@@ -128,12 +181,14 @@
 
             <single>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $osfilter$ $hostname$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period1*
 | append
-[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ $osfilter$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period2* ] | stats values(*) AS * by hostname
@@ -148,18 +203,21 @@
                 <option name="underLabel">GLOBAL TREND EVOLUTION OVER PERIOD 1</option>
                 <option name="linkView">search</option>
                 <option name="beforeLabel">Period 2:</option>
-                <option name="afterLabel">Usage</option>
+                <option name="afterLabel">$unity_minilabel$</option>
+                <option name="numberPrecision">0.00</option>
             </single>
 
             <table id="table1">
                 <title>Table Stats</title>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ $osfilter$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period1*
 | append
-[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ $osfilter$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields hostname,usage_period2* ] | stats values(*) AS * by hostname
@@ -242,13 +300,15 @@
             <title>Combined Chart (Time line period 1)</title>
             <chart>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ $osfilter$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | $chartactivate$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname
 | fields _time,usage_period1*
 | appendcols
-[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $hostname-prefilter$ $hostname$ $osfilter$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname
 | fields usage_period2* ]</query>
@@ -270,7 +330,7 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Usage</option>
+                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -284,7 +344,8 @@
             <title>Chart Period 1</title>
             <chart>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ $osfilter$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | $chartactivate$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by hostname</query>
@@ -306,7 +367,7 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Usage</option>
+                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -318,7 +379,8 @@
             <title>Chart Period 2</title>
             <chart>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ type=$monitor$ $osfilter$
+                    <query>eventtype=nmon:performance $hostname-prefilter$ $hostname$ $osfilter$ type=$monitor_filter$ | $frameID$
+| $monitor_definition$
 | $chartactivate$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by hostname</query>
@@ -340,7 +402,7 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Usage</option>
+                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
