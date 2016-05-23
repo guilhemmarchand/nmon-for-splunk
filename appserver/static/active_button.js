@@ -50,6 +50,8 @@ require(['splunkjs/mvc/simplexml/ready!'], function(){
                         */
                         $btn_group.find('button').on('click', function(){
                                 var $btn = $(this);
+                                var btn_current_label = $btn.html();
+                                var btn_alt_label = $btn.attr('data-alt-label');
                                 var tk_name = $btn.attr('data-token-name');
                                 var tk_value = $btn.attr('data-token-value');
 
@@ -61,6 +63,11 @@ require(['splunkjs/mvc/simplexml/ready!'], function(){
                                         unsetToken(tk_name);
                                         $btn.removeClass('active');
                                 }
+
+                                // Manage button label
+                                $btn.html(btn_alt_label);
+                                $btn.attr('data-alt-label', btn_current_label);
+
                         });
                 });
         });
