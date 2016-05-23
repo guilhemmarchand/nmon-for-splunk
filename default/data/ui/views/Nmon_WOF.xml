@@ -1,0 +1,1395 @@
+<form script="active_button.js" stylesheet="ui_simple.css,panel_decoration.css,hover.css">
+    <label>NMON Performance - Wall Of Performance</label>
+    <fieldset submitButton="false">
+        <input type="time" searchWhenChanged="true" token="time">
+            <label>Time range:</label>
+            <default>
+                <earliest>-24h</earliest>
+                <latest>now</latest>
+            </default>
+        </input>
+        <input type="dropdown" token="OStype" searchWhenChanged="true">
+            <label>OStype:</label>
+            <choice value="*">Any</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+            <prefix>OStype="</prefix>
+            <suffix>"</suffix>
+            <default>*</default>
+        </input>
+        <input type="multiselect" searchWhenChanged="true" token="hostname">
+            <label>Host(s):</label>
+            <choice value="*">TOUT</choice>
+            <label>Host:</label>
+            <search>
+                <query>| inputlookup nmon_inventory | search $OStype$ | stats count by hostname | sort hostname</query>
+                <earliest>0</earliest>
+                <!-- Progress event has access to job properties only -->
+                <progress>
+                    <condition match="'job.resultCount' == 0">
+                        <set token="show_null_config">True</set>
+                    </condition>
+                    <condition>
+                        <unset token="show_null_config"></unset>
+                    </condition>
+                </progress>
+            </search>
+            <fieldForLabel>hostname</fieldForLabel>
+            <fieldForValue>hostname</fieldForValue>
+            <valuePrefix>hostname="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+        </input>
+        <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Detected OS:</label>
+            <search>
+                <query>eventtype=nmon:performance $hostname$ | stats count by OStype | fields OStype | head 1</query>
+                <earliest>$time.earliest$</earliest>
+                <latest>$time.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>OStype</fieldForLabel>
+            <fieldForValue>OStype</fieldForValue>
+            <change>
+                <condition value="AIX">
+                    <set token="is_AIX">_time,*</set>
+                    <unset token="is_Linux"></unset>
+                    <unset token="is_Solaris"></unset>
+                </condition>
+                <condition value="Linux">
+                    <set token="is_Linux">_time,*</set>
+                    <unset token="is_AIX"></unset>
+                    <unset token="is_Solaris"></unset>
+                </condition>
+                <condition value="Solaris">
+                    <set token="is_Solaris">_time,*</set>
+                    <unset token="is_Linux"></unset>
+                    <unset token="is_AIX"></unset>
+                </condition>
+            </change>
+        </input>
+    </fieldset>
+
+    <search id="populate_splunk_user">
+        <query>eventtype=nmon:performance type=UARG $hostname$
+| fillnull value="Uncaptured" FullCommand | rex field=FullCommand "--user=(?&lt;splunk_user&gt;[\w\-\_]*)\s"
+| stats count by splunk_user | dedup splunk_user | sort splunk_user</query>
+        <earliest>$time.earliest$</earliest>
+        <latest>$time.latest$</latest>
+    </search>
+
+    <row depends="$show_null_config$">
+        <panel>
+            <html>
+                <p style="color:blue;margin-left:30px;font-size:14px">SYSTEM SUMMARY OVERVIEW Search returned no results, The nmon inventory data may not be available yet for this host, manually run the Nmon Inventory Generation report or wait for the auto update. (occurs every hour by default)</p>
+            </html>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_config" data-token-value="fields - _time">SHOW HOSTS CONFIGURATION</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+    <row depends="$show_config$">
+        <panel>
+            <table>
+                <title>NMON Inventory data:</title>
+                <search>
+                    <query>| inputlookup nmon_inventory | search $OStype$ $hostname$
+| eval "Operating System"=case(OStype=="AIX", ("IBM AIX " + AIX_LEVEL), OStype=="Linux", Linux_distribution, OStype=="Solaris", if(isnotnull(Solaris_version), Solaris_version, Solaris_sunOS_version))
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,"Operating System",nmon_version
+| fillnull value="N/A"
+| rename Physical_mem_MB AS "Physical memory (MB)", Virtual_mem_MB AS "Virtual memory (MB)"
+| $show_config$</query>
+                    <earliest>0</earliest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="drilldown">row</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel id="cpu">
+            <title>CPU statistics</title>
+        </panel>
+        <panel id="memory1">
+            <title>Physical memory</title>
+        </panel>
+        <panel id="memory2">
+            <title>Swap memory</title>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <single>
+                <title>Average deployment CPU % usage</title>
+                <search>
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+| eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| timechart span=5m avg(cpu_load_percent) AS value | where isnotnull(value)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">%</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <title>Average deployment physical memory % usage</title>
+                <search>
+                    <query>eventtype=nmon:performance type=MEM $hostname$ | timechart span=5m avg(mem_used_effective_PCT) AS value | where isnotnull(value)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">%</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <title>Average deployment swap memory % usage</title>
+                <search>
+                    <query>eventtype=nmon:performance type=MEM $hostname$ | timechart span=5m avg(swap_used_effective_PCT) AS value | where isnotnull(value)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">%</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-token-value="fields _time,*">SHOW ADVANCED CPU STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_phymem" data-token-value="fields _time,*">SHOW ADVANCED MEMORY STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_virtualmem" data-token-value="fields _time,*">SHOW ADVANCED SWAP STATS</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### CPU #########################################  -->
+
+    <row depends="$show_cpu$">
+        <panel>
+            <chart>
+                <title>Deployment global % CPU stats over time</title>
+                <search>
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+| eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| timechart `inline_customspan` avg(cpu_load_percent) AS cpu_load_percent
+| $show_cpu$
+| trendline sma5(cpu_load_percent) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% CPU</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Deployment per category % CPU stats over time</title>
+                <search>
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+| eval Sys_PCT=if(isnotnull(VP_Sys_PCT), VP_Sys_PCT, Sys_PCT), User_PCT=if(isnotnull(VP_User_PCT), VP_User_PCT, User_PCT), Wait_PCT=if(isnotnull(VP_Wait_PCT), VP_Wait_PCT, Wait_PCT), Idle_PCT=if(isnotnull(VP_Idle_PCT), VP_Idle_PCT, Idle_PCT)
+| timechart `inline_customspan` avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT
+| $show_cpu$
+| fields _time,Idle_PCT,Wait_PCT,User_PCT,Sys_PCT</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% CPU</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked100</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_cpu$">
+        <panel>
+            <chart>
+                <title>By host global % CPU stats over time</title>
+                <search>
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+| eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| timechart `inline_customspan` avg(cpu_load_percent) AS cpu_load_percent by hostname
+| $show_cpu$</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% CPU</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### Physical Memory #########################################  -->
+
+    <row depends="$show_phymem$">
+        <panel>
+            <chart>
+                <title>Deployment physical memory MB usage per category over time</title>
+                <search>
+                    <query>eventtype=nmon:performance:memory type=MEM $hostname$
+| stats sum(cached) AS cached, sum(buffers) AS buffers, sum(mem_free) AS mem_free, sum(mem_used_effective) AS mem_used_effective, sum(memtotal) AS memtotal by _time
+| $show_phymem$
+| timechart `inline_customspan` avg(*) AS *</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">400px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.overlayFields">memtotal</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.fieldColors">{"memtotal": 0xe50000}</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Deployment physical memory % usage over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=MEM $hostname$
+| timechart `inline_customspan` avg(mem_used_effective_PCT) AS mem_used_effective_PCT
+| $show_phymem$
+| trendline sma5(mem_used_effective_PCT) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% mem</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked100</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_phymem$">
+        <panel>
+            <chart>
+                <title>By host physical memory % usage over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=MEM $hostname$
+| timechart `inline_customspan` avg(mem_used_effective_PCT) AS mem_used_effective_PCT by hostname
+| $show_phymem$</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% mem</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### Virtual Memory #########################################  -->
+
+    <row depends="$show_virtualmem$">
+        <panel>
+            <chart>
+                <title>Deployment swap memory MB usage per category over time</title>
+                <search>
+                    <query>eventtype=nmon:performance:memory type=MEM $hostname$
+| stats sum(swap_used) AS swap_used, sum(swap) AS swaptotal, sum(swap_free) AS swap_free by _time
+| $show_virtualmem$
+| timechart `inline_customspan` avg(*) AS *</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">400px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.overlayFields">swaptotal</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.fieldColors">{"swaptotal": 0xe50000}</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Deployment swap memory % usage over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=MEM $hostname$
+| timechart `inline_customspan` avg(swap_used_effective_PCT) AS swap_used_effective_PCT
+| $show_virtualmem$
+| trendline sma5(swap_used_effective_PCT) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% mem</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked100</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_virtualmem$">
+        <panel>
+            <chart>
+                <title>By host swap memory % usage over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=MEM $hostname$
+| timechart `inline_customspan` avg(swap_used_effective_PCT) AS swap_used_effective_PCT by hostname
+| $show_virtualmem$</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% mem</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel id="disk">
+            <title>Disks activity</title>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <single>
+                <title>Average deployment I/O per sec</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKXFER $hostname$
+| dedup _time,hostname,value
+| stats sum(value) AS value by _time
+| timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">iops</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <title>Average deployment % of time busy disks</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBUSY $hostname$
+| dedup _time,hostname,value
+| timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">%</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <title>Average deployment disk data transfer size</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBSIZE $hostname$ | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">KBytes</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_diskxfer" data-token-value="fields _time,*">SHOW ADVANCED DISKXFER STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_diskbusy" data-token-value="fields _time,*">SHOW ADVANCED DISKBUSY STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_diskbsize" data-token-value="fields _time,*">SHOW ADVANCED DISKBSIZE STATS</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### DISKXFER #########################################  -->
+
+    <row depends="$show_diskxfer$">
+        <panel>
+            <chart>
+                <title>Deployment global I/O per sec over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKXFER $hostname$
+| dedup _time,hostname,value
+| stats sum(value) AS value by _time
+| timechart span=5m avg(value) AS iops
+| $show_diskxfer$
+| trendline sma5(iops) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_diskxfer$">
+        <panel>
+            <chart>
+                <title>By host I/O per sec over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKXFER $hostname$
+| dedup _time,hostname,value
+| stats sum(value) AS value by _time,hostname
+| timechart span=5m avg(value) AS iops by hostname
+| $show_diskxfer$</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### DISKBUSY #########################################  -->
+
+    <row depends="$show_diskbusy$">
+        <panel>
+            <chart>
+                <title>Deployment global % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBUSY $hostname$
+| dedup _time,hostname,value
+| timechart span=5m avg(value) AS busy_disk
+| $show_diskbusy$
+| trendline sma5(busy_disk) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% time busy</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_diskbusy$">
+        <panel>
+            <chart>
+                <title>By host % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBUSY $hostname$
+| dedup _time,hostname,value
+| timechart span=5m avg(value) AS busydisk by hostname
+| $show_diskbusy$</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% time busy</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### DISKBSIZE #########################################  -->
+
+    <row depends="$show_diskbsize$">
+        <panel>
+            <chart>
+                <title>Deployment global % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBSIZE $hostname$
+| dedup _time,hostname,value
+| timechart span=5m avg(value) AS tranfer_rate
+| $show_diskbsize$
+| trendline sma5(iops) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBytes</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_diskbsize$">
+        <panel>
+            <chart>
+                <title>By host % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBSIZE $hostname$
+| dedup _time,hostname,value
+| timechart span=5m avg(value) AS tranfer_rate by hostname
+| $show_diskbsize$</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBytes</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row>
+        <panel id="process1">
+            <title>Processes CPU usage</title>
+        </panel>
+        <panel id="process2">
+            <title>Processes Memory usage</title>
+        </panel>
+        <panel id="network">
+            <title>Network traffic</title>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <single rejects="$show_null_top$">
+                <title>Average deployment CPU usage main process</title>
+                <search>
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=* | bucket _time span=1m | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,frameID,hostname,Command,PID | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit) | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command | eval value=(pct_CPU/100) | where value&gt;0.01 | bucket _time `inline_customspan` | stats max(value) As value by _time,hostname,Command | stats sum(value) AS value by _time,Command | stats avg(value) AS value by Command | sort - value</query>
+                    <earliest>-5m</earliest>
+                    <latest>now</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_top">True</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_null_top"/>
+                        </condition>
+                    </progress>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+            <html depends="$show_null_top$">
+                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) has not been activated at nmon binary startup. (use the -t or -T option to activate the TOP collection)</p>
+            </html>
+        </panel>
+        <panel>
+            <single rejects="$show_null_top$">
+                <title>Average deployment Memory usage main process</title>
+                <search>
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=* | bucket _time span=1m
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
+| stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
+| stats avg(mem_usage_mb) AS mem_usage_mb by Command | sort - mem_usage_mb</query>
+                    <earliest>-5m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+            <html depends="$show_null_top$">
+                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) has not been activated at nmon binary startup. (use the -t or -T option to activate the TOP collection)</p>
+            </html>
+        </panel>
+        <panel>
+            <single>
+                <title>Average deployment network traffic (Mbps)</title>
+                <search>
+                    <query>eventtype=nmon:performance type=NET $hostname$ device!=*lo* | eval traffic_type=case(match(device, ".+read.+"), "In", match(device, ".+write.+"), "Out") | chart avg(value) AS value by traffic_type | eval value=round(value, 2) | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="underLabel">IN / OUT  NETWORK TRAFFIC</option>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">kbps</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+                <option name="refresh.auto.interval">120</option>
+            </single>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_cpuprocess" data-token-value="fields _time,*">SHOW ADVANCED CPU PROCESSES STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_memprocess" data-token-value="fields _time,*">SHOW ADVANCED MEM PROCESSES STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_net" data-token-value="fields _time,*">SHOW ADVANCED NETWORK STATS</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### TOP CPU #########################################  -->
+
+    <row depends="$show_cpuprocess$">
+        <panel>
+            <chart>
+                <title>Deployment TOP 10 CPU processes usage</title>
+                <search>
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| bucket _time span=1m
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| where value&gt;0.01
+| bucket _time `inline_customspan`
+| stats max(value) As value by _time,hostname,Command
+| stats sum(value) AS value by _time,Command
+| $show_cpuprocess$
+| timechart `inline_customspan` limit=10 useother=f max(value) AS value by Command</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">logical CPUs</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_cpuprocess$">
+        <panel>
+            <chart>
+                <title>By host TOP 10 CPU processes usage</title>
+                <search>
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| bucket _time span=1m
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| where value&gt;0.01
+| eval key=hostname+":"+Command
+| $show_cpuprocess$
+| timechart `inline_customspan` limit=10 useother=f max(value) As value by key</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">logical CPUs</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### TOP Memory #########################################  -->
+
+    <row depends="$show_memprocess$">
+        <panel>
+            <chart>
+                <title>Deployment TOP 10 Memory processes usage</title>
+                <search>
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=* | bucket _time span=1m
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
+| stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
+| $show_memprocess$
+| timechart `inline_customspan` limit=10 useother=f max(mem_usage_mb) AS mem_usage_mb by Command</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">MB</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_memprocess$">
+        <panel>
+            <chart>
+                <title>By host TOP 10 Memory processes usage</title>
+                <search>
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| bucket _time span=1m
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| stats max(mem_usage_mb) AS mem_usage_mb by _time,hostname,Command,PID
+| stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
+| eval key=hostname+":"+Command
+| $show_memprocess$
+| timechart `inline_customspan` limit=10 useother=f max(mem_usage_mb) As mem_usage_mb by key</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">MB</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### Network #########################################  -->
+
+    <row depends="$show_net$">
+        <panel>
+            <chart>
+                <title>Deployment Inbound/Outbound network traffic</title>
+                <search>
+                    <query>eventtype=nmon:performance type=NET $hostname$ device!=*lo*
+| eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
+| $show_net$
+| timechart `inline_customspan` avg(value) AS KBps by traffic_type</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBps</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_net$">
+        <panel>
+            <chart>
+                <title>By host TOP 10 Memory processes usage</title>
+                <search>
+                    <query>eventtype=nmon:performance type=NET $hostname$ device!=*lo*
+| eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
+| eval key=hostname+":"+traffic_type
+| $show_net$
+| timechart `inline_customspan` useother=f limit=0 avg(value) AS KBps by key</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">Kbps</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400px</option>
+            </chart>
+        </panel>
+    </row>
+
+</form>
