@@ -290,44 +290,22 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
                 <choice value="cpu_all_chart1">CPU_ALL, % by category</choice>
                 <choice value="cpu_all_chart2">CPU_ALL, % global usage</choice>
                 <choice value="cpu_nn_chart1">CPUnn, % global usage by processor</choice>
-                <choice value="lpar_chart1">LPAR, PowerLinux only, Partition statistics</choice>
-                <choice value="lpar_chart2">LPAR, PowerLinux only, Pool statistics</choice>
                 <default>cpu_all_chart1</default>
                 <change>
                     <condition value="cpu_all_chart1">
                         <set token="cpu_all_chart1">true</set>
                         <unset token="cpu_all_chart2"></unset>
                         <unset token="cpu_nn_chart1"></unset>
-                        <unset token="lpar_chart1"></unset>
-                        <unset token="lpar_chart2"></unset>
                     </condition>
                     <condition value="cpu_all_chart2">
                         <set token="cpu_all_chart2">true</set>
                         <unset token="cpu_all_chart1"></unset>
                         <unset token="cpu_nn_chart1"></unset>
-                        <unset token="lpar_chart1"></unset>
-                        <unset token="lpar_chart2"></unset>
                     </condition>
                     <condition value="cpu_nn_chart1">
                         <set token="cpu_nn_chart1">true</set>
                         <unset token="cpu_all_chart1"></unset>
                         <unset token="cpu_all_chart2"></unset>
-                        <unset token="lpar_chart1"></unset>
-                        <unset token="lpar_chart2"></unset>
-                    </condition>
-                    <condition value="lpar_chart1">
-                        <set token="lpar_chart1">true</set>
-                        <unset token="cpu_all_chart1"></unset>
-                        <unset token="cpu_all_chart2"></unset>
-                        <unset token="cpu_nn_chart1"></unset>
-                        <unset token="lpar_chart2"></unset>
-                    </condition>
-                    <condition value="lpar_chart2">
-                        <set token="lpar_chart2">true</set>
-                        <unset token="cpu_all_chart1"></unset>
-                        <unset token="cpu_all_chart2"></unset>
-                        <unset token="cpu_nn_chart1"></unset>
-                        <unset token="lpar_chart1"></unset>
                     </condition>
                 </change>
             </input>
@@ -439,7 +417,58 @@ avg("CPU.Wait_PCT") AS "Wait_PCT" by "CPU.CPUnn.logical_core"</link>
                 </drilldown>
             </chart>
 
-            <chart depends="$lpar_chart1$" rejects="$show_null_lpar$">
+        </panel>
+    </row>
+
+
+    <!-- LPAR management: Only show the LPAR is a partition -->
+
+    <row depends="$is_LPAR_input_hidden$">
+        <panel>
+            <input type="dropdown" token="is_LPAR_input" searchWhenChanged="true">
+                <label>Is LPAR:</label>
+                <search>
+                    <query>| tstats sum("CPU.is_CPU_ALL") AS CPU_ALL sum("CPU.is_LPAR_Linux") AS LPAR from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby "CPU.hostname" prestats=true | stats dedup_splitvals=t sum("CPU.is_CPU_ALL") AS CPU_ALL sum("CPU.is_LPAR_Linux") AS LPAR by "CPU.hostname" | sort limit=0 "CPU.hostname" | fields - _span | rename "CPU.hostname" AS hostname | fields hostname, CPU_ALL, LPAR
+| eval is_LPAR=if(LPAR>0, "True", "False") | fields is_LPAR</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <selectFirstChoice>true</selectFirstChoice>
+                <fieldForLabel>is_LPAR</fieldForLabel>
+                <fieldForValue>is_LPAR</fieldForValue>
+                <change>
+                    <condition value="True">
+                        <set token="is_LPAR">_time,*</set>
+                    </condition>
+                    <condition value="False">
+                        <unset token="is_LPAR"></unset>
+                    </condition>
+                </change>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$is_LPAR$">
+        <panel>
+
+            <input type="link" token="lpar_linkinput">
+                <label></label>
+                <choice value="lpar_chart1">LPAR, PowerLinux only, Partition statistics</choice>
+                <choice value="lpar_chart2">LPAR, PowerLinux only, Pool statistics</choice>
+                <default>lpar_chart1</default>
+                <change>
+                    <condition value="lpar_chart1">
+                        <set token="lpar_chart1">true</set>
+                        <unset token="lpar_chart2"></unset>
+                    </condition>
+                    <condition value="lpar_chart2">
+                        <set token="lpar_chart2">true</set>
+                        <unset token="lpar_chart1"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <chart depends="$lpar_chart1$">
                 <title></title>
                 <search>
                     <query>| tstats max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
@@ -449,18 +478,10 @@ groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
 max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
+| fields $is_LPAR$
 | timechart `inline_customspan` useother=f limit=0 max(lpar_vp_usage) AS lpar_vp_usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <!-- Progress event has access to job properties only -->
-                    <progress>
-                        <condition match="'job.resultCount' == 0">
-                            <set token="show_null_lpar">True</set>
-                        </condition>
-                        <condition>
-                            <unset token="show_null_lpar"/>
-                        </condition>
-                    </progress>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -491,25 +512,17 @@ max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
                 </drilldown>
             </chart>
 
-            <chart depends="$lpar_chart2$" rejects="$show_null_lpar$">
+            <chart depends="$lpar_chart2$">
                 <title></title>
                 <search>
                     <query>| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage
 from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (CPU.$hostname$)
 groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage by _time, "CPU.frameID", "CPU.hostname"
+| fields $is_LPAR$
 | timechart `inline_customspan` useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <!-- Progress event has access to job properties only -->
-                    <progress>
-                        <condition match="'job.resultCount' == 0">
-                            <set token="show_null_lpar">True</set>
-                        </condition>
-                        <condition>
-                            <unset token="show_null_lpar"/>
-                        </condition>
-                    </progress>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -537,13 +550,8 @@ groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
                 </drilldown>
             </chart>
 
-            <html depends="$show_null_lpar$">
-                <p style="color:blue;margin-left:30px;font-size:14px">PowerLinux Only, LPAR data is only available for PowerLinux micro-partitions on IBM Pseries</p>
-            </html>
-
         </panel>
     </row>
-
 
     <row>
         <html>
