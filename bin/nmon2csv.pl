@@ -84,8 +84,10 @@
 # - 05/24/2016, V1.2.18: Guilhem Marchand:
 #                                         - Git Issue #35 nmon2csv.pl parser issue - per section status file does
 #                                           not get updated
+# - 05/31/2016, V1.2.19: Guilhem Marchand:
+#                                         - Manage AIX WLM data
 
-$version = "1.2.18";
+$version = "1.2.19";
 
 use Time::Local;
 use Time::HiRes;
@@ -201,6 +203,9 @@ Available options are:
 
 # AIX only dynamic sections
 @AIX_dynamic_various = ( "SEA", "SEAPACKET", "SEACHPHY" );
+
+# AIX Workload Management
+@AIX_WLM = ( "WLMCPU", "WLMMEM", "WLMBIO" );
 
 #################################################
 ## 	Your Customizations Go Here
@@ -1851,6 +1856,17 @@ m/^UARG\,T\d+\,([0-9]*)\,([a-zA-Z\-\/\_\:\.0-9]*)\,(.+)/
     if ( $OStype eq "AIX" || $OStype eq "Unknown" ) {
 
         foreach $key (@AIX_dynamic_various) {
+            $BASEFILENAME =
+"$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
+            $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
+
+            &variable_sections_insert($key);
+            $now = time();
+            $now = $now - $start;
+
+        }
+
+        foreach $key (@AIX_WLM) {
             $BASEFILENAME =
 "$OUTPUT_DIR/${HOSTNAME}_${nmon_day}_${nmon_month}_${nmon_year}_${nmon_hour}${nmon_minute}${nmon_second}_${key}_${bytes}_${csv_timestamp}.nmon.csv";
             $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";

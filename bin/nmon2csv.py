@@ -126,7 +126,9 @@
 # (https://answers.splunk.com/answers/395601/nmon-performance-monitor-for-unix-and-linux-system-4.html)
 # - 05/05/2016, V1.1.18: Guilhem Marchand:
 #                                         - Manage Python datetime failure while parsing to epochtime, in some cases
-#                                           the epoch conversion fails, if it the case use time module.
+#                                           the epoch conversion fails, if it is the case we'll use time module.
+# - 05/05/2016, V1.1.19: Guilhem Marchand:
+#                                         - Manage AIX WLM data
 
 # Load libs
 
@@ -146,7 +148,7 @@ import glob
 import socket
 
 # Converter version
-nmon2csv_version = '1.1.18'
+nmon2csv_version = '1.1.19'
 
 # LOGGING INFORMATION:
 # - The program uses the standard logging Python module to display important messages in Splunk logs
@@ -205,6 +207,9 @@ solaris_dynamic_various = ["DISKSVCTM", "DISKWAITTM"]
 
 # AIX only dynamic sections
 AIX_dynamic_various = ["SEA", "SEAPACKET", "SEACHPHY"]
+
+# AIX Workload Management
+AIX_WLM = ["WLMCPU", "WLMMEM", "WLMBIO"]
 
 #################################################
 #      Variables
@@ -1633,6 +1638,11 @@ for section in static_section:
 # These sections are specific for Micro Partitions, can be AIX or PowerLinux
 if OStype in ("AIX", "Linux", "Unknown"):
     for section in LPAR_static_section:
+        standard_section_fn(section)
+
+# AIX specific
+if OStype in ("AIX", "Unknown"):
+    for section in AIX_WLM:
         standard_section_fn(section)
 
 # Solaris specific
