@@ -1027,8 +1027,8 @@
             <single rejects="$show_null_top$">
                 <title>Average deployment Memory usage main process</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=* | bucket _time span=1m
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by Command | sort - mem_usage_mb</query>
@@ -1115,7 +1115,6 @@
                 <title>Deployment TOP 10 CPU processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
-| bucket _time span=1m
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
@@ -1164,7 +1163,6 @@
                 <title>By host TOP 10 CPU processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
-| bucket _time span=1m
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
@@ -1213,8 +1211,8 @@
             <chart>
                 <title>Deployment TOP 10 Memory processes usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=* | bucket _time span=1m
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | $show_memprocess$
@@ -1257,8 +1255,7 @@
                 <title>By host TOP 10 Memory processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
-| bucket _time span=1m
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
 | stats max(mem_usage_mb) AS mem_usage_mb by _time,hostname,Command,PID
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | eval key=hostname+":"+Command
@@ -1343,7 +1340,7 @@
     <row depends="$show_net$">
         <panel>
             <chart>
-                <title>By host TOP 10 Memory processes usage</title>
+                <title>By host Inbound/Outbound network traffic</title>
                 <search>
                     <query>eventtype=nmon:performance type=NET $hostname$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")

@@ -687,7 +687,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ResText") AS ResText max("TOP_Linux.ResData") AS ResData by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
-| eval Used_Mem_MB=((ResData+ResText)/1024)
+| eval Used_Mem_MB=(((ResData+ResText)/1024)/4)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
 | timechart $span$ useother=f limit=0 max(Used_Mem_MB) as "Used_Memory" by Command</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -724,7 +724,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ResText") AS ResText max("TOP_Linux.ResData") AS ResData by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
-| eval Used_Mem_MB=((ResData%2BResText)/1024)
+| eval Used_Mem_MB=(((ResData%2BResText)/1024)/4)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
 | timechart span=1m useother=f limit=0 max(Used_Mem_MB) as "Used_Memory" by Command</link>
                 </drilldown>
@@ -738,7 +738,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | stats dedup_splitvals=t max("TOP_Linux.Size") AS Size by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(Size) As Size by _time,Command
-| eval Virtual_Mem_MB=round((Size/1024),2)
+| eval Virtual_Mem_MB=((Size/1024)/4)
 | timechart $span$ useother=f limit=0 max(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -775,7 +775,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
 | stats dedup_splitvals=t max("TOP_Linux.Size") AS Size by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(Size) As Size by _time,Command
-| eval Virtual_Mem_MB=round((Size/1024),2)
+| eval Virtual_Mem_MB=((Size/1024)/4)
 | timechart span=1m useother=f limit=0 max(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command</link>
                 </drilldown>
             </chart>

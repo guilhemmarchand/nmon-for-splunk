@@ -261,7 +261,7 @@ where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname-prefilter$) ($osfilte
 groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ResText") AS ResText max("TOP_Linux.ResData") AS ResData by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
-| eval Used_Mem_MB=((ResData+ResText)/1024)
+| eval Used_Mem_MB=(((ResData+ResText)/1024)/4)
 | stats sum(Used_Mem_MB) As value by _time,hostname,Command
 | $aggregate$
 | search $valuefilter$
@@ -293,7 +293,7 @@ where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname-prefilter$) ($osfilte
 groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ResText") AS ResText max("TOP_Linux.ResData") AS ResData by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
-| eval Used_Mem_MB=((ResData%2BResText)/1024)
+| eval Used_Mem_MB=(((ResData%2BResText)/1024)/4)
 | stats sum(Used_Mem_MB) As value by _time,hostname,Command,PID
 | eval key=hostname%2B":"%2BCommand%2B":"%2BPID
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
@@ -310,7 +310,7 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
 | stats dedup_splitvals=t max("TOP_Linux.Size") AS Size by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(Size) As Size by _time,hostname,Command
-| eval value=round((Size/1024),2)
+| eval value=((Size/1024)/4)
 | $aggregate$
 | search $valuefilter$
 | eval key=hostname+":"+Command
@@ -342,7 +342,7 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
 | stats dedup_splitvals=t max("TOP_Linux.Size") AS Size by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(Size) As Size by _time,hostname,Command,PID
-| eval value=round((Size/1024),2)
+| eval value=((Size/1024)/4)
 | eval key=hostname%2B":"%2BCommand%2B":"%2BPID
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
 &amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
@@ -535,7 +535,7 @@ where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname-prefilter$) ($osfilte
 groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ResText") AS ResText max("TOP_Linux.ResData") AS ResData by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
-| eval Used_Mem_MB=((ResData+ResText)/1024)
+| eval Used_Mem_MB=(((ResData+ResText)/1024)/4)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
 | stats $statsmode$(Used_Mem_MB) as Used_Mem_MB, sparkline($statsmode$(Used_Mem_MB)) as sparkline by Command
 | eval Used_Mem_MB=round(Used_Mem_MB,2)
