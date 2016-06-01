@@ -1640,11 +1640,6 @@ if OStype in ("AIX", "Linux", "Unknown"):
     for section in LPAR_static_section:
         standard_section_fn(section)
 
-# AIX specific
-if OStype in ("AIX", "Unknown"):
-    for section in AIX_WLM:
-        standard_section_fn(section)
-
 # Solaris specific
 if OStype in ("Solaris", "Unknown"):
     for section in Solaris_static_section:
@@ -2541,6 +2536,8 @@ for section in dynamic_section2:
 # Run
 if OStype in ("AIX", "Unknown"):
     for section in AIX_dynamic_various:
+        dynamic_section_fn(section)
+    for section in AIX_WLM:
         dynamic_section_fn(section)
 
 ###################
