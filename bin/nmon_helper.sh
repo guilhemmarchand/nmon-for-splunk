@@ -154,7 +154,7 @@ interval="60"
 snapshot="120"
 
 # AIX common options default, will be overwritten by nmon.conf (unless the file would not be available)
-AIX_options="-f -T -A -d -K -L -M -P -O -W -^ -p"
+AIX_options="-f -T -A -d -K -L -M -P -O -W -S -^ -p"
 
 # Linux max devices (-d option), default to 1500
 Linux_devices="1500"
@@ -785,7 +785,7 @@ esac
 # - Linux: Add the "-N" option if you want to extract NFS Statistics (NFS V2/V3/V4)
 # - AIX: Add the "-N" option for NFS V2/V3, "-NN" for NFS V4
 
-# For AIX, the default command options line "-f -T -A -d -K -L -M -P -O -W -^" includes: (see http://www-01.ibm.com/support/knowledgecenter/ssw_aix_61/com.ibm.aix.cmds4/nmon.htm)
+# For AIX, the default command options line "-f -T -A -d -K -L -M -P -O -W -S -^" includes: (see http://www-01.ibm.com/support/knowledgecenter/ssw_aix_61/com.ibm.aix.cmds4/nmon.htm)
 
 # AIX options can be managed using local/nmon.conf, do not modify options here
 
@@ -797,6 +797,7 @@ esac
 # -M	Includes the MEMPAGES section in the recording file. The MEMPAGES section displays detailed memory statistics per page size.
 # -O    Includes the Shared Ethernet adapter (SEA) VIOS sections in the recording file.
 # -W    Includes the WLM sections into the recording file.
+# -S	Includes WLM sections with subclasses in the recording file.
 # -P	Includes the Paging Space section in the recording file.
 # -T	Includes the top processes in the output and saves the command-line arguments into the UARG section. You cannot specify the -t, -T, or -Y flags with each other.
 # -^	Includes the Fiber Channel (FC) sections.
