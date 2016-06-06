@@ -1517,8 +1517,17 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) group
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
+                <option name="drilldown">row</option>
                 <option name="count">10</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) (JFS.device="$click.value$") groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+| rename "JFS.*" AS *
+| timechart $span$ limit=0 useother=f max(value) As value by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations</link>
+                </drilldown>
+
+
             </table>
         </panel>
     </row>
