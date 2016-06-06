@@ -86,8 +86,10 @@
 #                                           not get updated
 # - 05/31/2016, V1.2.19: Guilhem Marchand:
 #                                         - Manage AIX WLM data
+# - 06/06/2016, V1.2.20: Guilhem Marchand:
+#                                         - error for Solaris WLM* extraction (unexported variable)
 
-$version = "1.2.19";
+$version = "1.2.20";
 
 use Time::Local;
 use Time::HiRes;
@@ -2698,9 +2700,6 @@ sub solaris_wlm_section_fn {
     my $sanity_check                  = 0;
     my $sanity_check_timestampfailure = 0;
     $count = 0;
-
-    # Store last epochtime if in real time mode
-    $keyref = "$HOSTNAME_VAR/" . "${HOSTNAME}.${key}_lastepoch.txt";
 
     if ( $realtime eq "True" ) {
 
