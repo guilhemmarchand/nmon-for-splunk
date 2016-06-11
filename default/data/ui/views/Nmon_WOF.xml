@@ -23,15 +23,17 @@
             <choice value="*">TOUT</choice>
             <label>Host:</label>
             <search>
-                <query>| inputlookup nmon_inventory | search $OStype$ | stats count by hostname | sort hostname</query>
-                <earliest>0</earliest>
+                <!-- Search only first 10000 results in CPU_ALL which shall be much more enough than required -->
+                <query>eventtype=nmon:performance type=CPU_ALL $OStype$ | head 10000 | stats count by hostname | sort hostname</query>
+                <earliest>$time.earliest$</earliest>
+                <latest>$time.latest$</latest>
                 <!-- Progress event has access to job properties only -->
                 <progress>
                     <condition match="'job.resultCount' == 0">
-                        <set token="show_null_config">True</set>
+                        <set token="show_null_host">True</set>
                     </condition>
                     <condition>
-                        <unset token="show_null_config"></unset>
+                        <unset token="show_null_host"></unset>
                     </condition>
                 </progress>
             </search>
@@ -41,7 +43,7 @@
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <!--
-            Reset the form token chanhed changed
+            Reset the form token once changed
             -->
        		<change>
          		<unset token="form.OStype_detection"></unset>
@@ -83,6 +85,13 @@
             </change>
         </input>
     </fieldset>
+    <row depends="$show_null_host$">
+        <panel>
+            <html>
+                <p style="color:blue;margin-left:30px;font-size:14px">Searching for nmon performance data did not returned any result, please ensure at least one host is correctly configured to generate performance data. (search for eventtype=nmon:performance)</p>
+            </html>
+        </panel>
+    </row>
     <row depends="$show_null_config$">
         <panel>
             <html>
@@ -99,6 +108,17 @@
             </html>
         </panel>
     </row>
+
+    <row depends="$show_config$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start host configuration</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <row depends="$show_config$">
         <panel>
             <table>
@@ -120,6 +140,17 @@
             </table>
         </panel>
     </row>
+
+    <row depends="$show_config$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End host configuration</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <row>
         <panel id="cpu">
             <title>CPU statistics</title>
@@ -217,27 +248,37 @@
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-alt-label="HIDE ADVANCED CPU STATS" data-token-value="fields _time,*">SHOW ADVANCED CPU STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-alt-label="HIDE EXTENDED CPU STATS" data-token-value="fields _time,*">SHOW EXTENDED CPU STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_phymem" data-alt-label="HIDE ADVANCED MEMORY STATS" data-token-value="fields _time,*">SHOW ADVANCED MEMORY STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_phymem" data-alt-label="HIDE EXTENDED MEMORY STATS" data-token-value="fields _time,*">SHOW EXTENDED MEMORY STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_virtualmem" data-alt-label="HIDE ADVANCED SWAP STATS" data-token-value="fields _time,*">SHOW ADVANCED SWAP STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_virtualmem" data-alt-label="HIDE EXTENDED SWAP STATS" data-token-value="fields _time,*">SHOW EXTENDED SWAP STATS</button>
                 </div>
             </html>
         </panel>
     </row>
 
     <!-- ######################################### CPU #########################################  -->
+
+    <row depends="$show_cpu$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended CPU stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_cpu$">
         <panel>
@@ -363,7 +404,27 @@
         </panel>
     </row>
 
+    <row depends="$show_cpu$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended CPU stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <!-- ######################################### Physical Memory #########################################  -->
+
+    <row depends="$show_phymem$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended physical memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_phymem$">
         <panel>
@@ -371,9 +432,10 @@
                 <title>Deployment physical memory MB usage per category over time</title>
                 <search>
                     <query>eventtype=nmon:performance:memory type=MEM $hostname$
+| dedup _time,hostname
 | stats sum(cached) AS cached, sum(buffers) AS buffers, sum(mem_free) AS mem_free, sum(mem_used_effective) AS mem_used_effective, sum(memtotal) AS memtotal by _time
 | $show_phymem$
-| timechart `inline_customspan` avg(*) AS *</query>
+| timechart `inline_customspan` avg(*) AS * | fields _time,mem_free,cached,buffers,mem_used_effective,memtotal</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -489,7 +551,27 @@
         </panel>
     </row>
 
+    <row depends="$show_phymem$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended physical memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <!-- ######################################### Virtual Memory #########################################  -->
+
+    <row depends="$show_virtualmem$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended vitual memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_virtualmem$">
         <panel>
@@ -497,6 +579,7 @@
                 <title>Deployment swap memory MB usage per category over time</title>
                 <search>
                     <query>eventtype=nmon:performance:memory type=MEM $hostname$
+| dedup _time,hostname
 | stats sum(swap_used) AS swap_used, sum(swap) AS swaptotal, sum(swap_free) AS swap_free by _time
 | $show_virtualmem$
 | timechart `inline_customspan` avg(*) AS *</query>
@@ -614,11 +697,23 @@
             </chart>
         </panel>
     </row>
+
+    <row depends="$show_virtualmem$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended vitual memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <row>
         <panel id="disk">
             <title>Disks activity</title>
         </panel>
     </row>
+
     <row>
         <panel>
             <single>
@@ -708,21 +803,21 @@
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_diskxfer" data-alt-label="HIDE ADVANCED DISKXFER STATS" data-token-value="fields _time,*">SHOW ADVANCED DISKXFER STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_diskxfer" data-alt-label="HIDE EXTENDED DISKXFER STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKXFER STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_diskbusy" data-alt-label="HIDE ADVANCED DISKBUSY STATS" data-token-value="fields _time,*">SHOW ADVANCED DISKBUSY STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_diskbusy" data-alt-label="HIDE EXTENDED DISKBUSY STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKBUSY STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_diskbsize" data-alt-label="HIDE ADVANCED DISKBSIZE STATS" data-token-value="fields _time,*">SHOW ADVANCED DISKBSIZE STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_diskbsize" data-alt-label="HIDE EXTENDED DISKBSIZE STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKBSIZE STATS</button>
                 </div>
             </html>
         </panel>
@@ -732,11 +827,21 @@
 
     <row depends="$show_diskxfer$">
         <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended diskxfer stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_diskxfer$">
+        <panel>
             <chart>
                 <title>Deployment global I/O per sec over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=DISKXFER $hostname$
-| dedup _time,hostname,value
+| dedup _time,hostname,device,value
 | stats sum(value) AS value by _time
 | timechart span=5m avg(value) AS iops
 | $show_diskxfer$
@@ -816,7 +921,27 @@
         </panel>
     </row>
 
+    <row depends="$show_diskxfer$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended diskxfer stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <!-- ######################################### DISKBUSY #########################################  -->
+
+    <row depends="$show_diskbusy$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended diskbusy stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_diskbusy$">
         <panel>
@@ -902,7 +1027,27 @@
         </panel>
     </row>
 
+    <row depends="$show_diskbusy$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended diskbusy stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <!-- ######################################### DISKBSIZE #########################################  -->
+
+    <row depends="$show_diskbsize$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended diskbsize stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_diskbsize$">
         <panel>
@@ -987,6 +1132,19 @@
             </chart>
         </panel>
     </row>
+
+    <row depends="$show_diskbsize$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended diskbsize stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### PROCESS AND NETWORK #########################################  -->
+
     <row>
         <panel id="process1">
             <title>Processes CPU usage</title>
@@ -1003,7 +1161,18 @@
             <single rejects="$show_null_top$">
                 <title>Average deployment CPU usage main process</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=* | bucket _time span=1m | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit) | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command | eval value=(pct_CPU/100) | bucket _time `inline_customspan` | stats max(value) As value by _time,hostname,Command | stats sum(value) AS value by _time,Command | stats avg(value) AS value by Command | sort - value</query>
+                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| dedup _time,hostname,Command
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
+| eval value=(pct_CPU/100)
+| bucket _time `inline_customspan`
+| stats max(value) As value by _time,hostname,Command
+| stats sum(value) AS value by _time,Command
+| stats avg(value) AS value by Command
+| sort - value</query>
                     <earliest>-5m</earliest>
                     <latest>now</latest>
                     <!-- Progress event has access to job properties only -->
@@ -1033,7 +1202,7 @@
                 <option name="refresh.auto.interval">60</option>
             </single>
             <html depends="$show_null_top$">
-                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) has not been activated at nmon binary startup. (use the -t or -T option to activate the TOP collection)</p>
+                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) may have not been activated at nmon binary startup or no processes activity could be captured. (use the -t or -T option to activate the TOP collection)</p>
             </html>
         </panel>
         <panel>
@@ -1041,6 +1210,7 @@
                 <title>Average deployment Memory usage main process</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| dedup _time,hostname,Command
 | eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
@@ -1065,7 +1235,7 @@
                 <option name="refresh.auto.interval">60</option>
             </single>
             <html depends="$show_null_top$">
-                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) has not been activated at nmon binary startup. (use the -t or -T option to activate the TOP collection)</p>
+                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) may have not been at nmon binary startup or no processes activity could be captured. (use the -t or -T option to activate the TOP collection)</p>
             </html>
         </panel>
         <panel>
@@ -1100,27 +1270,37 @@
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_cpuprocess" data-alt-label="HIDE ADVANCED CPU PROCESSES STATS" data-token-value="fields _time,*">SHOW ADVANCED CPU PROCESSES STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_cpuprocess" data-alt-label="HIDE EXTENDED CPU PROCESSES STATS" data-token-value="fields _time,*">SHOW EXTENDED CPU PROCESSES STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_memprocess" data-alt-label="HIDE ADVANCED MEM PROCESSES STATS" data-token-value="fields _time,*">SHOW ADVANCED MEM PROCESSES STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_memprocess" data-alt-label="HIDE EXTENDED MEM PROCESSES STATS" data-token-value="fields _time,*">SHOW EXTENDED MEM PROCESSES STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_net" data-alt-label="HIDE ADVANCED NETWORK STATS" data-token-value="fields _time,*">SHOW ADVANCED NETWORK STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_net" data-alt-label="HIDE EXTENDED NETWORK STATS" data-token-value="fields _time,*">SHOW EXTENDED NETWORK STATS</button>
                 </div>
             </html>
         </panel>
     </row>
 
     <!-- ######################################### TOP CPU #########################################  -->
+
+    <row depends="$show_cpuprocess$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended CPU processes stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_cpuprocess$">
         <panel>
@@ -1217,7 +1397,27 @@
         </panel>
     </row>
 
+    <row depends="$show_cpuprocess$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended CPU processes stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <!-- ######################################### TOP Memory #########################################  -->
+
+    <row depends="$show_memprocess$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended processes memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_memprocess$">
         <panel>
@@ -1225,6 +1425,7 @@
                 <title>Deployment TOP 10 Memory processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| dedup _time,hostname,Command
 | eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
@@ -1268,6 +1469,7 @@
                 <title>By host TOP 10 Memory processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+| dedup _time,hostname,Command
 | eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
 | stats max(mem_usage_mb) AS mem_usage_mb by _time,hostname,Command,PID
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
@@ -1307,7 +1509,27 @@
         </panel>
     </row>
 
+    <row depends="$show_memprocess$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended processes memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <!-- ######################################### Network #########################################  -->
+
+    <row depends="$show_net$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended networking stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
     <row depends="$show_net$">
         <panel>
@@ -1390,6 +1612,16 @@
                 <option name="charting.legend.placement">top</option>
                 <option name="height">400px</option>
             </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_net$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended networking stats</h1>
+                </div>
+            </html>
         </panel>
     </row>
 
