@@ -1394,14 +1394,14 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
             <table depends="$is_Linux$">
                 <title>Table stats: Memory Usage per command invocation</title>
                 <search>
-                    <query>| tstats max("TOP_Linux.ResText") AS ResText max("TOP_Linux.ResData") AS ResData from datamodel=NMON_Data_TOP.TOP_Linux
+                    <query>| tstats max("TOP_Linux.ResSet") AS ResSet from datamodel=NMON_Data_TOP.TOP_Linux
 where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname$)
 groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Linux.ResText") AS ResText max("TOP_Linux.ResData") AS ResData by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
+| stats dedup_splitvals=t max("TOP_Linux.ResSet") AS ResSet by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | fields $is_Linux$
 | fields $show_processes$
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
-| eval Used_Mem_MB=(((ResData+ResText)/1024)/4)
+| eval Used_Mem_MB=((ResSet)/1024)
 | stats sum(Used_Mem_MB) As value by _time,Command
 | stats max(value) as "max memory usage (MB)", avg(value) as "avg memory usage (MB)", sparkline(max(value)) as sparkline by Command
 | foreach *MB* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 0) ]
@@ -1425,14 +1425,14 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
             <table depends="$is_AIX$">
                 <title>Table stats: Memory Usage per command invocation</title>
                 <search>
-                    <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP
+                    <query>| tstats max("TOP_AIX.ResSet") AS ResSet from datamodel=NMON_Data_TOP
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$)
 groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| stats dedup_splitvals=t max("TOP_AIX.ResSet") AS ResSet by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
 | fields $is_AIX$
 | fields $show_processes$
 | rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| eval Used_Mem_MB=((ResData+ResText)/1024)
+| eval Used_Mem_MB=((ResSet)/1024)
 | stats sum(Used_Mem_MB) As value by _time,frameID,hostname,Command
 | stats max(value) as "max memory usage (MB)", avg(value) as "avg memory usage (MB)", sparkline(max(value)) as sparkline by Command
 | foreach *MB* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 0) ]

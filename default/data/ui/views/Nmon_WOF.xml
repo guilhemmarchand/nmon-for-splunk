@@ -1211,7 +1211,7 @@
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
 | dedup _time,hostname,Command
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by Command | sort - mem_usage_mb</query>
@@ -1426,7 +1426,7 @@
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
 | dedup _time,hostname,Command
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | $show_memprocess$
@@ -1470,7 +1470,7 @@
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
 | dedup _time,hostname,Command
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), (((ResData+ResText)/1024)/4), match(OStype, "Solaris"), ((ResSize/1024)/4) )
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats max(mem_usage_mb) AS mem_usage_mb by _time,hostname,Command,PID
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | eval key=hostname+":"+Command
