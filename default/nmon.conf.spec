@@ -5,6 +5,10 @@
 # There is an nmon.conf in $SPLUNK_HOME/etc/[nmon|TA-nmon|PA-nmon]/default/.  To set custom configurations,
 # place an nmon.conf in $SPLUNK_HOME/etc/[nmon|TA-nmon|PA-nmon]/default/.
 
+# *** FILE ENCODING: UTF-8 ! ***
+# When creating a local/nmon.conf, pay attention to file encoding specially when working under Windows.
+# The file must be UTF-8 encoded or you may run in trouble.
+
 # *** DON'T MODIFY THIS FILE ***
 
 ########################################################################################################################
@@ -118,6 +122,14 @@ Linux_NFS=<string>
 
 Linux_embedded_nmon_priority=<string>
 
+# Change the limit for processes and disks capture of nmon for Linux
+# In default configuration, nmon will capture most of the process table by capturing main consuming processes
+# You can set nmon to an unlimited number of processes to be captured, and the entire process table will be captured.
+# Note this will affect the number of disk devices captured by setting it to an unlimited number.
+# This will also increase the volume of data to be generated and may require more cpu overhead to process nmon data
+# The default configuration uses the default mode (limited capture), you can set bellow the limit number of capture to unlimited mode
+# Change to "1" to set capture of processes and disks to no limit mode
+Linux_unlimited_capture="0"
 
 # Set the maximum number of devices collected by Nmon, default is set to 1500 devices
 # Increase this value if you have systems with more devices

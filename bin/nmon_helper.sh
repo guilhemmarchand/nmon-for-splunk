@@ -47,8 +47,9 @@
 # 2016/04/23, Guilhem Marchand:         - Improve the PID file age determination by switching from Perl to Python command depending on interpreter available
 # 2016/05/19, Guilhem Marchand:         - Fix some situation were the nmon bin in path could be ignored
 # 2016/05/31, Guilhem Marchand:         - AIX: Collect in default SEA and WLM stats (-O and -W options)
+# 2016/06/12, Guilhem Marchand:         - Linux: Managed unlimited capturation for processes and disks
 
-# Version 1.3.18
+# Version 1.3.19
 
 # For AIX / Linux / Solaris
 
@@ -145,6 +146,8 @@ esac
 
 # set defaults values for interval and snapshot and source nmon.conf
 
+### All these values are defaults values, and will be overcharged by default/nmon.conf and local/nmon.conf if they exists ###
+
 # Refresh interval in seconds, Nmon will this value to refresh data each X seconds
 # Default to 60 seconds
 interval="60"
@@ -163,6 +166,15 @@ Linux_devices="1500"
 # by default, the nmon_helper.sh script will use any nmon binary found in PATH
 # Set to "1" to give the priority to embedded nmon binaries
 Linux_embedded_nmon_priority="0"
+
+# Change the limit for processes and disks capture of nmon for Linux
+# In default configuration, nmon will capture most of the process table by capturing main consuming processes
+# You can set nmon to an unlimited number of processes to be captured, and the entire process table will be captured.
+# Note this will affect the number of disk devices captured by setting it to an unlimited number.
+# This will also increase the volume of data to be generated and may require more cpu overhead to process nmon data
+# The default configuration uses the default mode (limited capture), you can set bellow the limit number of capture to unlimited mode
+# Change to "1" to set capture of processes and disks to no limit mode
+Linux_unlimited_capture="0"
 
 # endtime_margin defines the time in seconds before a new nmon process will be started
 # in default configuration, a new process will be spawned 240 seconds before the current process ends
@@ -856,9 +868,22 @@ SunOS )
 Linux )
 
 	if [ ${Linux_NFS} -eq 1 ]; then
-		nmon_command="${NMON} -f -T -d ${Linux_devices} -N -s ${interval} -c ${snapshot} -p"
+
+        # Verify the limit configuration for processes and disks capture
+	    if [ ${Linux_unlimited_capture} -eq 1 ]; then
+	        nmon_command="${NMON} -f -T -N -s ${interval} -c ${snapshot} -I -1 -p"
+        else
+            nmon_command="${NMON} -f -T -d ${Linux_devices} -N -s ${interval} -c ${snapshot} -p"
+        fi
+
 	else
-		nmon_command="${NMON} -f -T -d ${Linux_devices} -s ${interval} -c ${snapshot} -p"
+
+        # Verify the limit configuration for processes and disks capture
+	    if [ ${Linux_unlimited_capture} -eq 1 ]; then
+	        nmon_command="${NMON} -f -T -s ${interval} -c ${snapshot} -I -1 -p"
+        else
+		    nmon_command="${NMON} -f -T -d ${Linux_devices} -s ${interval} -c ${snapshot} -p"
+        fi
 	fi
 ;;
 
