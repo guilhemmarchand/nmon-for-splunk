@@ -1162,7 +1162,7 @@
                 <title>Average deployment CPU usage main process</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
-| dedup _time,hostname,Command
+| dedup _time,hostname,Command,PID
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
@@ -1210,8 +1210,8 @@
                 <title>Average deployment Memory usage main process</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
-| dedup _time,hostname,Command
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| dedup _time,hostname,Command,PID
+| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by Command | sort - mem_usage_mb</query>
@@ -1425,7 +1425,7 @@
                 <title>Deployment TOP 10 Memory processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
-| dedup _time,hostname,Command
+| dedup _time,hostname,Command,PID
 | eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
@@ -1469,7 +1469,7 @@
                 <title>By host TOP 10 Memory processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
-| dedup _time,hostname,Command
+| dedup _time,hostname,Command,PID
 | eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats max(mem_usage_mb) AS mem_usage_mb by _time,hostname,Command,PID
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
