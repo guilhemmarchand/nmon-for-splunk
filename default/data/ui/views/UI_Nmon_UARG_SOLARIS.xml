@@ -1,9 +1,8 @@
 <form stylesheet="ui_simple.css,panel_decoration.css">
     <label>UI UARG, Search Commands Arguments</label>
-    <description>User Interface for the UARG data on Linux systems</description>
+    <description>User Interface for the UARG monitor on Solaris systems</description>
 
     <fieldset autoRun="false" submitButton="false">
-
         <input type="time" token="timerange" searchWhenChanged="true">
             <label>TimeRange:</label>
             <default>
@@ -14,9 +13,9 @@
 
         <input type="dropdown" token="osfilter" searchWhenChanged="true">
             <label>Filter OS Type:</label>
-            <default>Linux</default>
+            <default>Solaris</default>
             <choice value="*">Any OS</choice>
-            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
         </input>
 
         <input type="text" token="hostname-prefilter" searchWhenChanged="true">
@@ -28,7 +27,12 @@
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_UARG where (nodename = UARG) (UARG.hostname="$hostname-prefilter$") (UARG.OStype="$osfilter$") groupby "UARG.hostname" prestats=true | stats dedup_splitvals=t count AS Count by "UARG.hostname" | sort limit=0 "UARG.hostname" | fields - _span | rename "UARG.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_UARG where (nodename = UARG) (UARG.hostname="$hostname-prefilter$") (UARG.OStype="$osfilter$") groupby "UARG.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "UARG.hostname"
+| sort limit=0 "UARG.hostname"
+| fields - _span
+| rename "UARG.hostname" AS hostname
+| fillnull Count | fields hostname, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -40,16 +44,30 @@
             <fieldForValue>hostname</fieldForValue>
         </input>
 
-        <input type="text" token="ProgName" searchWhenChanged="true">
-            <label>Optional: Filter Command name</label>
-            <prefix>ProgName="</prefix>
+        <input type="text" token="PID" searchWhenChanged="true">
+            <label>Optional: Filter PIDs</label>
+            <prefix>PID="</prefix>
             <suffix>"</suffix>
             <default>*</default>
         </input>
 
-        <input type="text" token="PID" searchWhenChanged="true">
-            <label>Optional: Filter PIDs</label>
-            <prefix>PID="</prefix>
+        <input type="text" token="COMM" searchWhenChanged="true">
+            <label>Optional: Filter Command name</label>
+            <prefix>COMM="</prefix>
+            <suffix>"</suffix>
+            <default>*</default>
+        </input>
+
+        <input type="text" token="USER" searchWhenChanged="true">
+            <label>Optional: Filter user</label>
+            <prefix>USER="</prefix>
+            <suffix>"</suffix>
+            <default>*</default>
+        </input>
+
+        <input type="text" token="GROUP" searchWhenChanged="true">
+            <label>Optional: Filter group</label>
+            <prefix>GROUP="</prefix>
             <suffix>"</suffix>
             <default>*</default>
         </input>
@@ -105,8 +123,10 @@
                                     <div class="list">
                                         <lu>
                                             <li><b>PID:</b> The PID number of the process</li>
+                                            <li><b>PPID:</b> The father's PID number for that process</li>
                                             <li><b>ProgName:</b> The name of the main command invocation. (equivalent to Command in TOP data)</li>
                                             <li><b>FullCommand:</b> List of arguments that were associated with this PID</li>
+                                            <li><b>USER:</b> Name of the Unix user that owns the process</li>
                                         </lu>
                                     </div>
 
@@ -118,7 +138,7 @@
 
                                 <div style="text-align: center;" class="cat_title">
 
-                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:process%20type%3DUARG%20OStype%3DLinux" class="tryitbtn">Explore RAW DATA »
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:process%20type%3DUARG%20OStype%3DSolaris" class="tryitbtn">Explore RAW DATA »
                                     </a>
 
                                     <a target="_blank" href="Howto_TOP_spl" class="tryitbtn">HOWTO Interface for TOP »
@@ -133,7 +153,7 @@
                                     <a target="_blank" href="UI_data_dictionary?&amp;form.itemfilter=PROCESSES%20STATISTICS" class="tryitbtn">Processes Data Dictionnary »
                                     </a>
 
-                                    <a target="_blank" href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_LINUX" class="tryitbtn">Bubblechart dashboard »
+                                    <a target="_blank" href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_SOLARIS" class="tryitbtn">Bubblechart dashboard »
                                     </a>
 
                                 </div>
@@ -144,10 +164,10 @@
 
                                 <div style="text-align: center;" class="cat_title">
 
-                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Aprocess%20type%3DTOP%20OStype%3DLinux" class="tryitbtn">TOP RAW DATA »
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Aprocess%20type%3DTOP%20OStype%3DSolaris" class="tryitbtn">TOP RAW DATA »
                                     </a>
 
-                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Acpu%20type%3DCPU_ALL%20OStype%3DLinux" class="tryitbtn">CPU_ALL RAW DATA »
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Acpu%20type%3DCPU_ALL%20OStype%3DSolaris" class="tryitbtn">CPU_ALL RAW DATA »
                                     </a>
 
                                 </div>
@@ -178,7 +198,7 @@
             <event>
                 <title>Events:</title>
                 <search>
-                    <query>eventtype=nmon:performance type=UARG $hostname$ $ProgName$ $PID$ $FullCommand$ | search $customsearch$</query>
+                    <query>eventtype=nmon:performance type=UARG $hostname$ $PID$ $COMM$ $USER$ $GROUP$ $FullCommand$ | search $customsearch$</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -196,7 +216,7 @@
             <table>
                 <title>Table:</title>
                 <search>
-                    <query>eventtype=nmon:performance type=UARG $hostname$ $ProgName$ $PID$ $FullCommand$ | table _time,hostname,PID,ProgName,FullCommand</query>
+                    <query>eventtype=nmon:performance type=UARG $hostname$ $PID$ $COMM$ $USER$ $GROUP$ $FullCommand$ | table _time,hostname,PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
