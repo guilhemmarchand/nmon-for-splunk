@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css,panel_decoration.css" script="link_switcher.js, autodiscover.js">
+<form stylesheet="ui_simple.css,panel_decoration.css" script="autodiscover.js">
     <label>UI TOP, AIX Processes System Resources statistics</label>
     <description>User Interface for the TOP monitor on AIX Systems</description>
 
@@ -39,7 +39,7 @@
             <search id="frameIDSearch">
                 <query>| tstats count AS Count from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) ($osfilter$) groupby "TOP_AIX.frameID" prestats=true
 | stats dedup_splitvals=t count AS Count by "TOP_AIX.frameID"
-| sort limit=0 "TOP_AIX.frameID"
+| sort $limit$ "TOP_AIX.frameID"
 | fields - _span | fillnull Count | fields "TOP_AIX.frameID"</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
@@ -64,7 +64,7 @@
             <search id="hostsSearch">
                 <query>| tstats count AS Count from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) groupby "TOP_AIX.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "TOP_AIX.hostname"
-| sort limit=0 "TOP_AIX.hostname"
+| sort $limit$ "TOP_AIX.hostname"
 | fields - _span | fillnull Count | fields "TOP_AIX.hostname"</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
@@ -119,16 +119,120 @@
 
     </fieldset>
 
+    <!-- Information panel -->
+
     <row>
         <panel>
             <html>
 
-                <div class="imgheader2">
+                <div class="imgheader">
                     <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-                    <h4>
-                        <a href="/app/nmon/Howto_TOP_spl" target="_blank">Open the Howto build Nmon statistics for TOP</a>
-                        / If UARG collection is activated, search for PIDs, Commands and Full Arguments of processes: <a href="UI_Nmon_UARG?form.osfilter=AIX" target="_blank">Open UARG Search Interface in new window</a></h4>
-                    <h4>See also the Bubble Chart dashboard for TOP Processes: <a href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_AIX" target="_blank">BubbleChart dj Dashboard</a></h4>
+                    <h4><a data-toggle="modal" data-target="#Help_modal">Help, information and related links for TOP statistics</a></h4>
+                </div>
+
+                <!-- Modal -->
+                <div class="modal custom-modal-60 fade" id="Help_modal" tabindex="-1" role="dialog" aria-labelledby="Help_modal_Label">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"></span></button>
+                                <div style="text-align: left;">
+                                    <h4 class="modal-title" id="Help_modal_Label">Integrated Navigation:</h4>
+                                </div>
+                            </div>
+                            <div class="modal-body">
+
+                                <div style="text-align: center;">
+                                    <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="CPU"/>
+                                    <h1>Processes statistics (TOP)</h1>
+                                </div>
+
+                                <div>
+                                    <br />
+                                    <br />
+                                    The TOP monitor captures processes statistics for system resources metrics such as CPU, memory and more.
+                                    <br />
+                                    This section is available in any supported operating systems, but some metrics are specifics for some systems.
+                                    <br />
+                                    The <b>UARG monitor</b> is associated with the TOP monitor as it will capture the full list of processes arguments.
+
+                                    <br />
+                                    <br />
+                                    Processes statistics are generated at the PID level for a given "Command" invocation, as such, calculation will aggregate statistics of all PIDs for that given Command.
+
+                                </div>
+
+                                <div style="text-align: left;">
+
+                                    <h1>Main fields:</h1>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>Command:</b> The name of the global command that generated the process</li>
+                                            <li><b>PID:</b> The PID number of the process</li>
+                                            <li><b>pct_CPU:</b> (%) average amount of CPU used by this process</li>
+                                            <li><b>pct_Usr:</b> (%) average amount of user-mode CPU used by this process</li>
+                                            <li><b>pct_Sys:</b> (%) average amount of kernel-mode CPU used by this process</li>
+                                        </lu>
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>Size:</b> The size of the pages in kilobytes.</li>
+                                            <li><b>ResSet:</b> The sum of real-memory data used by the process</li>
+                                            <li><b>ResText:</b> The real-memory text size of the process.</li>
+                                            <li><b>ResData:</b> The real-memory data size of the process.</li>
+                                            <br />
+                                        </lu>
+                                    </div>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related links:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:process%20type%3DTOP" class="tryitbtn">Explore RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="Howto_TOP_spl" class="tryitbtn">HOWTO Interface »
+                                    </a>
+
+                                    <a target="_blank" href="pivot?model=%2FservicesNS%2Fnobody%2Fnmon%2Fdatamodel%2Fmodel%2FNMON_Data_TOP" class="tryitbtn">PIVOT Data model »
+                                    </a>
+
+                                    <a target="_blank" href="UI_data_dictionary?&amp;form.itemfilter=PROCESSES%20STATISTICS" class="tryitbtn">Processes Data Dictionnary »
+                                    </a>
+
+                                    <a target="_blank" href="../../../dj/en-us/nmon/UI_Usage_per_process_dj_AIX" class="tryitbtn">Bubblechart dashboard »
+                                    </a>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related metrics:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Aprocess%20type%3DUARG" class="tryitbtn">UARG RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Acpu%20type%3DCPU_ALL" class="tryitbtn">CPU_ALL RAW DATA »
+                                    </a>
+
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
 
             </html>
@@ -203,13 +307,61 @@
                 <default>value=*</default>
             </input>
 
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="link10,link11,link13,link14,link15">Select a view:<!--Links go here-->
-                </div>
-            </html>
-            <chart id="link10">
-                <title>CPU Usage per logical core</title>
+            <input type="text" token="limit" searchWhenChanged="true">
+                <label>Limit series: Max nb of series to be charted (limit):</label>
+                <default>0</default>
+                <prefix>limit=</prefix>
+            </input>
+
+            <input type="link" token="top_linkinput">
+                <label></label>
+                <choice value="top_chart1">CPU Usage per logical core</choice>
+                <choice value="top_chart2">Memory Usage per command invocation</choice>
+                <choice value="top_chart3">Read / Write System Calls</choice>
+                <choice value="top_chart4">Paging, Sum of page faults</choice>
+                <choice value="top_chart5">Threads per Command invocation</choice>
+                <default>top_chart1</default>
+                <change>
+                    <condition value="top_chart1">
+                        <set token="top_chart1">fields _time,*</set>
+                        <unset token="top_chart2"></unset>
+                        <unset token="top_chart3"></unset>
+                        <unset token="top_chart4"></unset>
+                        <unset token="top_chart5"></unset>
+                    </condition>
+                    <condition value="top_chart2">
+                        <set token="top_chart2">fields _time,*</set>
+                        <unset token="top_chart1"></unset>
+                        <unset token="top_chart3"></unset>
+                        <unset token="top_chart4"></unset>
+                        <unset token="top_chart5"></unset>
+                    </condition>
+                    <condition value="top_chart3">
+                        <set token="top_chart3">fields _time,*</set>
+                        <unset token="top_chart2"></unset>
+                        <unset token="top_chart1"></unset>
+                        <unset token="top_chart4"></unset>
+                        <unset token="top_chart5"></unset>
+                    </condition>
+                    <condition value="top_chart4">
+                        <set token="top_chart4">fields _time,*</set>
+                        <unset token="top_chart2"></unset>
+                        <unset token="top_chart3"></unset>
+                        <unset token="top_chart1"></unset>
+                        <unset token="top_chart5"></unset>
+                    </condition>
+                    <condition value="top_chart5">
+                        <set token="top_chart5">fields _time,*</set>
+                        <unset token="top_chart2"></unset>
+                        <unset token="top_chart3"></unset>
+                        <unset token="top_chart4"></unset>
+                        <unset token="top_chart1"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <chart depends="$top_chart1$">
+                <title></title>
                 <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
                 <search>
                     <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP
@@ -219,13 +371,14 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | $majorsmt$
+| $top_chart1$
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,hostname,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As value by _time,hostname,Command
 | $aggregate$
 | search $valuefilter$
 | eval key=hostname+":"+Command
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -259,14 +412,14 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats sum(usage_per_core) As value by _time,hostname,Command,PID
 | eval key=hostname%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
 &amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
             </chart>
 
 
-            <chart id="link11">
-                <title>Memory Usage per command invocation</title>
+            <chart depends="$top_chart2$">
+                <title></title>
                 <search>
                     <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
@@ -275,10 +428,11 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As value by _time,hostname,Command
+| $top_chart2$
 | $aggregate$
 | search $valuefilter$
 | eval key=hostname+":"+Command
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -309,13 +463,13 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats sum(Used_Mem_MB) As value by _time,hostname,Command,PID
 | eval key=hostname%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
 &amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
             </chart>
 
-            <chart id="link13">
-                <title>Read / Write System Calls</title>
+            <chart depends="$top_chart3$">
+                <title></title>
                 <search>
                     <query>| tstats max("TOP_AIX.CharIO") AS CharIO from datamodel=NMON_Data_TOP
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
@@ -323,10 +477,11 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats dedup_splitvals=t max("TOP_AIX.CharIO") AS CharIO by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | stats sum(CharIO) As value by _time,hostname,Command
+| $top_chart3$
 | $aggregate$
 | search $valuefilter$
 | eval key=hostname+":"+Command
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -356,13 +511,13 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats sum(CharIO) As value by _time,hostname,Command,PID
 | eval key=hostname%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
 &amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
             </chart>
 
-            <chart id="link14">
-                <title>Paging, Sum of page faults</title>
+            <chart depends="$top_chart4$">
+                <title></title>
                 <search>
                     <query>| tstats max("TOP_AIX.Paging") AS Paging from datamodel=NMON_Data_TOP
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
@@ -370,10 +525,11 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats dedup_splitvals=t max("TOP_AIX.Paging") AS Paging by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | stats sum(Paging) As value by _time,Command,hostname
+| $top_chart4$
 | $aggregate$
 | search $valuefilter$
 | eval key=hostname+":"+Command
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -403,13 +559,13 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats sum(Paging) As value by _time,hostname,Command,PID
 | eval key=hostname%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
 &amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
             </chart>
 
-            <chart id="link15">
-                <title>Threads per Command invocation</title>
+            <chart depends="$top_chart5$">
+                <title></title>
                 <search>
                     <query>| tstats max("TOP_AIX.Threads") AS Threads from datamodel=NMON_Data_TOP
 where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
@@ -417,10 +573,11 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats dedup_splitvals=t max("TOP_AIX.Threads") AS Threads by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
 | rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | stats sum(Threads) As value by _time,hostname,Command
+| $top_chart5$
 | $aggregate$
 | search $valuefilter$
 | eval key=hostname+":"+Command
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -450,7 +607,7 @@ groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "T
 | stats sum(Threads) As value by _time,hostname,Command,PID
 | eval key=hostname%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
-| timechart $span$ limit=0 useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
+| timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*
 &amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
             </chart>
