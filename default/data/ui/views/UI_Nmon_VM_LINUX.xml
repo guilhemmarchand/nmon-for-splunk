@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css,panel_decoration.css" script="link_switcher.js, autodiscover.js">
+<form script="active_button.js,link_switcher.js" stylesheet="ui_simple.css,panel_decoration.css,hover.css">
     <label>UI VM, Linux Virtual Memory Statistics</label>
     <description>User Interface for the VM monitor on Linux Systems</description>
 
@@ -30,6 +30,7 @@
             <prefix>Linux.OStype="</prefix>
             <suffix>"</suffix>
             <choice value="Linux">Linux</choice>
+            <choice value="*">ANY</choice>
         </input>
 
         <input type="multiselect" token="frameID" searchWhenChanged="true">
@@ -102,19 +103,103 @@ groupby _time, "Linux.frameID", "Linux.hostname" prestats=true span=1m
     <!-- Information panel -->
 
     <row>
-
         <panel>
             <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_def" data-alt-label="Hide fields and metric definition for VM statistics" data-token-value="true">Show fields and metric definition for VM statistics</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="mainbutton_container_nomargin">
 
-                <div class="imgheader">
-                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
-                    <a href="search?q=%7C%20inputlookup%20data_dictionary%20%7C%20search%20Linux%3Dtrue%20nmon_section%3DVM" target="_blank">
-                        <h4><i>Link: Access to definition of these metrics</i></h4>
-                    </a>
+                    <div class="mainbutton">
+                        <button class="button2_lowpadding glow" data-toggle="modal" data-target="#Help_modal">Help, information and related links for VM statistics</button>
+                    </div>
 
                 </div>
 
+                <!-- Modal -->
+                <div class="modal custom-modal-60 fade" id="Help_modal" tabindex="-1" role="dialog" aria-labelledby="Help_modal_Label">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"></span></button>
+                                <div style="text-align: left;">
+                                    <h4 class="modal-title" id="Help_modal_Label">Integrated Navigation:</h4>
+                                </div>
+                            </div>
+                            <div class="modal-body">
+
+                                <div style="text-align: center;">
+                                    <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="CPU"/>
+                                    <h1>Linux Virtual Memory Statistics</h1>
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related links:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance%20type%3DVM%20OStype%3DLinux" class="tryitbtn">Explore RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="pivot?model=%2FservicesNS%2Fnobody%2Fnmon%2Fdatamodel%2Fmodel%2FNMON_Data_VM" class="tryitbtn">PIVOT Data model »
+                                    </a>
+
+                                    <a target="_blank" href="UI_data_dictionary?&amp;form.itemfilter=KERNEL%20STATISTICS&amp;form.osfilter=Linux%3Dtrue" class="tryitbtn">Kernel Data Dictionary »
+                                    </a>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related metrics:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Aprocess%20type%3DTOP" class="tryitbtn">TOP RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Aprocess%20type%3DUARG" class="tryitbtn">UARG RAW DATA »
+                                    </a>
+
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
             </html>
+        </panel>
+    </row>
+
+    <row depends="$show_def$">
+        <panel>
+            <input type="text" token="def_search" searchWhenChanged="true">
+                <label>free search:</label>
+                <default>*</default>
+            </input>
+            <table>
+                <title></title>
+                <search>
+                    <query>| inputlookup data_dictionary | search Linux=true nmon_section=VM | fields perf_item,nmon_section,formula*,long*,unity | sort "formula (or field name if not evaluated)"
+| search long_description="*$def_search$*"</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">100</option>
+            </table>
         </panel>
     </row>
 
