@@ -1,14 +1,11 @@
 /*
-
-
-
-
-
+	--------------
+	SccTakeTheTour
+	--------------
 */
 
 define(function(require, exports, module) {
     var $ = require('jquery');
-	//var mvc = require('splunkjs/mvc');
 	var SimpleSplunkView = require('splunkjs/mvc/simplesplunkview');
     var SplunkUtils = require('splunkjs/mvc/utils');
 	require("css!./scc_takethetour.css");
@@ -21,15 +18,14 @@ define(function(require, exports, module) {
 			close_btn_label: "Close",
 			no_more_label: "Do not show this tour again",
             hide_container: false,
-            show_credits: false
+            show_credits: false,
+			cookie_name_suffix: ""
         },
 
         initialize: function() {
 			SimpleSplunkView.prototype.initialize.apply(this, arguments);
-            
-            //console.log(this.className);
 
-            // 
+            // Treat "hide_container" setting
             if(this.settings.get('hide_container') == true){
                 this.$el.parent().css({
                     'padding':0,
@@ -45,8 +41,9 @@ define(function(require, exports, module) {
 		render: function() {
 			this.$el.html('');
 
-            // 
-            var ck_name = 'scc_takethetour' + SplunkUtils.getCurrentApp();
+            // Cookie stuff
+			var cookie_name_suffix = this.settings.get('cookie_name_suffix') == "" ? "" : '_' + this.settings.get('cookie_name_suffix');
+            var ck_name = 'scc_takethetour_' + SplunkUtils.getCurrentApp() + cookie_name_suffix;
 
             function getCookie(ck_name) {
 				var oRegex = new RegExp("(?:; )?" + ck_name + "=([^;]*);?");
@@ -72,7 +69,7 @@ define(function(require, exports, module) {
 								+			'</div>'
 								+			'<div class="modal-body">'
 								+				'<div class="scc-takethetour-nav">'
-								+					'<button class="prev btn btn-default"><span class="caret"></span></button>'
+								+					'<button class="prev btn btn-default disabled"><span class="caret"></span></button>'
 								+					'<div></div>'
 								+					'<button class="next btn btn-default"><span class="caret"></span></button>'
 								+ 				'</div>'
@@ -88,8 +85,8 @@ define(function(require, exports, module) {
 				this.$el.html(html_tpl);
                 
 				var $user_slides = $('#'+this.settings.get('user_slides')+' li');
-				var $modal = this.$el.find('#scc-takethetour-modal');
 				
+				var $modal = this.$el.find('#scc-takethetour-modal');
 				$modal.css({width:this.settings.get('width') + "%", "margin-left": "-" + this.settings.get('width')/2 + "%"});
 				
 				var $modal_body = this.$el.find('#scc-takethetour-modal .modal-body');
@@ -103,7 +100,7 @@ define(function(require, exports, module) {
 				var active_slide_id = 0;
 				var max_slide_id = $user_slides.length - 1;
 
-                //
+                // Treat "show_credits" setting
                 if(this.settings.get('show_credits') === true){
                     var html_credits = '<div class="credits">'
                                         +   'Powered by <a href="http://www.splunk.com" target="_blank">Splunk</a> and <a href="https://github.com/ftoulouse/splunk-components-collection" target="_blank">Scc</a>'
@@ -111,9 +108,8 @@ define(function(require, exports, module) {
                     $modal.find('.modal-footer').append(html_credits);
                 }
 
-				
 				$user_slides.each(function(idx){
-					$slides_nav_links.append('<button class="btn btn-default" data-slide-id="' + idx + '">' + idx + '</button>');
+					$slides_nav_links.append('<button class="btn btn-default" data-slide-id="' + idx + '">' + (idx + 1) + '</button>');
 					$slides.append($user_slides.eq(idx));
 
 					idx == 0 ? $slides_nav_links.find('button').eq(idx).addClass('btn-primary') : $slides.find('li').eq(idx).addClass('hide');
@@ -121,6 +117,8 @@ define(function(require, exports, module) {
                 $('#'+this.settings.get('user_slides')).remove();
                 
 
+				// EVENTS
+				// ------
 				$slides_nav_prev.on('click', function(){
 					if(!$(this).hasClass('disabled')){
 						slidesManagr(active_slide_id - 1);
@@ -135,29 +133,28 @@ define(function(require, exports, module) {
 					slidesManagr($(e.target).attr('data-slide-id'));
 				});
 
-
-
+				// Add / remove vertical scrollbar on page resize
+				function isScrollNeeded(){
+					var overflow_y = $slides_nav.outerHeight(true) + $slides.outerHeight() > $modal_body.height() ? 'scroll' : 'none'; 
+					$modal_body.css('overflow-y', overflow_y);
+				};
 				
-				
-				// 
-				function slidesManagr(slide_id){
-					
+				// Hide / show slides and slides navigation
+				function slidesManagr(slide_id){	
 					slide_id = parseInt(slide_id);
-					
-					
-					
+
+					// Manage slides
 					$slides.find('li').eq(active_slide_id).addClass('hide');
 					$slides_nav_links.find('button').eq(active_slide_id).removeClass('btn-primary')
 					
 					$slides.find('li').eq(slide_id).removeClass('hide');
 					$slides_nav_links.find('button').eq(slide_id).addClass('btn-primary');
 					
-					
+					// Manage nav
 					if(slide_id == 0){
 						if(!$slides_nav_prev.hasClass('disabled')){
 							$slides_nav_prev.addClass('disabled');
 						}
-						
 						if($slides_nav_next.hasClass('disabled')){
 							$slides_nav_next.removeClass('disabled');
 						}
@@ -167,7 +164,6 @@ define(function(require, exports, module) {
 						if(!$slides_nav_next.hasClass('disabled')){
 							$slides_nav_next.addClass('disabled');
 						}
-						
 						if($slides_nav_prev.hasClass('disabled')){
 							$slides_nav_prev.removeClass('disabled');
 						}
@@ -182,56 +178,32 @@ define(function(require, exports, module) {
 						}
 					}
 
-					active_slide_id = slide_id;					
+					active_slide_id = slide_id;
+					isScrollNeeded();					
 				}
 
-				$slides_nav_prev.addClass('disabled');
-				
-				
-				
-				function isScrollNeeded(){
-					var overflow_y = $slides_nav.outerHeight(true) + $slides.outerHeight() > $modal_body.outerHeight() ? 'scroll' : 'none'; 
-					$modal_body.css('overflow-y', overflow_y);
-				};
-				
-				//var ck_name = this.settings.get('no_more_cookie_name');
-				
-				
-				$modal
-				.on('show.bs.modal', function(e){
-					isScrollNeeded();
-				})
-				.on('shown.bs.modal', function(e){
-					// Prevents page body scrolling if modal content is scrollable
-					$('body').css({overflow:"hidden", position:"fixed", width: "100%"});
-				})
-				.on('hide.bs.modal', function(e){
-					//
-					$('body').css({overflow:"inherit", position:"inherit", width: "inherit"});
-					
-					// Never show Tour until
-					if($checkbox.is(':checked')){
-						setCookie(ck_name);
-					}
-				});
-				
-				// 
 				$(window).resize(function(){
 					isScrollNeeded();
 				});
 
-
-				
-				
-				
-				
-				
-				$modal.modal('show');
-				
+				$modal
+				.on('shown.bs.modal', function(e){
+					// Prevents page body scrolling if modal content is scrollable
+					$('body').css({overflow:"hidden", position:"fixed", width: "100%"});
+					isScrollNeeded();
+				})
+				.on('hide.bs.modal', function(e){
+					// Give back inherited overflow attributes to the body
+					$('body').css({overflow:"inherit", position:"inherit", width: "inherit"});
+					
+					// Never show the tour again until navigator cookie is not deleted by user
+					if($checkbox.is(':checked')){
+						setCookie(ck_name);
+					}
+				})
+				.modal('show');
 			}
-			
-			
-			
+
 			return this;
 		}
 	});
