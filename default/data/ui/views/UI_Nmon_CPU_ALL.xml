@@ -244,7 +244,7 @@
         <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.cpu_PCT") AS CPU.cpu_PCT by _time, "CPU.hostname"
 | $aggregate$
-| stats max("CPU.cpu_PCT") AS max, avg("CPU.cpu_PCT") AS avg, min("CPU.cpu_PCT") AS min by "CPU.hostname"</query>
+| stats max("CPU.cpu_PCT") AS max, avg("CPU.cpu_PCT") AS avg, median("CPU.cpu_PCT") AS median by "CPU.hostname"</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -253,73 +253,67 @@
 
     <row>
         <panel>
-            <chart>
-                <title>Higher load</title>
+            <viz type="nmon.horseshoe_meter">
                 <search base="gaugestats">
-                    <query>stats max(max) AS max | eval max=round(max,2) | gauge max</query>
+                    <query>eval max=round(max,2) | gauge max</query>
                 </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart">radialGauge</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">default</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">right</option>
-                <option name="height">115px</option>
-            </chart>
+                <option name="nmon.horseshoe_meter.backgroundColor">#FFF</option>
+                <option name="nmon.horseshoe_meter.dialColor">#d0d5d9</option>
+                <option name="nmon.horseshoe_meter.valueColor">#555</option>
+                <option name="nmon.horseshoe_meter.minValue">0</option>
+                <option name="nmon.horseshoe_meter.maxValue">100</option>
+                <option name="nmon.horseshoe_meter.useRangemap">true</option>
+                <option name="nmon.horseshoe_meter.thresholdStyle">percentage</option>
+                <option name="nmon.horseshoe_meter.minRangeColor">#3fc77a</option>
+                <option name="nmon.horseshoe_meter.midRangeColor">#fbcd2f</option>
+                <option name="nmon.horseshoe_meter.midRangeThreshold">55</option>
+                <option name="nmon.horseshoe_meter.maxRangeColor">#b44441</option>
+                <option name="nmon.horseshoe_meter.maxRangeThreshold">85</option>
+                <option name="nmon.horseshoe_meter.caption">Max %CPU</option>
+                <option name="height">180px</option>
+            </viz>
         </panel>
         <panel>
-            <chart>
-                <title>Average load</title>
+            <viz type="nmon.horseshoe_meter">
                 <search base="gaugestats">
-                    <query>stats avg(avg) AS avg | eval avg=round(avg,2) | gauge avg</query>
+                    <query>eval avg=round(avg,2) | gauge avg</query>
                 </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">default</option>
-                <option name="charting.chart">radialGauge</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">right</option>
-                <option name="height">115px</option>
-            </chart>
+                <option name="nmon.horseshoe_meter.backgroundColor">#FFF</option>
+                <option name="nmon.horseshoe_meter.dialColor">#d0d5d9</option>
+                <option name="nmon.horseshoe_meter.valueColor">#555</option>
+                <option name="nmon.horseshoe_meter.minValue">0</option>
+                <option name="nmon.horseshoe_meter.maxValue">100</option>
+                <option name="nmon.horseshoe_meter.useRangemap">true</option>
+                <option name="nmon.horseshoe_meter.thresholdStyle">percentage</option>
+                <option name="nmon.horseshoe_meter.minRangeColor">#3fc77a</option>
+                <option name="nmon.horseshoe_meter.midRangeColor">#fbcd2f</option>
+                <option name="nmon.horseshoe_meter.midRangeThreshold">55</option>
+                <option name="nmon.horseshoe_meter.maxRangeColor">#b44441</option>
+                <option name="nmon.horseshoe_meter.maxRangeThreshold">85</option>
+                <option name="nmon.horseshoe_meter.caption">Avg %CPU</option>
+                <option name="height">180px</option>
+            </viz>
         </panel>
         <panel>
-            <chart>
-                <title>Minimal load</title>
+            <viz type="nmon.horseshoe_meter">
                 <search base="gaugestats">
-                    <query>stats min(min) AS min | eval min=round(min,2) | gauge min</query>
+                    <query>eval median=round(median,2) | gauge median</query>
                 </search>
-                <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.visibility">visible</option>
-                <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.scale">linear</option>
-                <option name="charting.chart.style">shiny</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
-                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">default</option>
-                <option name="charting.chart">radialGauge</option>
-                <option name="charting.drilldown">all</option>
-                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
-                <option name="charting.layout.splitSeries">0</option>
-                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">right</option>
-                <option name="height">115px</option>
-            </chart>
+                <option name="nmon.horseshoe_meter.backgroundColor">#FFF</option>
+                <option name="nmon.horseshoe_meter.dialColor">#d0d5d9</option>
+                <option name="nmon.horseshoe_meter.valueColor">#555</option>
+                <option name="nmon.horseshoe_meter.minValue">0</option>
+                <option name="nmon.horseshoe_meter.maxValue">100</option>
+                <option name="nmon.horseshoe_meter.useRangemap">true</option>
+                <option name="nmon.horseshoe_meter.thresholdStyle">percentage</option>
+                <option name="nmon.horseshoe_meter.minRangeColor">#3fc77a</option>
+                <option name="nmon.horseshoe_meter.midRangeColor">#fbcd2f</option>
+                <option name="nmon.horseshoe_meter.midRangeThreshold">55</option>
+                <option name="nmon.horseshoe_meter.maxRangeColor">#b44441</option>
+                <option name="nmon.horseshoe_meter.maxRangeThreshold">85</option>
+                <option name="nmon.horseshoe_meter.caption">Median %CPU</option>
+                <option name="height">180px</option>
+            </viz>
         </panel>
     </row>
 

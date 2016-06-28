@@ -62,6 +62,7 @@
             -->
        		<change>
          		<unset token="form.OStype_detection"></unset>
+                <unset token="form.CPU_datasource_detection"></unset>
        		</change>
         </input>
 
@@ -88,7 +89,7 @@
         </input>
 
         <!--
-        This input is an hidden input that will be used to detect th type of operating system depending on the user
+        This input is an hidden input that will be used to detect the type of operating system depending on the user
         selection.
         This requires the associated form.hostname to be reset when changed
         -->
@@ -96,7 +97,7 @@
         <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Detected OS:</label>
             <search>
-                <query>eventtype=nmon:performance $hostname$ | stats count by OStype | fields OStype | head 1</query>
+                <query>eventtype=nmon:performance type=CPU_ALL $hostname$ OStype=* | head 1 | stats count by OStype | fields OStype | head 1</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -122,6 +123,44 @@
             </change>
         </input>
 
+        <!--
+        This input is an hidden input with the goal to determine and store the source of CPU stats
+        If we are dealing with an IBM Partition with LPAR stats (AIX or PowerLinux), we will want to use LPAR stats
+        In other cases, we will want to use CPU_ALL.
+
+        This input result will be used to inform the user of the CPU data source origin.
+        -->
+
+        <input type="dropdown" token="CPU_datasource_detection" depends="$hidden_element2$" searchWhenChanged="true">
+            <label>Datasource detected:</label>
+            <search id="datasource">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby "CPU.hostname", "CPU.type" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.hostname", "CPU.type"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname "CPU.type" AS type
+| fillnull Count
+| fields hostname, type, Count
+| sort - type
+| head 1
+| eval datasource=case(match(type, "LPAR"), "LPAR", match(type, "CPU_ALL"), "CPU_ALL")</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>datasource</fieldForLabel>
+            <fieldForValue>datasource</fieldForValue>
+            <change>
+                <condition value="CPU_ALL">
+                    <set token="CPU_datasource">CPU_ALL usage</set>
+                    <set token="CPU_datasource_minilabel">CPU % usage</set>
+                </condition>
+                <condition value="LPAR">
+                    <set token="CPU_datasource">LPAR usage</set>
+                    <set token="CPU_datasource_minilabel">partition vCPUs usage</set>
+                </condition>
+            </change>
+        </input>
 
     </fieldset>
 
@@ -135,46 +174,30 @@ last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nod
 | stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
 last("Nmon_Config.OS_Level") AS OS_Level
 last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
-| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | eval OS_summary=upper(OStype)+" / "+OS_Level | fields hostname, OStype, OS_Level, OS_summary, cpu_cores, Processor</query>
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | eval OS_summary=upper(OStype)+" / "+OS_Level
+| $show_configuration$
+| fields hostname, OStype, OS_Level, OS_summary, cpu_cores, Processor</query>
         <earliest>0</earliest>
         <latest>$timerange.latest$</latest>
     </search>
 
     <search id="MEMSearch">
-        <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT, max("MEM.allOS_Real_total_MB") AS mem_total_MB max("MEM.allOS_Virtual_total_MB") AS swap_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
-groupby _time MEM.hostname prestats=true span=1m
-| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT, max("MEM.allOS_Real_total_MB") AS mem_total_MB max("MEM.allOS_Virtual_total_MB") AS swap_total_MB by _time, MEM.hostname
-| stats avg(mem_used_effective_PCT) AS avg_mem_used_PCT, max(mem_used_effective_PCT) AS max_mem_used_PCT, avg(swap_used_effective_PCT) AS avg_swap_used_PCT, max(swap_used_effective_PCT) AS max_swap_used_PCT, latest(mem_total_MB) AS mem_total_MB, latest(swap_total_MB) AS swap_total_MB by MEM.hostname
-| rename MEM.hostname AS hostname | foreach avg* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ] | foreach *total* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 0) ]</query>
+        <query>| tstats latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
+groupby MEM.hostname prestats=true
+| stats dedup_splitvals=t latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB by MEM.hostname
+| rename MEM.hostname AS hostname
+| $show_configuration$
+| foreach *total* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 0) ]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
 
-    <search id="CPUSearch">
-        <query>| tstats
-avg("CPU.lpar_vp_usage") AS avg_vp_usage max("CPU.lpar_vp_usage") AS max_vp_usage
-avg("CPU.cpu_PCT") AS avg_pct_usage max("CPU.cpu_PCT") AS max_pct_usage
-from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t
-avg("CPU.lpar_vp_usage") AS avg_vp_usage max("CPU.lpar_vp_usage") AS max_vp_usage
-avg("CPU.cpu_PCT") AS avg_pct_usage max("CPU.cpu_PCT") AS max_pct_usage by "CPU.hostname"
-| eval avg_usage=if(isnotnull(avg_vp_usage), avg_vp_usage, avg_pct_usage)
-| eval max_usage=if(isnotnull(max_vp_usage), max_vp_usage, max_pct_usage)
-| sort limit=0 "CPU.hostname"
-| fields - _span
-| rename "CPU.hostname" AS hostname
-| fields hostname, avg_usage, max_usage | eval avg_usage=round(avg_usage,2)</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-    </search>
-
-    <search id="IOPSSearch">
-        <query>| tstats sum("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$) groupby _time, "DISKXFER.hostname" prestats=true span=1m
+    <search id="CPUSearch_summary">
+        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
-| sort limit=0 _time | rename "DISKXFER.hostname" AS hostname
-| fields _time, hostname, iops | eval _time= strftime('_time', "%FT%H:%M:%S.%3N%z")
-| stats avg(iops) As avg_iops, max(iops) As max_iops | eval avg_iops=round(avg_iops,2)</query>
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| eval usage=if(isnotnull(vp_usage_pct), vp_usage_pct, pct_usage)
+| stats max(usage) AS max_usage avg(usage) AS avg_usage median(usage) AS median_usage | eval max_usage=round(max_usage, 2), avg_usage=round(avg_usage, 2), median_usage=round(median_usage, 2)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -221,8 +244,95 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
         </panel>
     </row>
 
+    <row>
+        <panel>
+            <viz type="nmon.horseshoe_meter">
+                <search base="CPUSearch_summary">
+                    <query>gauge max_usage</query>
+                </search>
+                <option name="nmon.horseshoe_meter.backgroundColor">#FFF</option>
+                <option name="nmon.horseshoe_meter.dialColor">#d0d5d9</option>
+                <option name="nmon.horseshoe_meter.valueColor">#555</option>
+                <option name="nmon.horseshoe_meter.minValue">0</option>
+                <option name="nmon.horseshoe_meter.maxValue">100</option>
+                <option name="nmon.horseshoe_meter.useRangemap">true</option>
+                <option name="nmon.horseshoe_meter.thresholdStyle">percentage</option>
+                <option name="nmon.horseshoe_meter.minRangeColor">#3fc77a</option>
+                <option name="nmon.horseshoe_meter.midRangeColor">#fbcd2f</option>
+                <option name="nmon.horseshoe_meter.midRangeThreshold">55</option>
+                <option name="nmon.horseshoe_meter.maxRangeColor">#b44441</option>
+                <option name="nmon.horseshoe_meter.maxRangeThreshold">85</option>
+                <option name="nmon.horseshoe_meter.caption">Max %CPU</option>
+                <option name="height">180px</option>
+            </viz>
+        </panel>
+        <panel>
+            <viz type="nmon.horseshoe_meter">
+                <search base="CPUSearch_summary">
+                    <query>gauge avg_usage</query>
+                </search>
+                <option name="nmon.horseshoe_meter.backgroundColor">#FFF</option>
+                <option name="nmon.horseshoe_meter.dialColor">#d0d5d9</option>
+                <option name="nmon.horseshoe_meter.valueColor">#555</option>
+                <option name="nmon.horseshoe_meter.minValue">0</option>
+                <option name="nmon.horseshoe_meter.maxValue">100</option>
+                <option name="nmon.horseshoe_meter.useRangemap">true</option>
+                <option name="nmon.horseshoe_meter.thresholdStyle">percentage</option>
+                <option name="nmon.horseshoe_meter.minRangeColor">#3fc77a</option>
+                <option name="nmon.horseshoe_meter.midRangeColor">#fbcd2f</option>
+                <option name="nmon.horseshoe_meter.midRangeThreshold">55</option>
+                <option name="nmon.horseshoe_meter.maxRangeColor">#b44441</option>
+                <option name="nmon.horseshoe_meter.maxRangeThreshold">85</option>
+                <option name="nmon.horseshoe_meter.caption">Avg %CPU</option>
+                <option name="height">180px</option>
+            </viz>
+        </panel>
+        <panel>
+            <viz type="nmon.horseshoe_meter">
+                <search base="CPUSearch_summary">
+                    <query>gauge median_usage</query>
+                </search>
+                <option name="nmon.horseshoe_meter.backgroundColor">#FFF</option>
+                <option name="nmon.horseshoe_meter.dialColor">#d0d5d9</option>
+                <option name="nmon.horseshoe_meter.valueColor">#555</option>
+                <option name="nmon.horseshoe_meter.minValue">0</option>
+                <option name="nmon.horseshoe_meter.maxValue">100</option>
+                <option name="nmon.horseshoe_meter.useRangemap">true</option>
+                <option name="nmon.horseshoe_meter.thresholdStyle">percentage</option>
+                <option name="nmon.horseshoe_meter.minRangeColor">#3fc77a</option>
+                <option name="nmon.horseshoe_meter.midRangeColor">#fbcd2f</option>
+                <option name="nmon.horseshoe_meter.midRangeThreshold">55</option>
+                <option name="nmon.horseshoe_meter.maxRangeColor">#b44441</option>
+                <option name="nmon.horseshoe_meter.maxRangeThreshold">85</option>
+                <option name="nmon.horseshoe_meter.caption">Median %CPU</option>
+                <option name="height">180px</option>
+            </viz>
+        </panel>
+    </row>
 
-    <row depends="$hostname$">
+    <!-- ######################################### Active Buttons #########################################  -->
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_configuration" data-alt-label="HIDE CONFIGURATION SUMMARY" data-token-value="fields *">SHOW CONFIGURATION SUMMARY</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_configuration$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start host configuration</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_configuration$">
         <panel>
             <title>Operating System</title>
 
@@ -284,52 +394,19 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
         </panel>
     </row>
 
+    <row depends="$show_configuration$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End host configuration</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <row>
         <panel id="cpu">
             <title>CPU Usage Statistics</title>
-
-            <single>
-                <search id="datasource">
-                    <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby "CPU.hostname", "CPU.type" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname", "CPU.type"
-| sort limit=0 "CPU.hostname"
-| fields - _span
-| rename "CPU.hostname" AS hostname "CPU.type" AS type
-| fillnull Count
-| fields hostname, type, Count
-| sort - type
-| head 1
-| eval datasource=case(match(type, "LPAR"), "LPAR (VP usage)", match(type, "CPU_ALL"), "CPU_ALL (% usage)") | stats values(datasource) As datasource</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">CPU datasource</option>
-                <option name="numberPrecision">0.0</option>
-                <option name="linkView">search</option>
-            </single>
-
-            <single>
-                <search base="CPUSearch">
-                    <query>fields avg_usage</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Average CPU Usage</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.0</option>
-                <option name="afterLabel">% or VP</option>
-            </single>
-
-            <single>
-                <search base="CPUSearch">
-                    <query>fields max_usage</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Max CPU Usage</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.0</option>
-                <option name="afterLabel">% or VP</option>
-            </single>
 
             <chart>
                 <search id="cputimechart">
@@ -359,7 +436,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">350px</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">CPU Usage</option>
+                <option name="charting.axisTitleY.text">$CPU_datasource_minilabel$</option>
                 <option name="charting.axisY.minimumNumber">0</option>
             </chart>
 
@@ -367,26 +444,6 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
 
         <panel id="disk">
             <title>I/O Operations per second</title>
-
-            <single>
-                <search base="IOPSSearch">
-                    <query>fields avg_iops</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Average I/O stats</option>
-                <option name="linkView">search</option>
-                <option name="afterLabel">IOPS</option>
-            </single>
-
-            <single>
-                <search base="IOPSSearch">
-                    <query>fields max_iops</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Max I/O stats</option>
-                <option name="linkView">search</option>
-                <option name="afterLabel">IOPS</option>
-            </single>
 
             <chart>
                 <search id="IOPStimechart">
@@ -749,53 +806,6 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel id="mem">
             <title>Memory Statistics</title>
 
-            <single>
-                <search base="MEMSearch">
-                    <query>fields avg_mem_used_PCT</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Average RealMem Usage</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.0</option>
-                <option name="afterLabel">%</option>
-            </single>
-
-            <single>
-                <search base="MEMSearch">
-                    <query>fields max_mem_used_PCT</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Max RealMem Usage</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.0</option>
-                <option name="afterLabel">%</option>
-                <option name="linkFields">result</option>
-            </single>
-
-            <single>
-                <search base="MEMSearch">
-                    <query>fields avg_swap_used_PCT</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Average Virtual Mem Usage</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.0</option>
-                <option name="afterLabel">%</option>
-                <option name="linkFields">result</option>
-            </single>
-
-            <single>
-                <search base="MEMSearch">
-                    <query>fields max_swap_used_PCT</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Max Virtual Mem Usage</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.0</option>
-                <option name="afterLabel">%</option>
-                <option name="linkFields">result</option>
-            </single>
-
             <chart>
                 <search id="MEMtimechart">
                     <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
@@ -828,99 +838,6 @@ groupby _time MEM.hostname prestats=true span=1m
 
         <panel id="process">
             <title>Top 20 processes CPU Statistics</title>
-
-            <single rejects="$show_null_top$">
-                <search base="TOPSearch">
-                    <query>head 1 | fields Command</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">TOP Process</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.00</option>
-                <option name="beforeLabel">Command</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
-| eval limit=(logical_cpus*100)
-| where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As usage_per_core by _time,Command
-| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
-| eval avg_usage_per_core=round(avg_usage_per_core,2)
-| eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</option>
-            </single>
-
-            <single rejects="$show_null_top$">
-                <search base="TOPSearch">
-                    <query>head 1 | fields avg_usage_per_core</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Average Conso for this Command</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.00</option>
-                <option name="beforeLabel">core conso</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
-| eval limit=(logical_cpus*100)
-| where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As usage_per_core by _time,Command
-| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
-| eval avg_usage_per_core=round(avg_usage_per_core,2)
-| eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</option>
-            </single>
-
-            <single rejects="$show_null_top$">
-                <search base="TOPSearch">
-                    <query>head 1 | fields max_usage_per_core</query>
-                </search>
-                <option name="drilldown">none</option>
-                <option name="underLabel">Max Conso for this Command</option>
-                <option name="linkView">search</option>
-                <option name="numberPrecision">0.00</option>
-                <option name="beforeLabel">core conso</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
-| eval limit=(logical_cpus*100)
-| where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As usage_per_core by _time,Command
-| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
-| eval avg_usage_per_core=round(avg_usage_per_core,2)
-| eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</option>
-            </single>
 
             <chart rejects="$show_null_top$">
                 <search id="TOPtimechart">
@@ -1279,6 +1196,105 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
     </row>
 
     <row depends="$show_processes$">
+        <panel>
+
+            <single>
+                <search base="TOPSearch">
+                    <query>head 1 | fields Command</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">TOP Process</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="beforeLabel">Command</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
+| eval avg_usage_per_core=round(avg_usage_per_core,2)
+| eval max_usage_per_core=round(max_usage_per_core,2)
+| sort - avg_usage_per_core</option>
+            </single>
+
+            <single>
+                <search base="TOPSearch">
+                    <query>head 1 | fields avg_usage_per_core</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Average Conso for this Command</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="beforeLabel">core conso</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
+| eval avg_usage_per_core=round(avg_usage_per_core,2)
+| eval max_usage_per_core=round(max_usage_per_core,2)
+| sort - avg_usage_per_core</option>
+            </single>
+
+            <single>
+                <search base="TOPSearch">
+                    <query>head 1 | fields max_usage_per_core</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Max Conso for this Command</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="beforeLabel">core conso</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
+| eval avg_usage_per_core=round(avg_usage_per_core,2)
+| eval max_usage_per_core=round(max_usage_per_core,2)
+| sort - avg_usage_per_core</option>
+            </single>
+
+        </panel>
+    </row>
+
+    <row depends="$show_processes$">
 
         <!-- Table stats of CPU processes usage -->
 
@@ -1425,18 +1441,14 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
             <table depends="$is_AIX$">
                 <title>Table stats: Memory Usage per command invocation</title>
                 <search>
-                    <query>| tstats max("TOP_AIX.ResSet") AS ResSet from datamodel=NMON_Data_TOP
-where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$)
-groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.ResSet") AS ResSet by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| fields $is_AIX$
-| fields $show_processes$
-| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| eval Used_Mem_MB=((ResSet)/1024)
+                    <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$) groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.*" AS *
+| eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As value by _time,frameID,hostname,Command
-| stats max(value) as "max memory usage (MB)", avg(value) as "avg memory usage (MB)", sparkline(max(value)) as sparkline by Command
-| foreach *MB* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 0) ]
-| sort - "max memory usage (MB)"</query>
+| stats max(value) as max_Used_Mem_MB, avg(value) as avg_Used_Mem_MB, sparkline(max(value)) as sparkline by Command | eval max_Used_Mem_MB=round(max_Used_Mem_MB,2) | eval avg_Used_Mem_MB=round(avg_Used_Mem_MB,2)
+| sort - "avg_Used_Mem_MB"
+| rename max_Used_Mem_MB AS "max memory usage (MB)", avg_Used_Mem_MB AS "avg memory usage (MB)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
