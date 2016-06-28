@@ -1,0 +1,1612 @@
+<form stylesheet="ui_simple.css,hover.css,hide_timeindicator.css,panel_decoration.css,table_data_bar.css" script="active_button.js,autodiscover.js,table_data_bar.js">
+    <label>NMON Summary Light Analysis (compatibility mode)</label>
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>*</default>
+            <choice value="*">Any OS</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+
+        <input type="dropdown" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.OStype=$osfilter$) groupby "CPU.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.frameID"
+| sort limit=0 "CPU.frameID"
+| fields - _span | fillnull Count | fields "CPU.frameID"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>CPU.frameID</fieldForLabel>
+            <fieldForValue>CPU.frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+
+        <input type="dropdown" token="hostname" searchWhenChanged="true">
+            <label>Host:</label>
+            <!-- Populating Data Model Search -->
+            <search id="baseSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID="$frameID$") (CPU.hostname="$hostname-prefilter$") (CPU.OStype="$osfilter$") groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.hostname"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname
+| fillnull Count
+| fields hostname, Count</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <fieldForLabel>hostname</fieldForLabel>
+            <fieldForValue>hostname</fieldForValue>
+            <!--
+            Reset the form token changed
+            -->
+       		<change>
+         		<unset token="form.OStype_detection"></unset>
+                <unset token="form.CPU_datasource_detection"></unset>
+       		</change>
+        </input>
+
+        <input type="dropdown" token="span" searchWhenChanged="true">
+            <label>Span:</label>
+            <default>`inline_customspan`</default>
+            <choice value="`inline_customspan`">auto</choice>
+            <choice value="span=1m">1 minute</choice>
+            <choice value="span=2m">2 minutes</choice>
+            <choice value="span=3m">3 minutes</choice>
+            <choice value="span=4m">4 minutes</choice>
+            <choice value="span=5m">5 minutes</choice>
+            <choice value="span=10m">10 minutes</choice>
+            <choice value="span=15m">15 minutes</choice>
+            <choice value="span=30m">30 minutes</choice>
+            <choice value="span=1h">1 hour</choice>
+            <choice value="span=2h">2 hours</choice>
+            <choice value="span=12h">12 hours</choice>
+            <choice value="span=4h">4 hours</choice>
+            <choice value="span=1d">1 day</choice>
+            <choice value="span=2d">2 days</choice>
+            <choice value="span=1w">7 days</choice>
+            <choice value="span=1mon">1 month</choice>
+        </input>
+
+        <!--
+        This input is an hidden input that will be used to detect the type of operating system depending on the user
+        selection.
+        This requires the associated form.hostname to be reset when changed
+        -->
+
+        <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Detected OS:</label>
+            <search>
+                <query>eventtype=nmon:performance type=CPU_ALL $hostname$ OStype=* | head 1 | stats count by OStype | fields OStype | head 1</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>OStype</fieldForLabel>
+            <fieldForValue>OStype</fieldForValue>
+            <change>
+                <condition value="AIX">
+                    <set token="is_AIX">_time,*</set>
+                    <unset token="is_Linux"></unset>
+                    <unset token="is_Solaris"></unset>
+                </condition>
+                <condition value="Linux">
+                    <set token="is_Linux">_time,*</set>
+                    <unset token="is_AIX"></unset>
+                    <unset token="is_Solaris"></unset>
+                </condition>
+                <condition value="Solaris">
+                    <set token="is_Solaris">_time,*</set>
+                    <unset token="is_Linux"></unset>
+                    <unset token="is_AIX"></unset>
+                </condition>
+            </change>
+        </input>
+
+        <!--
+        This input is an hidden input with the goal to determine and store the source of CPU stats
+        If we are dealing with an IBM Partition with LPAR stats (AIX or PowerLinux), we will want to use LPAR stats
+        In other cases, we will want to use CPU_ALL.
+
+        This input result will be used to inform the user of the CPU data source origin.
+        -->
+
+        <input type="dropdown" token="CPU_datasource_detection" depends="$hidden_element2$" searchWhenChanged="true">
+            <label>Datasource detected:</label>
+            <search id="datasource">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby "CPU.hostname", "CPU.type" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.hostname", "CPU.type"
+| sort limit=0 "CPU.hostname"
+| fields - _span
+| rename "CPU.hostname" AS hostname "CPU.type" AS type
+| fillnull Count
+| fields hostname, type, Count
+| sort - type
+| head 1
+| eval datasource=case(match(type, "LPAR"), "LPAR", match(type, "CPU_ALL"), "CPU_ALL")</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>datasource</fieldForLabel>
+            <fieldForValue>datasource</fieldForValue>
+            <change>
+                <condition value="CPU_ALL">
+                    <set token="CPU_datasource">CPU_ALL usage</set>
+                    <set token="CPU_datasource_minilabel">CPU % usage</set>
+                </condition>
+                <condition value="LPAR">
+                    <set token="CPU_datasource">LPAR usage</set>
+                    <set token="CPU_datasource_minilabel">partition vCPUs usage</set>
+                </condition>
+            </change>
+        </input>
+
+    </fieldset>
+
+    <!-- Configuration Search will run over earliest Alltime using the accelerated Data Model -->
+
+    <search id="configSearch">
+        <query>| tstats last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.hostname=$hostname$) groupby "Nmon_Config.hostname" prestats=true
+| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
+last("Nmon_Config.OS_Level") AS OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
+| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | eval OS_summary=upper(OStype)+" / "+OS_Level
+| $show_configuration$
+| fields hostname, OStype, OS_Level, OS_summary, cpu_cores, Processor</query>
+        <earliest>0</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="MEMSearch">
+        <query>| tstats latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
+groupby MEM.hostname prestats=true
+| stats dedup_splitvals=t latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB by MEM.hostname
+| rename MEM.hostname AS hostname
+| $show_configuration$
+| foreach *total* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 0) ]</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="CPUSearch_summary">
+        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| eval usage=if(isnotnull(vp_usage_pct), vp_usage_pct, pct_usage)
+| stats max(usage) AS max_usage avg(usage) AS avg_usage median(usage) AS median_usage | eval max_usage=round(max_usage, 2), avg_usage=round(avg_usage, 2), median_usage=round(median_usage, 2)</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="TOPSearch">
+        <query>| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
+| eval avg_usage_per_core=round(avg_usage_per_core,3)
+| eval max_usage_per_core=round(max_usage_per_core,3)
+| sort - avg_usage_per_core</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <!-- Information panel -->
+
+    <row rejects="$hostname$">
+        <panel>
+            <html>
+
+                <div class="imgheader2">
+                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+
+                    <h4>The Nmon Summary interface has been designed for focused time ranges, very large time ranges may require time to be fully processed</h4>
+                    <h4>For long time analysis, please consider using metric dedicated interfaces available from App home pages</h4>
+
+                </div>
+
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <chart>
+                <title>Higher load</title>
+                <search base="CPUSearch_summary">
+                    <query>gauge max_usage</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">115px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Average load</title>
+                <search base="CPUSearch_summary">
+                    <query>gauge avg_usage</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">115px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Median load</title>
+                <search base="CPUSearch_summary">
+                    <query>gauge median_usage</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">115px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### Active Buttons #########################################  -->
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_configuration" data-alt-label="HIDE CONFIGURATION SUMMARY" data-token-value="fields *">SHOW CONFIGURATION SUMMARY</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_configuration$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start host configuration</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_configuration$">
+        <panel>
+            <title>Operating System</title>
+
+            <single>
+                <search base="configSearch">
+                    <query>fields OS_summary</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Operating System Level</option>
+                <option name="linkView">search</option>
+            </single>
+
+        </panel>
+        <panel>
+            <title>Processor Configuration</title>
+
+            <single>
+                <search base="configSearch">
+                    <query>fields cpu_cores</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Virtual Proc / Logical Cores</option>
+            </single>
+
+            <single>
+                <search base="configSearch">
+                    <query>fields Processor</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Processor Type</option>
+                <option name="linkView">search</option>
+            </single>
+
+        </panel>
+
+        <panel>
+            <title>Memory Configuration</title>
+
+            <single>
+                <search base="MEMSearch">
+                    <query>fields mem_total_MB</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Total Memory</option>
+                <option name="linkView">search</option>
+                <option name="afterLabel">MB</option>
+            </single>
+
+            <single>
+                <search base="MEMSearch">
+                    <query>fields swap_total_MB</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Total Paging Space</option>
+                <option name="linkView">search</option>
+                <option name="afterLabel">MB</option>
+            </single>
+
+        </panel>
+    </row>
+
+    <row depends="$show_configuration$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End host configuration</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="cpu">
+            <title>CPU Usage Statistics</title>
+
+            <chart>
+                <search id="cputimechart">
+                    <query>| tstats
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+| timechart $span$ max(usage) AS "Max CPU usage" avg(usage) AS "Avg CPU usage"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">350px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">$CPU_datasource_minilabel$</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+            </chart>
+
+        </panel>
+
+        <panel id="disk">
+            <title>I/O Operations per second</title>
+
+            <chart>
+                <search id="IOPStimechart">
+                    <query>| tstats sum("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$)
+groupby _time, "DISKXFER.hostname" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
+| fields _time, hostname, iops
+| timechart $span$ max(iops) As "Total I/O"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">350px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">I/O per second</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+            </chart>
+        </panel>
+    </row>
+
+    <!-- ######################################### Active Buttons #########################################  -->
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-alt-label="HIDE EXTENDED CPU STATS" data-token-value="fields _time,*">SHOW EXTENDED CPU STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_disks" data-alt-label="HIDE EXTENDED DISKS STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKS STATS</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### CPU #########################################  -->
+
+    <row depends="$show_cpu$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended CPU stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_cpu$">
+        <panel>
+            <chart>
+                <title>% CPU stats over time</title>
+                <search>
+                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname$)
+groupby _time, "CPU.hostname" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
+| fields $show_cpu$
+| timechart $span$
+avg("CPU.Idle_PCT") AS "Idle %",
+avg("CPU.Sys_PCT") AS "Sys %",
+avg("CPU.User_PCT") AS "User %",
+avg("CPU.Wait_PCT") AS "Wait %"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">%</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+                <option name="height">500px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>global % CPU stats per processor over time</title>
+                <search>
+                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname$) groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
+| fields $show_cpu$
+| fields _time,CPU.hostname,CPU.CPUnn.logical_core,CPU.cpu_PCT
+| timechart $span$ useother=f limit=0 avg("CPU.cpu_PCT") AS cpu_PCT by "CPU.CPUnn.logical_core"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% CPU</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked100</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">500px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_cpu$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended CPU stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### DISKS #########################################  -->
+
+    <row depends="$show_disks$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended Disks stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_disks$">
+        <panel>
+            <chart>
+                <title>Avg I/O per sec over time</title>
+                <search>
+                    <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname="$hostname$") groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
+| rename "DISKXFER.*" AS *
+| stats dedup_splitvals=t sum(value) AS value by _time, hostname
+| fields $show_disks$
+| timechart $span$ avg(value) As iops | trendline sma5(iops) AS trend</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Avg % time busy disk over time</title>
+                <search>
+                    <query>| tstats max("DISKBUSY.value") AS DISKBUSY.value from datamodel=NMON_Data_DISKBUSY where (nodename = DISKBUSY) (DISKBUSY.hostname="$hostname$") groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKBUSY.value") AS DISKBUSY.value by _time, "DISKBUSY.hostname", "DISKBUSY.device"
+| rename "DISKBUSY.*" AS *
+| fields $show_disks$
+| stats dedup_splitvals=t avg(value) AS value by _time, hostname
+| timechart $span$ avg(value) As busy_time | trendline sma5(busy_time) AS trend</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% of time busy</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_disks$">
+        <panel>
+            <chart>
+                <title>Avg data transfer size over time</title>
+                <search>
+                    <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (DISKBSIZE.hostname="$hostname$") groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "DISKBSIZE.hostname", "DISKBSIZE.device"
+| rename "DISKBSIZE.*" AS *
+| stats dedup_splitvals=t sum(value) AS value by _time, hostname
+| fields $show_disks$
+| timechart $span$ avg(value) As avg_transfer_size | trendline sma5(avg_transfer_size) AS trend</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBytes per transfer</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Avg read/write data rate (KBytes/sec) over time</title>
+                <search>
+                    <query>| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.hostname="$hostname$") groupby _time, "DISKREADWRITE.type", "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1m | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.type", "DISKREADWRITE.hostname", "DISKREADWRITE.device" | sort limit=0 _time | rename "DISKREADWRITE.type" AS type "DISKREADWRITE.hostname" AS hostname "DISKREADWRITE.device" AS device | fields _time, type, hostname, device, value
+| eval key=case(type=="DISKREAD", "read", type=="DISKWRITE", "write")
+| stats sum(value) AS value by _time, key
+| fields $show_disks$
+| timechart $span$ avg(value) As avg_data_rate by key</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">(KBytes/sec)</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_disks$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended Disks stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="mem">
+            <title>Memory Statistics</title>
+
+            <chart>
+                <search id="MEMtimechart">
+                    <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
+groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, MEM.hostname
+| timechart $span$ dedup_splitvals=t avg(mem_used_effective_PCT) AS mem_used_PCT, avg(swap_used_effective_PCT) AS swap_used_PCT</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">350px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Percentage (%)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+            </chart>
+        </panel>
+
+        <panel id="process">
+            <title>Top 20 processes CPU Statistics</title>
+
+            <chart rejects="$show_null_top$">
+                <search id="TOPtimechart">
+                    <query>| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100) | stats sum(usage_per_core) As usage_per_core by _time,Command
+| timechart $span$ useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_top">True</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_null_top"/>
+                        </condition>
+                    </progress>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">stacked</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">350px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisTitleY.text">Logical Core</option>
+            </chart>
+
+            <html depends="$show_null_top$">
+                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) has not been activated at nmon binary startup. (use the -t or -T option to activate the TOP collection)</p>
+            </html>
+
+        </panel>
+    </row>
+
+    <!-- ######################################### Active Buttons #########################################  -->
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_memory" data-alt-label="HIDE EXTENDED MEMORY STATS" data-token-value="fields _time,*">SHOW EXTENDED MEMORY STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_processes" data-alt-label="HIDE EXTENDED PROCESSES STATS" data-token-value="fields _time,*">SHOW EXTENDED PROCESSES STATS</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### Memory #########################################  -->
+
+    <row depends="$show_memory$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended Memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <search id="linux_memory_stats">
+        <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.hostname=$hostname$)
+groupby _time MEM.hostname prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+| fields $show_memory$
+| fields $is_Linux$
+| timechart `inline_customspan` dedup_splitvals=t avg(*) AS *</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="AIX_mem_memory_stats">
+        <query>| tstats max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Real_used_MB") AS Real_used_MB
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_used_MB") AS Virtual_used_MB
+from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$) groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| stats dedup_splitvals=t max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Real_used_MB") AS Real_used_MB
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_used_MB") AS Virtual_used_MB by _time,MEM.hostname
+| fields $show_memory$
+| fields $is_AIX$
+| timechart $span$ avg(Real_total_MB) AS Real_total_MB avg(Real_used_MB) AS Real_used_MB
+avg(Virtual_total_MB) AS Virtual_total_MB avg(Virtual_used_MB) AS Virtual_used_MB</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="AIX_memnew_memory_stats">
+        <query>| tstats
+max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
+max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT from datamodel=NMON_Data_MEMNEW
+where (nodename = MEMNEW) (MEMNEW.hostname=$hostname$) groupby _time, "MEMNEW.hostname" prestats=true span=1m
+| stats max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
+max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT by _time,MEMNEW.hostname
+| fields $show_memory$
+| fields $is_AIX$
+| timechart $span$
+avg(Free_PCT) AS Free_PCT avg(FScache_PCT) AS FScache_PCT avg(memused_PCT) AS memused_PCT
+avg(Process_PCT) AS Process_PCT avg(System_PCT) AS System_PCT</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="Solaris_MEM_real">
+        <query>| tstats
+max("MEM.memused") AS memused_MB max("MEM.memfree") AS memfree_MB max("MEM.memtotal") AS memtotal_MB
+from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
+groupby _time, "MEM.hostname" prestats=true span=1m
+| stats max("MEM.memused") AS memused_MB max("MEM.memfree") AS memfree_MB max("MEM.memtotal") AS memtotal_MB by _time, MEM.hostname
+| fields $show_memory$
+| fields $is_Solaris$
+| timechart $span$
+avg(memused_MB) AS memused_MB avg(memfree_MB) AS memfree_MB avg(memtotal_MB) AS memtotal_MB</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="Solaris_MEM_swap">
+        <query>| tstats
+max("MEM.swapused") AS swapused_MB max("MEM.swapfree") AS swapfree_MB max("MEM.swaptotal") AS swaptotal_MB
+from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
+groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+| stats max("MEM.swapused") AS swapused_MB max("MEM.swapfree") AS swapfree_MB max("MEM.swaptotal") AS swaptotal_MB by _time, MEM.hostname
+| fields $show_memory$
+| fields $is_Solaris$
+| timechart $span$
+avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB) AS swaptotal_MB</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+
+    <row depends="$show_memory$">
+        <panel>
+            <chart depends="$is_Linux$">
+                <title>Memory usage (MB) by main metrics</title>
+                <search base="linux_memory_stats">
+                    <query>fields _time, *mem_free_MB*, *mem_cached_MB*, *mem_buffers_MB*, *mem_used_effective_MB*, *mem_total_MB*</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.overlayFields">mem_total_MB</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.fieldColors">{"mem_total_MB": 0xe50000}</option>
+            </chart>
+            <chart depends="$is_AIX$">
+                <title>AIX % memory allocation by category</title>
+                <search base="AIX_memnew_memory_stats">
+                    <query>fields _time,Free_PCT,FScache_PCT,Process_PCT,System_PCT</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Percentage (%)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+            </chart>
+            <chart depends="$is_Solaris$">
+                <title>Solaris memory usage (MB)</title>
+                <search base="Solaris_MEM_real">
+                    <query>fields _time,memfree_MB,memused_MB,memtotal_MB</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.chart.overlayFields">memtotal_MB</option>
+                <option name="charting.fieldColors">{"memtotal_MB": 0xe50000}</option>
+            </chart>
+        </panel>
+
+        <panel>
+            <chart depends="$is_Linux$">
+                <title>Swap effective used/cached/free/global (MB)</title>
+                <search base="linux_memory_stats">
+                    <query>fields _time, *swap_free_MB*, *swap_used_effective_MB*, *swap_cached_MB*, *swap_total_MB*</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.overlayFields">swap_total_MB</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.fieldColors">{"swap_total_MB": 0xe50000}</option>
+            </chart>
+            <chart depends="$is_AIX$">
+                <title>AIX paging Space usage (MB)</title>
+                <search base="AIX_mem_memory_stats">
+                    <query>fields _time,Virtual_total_MB,Virtual_used_MB</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisTitleY.text">Virtual_total_MB</option>
+                <option name="charting.chart.overlayFields">Virtual_total_MB</option>
+                <option name="charting.fieldColors">{"Virtual_total_MB": 0xe50000}</option>
+            </chart>
+            <chart depends="$is_Solaris$">
+                <title>Solaris swap usage (MB)</title>
+                <search base="Solaris_MEM_swap">
+                    <query>fields _time,swapfree_MB,swapused_MB,swaptotal_MB</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Megabytes (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.chart.overlayFields">swaptotal_MB</option>
+                <option name="charting.fieldColors">{"swaptotal_MB": 0xe50000}</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_memory$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended Memory stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### Processes #########################################  -->
+
+    <row depends="$show_processes$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start extended processes stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_processes$">
+        <panel>
+
+            <single>
+                <search base="TOPSearch">
+                    <query>head 1 | fields Command</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">TOP Process</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="beforeLabel">Command</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
+| eval avg_usage_per_core=round(avg_usage_per_core,2)
+| eval max_usage_per_core=round(max_usage_per_core,2)
+| sort - avg_usage_per_core</option>
+            </single>
+
+            <single>
+                <search base="TOPSearch">
+                    <query>head 1 | fields avg_usage_per_core</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Average Conso for this Command</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="beforeLabel">core conso</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
+| eval avg_usage_per_core=round(avg_usage_per_core,2)
+| eval max_usage_per_core=round(max_usage_per_core,2)
+| sort - avg_usage_per_core</option>
+            </single>
+
+            <single>
+                <search base="TOPSearch">
+                    <query>head 1 | fields max_usage_per_core</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">Max Conso for this Command</option>
+                <option name="linkView">search</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="beforeLabel">core conso</option>
+                <option name="linkFields">result</option>
+                <option name="linkSearch">| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
+groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields hostname, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As usage_per_core by _time,Command
+| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
+| eval avg_usage_per_core=round(avg_usage_per_core,2)
+| eval max_usage_per_core=round(max_usage_per_core,2)
+| sort - avg_usage_per_core</option>
+            </single>
+
+        </panel>
+    </row>
+
+    <row depends="$show_processes$">
+
+        <!-- Table stats of CPU processes usage -->
+
+        <panel>
+            <table depends="$is_Linux$">
+                <title>Table stats: CPU Usage in logical core per Command invocation</title>
+                <search>
+                    <query>| tstats max("TOP_Linux.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Linux
+where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname$)
+groupby _time, "TOP_Linux.frameID", "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Linux.pct_CPU") AS pct_CPU by _time, "TOP_Linux.frameID", "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
+| rename "TOP_Linux.frameID" AS frameID, "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| fields $is_Linux$
+| fields $show_processes$
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| eval frameID=if(isnull(frameID), "aggreg", frameID)
+| stats max(value) as "max CPU usage per core", avg(value) as "avg CPU usage per core", sparkline(max(value)) As sparkline by Command
+| foreach *CPU* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 3) ]
+| sort - "max CPU usage per core"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25px</option>
+                </format>
+            </table>
+            <table depends="$is_AIX$">
+                <title>Table stats: CPU Usage in logical core per Command invocation</title>
+                <search>
+                    <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP
+where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$)
+groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| fields $is_AIX$
+| fields $show_processes$
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| eval frameID=if(isnull(frameID), "aggreg", frameID)
+| stats max(value) as "max CPU usage per core", avg(value) as "avg CPU usage per core", sparkline(max(value)) As sparkline by Command
+| foreach *CPU* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 3) ]
+| sort - "max CPU usage per core"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25px</option>
+                </format>
+            </table>
+            <table depends="$is_Solaris$">
+                <title>Table stats: CPU Usage in logical core per Command invocation</title>
+                <search>
+                    <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname$)
+groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| fields $is_Solaris$
+| fields $show_processes$
+| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| eval frameID=if(isnull(frameID), "aggreg", frameID)
+| stats max(value) as "max CPU usage per core", avg(value) as "avg CPU usage per core", sparkline(max(value)) As sparkline by Command
+| foreach *CPU* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 3) ]
+| sort - "max CPU usage per core"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25px</option>
+                </format>
+            </table>
+        </panel>
+
+        <!-- Table stats of Memory processes usage -->
+
+        <panel>
+            <table depends="$is_Linux$">
+                <title>Table stats: Memory Usage per command invocation</title>
+                <search>
+                    <query>| tstats max("TOP_Linux.ResSet") AS ResSet from datamodel=NMON_Data_TOP.TOP_Linux
+where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname$)
+groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Linux.ResSet") AS ResSet by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
+| fields $is_Linux$
+| fields $show_processes$
+| rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
+| eval Used_Mem_MB=((ResSet)/1024)
+| stats sum(Used_Mem_MB) As value by _time,Command
+| stats max(value) as "max memory usage (MB)", avg(value) as "avg memory usage (MB)", sparkline(max(value)) as sparkline by Command
+| foreach *MB* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 0) ]
+| sort - "max memory usage (MB)"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25px</option>
+                </format>
+            </table>
+            <table depends="$is_AIX$">
+                <title>Table stats: Memory Usage per command invocation</title>
+                <search>
+                    <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$) groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.*" AS *
+| eval Used_Mem_MB=((ResData+ResText)/1024)
+| stats sum(Used_Mem_MB) As value by _time,frameID,hostname,Command
+| stats max(value) as max_Used_Mem_MB, avg(value) as avg_Used_Mem_MB, sparkline(max(value)) as sparkline by Command | eval max_Used_Mem_MB=round(max_Used_Mem_MB,2) | eval avg_Used_Mem_MB=round(avg_Used_Mem_MB,2)
+| sort - "avg_Used_Mem_MB"
+| rename max_Used_Mem_MB AS "max memory usage (MB)", avg_Used_Mem_MB AS "avg memory usage (MB)"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25px</option>
+                </format>
+            </table>
+            <table depends="$is_Solaris$">
+                <title>Table stats: Physical Memory Usage per command invocation</title>
+                <search>
+                    <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris
+where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname$)
+groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| fields $is_Solaris$
+| fields $show_processes$
+| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| eval Phys_Mem_MB=round(((ResSize)/1024),2)
+| stats sum(Phys_Mem_MB) As value by _time,frameID,hostname,Command
+| stats max(value) as "max memory usage (MB)", avg(value) as "avg memory usage (MB)", sparkline(max(value)) as sparkline by Command
+| foreach *MB* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 0) ]
+| sort - "max memory usage (MB)"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25px</option>
+                </format>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$show_processes$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End extended processes stats</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="fs">
+            <title>File System Percent utilization</title>
+            <table id="tablebar">
+                <search>
+                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.device"
+| rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by "device"
+| sort limit=0 device | rename device AS "Mount point"
+| eval value=round(value,2)
+| fields "Mount point",max_value, avg_value, min_value, UsedPct | eval avg_value=round(avg_value,2)
+| rename max_value AS "Max value in period (%)", avg_value AS "Average value in period (%)", min_value AS "Min value in Period (%)"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">10</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) (JFS.device="$click.value$") groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+| rename "JFS.*" AS *
+| timechart $span$ limit=0 useother=f max(value) As value by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations</link>
+                </drilldown>
+
+
+            </table>
+        </panel>
+    </row>
+
+    <!-- ######################################### Active Buttons #########################################  -->
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_filesystem" data-alt-label="HIDE FILE-SYSTEMS OVER TIME" data-token-value="fields _time,*">SHOW FILE-SYSTEMS EVOLUTION OVER TIME</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### filesystem over time #########################################  -->
+
+    <row depends="$show_filesystem$">
+        <panel>
+            <title>File systems utilization evolution over time</title>
+
+            <input type="text" token="fsfilter" searchWhenChanged="true">
+                <label>Filter FileSystems by pattern:</label>
+                <default>*</default>
+                <prefix>JFS.device="</prefix>
+                <suffix>"</suffix>
+            </input>
+
+            <chart>
+                <search>
+                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+| $show_filesystem$
+| rename "JFS.*" AS *
+| timechart $span$ limit=0 useother=f max(value) As value by device</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">connect</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">500px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">% Used</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+            </chart>
+        </panel>
+    </row>
+
+
+</form>
