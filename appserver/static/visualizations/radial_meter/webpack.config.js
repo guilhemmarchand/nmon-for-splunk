@@ -2,7 +2,7 @@ var webpack = require('webpack');
 var path = require('path');
 
 module.exports = {
-    entry: 'horseshoe_meter',
+    entry: 'radial_meter',
     resolve: {
         root: [
             path.join(__dirname, 'src'),

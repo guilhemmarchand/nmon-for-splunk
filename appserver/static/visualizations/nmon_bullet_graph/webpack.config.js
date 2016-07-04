@@ -2,7 +2,7 @@ var webpack = require('webpack');
 var path = require('path');
 
 module.exports = {
-    entry: 'bullet_graph',
+    entry: 'nmon_bullet_graph',
     resolve: {
         root: [
             path.join(__dirname, 'src'),
