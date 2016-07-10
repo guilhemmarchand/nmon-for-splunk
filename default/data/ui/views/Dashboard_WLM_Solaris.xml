@@ -1,0 +1,365 @@
+<form script="autodiscover.js,custom_layout.js" stylesheet="ui_simple.css">
+    <label>NMON Solaris WLM: CPU and Memory Statistics of Projects / Zones / Tasks / Users</label>
+    <description>WLM Statistics dashboard for Solaris systems</description>
+
+    <fieldset autoRun="false" submitButton="false">
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_WLM where (nodename = WLM) groupby "WLM.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "WLM.frameID"
+| sort limit=0 "WLM.frameID"
+| fields - _span | fillnull Count | fields "WLM.frameID"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>WLM.frameID="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>WLM.frameID</fieldForLabel>
+            <fieldForValue>WLM.frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+
+        <input type="multiselect" token="hostname" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search>
+                <query>| tstats count AS Count from datamodel=NMON_Data_WLM where (nodename = WLM) (WLM.hostname=$hostname-prefilter$) ($frameID$) groupby "WLM.hostname" prestats=true
+| stats dedup_splitvals=t count AS Count by "WLM.hostname"
+| sort limit=0 "WLM.hostname"
+| fields - _span
+| fillnull Count | fields WLM.hostname | dedup WLM.hostname | sort WLM.hostname</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>WLM.hostname="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <default>*</default>
+            <fieldForLabel>WLM.hostname</fieldForLabel>
+            <fieldForValue>WLM.hostname</fieldForValue>
+        </input>
+
+        <input type="multiselect" token="device" searchWhenChanged="true">
+            <label>Project / Zone / Task / User:</label>
+            <!-- Populating Data Model Search -->
+            <search>
+                <query>| tstats count AS Count from datamodel=NMON_Data_WLM where (nodename = WLM) (WLM.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) groupby "WLM.hostname", "WLM.device" prestats=true
+| stats dedup_splitvals=t count AS Count by "WLM.hostname", "WLM.device"
+| sort limit=0 "WLM.hostname"
+| fields - _span
+| fillnull Count | fields WLM.device | dedup WLM.device | sort WLM.device</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>WLM.device="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL</choice>
+            <default>*</default>
+            <fieldForLabel>WLM.device</fieldForLabel>
+            <fieldForValue>WLM.device</fieldForValue>
+        </input>
+
+        <input type="dropdown" token="monitor" searchWhenChanged="true">
+            <label>Monitor:</label>
+            <choice value="Project">Project</choice>
+            <choice value="Zone">Zone</choice>
+            <choice value="Task">Task</choice>
+            <choice value="User">User</choice>
+            <default>Zone</default>
+            <change>
+                <condition value="Project">
+                    <set token="monitor_cpu_type">WLMPROJECTCPU</set>
+                    <set token="monitor_memory_type">WLMPROJECTMEM</set>
+                </condition>
+                <condition value="Zone">
+                    <set token="monitor_cpu_type">WLMZONECPU</set>
+                    <set token="monitor_memory_type">WLMZONEMEM</set>
+                </condition>
+                <condition value="Task">
+                    <set token="monitor_cpu_type">WLMTASKCPU</set>
+                    <set token="monitor_memory_type">WLMTASKMEM</set>
+                </condition>
+                <condition value="User">
+                    <set token="monitor_cpu_type">WLMUSERCPU</set>
+                    <set token="monitor_memory_type">WLMUSERMEM</set>
+                </condition>
+            </change>
+        </input>
+
+        <input type="dropdown" token="report" searchWhenChanged="true">
+            <label>Report CPU usage in:</label>
+            <choice value="value">% CPU usage</choice>
+            <choice value="value_logical_cpus">CPU usage in logical CPUs</choice>
+            <default>value</default>
+        </input>
+
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Stats mode:</label>
+            <default>avg</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+
+    </fieldset>
+
+    <!-- Search based for post processing -->
+
+    <search id="tablestats_cpu_per_monitor">
+        <query>| tstats max("WLM.$report$") AS value from datamodel=NMON_Data_WLM
+where (nodename = WLM.$monitor_cpu_type$) (WLM.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(WLM)`
+groupby _time, "WLM.hostname", "WLM.device" prestats=true span=1m
+| stats dedup_splitvals=t max("WLM.$report$") AS value by _time, "WLM.hostname", "WLM.device"
+| rename "WLM.hostname" AS hostname, "WLM.device" AS device
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value by "device"
+| sort limit=0 "device"
+| eval value=round(value,2)
+| fields device,max_value,avg_value,min_value
+| rename device AS $monitor$
+| foreach "*_value" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | sort - avg_value | rename "*_value" AS "*"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="tablestats_cpu_per_host">
+        <query>| tstats max("WLM.$report$") AS value from datamodel=NMON_Data_WLM
+where (nodename = WLM.$monitor_cpu_type$) (WLM.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(WLM)`
+groupby _time, "WLM.hostname", "WLM.device" prestats=true span=1m
+| stats dedup_splitvals=t max("WLM.$report$") AS value by _time, "WLM.hostname", "WLM.device"
+| rename "WLM.hostname" AS hostname, "WLM.device" AS device
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value by  "hostname", "device"
+| sort limit=0 "hostname"
+| eval value=round(value,2)
+| fields hostname,device,max_value,avg_value,min_value
+| rename device AS $monitor$
+| foreach "*_value" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | sort - avg_value | rename "*_value" AS "*"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>CPU Usage Statistics of Solaris Projects / Zones / Tasks / Users</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="panela1_setWidth_50">
+            <title>Graphical Representation by $monitor$</title>
+            <html>
+                <div id="bubbleSearch"
+                     class="splunk-manager"
+                     data-require="splunkjs/mvc/searchmanager"
+                     data-options="{&quot;search&quot;:
+                     {
+                     &quot;type&quot;:
+                     &quot;token_safe&quot;,
+                     &quot;value&quot;: &quot;| tstats max(WLM.$$report$$) AS value from datamodel=NMON_Data_WLM
+where (nodename = WLM.$$monitor_cpu_type$$) (WLM.hostname=$$hostname-prefilter$$) ($$frameID$$) ($$hostname$$) ($$device$$) `$$timefilter$$(WLM)`
+groupby _time, WLM.hostname, WLM.device prestats=true span=1m
+| stats dedup_splitvals=t max(WLM.$$report$$) AS value by _time, WLM.hostname, WLM.device
+| rename WLM.hostname AS hostname, WLM.device AS device
+| stats $$statsmode$$(value) AS value by device
+| sort limit=0 device
+| eval value=round(value,2)
+| sort - avg_value | head 100&quot;},
+                    &quot;earliest_time&quot;:
+                    {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.earliest$$&quot;
+                    },
+                    &quot;latest_time&quot;: {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.latest$$&quot;
+                    },
+                    &quot;auto_cancel&quot;: 90,
+                    &quot;preview&quot;: true
+                    }">
+                </div>
+                <div id="bubbleChart" class="splunk-view" data-require="app/nmon/components/bubblechart/bubblechart" data-options="{
+                &quot;managerid&quot;: &quot;bubbleSearch&quot;,
+                &quot;nameField&quot;: &quot;device&quot;,
+                &quot;categoryField&quot;: &quot;device&quot;,
+                &quot;valueField&quot;: &quot;value&quot;,
+                &quot;height&quot;: 600
+                }">
+                </div>
+            </html>
+        </panel>
+        <panel id="panela2_setWidth_25">
+            <title>Stats by $monitor$</title>
+            <table>
+                <search base="tablestats_cpu_per_monitor">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+        <panel id="panela3_setWidth_25">
+            <title>Stats by Hosts,$monitor$</title>
+            <table>
+                <search base="tablestats_cpu_per_host">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Memory % Usage Statistics of Solaris Projects / Zones / Tasks / Users</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- Search based for post processing -->
+
+    <search id="tablestats_memory_per_monitor">
+        <query>| tstats max("WLM.$report$") AS value from datamodel=NMON_Data_WLM
+where (nodename = WLM.$monitor_memory_type$) (WLM.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(WLM)`
+groupby _time, "WLM.hostname", "WLM.device" prestats=true span=1m
+| stats dedup_splitvals=t max("WLM.$report$") AS value by _time, "WLM.hostname", "WLM.device"
+| rename "WLM.hostname" AS hostname, "WLM.device" AS device
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value by "device"
+| sort limit=0 "device"
+| eval value=round(value,2)
+| fields device,max_value,avg_value,min_value
+| rename device AS $monitor$
+| foreach "*_value" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | sort - avg_value | rename "*_value" AS "*"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="tablestats_memory_per_host">
+        <query>| tstats max("WLM.$report$") AS value from datamodel=NMON_Data_WLM
+where (nodename = WLM.$monitor_memory_type$) (WLM.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(WLM)`
+groupby _time, "WLM.hostname", "WLM.device" prestats=true span=1m
+| stats dedup_splitvals=t max("WLM.$report$") AS value by _time, "WLM.hostname", "WLM.device"
+| rename "WLM.hostname" AS hostname, "WLM.device" AS device
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value by  "hostname", "device"
+| sort limit=0 "hostname"
+| eval value=round(value,2)
+| fields hostname,device,max_value,avg_value,min_value
+| rename device AS $monitor$
+| foreach "*_value" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | sort - avg_value | rename "*_value" AS "*"</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+        <panel id="panelb1_setWidth_50">
+            <title>Graphical Representation by $monitor$</title>
+            <html>
+                <div id="bubbleSearch2"
+                     class="splunk-manager"
+                     data-require="splunkjs/mvc/searchmanager"
+                     data-options="{&quot;search&quot;:
+                     {
+                     &quot;type&quot;:
+                     &quot;token_safe&quot;,
+                     &quot;value&quot;: &quot;| tstats max(WLM.$$report$$) AS value from datamodel=NMON_Data_WLM
+where (nodename = WLM.$$monitor_memory_type$$) (WLM.hostname=$$hostname-prefilter$$) ($$frameID$$) ($$hostname$$) ($$device$$) `$$timefilter$$(WLM)`
+groupby _time, WLM.hostname, WLM.device prestats=true span=1m
+| stats dedup_splitvals=t max(WLM.$$report$$) AS value by _time, WLM.hostname, WLM.device
+| rename WLM.hostname AS hostname, WLM.device AS device
+| stats $$statsmode$$(value) AS value by device
+| sort limit=0 device
+| eval value=round(value,2)
+| sort - avg_value | head 100&quot;},
+                    &quot;earliest_time&quot;:
+                    {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.earliest$$&quot;
+                    },
+                    &quot;latest_time&quot;: {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.latest$$&quot;
+                    },
+                    &quot;auto_cancel&quot;: 90,
+                    &quot;preview&quot;: true
+                    }">
+                </div>
+                <div id="bubbleChart2" class="splunk-view" data-require="app/nmon/components/bubblechart/bubblechart" data-options="{
+                &quot;managerid&quot;: &quot;bubbleSearch2&quot;,
+                &quot;nameField&quot;: &quot;device&quot;,
+                &quot;categoryField&quot;: &quot;device&quot;,
+                &quot;valueField&quot;: &quot;value&quot;,
+                &quot;height&quot;: 600
+                }">
+                </div>
+            </html>
+        </panel>
+        <panel id="panelb2_setWidth_25">
+            <title>Stats by $monitor$</title>
+            <table>
+                <search base="tablestats_memory_per_monitor">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+        <panel id="panelb3_setWidth_25">
+            <title>Stats by Hosts,$monitor$</title>
+            <table>
+                <search base="tablestats_memory_per_host">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+    </row>
+
+</form>
