@@ -1,0 +1,316 @@
+<form script="autodiscover.js,custom_layout.js" stylesheet="ui_simple.css">
+    <label>NMON TOP: Resources Usage per Command Invocation</label>
+    <description>TOP Processes CPU and Memory utilization using Bubble charts</description>
+
+    <fieldset autoRun="false" submitButton="false">
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>*</default>
+            <prefix>TOP_ALLOS.OStype=</prefix>
+            <choice value="*">Any OS</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS count from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) ($osfilter$) groupby "TOP_ALLOS.frameID" prestats=true
+                    | stats dedup_splitvals=t count AS count by "TOP_ALLOS.frameID" | sort limit=0 "TOP_ALLOS.frameID" | fields - _span
+                    | fillnull count | fields TOP_ALLOS.frameID</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>TOP_ALLOS.frameID=</valuePrefix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>TOP_ALLOS.frameID</fieldForLabel>
+            <fieldForValue>TOP_ALLOS.frameID</fieldForValue>
+        </input>
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+        <input type="multiselect" token="hostname" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="hostsSearch">
+                <query>| tstats count AS count from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) ($osfilter$) groupby "TOP_ALLOS.hostname" prestats=true
+                    | stats dedup_splitvals=t count AS count by "TOP_ALLOS.hostname" | sort limit=0 "TOP_ALLOS.hostname" | fields - _span
+                    | fillnull count | fields TOP_ALLOS.hostname</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>TOP_ALLOS.hostname=</valuePrefix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>TOP_ALLOS.hostname</fieldForLabel>
+            <fieldForValue>TOP_ALLOS.hostname</fieldForValue>
+            <default>*</default>
+        </input>
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Stats mode:</label>
+            <default>avg</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+        <input type="text" token="Command" searchWhenChanged="true">
+            <label>Optional: Filter by Command</label>
+            <prefix>TOP_ALLOS.Command="</prefix>
+            <suffix>"</suffix>
+            <default>*</default>
+        </input>
+    </fieldset>
+
+    <!-- Search based for post processing -->
+
+    <search id="tablestats_cpu_per_command">
+        <query>| tstats max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($Command$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| dedup _time,frameID,hostname,Command,pct_CPU
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(value) As value, sum(logical_cpus) As logical_cpus by _time,Command
+| stats $statsmode$(value) AS $statsmode$_Usage_per_single_core by Command
+| sort - $statsmode$_Usage_per_single_core</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="tablestats_cpu_per_host">
+        <query>| tstats max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($Command$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| dedup _time,frameID,hostname,Command,pct_CPU
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(value) As value, sum(logical_cpus) As logical_cpus by _time,hostname,Command
+| stats $statsmode$(value) AS $statsmode$_Usage_per_single_core by hostname,Command
+| sort - $statsmode$_Usage_per_single_core</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>CPU Single Core Usage per Command Invocation (PIDs aggregation per interval)</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="panela1_setWidth_50">
+            <title>Graphical Representation</title>
+            <html>
+                <div id="bubbleSearch"
+                     class="splunk-manager"
+                     data-require="splunkjs/mvc/searchmanager"
+                     data-options="{&quot;search&quot;:
+                     {
+                     &quot;type&quot;:
+                     &quot;token_safe&quot;,
+                     &quot;value&quot;: &quot;| tstats max(TOP_ALLOS.pct_CPU) AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$$hostname-prefilter$$) ($$frameID$$) ($$osfilter$$) ($$hostname$$) ($$Command$$) `$$timefilter$$(TOP_ALLOS)` groupby _time, TOP_ALLOS.frameID, TOP_ALLOS.hostname, TOP_ALLOS.logical_cpus, TOP_ALLOS.Command, TOP_ALLOS.PID prestats=true span=1m
+| stats dedup_splitvals=t max(TOP_ALLOS.pct_CPU) AS pct_CPU by _time, TOP_ALLOS.frameID, TOP_ALLOS.hostname, TOP_ALLOS.logical_cpus, TOP_ALLOS.Command, TOP_ALLOS.PID
+| rename TOP_ALLOS.frameID AS frameID, TOP_ALLOS.hostname AS hostname TOP_ALLOS.logical_cpus AS logical_cpus TOP_ALLOS.Command AS Command TOP_ALLOS.PID AS PID
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| dedup _time,frameID,hostname,Command,pct_CPU
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| eval usage_per_core=(pct_CPU/100)
+| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(value) As value, sum(logical_cpus) As logical_cpus by _time,Command
+| stats $$statsmode$$(value) AS usage by Command
+| sort - usage | head 100&quot;},
+                    &quot;earliest_time&quot;:
+                    {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.earliest$$&quot;
+                    },
+                    &quot;latest_time&quot;: {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.latest$$&quot;
+                    },
+                    &quot;auto_cancel&quot;: 90,
+                    &quot;preview&quot;: true
+                    }">
+                </div>
+                <div id="bubbleChart" class="splunk-view" data-require="app/nmon/components/bubblechart/bubblechart" data-options="{
+                &quot;managerid&quot;: &quot;bubbleSearch&quot;,
+                &quot;nameField&quot;: &quot;Command&quot;,
+                &quot;categoryField&quot;: &quot;Command&quot;,
+                &quot;valueField&quot;: &quot;usage&quot;,
+                &quot;height&quot;: 600
+                }">
+                </div>
+            </html>
+        </panel>
+        <panel id="panela2_setWidth_25">
+            <title>Stats by Commands</title>
+            <table>
+                <search base="tablestats_cpu_per_command">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+        <panel id="panela3_setWidth_25">
+            <title>Stats by Hosts</title>
+            <table>
+                <search base="tablestats_cpu_per_host">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>MEMORY Statistics per Command Invocation (PIDs aggregation per interval)</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- Search based for post processing -->
+
+    <search id="tablestats_memory_per_command">
+        <query>| tstats max("TOP_ALLOS.mem_used_MB") AS mem_used_MB from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($Command$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_ALLOS.mem_used_MB") AS mem_used_MB by _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| dedup _time,frameID,hostname,Command,mem_used_MB
+| stats sum(mem_used_MB) As mem_used_MB by _time,frameID,hostname,Command
+| stats sum(mem_used_MB) As mem_used_MB by _time,frameID,hostname,Command
+| stats sum(mem_used_MB) As mem_used_MB by _time,Command
+| stats $statsmode$(mem_used_MB) AS $statsmode$_mem_used_MB by Command
+| sort - $statsmode$_mem_used_MB</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="tablestats_memory_per_host">
+        <query>| tstats max("TOP_ALLOS.mem_used_MB") AS mem_used_MB from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($Command$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_ALLOS.mem_used_MB") AS mem_used_MB by _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| dedup _time,frameID,hostname,Command,mem_used_MB
+| stats sum(mem_used_MB) As mem_used_MB by _time,frameID,hostname,Command
+| stats sum(mem_used_MB) As mem_used_MB by _time,frameID,hostname,Command
+| stats sum(mem_used_MB) As mem_used_MB by _time,hostname,Command
+| stats $statsmode$(mem_used_MB) AS $statsmode$_mem_used_MB by hostname,Command
+| sort - $statsmode$_mem_used_MB</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+        <panel id="panelb1_setWidth_50">
+            <title>Graphical Representation</title>
+            <html>
+                <div id="bubbleSearch2"
+                     class="splunk-manager"
+                     data-require="splunkjs/mvc/searchmanager"
+                     data-options="{&quot;search&quot;:
+                     {
+                     &quot;type&quot;:
+                     &quot;token_safe&quot;,
+                     &quot;value&quot;: &quot;| tstats max(TOP_ALLOS.mem_used_MB) AS mem_used_MB from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$$hostname-prefilter$$) ($$frameID$$) ($$osfilter$$) ($$hostname$$) ($$Command$$) `$$timefilter$$(TOP_ALLOS)` groupby _time, TOP_ALLOS.frameID, TOP_ALLOS.hostname, TOP_ALLOS.logical_cpus, TOP_ALLOS.Command, TOP_ALLOS.PID prestats=true span=1m
+| stats dedup_splitvals=t max(TOP_ALLOS.mem_used_MB) AS mem_used_MB by _time, TOP_ALLOS.frameID, TOP_ALLOS.hostname, TOP_ALLOS.logical_cpus, TOP_ALLOS.Command, TOP_ALLOS.PID
+| rename TOP_ALLOS.frameID AS frameID, TOP_ALLOS.hostname AS hostname TOP_ALLOS.logical_cpus AS logical_cpus TOP_ALLOS.Command AS Command TOP_ALLOS.PID AS PID
+| dedup _time,frameID,hostname,Command,mem_used_MB
+| stats sum(mem_used_MB) As mem_used_MB by _time,frameID,hostname,Command
+| stats sum(mem_used_MB) As mem_used_MB by _time,frameID,hostname,Command
+| stats sum(mem_used_MB) As mem_used_MB by _time,Command
+| stats $$statsmode$$(mem_used_MB) AS usage by Command
+| sort - usage | head 100&quot;},
+                    &quot;earliest_time&quot;:
+                    {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.earliest$$&quot;
+                    },
+                    &quot;latest_time&quot;: {&quot;type&quot;: &quot;token_safe&quot;,
+                    &quot;value&quot;: &quot;$$timerange.latest$$&quot;
+                    },
+                    &quot;auto_cancel&quot;: 90,
+                    &quot;preview&quot;: true
+                    }">
+                </div>
+                <div id="bubbleChart2" class="splunk-view" data-require="app/nmon/components/bubblechart/bubblechart" data-options="{
+                &quot;managerid&quot;: &quot;bubbleSearch2&quot;,
+                &quot;nameField&quot;: &quot;Command&quot;,
+                &quot;categoryField&quot;: &quot;Command&quot;,
+                &quot;valueField&quot;: &quot;usage&quot;,
+                &quot;height&quot;: 600
+                }">
+                </div>
+            </html>
+        </panel>
+        <panel id="panelb2_setWidth_25">
+            <title>Stats by Commands</title>
+            <table>
+                <search base="tablestats_memory_per_command">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+        <panel id="panelb3_setWidth_25">
+            <title>Stats by Hosts</title>
+            <table>
+                <search base="tablestats_memory_per_host">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+    </row>
+
+</form>
