@@ -48,8 +48,10 @@
 # 2016/05/19, Guilhem Marchand:         - Fix some situation were the nmon bin in path could be ignored
 # 2016/05/31, Guilhem Marchand:         - AIX: Collect in default SEA and WLM stats (-O and -W options)
 # 2016/06/12, Guilhem Marchand:         - Linux: Managed unlimited capturation for processes and disks
+# 2016/07/11, Guilhem Marchand:         - Linux: Manage the bytes order system to identify if running in big or little endian
+# 2016/07/12, Guilhem Marchand:         - Store linux binaries in a tgz archive file that be uncompressed if required
 
-# Version 1.3.19
+# Version 1.3.20
 
 # For AIX / Linux / Solaris
 
@@ -103,9 +105,25 @@ APP_VAR=$SPLUNK_HOME/var/run/nmon
 # Which type of OS are we running
 UNAME=`uname`
 
+# Linux binaries are stored in the bin/linux.tgz archive file
+# At first startup only, if the linux directory does not exist, extract the binaries archive file
+case $UNAME in
+
+Linux )
+
+if [ ! -d ${APP}/bin/linux ]; then
+    cd ${APP}/bin
+    tar -xzpf linux.tgz
+fi
+
+;;
+esac
+
 # Silently update bin content to run directory (see after this)
 # Note: on some systems, cp is an alias to cp -i which would prevent this from working as expected
 update_var_bin () {
+cd ${APP}/bin
+tar -xzpf linux.tgz
 \cp -pf ${APP}/default/app.conf ${APP_VAR}/app.conf > /dev/null 2>&1
 \cp -rpf ${APP}/bin ${APP_VAR}/ > /dev/null 2>&1
 }
@@ -302,14 +320,6 @@ if [ ! -x "$NMON" ];then
 	
 		ARCH_NAME="power_64" ;; # powerpc 64 bits	
 
-	ppp64le )
-	
-		ARCH_NAME="power_64le" ;; # powerpc 64 bits little endian	
-
-	ppp64be )
-	
-		ARCH_NAME="power_64be" ;; # powerpc 64 bits big endian
-
 	s390 )
 	
 		ARCH_NAME="mainframe_32" ;; # s390 32 bits mainframe	
@@ -319,6 +329,40 @@ if [ ! -x "$NMON" ];then
 		ARCH_NAME="mainframe_64" ;; # s390x 64 bits mainframe	
 	
 	esac
+
+	### PowerLinux specific ###
+
+	# On PowerLinux arch, some OS can run in Big Endian while most will run in Little Endian
+    # On a Little Endian system, the following command will return "1" for a Little Endian arch
+
+    # See this nice article: https://www.mainline.com/linux-on-power-to-be-or-not-to-be-why-should-i-care
+    # And specifically "Ubuntu is LE only; SLES 11 is BE only; SLES 12 is LE only; RedHat 6.x is BE only; RedHat 7.1 has two distributions – one LE, the other BE"
+
+    # For convenience, all powerLinux binaries are suffixed by "_le" or "_be"
+
+    case $ARCH in
+
+    ppp32 | ppp64 )
+
+        # Assign default to Little Endian in case of failure
+        BYTE_ORDER_STATUS="1"
+        BYTE_ORDER="le"
+
+        BYTE_ORDER_STATUS=`echo I | tr -d [:space:] | od -to2 | head -n1 | awk '{print $2}' | cut -c6`
+        case ${BYTE_ORDER_STATUS} in
+
+        0 )
+        # Big Endian
+            BYTE_ORDER="be" ;;
+
+        # Little Endian
+        1 )
+            BYTE_ORDER="le" ;;
+
+        esac
+
+    ;;
+    esac
 
 	# Initialize linux_vendor
 	linux_vendor=""
@@ -340,26 +384,78 @@ if [ ! -x "$NMON" ];then
 		linux_mainversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | awk -F'.' '{print $1}'`	# The main release (eg. rhel 7) 	
 		linux_subversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | awk -F'.' '{print $2}'`	# The sub level release (eg. "1" from rhel 7.1)
 		linux_fullversion=`grep '^VERSION_ID=' $OSRELEASE | awk -F'"' '{print $2}' | sed 's/\.//g'`	# Concatenated version of the release (eg. 71 for rhel 7.1)	
-	
-		# Try the most accurate
-		
-		if [ -f $APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion} ]; then
-		
-			NMON="$APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}"
-			
-		# try the mainversion
-		
-		elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion} ]; then
-		
-			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
-		
-		# try the linux_vendor
 
-		elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor} ]; then
+        case $ARCH in
 
-			NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}"
+        # PowerLinux
+        ppp32 | ppp64 )
 
-		fi
+            # Manage Big / Little Endian arch
+            case ${BYTE_ORDER} in
+
+            # Big Endian
+            0 )
+
+                # Try the most accurate
+                if [ -f $APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}_be ]; then
+                    NMON="$APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}_be"
+
+                # try the mainversion
+                elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_be ]; then
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_be"
+
+                # try the linux_vendor
+                elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}_be ]; then
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}_be"
+
+                fi
+
+            ;;
+
+            # Little Endian
+            1 )
+
+                # Try the most accurate
+                if [ -f $APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}_le ]; then
+                    NMON="$APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}_le"
+
+                # try the mainversion
+                elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_le ]; then
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_le"
+
+                # try the linux_vendor
+                elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}_le ]; then
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}_le"
+
+                fi
+
+            ;;
+
+            esac
+
+        ;;
+
+        # All other arch
+        *)
+
+                # Try the most accurate
+                if [ -f $APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion} ]; then
+                    NMON="$APP_VAR/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_fullversion}"
+
+                # try the mainversion
+                elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion} ]; then
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+
+                # try the linux_vendor
+                elif [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor} ]; then
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}"
+
+                fi
+
+        ;;
+
+        esac
+
 
 	# So bad, no os-release, probably old linux, things becomes a bit harder
 
@@ -371,7 +467,7 @@ if [ ! -x "$NMON" ];then
 
                linux_vendor="centos"
                linux_mainversion="$version"
-                NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+               NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
 
            fi
 
@@ -380,6 +476,8 @@ if [ ! -x "$NMON" ];then
     # rhel, OS and version detection
 	elif [ -f /etc/redhat-release ]; then
 
+        # Redhat has some version for PowerLinux that can be Little or Big endian
+
 		for version in 4 5 6 7; do
 	
 			# search for rhel		
@@ -387,8 +485,38 @@ if [ ! -x "$NMON" ];then
 		
 				linux_vendor="rhel"
 				linux_mainversion="$version"
-				NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
-				
+
+                case $ARCH in
+
+                # PowerLinux
+                ppp32 | ppp64 )
+
+                    # Manage Big / Little Endian arch
+                    case ${BYTE_ORDER} in
+
+                    # Big endian
+                    0 )
+                        NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_be"
+
+				    ;;
+
+				    # Little endian
+				    1)
+    				    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_le"
+				    ;;
+
+				    esac
+
+				;;
+
+				# Other arch
+				* )
+				    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+
+                ;;
+
+                esac
+
 			fi
 			
 		done
@@ -405,12 +533,36 @@ if [ ! -x "$NMON" ];then
 			linux_mainversion=`grep 'VERSION =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
             linux_subversion=`grep 'PATCHLEVEL =' /etc/SuSE-release | sed 's/ //g' | awk -F= '{print $2}' | awk -F. '{print $1}'`
 
-            # try the most accurate
-            if [ -f ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}${linux_subversion} ]; then
-                    NMON=" ${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}${linux_subversion}"
-            else
-                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
-            fi
+            case $ARCH in
+
+            # PowerLinux
+            ppp32 | ppp64 )
+
+                # Manage Big / Little Endian arch
+                case ${BYTE_ORDER} in
+
+                # Big endian
+                0 )
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_be"
+
+                ;;
+
+                # Little endian
+                1)
+                    NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_le"
+                ;;
+
+                esac
+
+            ;;
+
+            # Other arch
+            * )
+                NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+
+            ;;
+
+            esac
 
 		elif grep "openSUSE" /etc/SuSE-release >/dev/null; then
 		
@@ -447,6 +599,7 @@ if [ ! -x "$NMON" ];then
 		
 			done
 
+        # Ubuntu is Little Endian only
 		elif grep "Ubuntu" /etc/issue >/dev/null; then
 
 			for version in 6 7 8 9 10 11 12 13 14 15; do
@@ -455,7 +608,37 @@ if [ ! -x "$NMON" ];then
 		
 					linux_vendor="ubuntu"
 					linux_mainversion="$version"
-					NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+
+                    case $ARCH in
+
+                    # PowerLinux
+                    ppp32 | ppp64 )
+
+                        # Manage Big / Little Endian arch
+                        case ${BYTE_ORDER} in
+
+                        # Big endian
+                        0 )
+                            NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_be"
+
+                        ;;
+
+                        # Little endian
+                        1)
+                            NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}_le"
+                        ;;
+
+                        esac
+
+                    ;;
+
+                    # Other arch
+                    * )
+                        NMON="${APP_VAR}/bin/linux/${linux_vendor}/nmon_${ARCH_NAME}_${linux_vendor}${linux_mainversion}"
+
+                    ;;
+
+                    esac
 
 				fi
 		
@@ -477,8 +660,38 @@ if [ ! -x "$NMON" ];then
 		if [ $? -eq 0 ]; then
 			NMON=`which nmon 2>&1`
 		else
-			# Try switching to embedded generic
-			NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}"
+
+            case $ARCH in
+
+            # PowerLinux
+            ppp32 | ppp64 )
+
+                # Manage Big / Little Endian arch
+                case ${BYTE_ORDER} in
+
+                # Big endian
+                0 )
+                    NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}_be"
+
+                ;;
+
+                # Little endian
+                1)
+                    NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}_le"
+                ;;
+
+                esac
+
+            ;;
+
+            # Other arch
+            * )
+                NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}"
+
+            ;;
+
+            esac
+
 		fi
     ;;
 
@@ -505,7 +718,37 @@ if [ ! -x "$NMON" ];then
 		if [ -x ${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH} ]; then
 		
 			# Try switching to embedded generic
-			NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}"
+
+            case $ARCH in
+
+            # PowerLinux
+            ppp32 | ppp64 )
+
+                # Manage Big / Little Endian arch
+                case ${BYTE_ORDER} in
+
+                # Big endian
+                0 )
+                    NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}_be"
+
+                ;;
+
+                # Little endian
+                1)
+                    NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}_le"
+                ;;
+
+                esac
+
+            ;;
+
+            # Other arch
+            * )
+                NMON="${APP_VAR}/bin/linux/generic/nmon_linux_${ARCH}"
+
+            ;;
+
+            esac
 
 		else
 			

@@ -1,0 +1,292 @@
+<form stylesheet="ui_simple.css,panel_decoration.css">
+    <label>UI RT CPU_ALL, Real Time CPU Percentage load Analysis (compatibility mode)</label>
+    <description>Simplified Real Time capable User Interface for the CPU_ALL monitor</description>
+
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>rt-4h</earliestTime>
+                <latestTime>rtnow</latestTime>
+            </default>
+        </input>
+
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>*</default>
+            <prefix>OStype is "</prefix>
+            <suffix>"</suffix>
+            <choice value="*">Any OS</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+
+        <input type="dropdown" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search base="populate">
+                <query>stats count by frameID | sort frameID | dedup frameID</query>
+            </search>
+            <prefix>"</prefix>
+            <suffix>"</suffix>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>frameID</fieldForLabel>
+            <fieldForValue>frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+
+        <input type="dropdown" token="hostname" searchWhenChanged="true">
+            <label>Host Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search base="populate">
+                <query>search frameID=$frameID$ hostname="$hostname-prefilter$" | stats count by hostname | dedup hostname</query>
+            </search>
+            <prefix>"</prefix>
+            <suffix>"</suffix>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>hostname</fieldForLabel>
+            <fieldForValue>hostname</fieldForValue>
+        </input>
+
+    </fieldset>
+
+    <!-- Base Searches for PostProcessing -->
+
+    <search id="populate">
+        <query>| pivot NMON_Data_CPU CPU_ALL count(CPU_ALL) AS "count" SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ SORT 0 frameID ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="tablestats">
+        <query>| pivot NMON_Data_CPU CPU_ALL max(cpu_PCT) AS "Max CPU %" avg(cpu_PCT) AS "Avg CPU %" median(cpu_PCT) AS "Median CPU %" min(cpu_PCT) AS "Min CPU %" avg(Idle_PCT) AS "Avg Idle %" avg(Sys_PCT) AS "Avg Sys %" avg(User_PCT) AS "Avg User %" avg(Wait_PCT) AS "Avg Wait %"
+SPLITROW hostname AS hostname SPLITROW frameID AS frameID FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <!-- Help the user -->
+
+    <row rejects="$hostname$">
+        <panel>
+            <html>
+                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name in the host selector bellow - - - - - - - - - -</p>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ################################ -->
+
+    <row>
+        <panel>
+            <chart>
+                <title>Higher load</title>
+                <search base="tablestats">
+                    <query>eval max=round('Max CPU %',2) | gauge max</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">115px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Average load</title>
+                <search base="tablestats">
+                    <query>eval avg=round('Avg CPU %',2) | gauge avg</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">115px</option>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Median load</title>
+                <search base="tablestats">
+                    <query>eval median=round('Median CPU %',2) | gauge median</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart">radialGauge</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.gaugeColors">[0x84E900,0xFFE800,0xBF3030]</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">115px</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <table>
+                <search base="tablestats">
+                    <query>| foreach "* %" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">10</option>
+                <drilldown target="search">
+                    <link>
+                        <![CDATA[
+/app/nmon/search?earliest=$timerange.earliest$&latest=$timerange.latest$&q=| pivot NMON_Data_CPU CPU_ALL max(cpu_PCT) AS max_cpu_PCT avg(cpu_PCT) AS avg_cpu_PCT min(cpu_PCT) AS min_cpu_PCT avg(Idle_PCT) AS avg_Idle_PCT avg(Sys_PCT) AS avg_Sys_PCT avg(User_PCT) AS avg_User_PCT avg(Wait_PCT) AS avg_Wait_PCT 
+SPLITROW frameID AS frameID SPLITROW hostname AS hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $click.value$ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+			]]></link>
+                </drilldown>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="settings">
+            <title>Charting parameters</title>
+            <input type="dropdown" token="period" searchWhenChanged="true">
+                <label>Period:</label>
+                <default>minute</default>
+                <choice value="auto">Auto</choice>
+                <choice value="second">Secondes</choice>
+                <choice value="minute">Minutes</choice>
+                <choice value="hour">Hours</choice>
+                <choice value="day">Days</choice>
+                <choice value="month">Months</choice>
+                <choice value="year">Years</choice>
+            </input>
+            <input type="dropdown" token="cpumode" searchWhenChanged="true">
+                <label>Show CPU load by:</label>
+                <default>avg(cpu_PCT) AS cpu_PCT</default>
+                <choice value="avg(cpu_PCT) AS cpu_PCT">Avg Global CPU % Usage</choice>
+                <choice value="max(cpu_PCT) AS cpu_PCT">Max Global CPU % Usage</choice>
+                <choice value="avg(Idle_PCT) AS Idle_PCT avg(Sys_PCT) AS Sys_PCT avg(User_PCT) AS User_PCT avg(Wait_PCT) AS Wait_PCT">Avg: Sys,User,Wait,Idle</choice>
+                <choice value="max(Idle_PCT) AS Idle_PCT max(Sys_PCT) AS Sys_PCT max(User_PCT) AS User_PCT max(Wait_PCT) AS Wait_PCT">Max: Sys,User,Wait,Idle</choice>
+            </input>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>connect</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="cpu">
+            <title>CPU percentage usage statistics</title>
+            <input type="checkbox" token="cpu_scale" searchWhenChanged="true">
+                <label></label>
+                <default>0</default>
+                <choice value="0">Starts scale at 0 %</choice>
+            </input>
+            <input type="checkbox" token="cpu_scaleend" searchWhenChanged="true">
+                <label></label>
+                <default>100</default>
+                <choice value="100">Ends scale at 100 %</choice>
+            </input>
+            <chart>
+                <search id="timechart">
+                    <query>| pivot NMON_Data_CPU CPU_ALL $cpumode$
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680px</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">% CPUs</option>
+                <option name="charting.axisY.minimumNumber">$cpu_scale$</option>
+                <option name="charting.axisY.maximumNumber">$cpu_scaleend$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <drilldown target="search">
+                    <link>
+                        <![CDATA[
+/app/nmon/search?earliest=$earliest$&latest=$latest$&q=| pivot NMON_Data_CPU CPU_ALL $cpumode$ 
+SPLITROW _time AS _time PERIOD $period$ SPLITCOL hostname FILTER $osfilter$ FILTER hostname is $hostname-prefilter$ FILTER frameID is $frameID$ FILTER hostname is $hostname$ SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 0
+			]]></link>
+                </drilldown>
+            </chart>
+        </panel>
+    </row>
+
+</form>
