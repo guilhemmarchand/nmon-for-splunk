@@ -9,21 +9,24 @@
 
 # *** BE UPGRADE RESILIENT: *** Copy this stanza to your local/props.conf to prevent futur upgrades from overwriting your setting
 
-# To force the use of the Python converter, set:
-# unarchive_cmd = $SPLUNK_HOME/bin/splunk cmd python $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.py
-
-# To force the use of the Python converter, set:
-# unarchive_cmd = $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.pl
-
 # This source stanza will be called by the archive processor to convert NMON raw data into csv files
 # Splunk can manage. See inputs.conf for the associated monitor
 
 # To force nmon2csv parsers to always consider nmon files as realtime data, you can set the option "--mode realtime":
-# unarchive_cmd = $SPLUNK_HOME/bin/splunk cmd $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.sh --mode realtime
+# unarchive_cmd = C:\Program Files\Splunk\etc\apps\nmon\bin\nmon2csv.py --mode realtime
 # This is normally not necessary as parsers will automatically detect if we are dealing with realtime data
 
-[source::...\.*.nmon]
+# host name definition: by default, nmon2csv parsers will use the value returned by nmon for the host name definition. (available in the config section - AAA,host)
+# If you want to have hosts using their fully qualified domain name (fqdn) instead of the nmon hostname value, add the option "--use_fqdn" in the source stanza definition
+# the value of host name will be equivalent to the "hostname -f" command on the host.
+# **CAUTION**: Do use this option when managing nmon data generated out of Splunk (central repositories) or all the data being ingested will be identified as coming the host
+# that managed the nmon data
+# This option must be used on host that are only managing their own nmon data.
 
+# To activate fqdn:
+# unarchive_cmd = C:\Program Files\Splunk\etc\apps\nmon\bin\nmon2csv.py --use_fqdn
+
+[source::...\.*.nmon]
 invalid_cause = archive
 unarchive_cmd = C:\Program Files\Splunk\etc\apps\nmon\bin\nmon2csv.py
 sourcetype = nmon_processing
@@ -80,31 +83,90 @@ FIELDALIAS-frameID = serialnum AS frameID
 
 # LOOKUP-PSERIES = my_lookup_table serialnum AS serialnum OUTPUT PSERIES AS frameID
 
-#####################
-# CIM normalization #
-#####################
+########################################
+# CIM normalization / NMON extractions #
+########################################
 
 # When applicabe, be CIM compliant
 
+# Various CIM
 FIELDALIAS-dest = host as dest
 EVAL-hypervisor_id = if(isnotnull(frameID), frameID, serialnum)
 
+#
+# Non CIM and Power arch common, unify AIX and PowerLinux stats to a common model at search extraction time
+#
+
+# For Power arch micro-partitions (AIX & PowerLinux)
+EVAL-lpar_vp_usage = case(OStype=="AIX", round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),3), OStype=="Linux", round(PhysicalCPU,3))
+EVAL-lpar_vp_usage_PCT = case(OStype=="AIX", round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2), OStype=="Linux", round((PhysicalCPU/partition_active_processors*100),2))
+
+# For Power arch micro-partitions Pool statistics (AIX & PowerLinux)
+EVAL-lpar_pool_vp_usage = case(OStype=="AIX", round((poolCPUs-PoolIdle),3), OStype="Linux", round((system_active_processors-pool_idle_time),3))
+EVAL-lpar_pool_vp_usage_PCT = case(OStype=="AIX", round(((poolCPUs-PoolIdle)*100/poolCPUs),2), OStype="Linux", round((system_active_processors-pool_idle_time)/system_active_processors*100,2))
+
+# Normalize capacity information
+EVAL-lpar_pool_capacity = case(OStype=="AIX", poolCPUs, OStype="Linux", system_active_processors)
+EVAL-lpar_vp_capacity = case(OStype=="AIX", virtualCPUs, OStype="Linux", partition_active_processors)
+EVAL-lpar_entitled_capacity = case(OStype=="AIX", entitled, OStype="Linux", partition_entitled_capacity)
+
 # CIM normalization for cpu metrics
 
-EVAL-cpu_load_percent = case(type=="CPU_ALL", (Sys_PCT+User_PCT+Wait_PCT), type=="TOP", pct_CPU)
+EVAL-cpu_load_percent = case(match(type,"CPU.*"), (Sys_PCT+User_PCT+Wait_PCT), type=="TOP", pct_CPU, type=="LPAR", round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2), OStype=="Linux", round((PhysicalCPU/partition_active_processors*100),2) )
 FIELDALIAS-cpu_load_user = User_PCT as cpu_user_percent
+# Non CIM, but provides good visibility on these fields, and this looks like logical
+FIELDALIAS-cpu_load_sys = Sys_PCT as cpu_sys_percent
+FIELDALIAS-cpu_load_wait = Wait_PCT as cpu_wait_percent
+FIELDALIAS-cpu_load_idle = Idle_PCT as cpu_idle_percent
+
+# Non CIM: provide the same fields evaluation in logical CPU units
+EVAL-cpu_load_logicalcpus = case(match(type,"CPU_ALL"), ((Sys_PCT+User_PCT+Wait_PCT)/100*logical_cpus))
+EVAL-cpu_user_logicalcpus = case(match(type,"CPU_ALL"), (User_PCT/100*logical_cpus))
+EVAL-cpu_wait_logicalcpus = case(match(type,"CPU_ALL"), (Wait_PCT/100*logical_cpus))
+EVAL-cpu_idle_logicalcpus = case(match(type,"CPU_ALL"), (Idle/100*logical_cpus))
 
 # CIM normalization for common memory metrics
 
 # Total memory available in MB (for AIX / Linux / Solaris)
 EVAL-mem = case(isnotnull(Real_total_MB), Real_total_MB, isnotnull(memtotal), memtotal)
 EVAL-mem_free = case(isnotnull(Real_free_MB), Real_free_MB, isnotnull(memfree), memfree)
-EVAL-mem_used = case(type=="MEM", (case(isnotnull(Real_total_MB), (Real_total_MB-Real_free_MB), isnotnull(memtotal), (memtotal-memfree))), type="TOP", case(OStype="AIX", (ResData+ResText), OStype="Linux", (ResData+ResText), OStype="Solaris", ResSize))
+EVAL-mem_used = case(type=="MEM", (case(isnotnull(Real_total_MB), (Real_total_MB-Real_free_MB), isnotnull(memtotal), (memtotal-memfree))), type="TOP", case(OStype="AIX", (ResSet), OStype="Linux", (ResSet), OStype="Solaris", ResSize))
+
+# Non CIM: For Linux, create the effective mem_used and mem_free, effective means memory less buffers and cached that can be free by the kernel if it required
+# Volume of buffers and cached are by default accounted in the memory being used, therefore this is can be considered as a level memory available for system and application needs
+# For other OS, these fields will be created for convenient use but are they are equal to previously calculated fields
+EVAL-mem_used_effective = case(type=="MEM", (case(isnotnull(Real_total_MB), (Real_total_MB-Real_free_MB), isnotnull(cached), ((memtotal-(buffers+cached))-memfree), isnotnull(memtotal), memtotal-memfree)))
+EVAL-mem_free_effective = case(isnotnull(Real_free_MB), Real_free_MB, isnotnull(cached), (memfree+(buffers+cached)), isnotnull(memtotal), memfree)
+
+# Evaluate at the props level the percentile versions of memory statistics
+EVAL-mem_used_PCT = case(isnotnull(Real_total_MB), round((((Real_total_MB-Real_free_MB)/Real_total_MB)*100),2), isnotnull(memtotal), round((((memtotal-memfree)/memtotal)*100),2))
+EVAL-mem_free_PCT = case(isnotnull(Real_Free_PCT), Real_Free_PCT, isnotnull(memtotal), round(((memfree/memtotal)*100),2))
+EVAL-mem_used_effective_PCT = case(isnotnull(Real_total_MB), round((((Real_total_MB-Real_free_MB)/Real_total_MB)*100),2), isnotnull(cached), round((((((memtotal-(buffers+cached))-memfree))/memtotal)*100),2), isnotnull(memtotal), round((((memtotal-memfree)/memtotal)*100),2))
+EVAL-mem_free_effective_PCT = case(isnotnull(Real_Free_PCT), Real_Free_PCT, isnotnull(cached), round((((memfree+(buffers+cached))/memtotal)*100),2), isnotnull(memtotal), round(((memfree/memtotal)*100),2))
+
+# Non CIM: For Linux, eval cached, buffers, active and inactive in PCT
+EVAL-cached_PCT = case(isnotnull(cached), round(((cached/memtotal)*100),2))
+EVAL-buffers_PCT = case(isnotnull(buffers), round(((buffers/memtotal)*100),2))
+EVAL-active_PCT = case(isnotnull(active), round(((active/memtotal)*100),2))
+EVAL-inactive_PCT = case(isnotnull(inactive), round(((inactive/memtotal)*100),2))
 
 # Total virtual memory available in MB (for AIX / Linux / Solaris)
 EVAL-swap = case(isnotnull(Virtual_total_MB), Virtual_total_MB, isnotnull(swaptotal), swaptotal)
 EVAL-swap_free = case(isnotnull(Virtual_free_MB), Virtual_free_MB, isnotnull(swapfree), swapfree)
 EVAL-swap_used = case(isnotnull(Virtual_total_MB), (Virtual_total_MB-Virtual_free_MB), isnotnull(swaptotal), (swaptotal-swapfree))
+
+# Non CIM
+EVAL-swap_free_PCT = case(isnotnull(Virtual_free_PCT), Virtual_free_PCT, isnotnull(swapfree), round(((swapfree/swaptotal)*100),2))
+EVAL-swap_used_PCT = case(isnotnull(Virtual_total_MB), round((((Virtual_total_MB-Virtual_free_MB)/Virtual_total_MB)*100),2), isnotnull(swaptotal), round((((swaptotal-swapfree)/swaptotal)*100),2))
+
+# For Linux, consider effective swap using over the volume of swapcached
+EVAL-swap_free_effective = case(isnotnull(Virtual_free_MB), Virtual_free_MB, isnotnull(swapcached), (swapfree+swapcached), isnotnull(swapfree), swapfree)
+EVAL-swap_used_effective = case(isnotnull(Virtual_total_MB), (Virtual_total_MB-Virtual_free_MB), isnotnull(swapcached), ((swaptotal-swapfree)-swapcached), isnotnull(swaptotal), (swaptotal-swapfree))
+EVAL-swap_free_effective_PCT = case(isnotnull(Virtual_free_PCT), Virtual_free_PCT, isnotnull(swapcached), round((((swapfree+swapcached)/swaptotal)*100),2), isnotnull(swapfree), round(((swapfree/swaptotal)*100),2))
+EVAL-swap_used_effective_PCT = case(isnotnull(Virtual_total_MB), round((((Virtual_total_MB-Virtual_free_MB)/Virtual_total_MB)*100),2), isnotnull(swapcached), round((((((swaptotal-swapfree)-swapcached))/swaptotal)*100),2), isnotnull(swaptotal), round((((swaptotal-swapfree)/swaptotal)*100),2))
+
+# Non CIM
+EVAL-swapcached_PCT = case(isnotnull(swapcached), round(((swapcached/swaptotal)*100),2))
 
 # CIM normalization for common network statistics
 EVAL-thruput = case(type=="NET", (value*1000))
@@ -245,8 +307,8 @@ EXTRACT-Linux_swapmemory_KB = BBB\w*,[^,]*,/proc/meminfo,\"SwapTotal:\s*(?<Linux
 
 # uptime (available for Linux hosts only)
 # Sic !!!
-EXTRACT-uptime_raw = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*(?<uptime_raw>[\w\d\:\s]*)\s*,
-EXTRACT-uptime_days = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*(?<uptime_days>\d*)\s*days\s*,
+EXTRACT-uptime_days = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*(?<uptime_days>\d*)\s*day[s|,]*\s*(?<uptime_dayshour>\d*):(?<uptime_daystime>\d*)
+EXTRACT-uptime_days_with_min = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*(?<uptime_days>\d*)\s*day[s|,]*\s*(?<uptime_daysmin>\d*)\smin
 EXTRACT-uptime_minutes = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*(?<uptime_minutes>\d*)\s*min\s*,
 EXTRACT-uptime_hours = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*(?<uptime_hours>\d*:\d*)\s*,
 EXTRACT-uptime_hours_hours = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*(?<uptime_hours_hours>\d*):\d*\s*,
@@ -254,7 +316,7 @@ EXTRACT-uptime_hours_minutes = BBB\w*,[^,]+,uptime,\"\s*[\d|\w|:]*\s*up\s*\d*:(?
 EVAL-uptime_fromdays = (uptime_days*86400)
 EVAL-uptime_fromminutes = (uptime_minutes*60)
 EVAL-uptime_fromhours = (uptime_hours_hours*60*60) + (uptime_hours_minutes*60)
-EVAL-uptime = case(isnotnull(uptime_days), (uptime_days*86400), isnotnull(uptime_minutes), (uptime_minutes*60), isnotnull(uptime_hours), (uptime_hours_hours*60*60) + (uptime_hours_minutes*60) )
+EVAL-uptime = case(isnotnull(uptime_daysmin), ((uptime_days*86400)+(uptime_daysmin*60)), isnotnull(uptime_days), ((uptime_days*86400)+(uptime_dayshour*3600)+(uptime_daystime*60)), isnotnull(uptime_minutes), (uptime_minutes*60), isnotnull(uptime_hours), (uptime_hours_hours*60*60) + (uptime_hours_minutes*60) )
 
 ###########################################
 #			SA-Eventgen								#
