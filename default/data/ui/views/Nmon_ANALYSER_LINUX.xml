@@ -2140,11 +2140,18 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.$hostname$) groupby _time,
                 <option name="count">20</option>
             </table>
 
+            <input type="text" token="fsfilter" depends="$show_jfsfile_overtime$" searchWhenChanged="true">
+                <label>Filter FileSystems by pattern:</label>
+                <default>*</default>
+                <prefix>JFS.device="</prefix>
+                <suffix>"</suffix>
+            </input>
+
             <chart depends="$show_jfsfile_overtime$">
                 <title></title>
                 <search>
                     <query>| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" prestats=true $span$
+where (nodename = JFS.JFSFILE) (JFS.$hostname$) ($fsfilter$) groupby _time, "JFS.device" prestats=true $span$
 | timechart $span$ limit=0 useother=f max("JFS.value") AS value by "JFS.device"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -2291,17 +2298,17 @@ where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby 
                 <choice value="nfsserverv2">NFS Server V2</choice>
                 <default>nfsserverv4</default>
                 <change>
-                    <condition value="nfsserver4">
+                    <condition value="nfsserverv4">
                         <set token="show_nfsserverv4">true</set>
-                        <unset token="show_nfsserverv3"></unset>
                         <unset token="show_nfsserverv2"></unset>
+                        <unset token="show_nfsserverv3"></unset>
                     </condition>
-                    <condition value="nfsserver3">
+                    <condition value="nfsserverv3">
                         <set token="show_nfsserverv3">true</set>
                         <unset token="show_nfsserverv2"></unset>
-                        <unset token="show_nfsserverv2"></unset>
+                        <unset token="show_nfsserverv4"></unset>
                     </condition>
-                    <condition value="nfsserver2">
+                    <condition value="nfsserverv2">
                         <set token="show_nfsserverv2">true</set>
                         <unset token="show_nfsserverv3"></unset>
                         <unset token="show_nfsserverv4"></unset>
@@ -2309,7 +2316,7 @@ where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby 
                 </change>
             </input>
 
-            <chart depends="$nfsserverv4$" rejects="$show_null_nfsserverv4$">
+            <chart depends="$show_nfsserverv4$" rejects="$show_null_nfsserverv4$">
                 <title>NFS Server V4</title>
                 <search>
                     <query>| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS
@@ -2357,7 +2364,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats
                 </drilldown>
             </chart>
 
-            <chart depends="$nfsserverv3$" rejects="$show_null_nfsserverv3$">
+            <chart depends="$show_nfsserverv3$" rejects="$show_null_nfsserverv3$">
                 <title>NFS Server V3</title>
                 <search>
                     <query>| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS
@@ -2405,7 +2412,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats
                 </drilldown>
             </chart>
 
-            <chart depends="$nfsserverv2$" rejects="$show_null_nfsserverv2$">
+            <chart depends="$show_nfsserverv2$" rejects="$show_null_nfsserverv2$">
                 <title>NFS Server V2</title>
                 <search>
                     <query>| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS
@@ -2473,22 +2480,22 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats
 
             <input type="link" token="nfsclient_linkinput">
                 <label></label>
-                <choice value="nfsclientv4">NFS Server V4</choice>
-                <choice value="nfsclientv3">NFS Server V3</choice>
-                <choice value="nfsclientv2">NFS Server V2</choice>
+                <choice value="nfsclientv4">NFS Client V4</choice>
+                <choice value="nfsclientv3">NFS Client V3</choice>
+                <choice value="nfsclientv2">NFS Client V2</choice>
                 <default>nfsclientv4</default>
                 <change>
-                    <condition value="nfsclient4">
+                    <condition value="nfsclientv4">
                         <set token="show_nfsclientv4">true</set>
-                        <unset token="show_nfsclientv3"></unset>
                         <unset token="show_nfsclientv2"></unset>
+                        <unset token="show_nfsclientv3"></unset>
                     </condition>
-                    <condition value="nfsclient3">
+                    <condition value="nfsclientv3">
                         <set token="show_nfsclientv3">true</set>
                         <unset token="show_nfsclientv2"></unset>
-                        <unset token="show_nfsclientv2"></unset>
+                        <unset token="show_nfsclientv4"></unset>
                     </condition>
-                    <condition value="nfsclient2">
+                    <condition value="nfsclientv2">
                         <set token="show_nfsclientv2">true</set>
                         <unset token="show_nfsclientv3"></unset>
                         <unset token="show_nfsclientv4"></unset>
@@ -2496,7 +2503,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats
                 </change>
             </input>
 
-            <chart depends="$nfsserverv4$" rejects="$show_null_nfsclientv4$">
+            <chart depends="$show_nfsclientv4$" rejects="$show_null_nfsclientv4$">
                 <title>NFS Client V4</title>
                 <search>
                     <query>| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS
@@ -2544,7 +2551,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time presta
                 </drilldown>
             </chart>
 
-            <chart depends="$nfsserverv3$" rejects="$show_null_nfsclientv3$">
+            <chart depends="$show_nfsclientv3$" rejects="$show_null_nfsclientv3$">
                 <title>NFS Client V3</title>
                 <search>
                     <query>| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS
@@ -2592,7 +2599,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time presta
                 </drilldown>
             </chart>
 
-            <chart depends="$nfsserverv2$" rejects="$show_null_nfsclientv2$">
+            <chart depends="$show_nfsclientv2$" rejects="$show_null_nfsclientv2$">
                 <title>NFS Client V2</title>
                 <search>
                     <query>| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS

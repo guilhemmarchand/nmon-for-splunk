@@ -46,9 +46,9 @@
                 <!-- Populating Data Model Search -->
                 <search id="frameIDSearch">
                     <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID="*") ($osfilter$)
-                        groupby "CPU.frameID", "CPU.hostname" prestats=true
-                        | stats dedup_splitvals=t count AS count by "CPU.frameID"
-                        | rename "CPU.frameID" AS "frameID" | fields frameID | sort frameID</query>
+groupby "CPU.frameID", "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS count by "CPU.frameID"
+| rename "CPU.frameID" AS "frameID" | fields frameID | sort frameID</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -68,11 +68,10 @@
                 <!-- Populating Data Model Search -->
                 <search id="baseSearch">
                     <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID=$frameID$) (CPU.hostname=$hostname-prefilter$) ($osfilter$)
-                        groupby "CPU.hostname" prestats=true
-                        | stats dedup_splitvals=t count AS count by "CPU.hostname"
-                        | rename "CPU.hostname" AS hostname
-                        | fields hostname | sort hostname
-                    </query>
+groupby "CPU.hostname" prestats=true
+| stats dedup_splitvals=t count AS count by "CPU.hostname"
+| rename "CPU.hostname" AS hostname
+| fields hostname | sort hostname</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -134,7 +133,7 @@
             <table rejects="$show_null_config$">
                 <title></title>
                 <search base="configSearch">
-                    <query>search $hostname$ | fields - hostname</query>
+                    <query>search $hostname$ | fields - hostname,Virtual_mem_MB</query>
                     <!-- Progress event has access to job properties only -->
                     <progress>
                         <condition match="'job.resultCount' == 0">
@@ -2477,11 +2476,18 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.$hostname$) groupby _time,
                 <option name="count">20</option>
             </table>
 
+            <input type="text" token="fsfilter" depends="$show_jfsfile_overtime$" searchWhenChanged="true">
+                <label>Filter FileSystems by pattern:</label>
+                <default>*</default>
+                <prefix>JFS.device="</prefix>
+                <suffix>"</suffix>
+            </input>
+
             <chart depends="$show_jfsfile_overtime$">
                 <title></title>
                 <search>
                     <query>| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" prestats=true $span$
+where (nodename = JFS.JFSFILE) (JFS.$hostname$) ($fsfilter$) groupby _time, "JFS.device" prestats=true $span$
 | timechart $span$ limit=0 useother=f max("JFS.value") AS value by "JFS.device"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
