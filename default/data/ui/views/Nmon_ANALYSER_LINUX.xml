@@ -1639,7 +1639,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
         <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$)
 groupby _time MEM.hostname prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
-| timechart `inline_customspan` dedup_splitvals=t avg(*) AS *</query>
+| timechart $span$ dedup_splitvals=t avg(*) AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -1685,7 +1685,7 @@ groupby _time MEM.hostname prestats=true span=1m
             <chart depends="$mem_chart1$">
                 <title></title>
                 <search base="memory_stats">
-                    <query>fields _time, *mem_cached_MB*, *mem_buffers_MB*, *mem_free_MB*, *mem_used_effective_MB*, *mem_total_MB*</query>
+                    <query>fields _time, *mem_free_MB*, *mem_cached_MB*, *mem_buffers_MB*, *mem_used_effective_MB*, *mem_total_MB*</query>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
