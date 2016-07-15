@@ -179,7 +179,7 @@ groupby "CPU.hostname" prestats=true
                 <search>
                     <query>| tstats
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
-from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.type="LPAR") (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
@@ -208,7 +208,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
                 <drilldown target="search">
                     <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
-from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.type="LPAR") (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
