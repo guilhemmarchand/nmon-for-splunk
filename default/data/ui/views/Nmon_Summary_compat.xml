@@ -203,7 +203,7 @@ groupby MEM.hostname prestats=true
     </search>
 
     <search id="CPUSearch_summary">
-        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, "CPU.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
 | eval usage=if(isnotnull(vp_usage_pct), vp_usage_pct, pct_usage)
@@ -428,7 +428,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <search id="cputimechart">
                     <query>| tstats
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
-from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, "CPU.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
@@ -463,12 +463,13 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
 
             <chart>
                 <search id="IOPStimechart">
-                    <query>| tstats sum("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$)
-groupby _time, "DISKXFER.hostname" prestats=true span=1m
+                    <query>| tstats max("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$)
+groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t sum("DISKXFER.value") AS iops by _time, "DISKXFER.hostname"
-| fields _time, hostname, iops
-| timechart $span$ max(iops) As "Total I/O"</query>
+| stats dedup_splitvals=t max("DISKXFER.value") AS iops by _time, "DISKXFER.hostname", "DISKXFER.device"
+| dedup _time, "DISKXFER.hostname", "DISKXFER.device", iops
+| stats sum(iops) AS iops by _time, "DISKXFER.hostname"
+| timechart $span$ max(iops) As "max Total I/O", avg(iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -643,6 +644,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname="$hostname$") groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | rename "DISKXFER.*" AS *
+| dedup _time, hostname, device, value
 | stats dedup_splitvals=t sum(value) AS value by _time, hostname
 | fields $show_disks$
 | timechart $span$ avg(value) As iops | trendline sma5(iops) AS trend</query>
@@ -685,6 +687,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <query>| tstats max("DISKBUSY.value") AS DISKBUSY.value from datamodel=NMON_Data_DISKBUSY where (nodename = DISKBUSY) (DISKBUSY.hostname="$hostname$") groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKBUSY.value") AS DISKBUSY.value by _time, "DISKBUSY.hostname", "DISKBUSY.device"
 | rename "DISKBUSY.*" AS *
+| dedup _time, hostname, device, value
 | fields $show_disks$
 | stats dedup_splitvals=t avg(value) AS value by _time, hostname
 | timechart $span$ avg(value) As busy_time | trendline sma5(busy_time) AS trend</query>
@@ -730,6 +733,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (DISKBSIZE.hostname="$hostname$") groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "DISKBSIZE.hostname", "DISKBSIZE.device"
 | rename "DISKBSIZE.*" AS *
+| dedup _time, hostname, device, value
 | stats dedup_splitvals=t sum(value) AS value by _time, hostname
 | fields $show_disks$
 | timechart $span$ avg(value) As avg_transfer_size | trendline sma5(avg_transfer_size) AS trend</query>
@@ -771,6 +775,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <search>
                     <query>| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.hostname="$hostname$") groupby _time, "DISKREADWRITE.type", "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1m | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.type", "DISKREADWRITE.hostname", "DISKREADWRITE.device" | sort limit=0 _time | rename "DISKREADWRITE.type" AS type "DISKREADWRITE.hostname" AS hostname "DISKREADWRITE.device" AS device | fields _time, type, hostname, device, value
 | eval key=case(type=="DISKREAD", "read", type=="DISKWRITE", "write")
+| dedup _time, key, value
 | stats sum(value) AS value by _time, key
 | fields $show_disks$
 | timechart $span$ avg(value) As avg_data_rate by key</query>
