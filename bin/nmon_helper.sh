@@ -50,8 +50,9 @@
 # 2016/06/12, Guilhem Marchand:         - Linux: Managed unlimited capturation for processes and disks
 # 2016/07/11, Guilhem Marchand:         - Linux: Manage the bytes order system to identify if running in big or little endian
 # 2016/07/12, Guilhem Marchand:         - Store linux binaries in a tgz archive file that be uncompressed if required
+# 2016/07/16, Guilhem Marchand:         - ARM support
 
-# Version 1.3.20
+# Version 1.3.21
 
 # For AIX / Linux / Solaris
 
@@ -326,7 +327,11 @@ if [ ! -x "$NMON" ];then
 
 	s390x )
 	
-		ARCH_NAME="mainframe_64" ;; # s390x 64 bits mainframe	
+		ARCH_NAME="mainframe_64" ;; # s390x 64 bits mainframe
+
+    arm* )
+
+        ARCH_NAME="arm" ;; # arm architecture
 	
 	esac
 
