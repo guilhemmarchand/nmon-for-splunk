@@ -1,6 +1,6 @@
-<dashboard script="autodiscover.js,panel_resize.js" stylesheet="Home.css,hover.css,hide_timeindicator.css" hideEdit="true">
+<dashboard script="autodiscover.js,panel_resize.js" stylesheet="Home.css,hover.css,hide_timeindicator.css" hideEdit="false">
     <label>NMON Performance Monitor</label>
-    <description>NMON Performance Monitor for Unix and Linux Systems - Version 1.7.0</description>
+    <description>NMON Performance Monitor for Unix and Linux Systems - Version 1.7.1</description>
 
     <!-- Global Search -->
 
@@ -914,47 +914,43 @@
                 <search base="Global">
                     <query>fields summary</query>
                 </search>
-                <option name="linkView">search</option>
                 <option name="underLabel">DATE OF FIRST AND LAST PERF EVENT</option>
-                <option name="drilldown">none</option>
                 <option name="refresh.auto.interval">60</option>
                 <option name="drilldown">all</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary="Starts at:" + 'First Event' + " # " + "Ends at:" + 'Last Event'</option>
+                <drilldown target="search">
+                    <link>search?q=| `indexes_datestats` | where (sourcetype == "nmon_data")</link>
+                </drilldown>
             </single>
             <single>
                 <search ref="Hosts with data within last 7 days"></search>
-                <option name="linkView">search</option>
-                <option name="afterLabel">Host(s) with activity</option>
+                <option name="unit">Host(s) with activity</option>
                 <option name="underLabel">IN THE LAST 7 DAYS</option>
                 <option name="refresh.auto.interval">60</option>
                 <option name="field">count</option>
                 <option name="drilldown">all</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| savedsearch "Hosts with data within last 7 days"</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Config Nmon_Config dc(hostname) AS "dcount" SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</link>
+                </drilldown>
             </single>
             <single>
                 <search ref="Volume of Data indexed Today"></search>
                 <option name="numberPrecision">0.00</option>
-                <option name="linkView">search</option>
-                <option name="afterLabel">MB Indexed</option>
+                <option name="unit">MB Indexed</option>
                 <option name="underLabel">TODAY / EVOLUTION VS YESTERDAY</option>
                 <option name="refresh.auto.interval">60</option>
                 <option name="field">value</option>
                 <option name="drilldown">all</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| savedsearch "Volume of Data indexed Today"</option>
             </single>
             <single>
                 <search ref="Number of Errors in Data Processing or Data Collect since last 24 Hours"></search>
-                <option name="linkView">search</option>
-                <option name="afterLabel">Errors Reported</option>
+                <option name="unit">Errors Reported</option>
                 <option name="underLabel">PROCESSING/COLLECT LAST 24 HOURS</option>
                 <option name="refresh.auto.interval">60</option>
                 <option name="field">value</option>
                 <option name="drilldown">all</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">(eventtype=nmon:processing OR eventtype=nmon:collect error) OR (index=_internal sourcetype=splunkd ERROR ExecProcessor nmon) NOT ("There is no python in" OR "python: not found") earliest="-24h" latest="now"</option>
+                <drilldown target="search">
+                    <link>search?q=(eventtype=nmon:processing OR eventtype=nmon:collect error) OR (index=_internal sourcetype=splunkd ERROR ExecProcessor nmon) NOT ("There is no python in" OR "python: not found") earliest="-24h" latest="now"</link>
+                </drilldown>
             </single>
         </panel>
     </row>
@@ -981,30 +977,18 @@
 
             <single>
                 <search ref="SAFE CENTER - Number of active CPU alerts"></search>
-                <option name="classField">range</option>
-                <option name="linkFields">result</option>
-                <option name="linkView"><![CDATA[/app/nmon/search?q=search `alerting_cpu_usage(*,*,90,300,5m)`&earliest=-60m&latest=now]]></option>
                 <option name="refresh.auto.interval">60</option>
             </single>
             <single>
                 <search ref="SAFE CENTER - Number of active Real Memory alerts"></search>
-                <option name="classField">range</option>
-                <option name="linkFields">result</option>
-                <option name="linkView"><![CDATA[/app/nmon/search?q=search `alerting_realmemory_usage(*,*,90,300,5m)`&earliest=-60m&latest=now]]></option>
                 <option name="refresh.auto.interval">60</option>
             </single>
             <single>
                 <search ref="SAFE CENTER - Number of active Virtual Memory alerts"></search>
-                <option name="classField">range</option>
-                <option name="linkFields">result</option>
-                <option name="linkView"><![CDATA[/app/nmon/search?q=search `alerting_virtualmemory_usage(*,*,40,300,5m)`&earliest=-60m&latest=now]]></option>
                 <option name="refresh.auto.interval">60</option>
             </single>
             <single>
                 <search ref="SAFE CENTER - Number of active FS alerts"></search>
-                <option name="classField">range</option>
-                <option name="linkFields">result</option>
-                <option name="linkView"><![CDATA[/app/nmon/search?q=search `alerting_filesystem_usage(*,*,90,300,5m)`&earliest=-60m&latest=now]]></option>
                 <option name="refresh.auto.interval">60</option>
             </single>
 
