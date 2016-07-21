@@ -1,5 +1,5 @@
 <form stylesheet="ui_simple.css,hover.css,hide_timeindicator.css,panel_decoration.css,table_data_bar.css" script="active_button.js,autodiscover.js,table_data_bar.js">
-    <label>NMON Summary Light Analysis (compatibility mode)</label>
+    <label>NMON Summary Light Analysis</label>
     <fieldset autoRun="false" submitButton="false">
 
         <input type="time" token="timerange" searchWhenChanged="true">
@@ -367,7 +367,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">Operating System Level</option>
-                <option name="linkView">search</option>
             </single>
 
         </panel>
@@ -388,7 +387,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">Processor Type</option>
-                <option name="linkView">search</option>
             </single>
 
         </panel>
@@ -402,7 +400,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">Total Memory</option>
-                <option name="linkView">search</option>
                 <option name="unit">MB</option>
             </single>
 
@@ -412,7 +409,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">Total Paging Space</option>
-                <option name="linkView">search</option>
                 <option name="unit">MB</option>
             </single>
 
@@ -1484,12 +1480,11 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">TOP Process</option>
-                <option name="linkView">search</option>
                 <option name="numberPrecision">0.00</option>
                 <option name="unit">Command</option>
-                <option name="unitPosition">before</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| tstats
+                <option name="unitPosition">debore</option>
+                <drilldown target="search">
+                <link>search?q=| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
 groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
 | bucket _time span=1m
@@ -1507,7 +1502,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 | stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
 | eval avg_usage_per_core=round(avg_usage_per_core,2)
 | eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</option>
+| sort - avg_usage_per_core</link>
+                </drilldown>
             </single>
 
             <single>
@@ -1516,12 +1512,11 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">Average Conso for this Command</option>
-                <option name="linkView">search</option>
                 <option name="numberPrecision">0.00</option>
                 <option name="unit">core conso</option>
                 <option name="unitPosition">before</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| tstats
+                <drilldown target="search">
+                    <link>search?q=| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
 groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
 | bucket _time span=1m
@@ -1539,7 +1534,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 | stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
 | eval avg_usage_per_core=round(avg_usage_per_core,2)
 | eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</option>
+| sort - avg_usage_per_core</link>
+                </drilldown>
             </single>
 
             <single>
@@ -1548,12 +1544,11 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">Max Conso for this Command</option>
-                <option name="linkView">search</option>
                 <option name="numberPrecision">0.00</option>
                 <option name="unit">core conso</option>
                 <option name="unitPosition">before</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| tstats
+                <drilldown target="search">
+<link>search?q=| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
 groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
 | bucket _time span=1m
@@ -1571,7 +1566,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 | stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
 | eval avg_usage_per_core=round(avg_usage_per_core,2)
 | eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</option>
+| sort - avg_usage_per_core</link>
+                </drilldown>
             </single>
 
         </panel>

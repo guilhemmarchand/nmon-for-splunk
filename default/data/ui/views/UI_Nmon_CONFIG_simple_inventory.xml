@@ -19,14 +19,14 @@
     <row>
         <single>
             <search base="Global">
-                <query>inputlookup nmon_inventory | stats dc(hostname) As count</query>
+                <query>| inputlookup nmon_inventory | stats dc(hostname) As count</query>
             </search>
             <option name="unit">Hosts known</option>
             <option name="underLabel">ANY OS</option>
-            <option name="linkView">search</option>
             <option name="drilldown">all</option>
-            <option name="linkFields">result</option>
-            <option name="linkSearch">| inputlookup nmon_inventory</option>
+            <drilldown target="search">
+                <link>search?q=| inputlookup nmon_inventory</link>
+            </drilldown>
         </single>
     </row>
     <row>
@@ -37,11 +37,11 @@
                 </search>
                 <option name="unit">Hosts</option>
                 <option name="underLabel">AIX</option>
-                <option name="linkView">search</option>
                 <option name="drilldown">all</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| inputlookup nmon_inventory | search OStype=AIX
-                    | fields hostname,OStype,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</option>
+                <drilldown target="search">
+                    <link>search?q=|inputlookup nmon_inventory | search OStype=AIX
+| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</link>
+                </drilldown>
             </single>
             <html>
                 <div class="customlink">
@@ -60,9 +60,10 @@
                 <option name="unit">Hosts</option>
                 <option name="underLabel">LINUX</option>
                 <option name="drilldown">all</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Linux
-                    | fields hostname,OStype,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype=Linux
+| fields hostname,OStype,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</link>
+                </drilldown>
             </single>
             <html>
                 <div class="customlink">
@@ -81,9 +82,10 @@
                 <option name="unit">Hosts</option>
                 <option name="underLabel">SOLARIS</option>
                 <option name="drilldown">all</option>
-                <option name="linkFields">result</option>
-                <option name="linkSearch">| inputlookup nmon_inventory | search OStype=Solaris
-                    | fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype=Solaris
+| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</link>
+                </drilldown>
             </single>
             <html>
                 <div class="customlink">
@@ -119,7 +121,7 @@
         <table>
             <title>Table Stats</title>
             <search base="Global">
-                <query>| top limit=0 OStype | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+                <query>top limit=0 OStype | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
             </search>
         </table>
     </row>
@@ -342,24 +344,24 @@
                 <title>Full AIX Configuration</title>
                 <search base="Global">
                     <query>search OStype="AIX" | stats
-                        values(AIX_Machine_SerialNumber) As Machine_SerialNumber,
-                        values(AIX_virtualcpus) As virtualcpus,
-                        values(AIX_logicalcores) As logicalcores,
-                        values(AIX_entitled) As entitled,
-                        values(OStype) As OStype,
-                        values(Processor) As Processor,
-                        values(AIX_processor_mode) As processor_mode,
-                        values(AIX_processor_clockspeed) As processor_clockspeed,
-                        values(AIX_cpu_type) As cpu_type,
-                        values(AIX_kernel_type) As kernel_type,
-                        values(AIX_plateform_firmware_level) As plateform_firmware_level,
-                        values(nmon_version) As nmon_version,
-                        values(AIX_PoolID) As PoolID,
-                        values(AIX_system_installed_CPUs) As system_installed_CPUs,
-                        values(AIX_system_active_CPUs) As system_active_CPUs,
-                        values(AIX_LEVEL) As os_version,
-                        values(AIX_PoolCPUs) As PoolCPUs by hostname
-                        | fillnull value=Undeterminated</query>
+values(AIX_Machine_SerialNumber) As Machine_SerialNumber,
+values(AIX_virtualcpus) As virtualcpus,
+values(AIX_logicalcores) As logicalcores,
+values(AIX_entitled) As entitled,
+values(OStype) As OStype,
+values(Processor) As Processor,
+values(AIX_processor_mode) As processor_mode,
+values(AIX_processor_clockspeed) As processor_clockspeed,
+values(AIX_cpu_type) As cpu_type,
+values(AIX_kernel_type) As kernel_type,
+values(AIX_plateform_firmware_level) As plateform_firmware_level,
+values(nmon_version) As nmon_version,
+values(AIX_PoolID) As PoolID,
+values(AIX_system_installed_CPUs) As system_installed_CPUs,
+values(AIX_system_active_CPUs) As system_active_CPUs,
+values(AIX_LEVEL) As os_version,
+values(AIX_PoolCPUs) As PoolCPUs by hostname
+| fillnull value=Undeterminated</query>
                 </search>
             </table>
         </panel>
@@ -370,17 +372,17 @@
                 <title>Full Linux Configuration</title>
                 <search base="Global">
                     <query>search OStype="Linux" | stats
-                        values(cpu_cores) As cpu_cores,
-                        values(OStype) As OStype,
-                        values(Processor) As Processor,
-                        values(Linux_memory_MB) As Linux_memory_MB,
-                        values(Linux_swap_MB) As Linux_swap_MB,
-                        values(Linux_vendor) AS Linux_vendor,
-                        values(Linux_distribution) As Linux_distribution,
-                        values(Linux_kernelversion) As Linux_kernelversion,
-                        values(nmon_version) As nmon_version by hostname
-                        | fillnull value=Undeterminated
-                        | rename "Linux_*" AS *</query>
+values(cpu_cores) As cpu_cores,
+values(OStype) As OStype,
+values(Processor) As Processor,
+values(Linux_memory_MB) As Linux_memory_MB,
+values(Linux_swap_MB) As Linux_swap_MB,
+values(Linux_vendor) AS Linux_vendor,
+values(Linux_distribution) As Linux_distribution,
+values(Linux_kernelversion) As Linux_kernelversion,
+values(nmon_version) As nmon_version by hostname
+| fillnull value=Undeterminated
+| rename "Linux_*" AS *</query>
                 </search>
             </table>
         </panel>
@@ -391,15 +393,15 @@
                 <title>Full Solaris Configuration</title>
                 <search base="Global">
                     <query>search OStype="Solaris" | stats
-                        values(cpu_cores) As cpu_cores,
-                        values(OStype) As OStype,
-                        values(Solaris_sunOS_version) As Solaris_sunOS_version,
-                        values(Solaris_version) As Solaris_version,
-                        values(Processor) As Processor,
-                        values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed,
-                        values(nmon_version) As nmon_version by hostname
-                        | fillnull value=Undeterminated
-                        | rename "Solaris_*" AS *</query>
+values(cpu_cores) As cpu_cores,
+values(OStype) As OStype,
+values(Solaris_sunOS_version) As Solaris_sunOS_version,
+values(Solaris_version) As Solaris_version,
+values(Processor) As Processor,
+values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed,
+values(nmon_version) As nmon_version by hostname
+| fillnull value=Undeterminated
+| rename "Solaris_*" AS *</query>
                 </search>
             </table>
         </panel>
