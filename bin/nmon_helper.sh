@@ -51,8 +51,9 @@
 # 2016/07/11, Guilhem Marchand:         - Linux: Manage the bytes order system to identify if running in big or little endian
 # 2016/07/12, Guilhem Marchand:         - Store linux binaries in a tgz archive file that be uncompressed if required
 # 2016/07/16, Guilhem Marchand:         - ARM support
+# 2016/07/25, Guilhem Marchand:         - Prevent tar error on Solaris OS
 
-# Version 1.3.21
+# Version 1.3.22
 
 # For AIX / Linux / Solaris
 
@@ -124,7 +125,10 @@ esac
 # Note: on some systems, cp is an alias to cp -i which would prevent this from working as expected
 update_var_bin () {
 cd ${APP}/bin
-tar -xzpf linux.tgz
+case $UNAME in
+    Linux )
+    tar -xzpf linux.tgz ;;
+esac
 \cp -pf ${APP}/default/app.conf ${APP_VAR}/app.conf > /dev/null 2>&1
 \cp -rpf ${APP}/bin ${APP_VAR}/ > /dev/null 2>&1
 }
