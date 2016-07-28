@@ -178,7 +178,7 @@
             <single>
                 <title>Average deployment CPU % usage</title>
                 <search>
-                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $hostname$
 | eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart span=5m avg(cpu_load_percent) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
@@ -205,7 +205,7 @@
             <single>
                 <title>Average deployment physical memory % usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $hostname$ | timechart span=5m avg(mem_used_effective_PCT) AS value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$ | timechart span=5m avg(mem_used_effective_PCT) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -230,7 +230,7 @@
             <single>
                 <title>Average deployment swap memory % usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $hostname$ | timechart span=5m avg(swap_used_effective_PCT) AS value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$ | timechart span=5m avg(swap_used_effective_PCT) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -293,7 +293,7 @@
             <chart>
                 <title>Deployment global % CPU stats over time</title>
                 <search>
-                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $hostname$
 | eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `inline_customspan` avg(cpu_load_percent) AS cpu_load_percent
 | $show_cpu$
@@ -333,7 +333,7 @@
             <chart>
                 <title>Deployment per category % CPU stats over time</title>
                 <search>
-                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $hostname$
 | eval Sys_PCT=if(isnotnull(VP_Sys_PCT), VP_Sys_PCT, Sys_PCT), User_PCT=if(isnotnull(VP_User_PCT), VP_User_PCT, User_PCT), Wait_PCT=if(isnotnull(VP_Wait_PCT), VP_Wait_PCT, Wait_PCT), Idle_PCT=if(isnotnull(VP_Idle_PCT), VP_Idle_PCT, Idle_PCT)
 | timechart `inline_customspan` avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT
 | $show_cpu$
@@ -375,7 +375,7 @@
             <chart>
                 <title>By host global % CPU stats over time</title>
                 <search>
-                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $hostname$
+                    <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $hostname$
 | eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `inline_customspan` avg(cpu_load_percent) AS cpu_load_percent by hostname
 | $show_cpu$</query>
@@ -439,7 +439,7 @@
             <chart>
                 <title>Deployment physical memory MB usage per category over time</title>
                 <search>
-                    <query>eventtype=nmon:performance:memory type=MEM $hostname$
+                    <query>eventtype=nmon:performance:memory type=MEM $OStype$ $hostname$
 | dedup _time,hostname
 | stats sum(cached) AS cached, sum(buffers) AS buffers, sum(mem_free) AS mem_free, sum(mem_used_effective) AS mem_used_effective, sum(memtotal) AS memtotal by _time
 | $show_phymem$
@@ -482,7 +482,7 @@
             <chart>
                 <title>Deployment physical memory % usage over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $hostname$
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
 | timechart `inline_customspan` avg(mem_used_effective_PCT) AS mem_used_effective_PCT
 | $show_phymem$
 | trendline sma5(mem_used_effective_PCT) AS trend</query>
@@ -523,7 +523,7 @@
             <chart>
                 <title>By host physical memory % usage over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $hostname$
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
 | timechart `inline_customspan` avg(mem_used_effective_PCT) AS mem_used_effective_PCT by hostname
 | $show_phymem$</query>
                     <earliest>$time.earliest$</earliest>
@@ -586,7 +586,7 @@
             <chart>
                 <title>Deployment swap memory MB usage per category over time</title>
                 <search>
-                    <query>eventtype=nmon:performance:memory type=MEM $hostname$
+                    <query>eventtype=nmon:performance:memory type=MEM $OStype$ $hostname$
 | dedup _time,hostname
 | stats sum(swap_used) AS swap_used, sum(swap) AS swaptotal, sum(swap_free) AS swap_free by _time
 | $show_virtualmem$
@@ -629,7 +629,7 @@
             <chart>
                 <title>Deployment swap memory % usage over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $hostname$
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
 | timechart `inline_customspan` avg(swap_used_effective_PCT) AS swap_used_effective_PCT
 | $show_virtualmem$
 | trendline sma5(swap_used_effective_PCT) AS trend</query>
@@ -670,7 +670,7 @@
             <chart>
                 <title>By host swap memory % usage over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $hostname$
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
 | timechart `inline_customspan` avg(swap_used_effective_PCT) AS swap_used_effective_PCT by hostname
 | $show_virtualmem$</query>
                     <earliest>$time.earliest$</earliest>
@@ -727,7 +727,7 @@
             <single>
                 <title>Average deployment I/O per sec</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKXFER $hostname$
+                    <query>eventtype=nmon:performance type=DISKXFER $OStype$ $hostname$
 | dedup _time,hostname,value
 | stats sum(value) AS value by _time
 | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
@@ -755,7 +755,7 @@
             <single>
                 <title>Average deployment % of time busy disks</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBUSY $hostname$
+                    <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $hostname$
 | dedup _time,hostname,value
 | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
@@ -782,7 +782,7 @@
             <single>
                 <title>Average deployment disk data transfer size</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBSIZE $hostname$ | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$ | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -845,7 +845,7 @@
             <chart>
                 <title>Deployment global I/O per sec over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKXFER $hostname$
+                    <query>eventtype=nmon:performance type=DISKXFER $OStype$ $hostname$
 | dedup _time,hostname,device,value
 | stats sum(value) AS value by _time
 | timechart span=5m avg(value) AS iops
@@ -888,7 +888,7 @@
             <chart>
                 <title>By host I/O per sec over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKXFER $hostname$
+                    <query>eventtype=nmon:performance type=DISKXFER $OStype$ $hostname$
 | dedup _time,hostname,value
 | stats sum(value) AS value by _time,hostname
 | timechart span=5m avg(value) AS iops by hostname
@@ -953,7 +953,7 @@
             <chart>
                 <title>Deployment global % time busy disk over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBUSY $hostname$
+                    <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $hostname$
 | dedup _time,hostname,value
 | timechart span=5m avg(value) AS busy_disk
 | $show_diskbusy$
@@ -995,7 +995,7 @@
             <chart>
                 <title>By host % time busy disk over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBUSY $hostname$
+                    <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $hostname$
 | dedup _time,hostname,value
 | timechart span=5m avg(value) AS busydisk by hostname
 | $show_diskbusy$</query>
@@ -1059,7 +1059,7 @@
             <chart>
                 <title>Deployment global % time busy disk over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBSIZE $hostname$
+                    <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$
 | dedup _time,hostname,value
 | timechart span=5m avg(value) AS tranfer_rate
 | $show_diskbsize$
@@ -1101,7 +1101,7 @@
             <chart>
                 <title>By host % time busy disk over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBSIZE $hostname$
+                    <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$
 | dedup _time,hostname,value
 | timechart span=5m avg(value) AS tranfer_rate by hostname
 | $show_diskbsize$</query>
@@ -1166,7 +1166,7 @@
             <single rejects="$show_null_top$">
                 <title>Average deployment CPU usage main process</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+                    <query>eventtype=nmon:performance type=TOP $OStype$ $hostname$ Command=*
 | dedup _time,hostname,Command,PID
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
 | eval limit=(logical_cpus*100)
@@ -1213,7 +1213,7 @@
             <single rejects="$show_null_top$">
                 <title>Average deployment Memory usage main process</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+                    <query>eventtype=nmon:performance type=TOP $OStype$ $hostname$ Command=*
 | dedup _time,hostname,Command,PID
 | eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
@@ -1245,7 +1245,7 @@
             <single>
                 <title>Average deployment KBps network traffic</title>
                 <search>
-                    <query>eventtype=nmon:performance type=NET $hostname$ device!=*lo* | eval traffic_type=case(match(device, ".+read.+"), "In", match(device, ".+write.+"), "Out") | chart avg(value) AS value by traffic_type | eval value=round(value, 2) | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=NET $OStype$ $hostname$ device!=*lo* | eval traffic_type=case(match(device, ".+read.+"), "In", match(device, ".+write.+"), "Out") | chart avg(value) AS value by traffic_type | eval value=round(value, 2) | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
                     <earliest>-5m</earliest>
                     <latest>now</latest>
                 </search>
@@ -1309,7 +1309,7 @@
             <chart>
                 <title>Deployment TOP 10 CPU processes usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+                    <query>eventtype=nmon:performance type=TOP $OStype$ $hostname$ Command=*
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
@@ -1357,7 +1357,7 @@
             <chart>
                 <title>By host TOP 10 CPU processes usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+                    <query>eventtype=nmon:performance type=TOP $OStype$ $hostname$ Command=*
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,hostname,Command,PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
@@ -1426,9 +1426,9 @@
             <chart>
                 <title>Deployment TOP 10 Memory processes usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+                    <query>eventtype=nmon:performance type=TOP $OStype$ $hostname$ Command=*
 | dedup _time,hostname,Command,PID
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| eval mem_usage_mb=case(match(OStype, "Linux"), ((ResSet)/1024), match(OStype, "AIX"), ((ResData+ResText)/1024),  match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | $show_memprocess$
@@ -1470,9 +1470,9 @@
             <chart>
                 <title>By host TOP 10 Memory processes usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=TOP $hostname$ Command=*
+                    <query>eventtype=nmon:performance type=TOP $OStype$ $hostname$ Command=*
 | dedup _time,hostname,Command,PID
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| eval mem_usage_mb=case(match(OStype, "Linux"), ((ResSet)/1024), match(OStype, "AIX"), ((ResData+ResText)/1024),  match(OStype, "Solaris"), (ResSize/1024) )
 | stats max(mem_usage_mb) AS mem_usage_mb by _time,hostname,Command,PID
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | eval key=hostname+":"+Command
@@ -1538,7 +1538,7 @@
             <chart>
                 <title>Deployment Inbound/Outbound network traffic</title>
                 <search>
-                    <query>eventtype=nmon:performance type=NET $hostname$ device!=*lo*
+                    <query>eventtype=nmon:performance type=NET $OStype$ $hostname$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | $show_net$
 | timechart `inline_customspan` avg(value) AS KBps by traffic_type</query>
@@ -1579,7 +1579,7 @@
             <chart>
                 <title>By host Inbound/Outbound network traffic</title>
                 <search>
-                    <query>eventtype=nmon:performance type=NET $hostname$ device!=*lo*
+                    <query>eventtype=nmon:performance type=NET $OStype$ $hostname$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | eval key=hostname+":"+traffic_type
 | $show_net$
