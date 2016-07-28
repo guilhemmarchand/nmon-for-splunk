@@ -104,8 +104,8 @@ EVAL-lpar_vp_usage_PCT = case(OStype=="AIX", round((VP_User_PCT+VP_Sys_PCT+VP_Wa
 # For Power arch micro-partitions Pool statistics (AIX & PowerLinux)
 # Note: For PowerLinux, at the perf collection startup the pool usage may report almost 100% usage which is incorrect, filtering with pool_idle_time>"0.1" will prevent from loading these data
 
-EVAL-lpar_pool_vp_usage = case(OStype=="AIX", round((poolCPUs-PoolIdle),3), OStype="Linux", case(pool_idle_time>"0.1", round(((pool_capacity/100)-pool_idle_time),3)) )
-EVAL-lpar_pool_vp_usage_PCT = case(OStype=="AIX", round(((poolCPUs-PoolIdle)*100/poolCPUs),2), OStype="Linux", case(pool_idle_time>"0.1", round(((pool_capacity/100)-pool_idle_time)/(pool_capacity/100)*100,2)) )
+EVAL-lpar_pool_vp_usage = case(OStype=="AIX", round((poolCPUs-PoolIdle),3), OStype="Linux", case(pool_idle_time>"0.1" AND pool_idle_time<(pool_capacity/100), round(((pool_capacity/100)-pool_idle_time),3)) )
+EVAL-lpar_pool_vp_usage_PCT = case(OStype=="AIX", round(((poolCPUs-PoolIdle)*100/poolCPUs),2), OStype="Linux", case(pool_idle_time>"0.1" AND pool_idle_time<(pool_capacity/100), round(((pool_capacity/100)-pool_idle_time)/(pool_capacity/100)*100,2)) )
 
 # Normalize capacity information
 EVAL-lpar_pool_capacity = case(OStype=="AIX", poolCPUs, OStype="Linux", (pool_capacity/100))
