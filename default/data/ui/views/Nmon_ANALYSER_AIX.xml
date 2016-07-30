@@ -83,8 +83,8 @@ groupby "CPU.hostname" prestats=true
 
             <input type="dropdown" token="span" searchWhenChanged="true">
                 <label>Span:</label>
-                <default>`inline_customspan`</default>
-                <choice value="`inline_customspan`">auto</choice>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
                 <choice value="span=1m">1 minute</choice>
                 <choice value="span=2m">2 minutes</choice>
                 <choice value="span=3m">3 minutes</choice>
@@ -577,7 +577,7 @@ from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) (POOLS.$hostname$) (
 groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS max_pool_capacity max("POOLS.entitled_pool_capacity") AS entitled_pool_capacity max("POOLS.pool_busy_time") AS pool_busy_time
 by _time, "POOLS.frameID", "POOLS.hostname"
-| timechart `inline_customspan` max(pool_busy_time) As pool_busy_time max(entitled_pool_capacity) AS entitled_pool_capacity, max(max_pool_capacity) AS max_pool_capacity</link>
+| timechart `nmon_span` max(pool_busy_time) As pool_busy_time max(entitled_pool_capacity) AS entitled_pool_capacity, max(max_pool_capacity) AS max_pool_capacity</link>
                 </drilldown>
             </chart>
 

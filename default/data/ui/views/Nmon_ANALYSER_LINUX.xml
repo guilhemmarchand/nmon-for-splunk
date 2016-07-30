@@ -90,8 +90,8 @@ groupby "CPU.hostname" prestats=true
 
             <input type="dropdown" token="span" searchWhenChanged="true">
                 <label>Span:</label>
-                <default>`inline_customspan`</default>
-                <choice value="`inline_customspan`">auto</choice>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
                 <choice value="span=1m">1 minute</choice>
                 <choice value="span=2m">2 minutes</choice>
                 <choice value="span=3m">3 minutes</choice>
@@ -494,7 +494,7 @@ groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
 max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
 | fields $is_LPAR$
-| timechart `inline_customspan` useother=f limit=0 max(lpar_vp_usage) AS lpar_vp_usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</query>
+| timechart `nmon_span` useother=f limit=0 max(lpar_vp_usage) AS lpar_vp_usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -535,7 +535,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (
 groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage by _time, "CPU.frameID", "CPU.hostname"
 | fields $is_LPAR$
-| timechart `inline_customspan` useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by "CPU.hostname"</query>
+| timechart `nmon_span` useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>

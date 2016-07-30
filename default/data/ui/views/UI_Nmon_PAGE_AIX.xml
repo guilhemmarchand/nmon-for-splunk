@@ -207,7 +207,7 @@ by "PAGE_AIX.frameID", "PAGE_AIX.hostname"
 max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles
 max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
 from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
-groupby _time, "PAGE_AIX.hostname" prestats=true `inline_customspan`
+groupby _time, "PAGE_AIX.hostname" prestats=true `nmon_span`
 | timechart $span$ useother=f limit=0
 max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin
 max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans
@@ -283,8 +283,8 @@ by "PAGE_AIX.hostname"</query>
       </input>
       <input type="dropdown" token="span" searchWhenChanged="true">
         <label>Span:</label>
-        <default>`inline_customspan`</default>
-        <choice value="`inline_customspan`">auto</choice>
+        <default>`nmon_span`</default>
+        <choice value="`nmon_span`">auto</choice>
         <choice value="span=1m">1 minute</choice>
         <choice value="span=2m">2 minutes</choice>
         <choice value="span=3m">3 minutes</choice>

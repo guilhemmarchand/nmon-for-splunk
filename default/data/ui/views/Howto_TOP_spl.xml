@@ -66,12 +66,12 @@
 | eval value=(pct_CPU/100)
 | where value&gt;0.01
 | eval key=hostname+":"+Command
-| timechart `inline_customspan` limit=0 useother=f max(value) As value by key</pre>
+| timechart `nmon_span` limit=0 useother=f max(value) As value by key</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%20Command%3D$Command$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20eval%20key%3Dhostname%2B&quot;%3A&quot;%2BCommand%0A%7C%20timechart%20%60inline_customspan%60%20limit%3D0%20useother%3Df%20max(value)%20As%20value%20by%20key&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%20Command%3D$Command$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20eval%20key%3Dhostname%2B&quot;%3A&quot;%2BCommand%0A%7C%20timechart%20%60nmon_span%60%20limit%3D0%20useother%3Df%20max(value)%20As%20value%20by%20key&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
@@ -86,15 +86,15 @@
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
 | eval value=(pct_CPU/100)
 | where value&gt;0.01
-| bucket _time `inline_customspan`
+| bucket _time `nmon_span`
 | stats max(value) As value by _time,hostname,Command
 | stats sum(value) AS value by _time,Command
-| timechart `inline_customspan` useother=f max(value) AS value by Command</pre>
+| timechart `nmon_span` useother=f max(value) AS value by Command</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%20Command%3D$Command$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20bucket%20_time%20%60inline_customspan%60%0A%7C%20stats%20max(value)%20As%20value%20by%20_time%2Chostname%2CCommand%0A%7C%20stats%20sum(value)%20AS%20value%20by%20_time%2CCommand%0A%7C%20timechart%20%60inline_customspan%60%20useother%3Df%20max(value)%20AS%20value%20by%20Command&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%20Command%3D$Command$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20bucket%20_time%20%60nmon_span%60%0A%7C%20stats%20max(value)%20As%20value%20by%20_time%2Chostname%2CCommand%0A%7C%20stats%20sum(value)%20AS%20value%20by%20_time%2CCommand%0A%7C%20timechart%20%60nmon_span%60%20useother%3Df%20max(value)%20AS%20value%20by%20Command&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
@@ -109,20 +109,20 @@
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
 | eval value=(pct_CPU/100)
 | where value&gt;0.01
-| bucket _time `inline_customspan`
+| bucket _time `nmon_span`
 | stats max(value) As value by _time,hostname,Command
 | stats sum(value) AS value by _time,Command
-| timechart `inline_customspan` useother=f max(value) AS value by Command
+| timechart `nmon_span` useother=f max(value) AS value by Command
 | appendcols [ search eventtype=nmon:performance type=TOP frameID=$frameID$ hostname=$hostname$
 | bucket _time span=1m
 | stats max(logical_cpus) AS logical_cpus by _time,hostname
 | stats sum(logical_cpus) AS logical_cpus by _time
-| timechart `inline_customspan` max(logical_cpus) AS logical_cpus ] | fields _time,*,logical_cpus</pre>
+| timechart `nmon_span` max(logical_cpus) AS logical_cpus ] | fields _time,*,logical_cpus</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%20Command%3D$Command$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20bucket%20_time%20%60inline_customspan%60%0A%7C%20stats%20max(value)%20As%20value%20by%20_time%2Chostname%2CCommand%0A%7C%20stats%20sum(value)%20AS%20value%20by%20_time%2CCommand%0A%7C%20timechart%20%60inline_customspan%60%20useother%3Df%20max(value)%20AS%20value%20by%20Command%0A%7C%20appendcols%20%5B%20search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2Chostname%0A%7C%20stats%20sum(logical_cpus)%20AS%20logical_cpus%20by%20_time%0A%7C%20timechart%20%60inline_customspan%60%20max(logical_cpus)%20AS%20logical_cpus%20%5D%20%7C%20fields%20_time%2C*%2Clogical_cpus&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage&amp;display.visualizations.charting.chart.overlayFields=logical_cpus" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%20Command%3D$Command$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(pct_CPU)%20AS%20pct_CPU%2C%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2CframeID%2Chostname%2CCommand%2CPID%0A%7C%20eval%20limit%3D(logical_cpus*100)%20%7C%20where%20(pct_CPU&lt;%3Dlimit)%0A%7C%20stats%20sum(pct_CPU)%20As%20pct_CPU%2C%20last(logical_cpus)%20As%20logical_cpus%20by%20_time%2Chostname%2CCommand%0A%7C%20eval%20value%3D(pct_CPU%2F100)%0A%7C%20where%20value&gt;0.01%0A%7C%20bucket%20_time%20%60nmon_span%60%0A%7C%20stats%20max(value)%20As%20value%20by%20_time%2Chostname%2CCommand%0A%7C%20stats%20sum(value)%20AS%20value%20by%20_time%2CCommand%0A%7C%20timechart%20%60nmon_span%60%20useother%3Df%20max(value)%20AS%20value%20by%20Command%0A%7C%20appendcols%20%5B%20search%20eventtype%3Dnmon%3Aperformance%20type%3DTOP%20frameID%3D$frameID$%20hostname%3D$hostname$%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20max(logical_cpus)%20AS%20logical_cpus%20by%20_time%2Chostname%0A%7C%20stats%20sum(logical_cpus)%20AS%20logical_cpus%20by%20_time%0A%7C%20timechart%20%60nmon_span%60%20max(logical_cpus)%20AS%20logical_cpus%20%5D%20%7C%20fields%20_time%2C*%2Clogical_cpus&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=area&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now&amp;display.visualizations.charting.chart.stackMode=stacked&amp;display.visualizations.charting.axisTitleY.text=Logical%20Core%20CPU%20usage&amp;display.visualizations.charting.chart.overlayFields=logical_cpus" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />

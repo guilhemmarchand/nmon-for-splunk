@@ -75,8 +75,8 @@
 
         <input type="dropdown" token="span" searchWhenChanged="true">
             <label>Span:</label>
-            <default>`inline_customspan`</default>
-            <choice value="`inline_customspan`">auto</choice>
+            <default>`nmon_span`</default>
+            <choice value="`nmon_span`">auto</choice>
             <choice value="span=1m">1 minute</choice>
             <choice value="span=2m">2 minutes</choice>
             <choice value="span=3m">3 minutes</choice>
@@ -742,7 +742,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | fields $show_cpu$
 | fields $is_LPAR$
 | fields $is_Linux$
-| timechart `inline_customspan` max(usage) AS usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
+| timechart `nmon_span` max(usage) AS usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -788,7 +788,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | fields $show_cpu$
 | fields $is_LPAR$
 | fields $is_Linux$
-| timechart `inline_customspan` max(usage) As usage max(CPU.lpar_pool_capacity) AS poolCPUs</query>
+| timechart `nmon_span` max(usage) As usage max(CPU.lpar_pool_capacity) AS poolCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -1207,7 +1207,7 @@ groupby _time MEM.hostname prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
 | fields $show_memory$
 | fields $is_Linux$
-| timechart `inline_customspan` dedup_splitvals=t avg(*) AS *</query>
+| timechart `nmon_span` dedup_splitvals=t avg(*) AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>

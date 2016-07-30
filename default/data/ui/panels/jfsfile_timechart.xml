@@ -29,7 +29,7 @@
     <search>
       <query>eventtype=nmon:performance type=JFSFILE $frameID$ $hostname$ $device$
 | dedup _time,frameID,hostname,device,value
-| bucket _time `inline_customspan`
+| bucket _time `nmon_span`
 | stats avg(value) As value by _time,hostname,device
 | eval s1="value"
 | makemv s1 
@@ -37,7 +37,7 @@
 | eval yval=case(s1=="value",value)
 | eval series=hostname+":"+device
 | xyseries _time,series,yval
-| makecontinuous _time `inline_customspan`</query>
+| makecontinuous _time `nmon_span`</query>
       <earliest>$timerange.earliest$</earliest>
       <latest>$timerange.latest$</latest>  
     </search>

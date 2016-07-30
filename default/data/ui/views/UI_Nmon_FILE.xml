@@ -289,8 +289,8 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
             </input>
             <input type="dropdown" token="span" searchWhenChanged="true">
                 <label>Span:</label>
-                <default>`inline_customspan`</default>
-                <choice value="`inline_customspan`">auto</choice>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
                 <choice value="span=1m">1 minute</choice>
                 <choice value="span=2m">2 minutes</choice>
                 <choice value="span=3m">3 minutes</choice>
@@ -324,7 +324,7 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
                 <search>
                     <query>| tstats $statsmode$(FILE.readch) As FILE.readch, $statsmode$(FILE.writech) As FILE.writech from datamodel=NMON_Data_FILE
 where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
-groupby _time, "FILE.hostname" prestats=true `inline_customspan`
+groupby _time, "FILE.hostname" prestats=true `nmon_span`
 | $charting$
 | timechart $span$ useother=f limit=0
 $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE.hostname</query>
@@ -356,7 +356,7 @@ $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE
 $statsmode$(FILE.iget) As FILE.iget, $statsmode$(FILE.namei) As FILE.namei, $statsmode$(FILE.dirblk) As FILE.dirblk
 $statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch from datamodel=NMON_Data_FILE
 where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
-groupby _time, "FILE.hostname" prestats=true `inline_customspan`
+groupby _time, "FILE.hostname" prestats=true `nmon_span`
 | $charting$
 | timechart $span$ useother=f limit=0
 $statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk

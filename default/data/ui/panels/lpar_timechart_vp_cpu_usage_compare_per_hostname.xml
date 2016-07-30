@@ -17,10 +17,10 @@
     <search>
       <query>eventtype=nmon:performance type=LPAR $frameID$ $hostname$
 | eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
-| timechart `inline_customspan` max(vp_usage) AS vp_usage_yesterday
+| timechart `nmon_span` max(vp_usage) AS vp_usage_yesterday
 | appendcols [ search eventtype=nmon:performance type=LPAR frameID=* hostname=* earliest="@d" latest="now"
 | eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
-| timechart `inline_customspan` max(vp_usage) AS vp_usage_today | fields - _time ]</query>
+| timechart `nmon_span` max(vp_usage) AS vp_usage_today | fields - _time ]</query>
       <earliest>-1d@d</earliest>
       <latest>@d</latest>
     </search>

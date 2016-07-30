@@ -295,7 +295,7 @@
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $hostname$
 | eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
-| timechart `inline_customspan` avg(cpu_load_percent) AS cpu_load_percent
+| timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent
 | $show_cpu$
 | trendline sma5(cpu_load_percent) AS trend</query>
                     <earliest>$time.earliest$</earliest>
@@ -335,7 +335,7 @@
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $hostname$
 | eval Sys_PCT=if(isnotnull(VP_Sys_PCT), VP_Sys_PCT, Sys_PCT), User_PCT=if(isnotnull(VP_User_PCT), VP_User_PCT, User_PCT), Wait_PCT=if(isnotnull(VP_Wait_PCT), VP_Wait_PCT, Wait_PCT), Idle_PCT=if(isnotnull(VP_Idle_PCT), VP_Idle_PCT, Idle_PCT)
-| timechart `inline_customspan` avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT
+| timechart `nmon_span` avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT
 | $show_cpu$
 | fields _time,Idle_PCT,Wait_PCT,User_PCT,Sys_PCT</query>
                     <earliest>$time.earliest$</earliest>
@@ -377,7 +377,7 @@
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $hostname$
 | eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
-| timechart `inline_customspan` avg(cpu_load_percent) AS cpu_load_percent by hostname
+| timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent by hostname
 | $show_cpu$</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -443,7 +443,7 @@
 | dedup _time,hostname
 | stats sum(cached) AS cached, sum(buffers) AS buffers, sum(mem_free) AS mem_free, sum(mem_used_effective) AS mem_used_effective, sum(memtotal) AS memtotal by _time
 | $show_phymem$
-| timechart `inline_customspan` avg(*) AS * | fields _time,mem_free,cached,buffers,mem_used_effective,memtotal</query>
+| timechart `nmon_span` avg(*) AS * | fields _time,mem_free,cached,buffers,mem_used_effective,memtotal</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -483,7 +483,7 @@
                 <title>Deployment physical memory % usage over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
-| timechart `inline_customspan` avg(mem_used_effective_PCT) AS mem_used_effective_PCT
+| timechart `nmon_span` avg(mem_used_effective_PCT) AS mem_used_effective_PCT
 | $show_phymem$
 | trendline sma5(mem_used_effective_PCT) AS trend</query>
                     <earliest>$time.earliest$</earliest>
@@ -524,7 +524,7 @@
                 <title>By host physical memory % usage over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
-| timechart `inline_customspan` avg(mem_used_effective_PCT) AS mem_used_effective_PCT by hostname
+| timechart `nmon_span` avg(mem_used_effective_PCT) AS mem_used_effective_PCT by hostname
 | $show_phymem$</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -590,7 +590,7 @@
 | dedup _time,hostname
 | stats sum(swap_used) AS swap_used, sum(swap) AS swaptotal, sum(swap_free) AS swap_free by _time
 | $show_virtualmem$
-| timechart `inline_customspan` avg(*) AS *</query>
+| timechart `nmon_span` avg(*) AS *</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -630,7 +630,7 @@
                 <title>Deployment swap memory % usage over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
-| timechart `inline_customspan` avg(swap_used_effective_PCT) AS swap_used_effective_PCT
+| timechart `nmon_span` avg(swap_used_effective_PCT) AS swap_used_effective_PCT
 | $show_virtualmem$
 | trendline sma5(swap_used_effective_PCT) AS trend</query>
                     <earliest>$time.earliest$</earliest>
@@ -671,7 +671,7 @@
                 <title>By host swap memory % usage over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=MEM $OStype$ $hostname$
-| timechart `inline_customspan` avg(swap_used_effective_PCT) AS swap_used_effective_PCT by hostname
+| timechart `nmon_span` avg(swap_used_effective_PCT) AS swap_used_effective_PCT by hostname
 | $show_virtualmem$</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -1173,7 +1173,7 @@
 | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
 | eval value=(pct_CPU/100)
-| bucket _time `inline_customspan`
+| bucket _time `nmon_span`
 | stats max(value) As value by _time,hostname,Command
 | stats sum(value) AS value by _time,Command
 | stats avg(value) AS value by Command
@@ -1315,11 +1315,11 @@
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,hostname,Command
 | eval value=(pct_CPU/100)
 | where value&gt;0.01
-| bucket _time `inline_customspan`
+| bucket _time `nmon_span`
 | stats max(value) As value by _time,hostname,Command
 | stats sum(value) AS value by _time,Command
 | $show_cpuprocess$
-| timechart `inline_customspan` limit=10 useother=f max(value) AS value by Command</query>
+| timechart `nmon_span` limit=10 useother=f max(value) AS value by Command</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -1365,7 +1365,7 @@
 | where value&gt;0.01
 | eval key=hostname+":"+Command
 | $show_cpuprocess$
-| timechart `inline_customspan` limit=10 useother=f max(value) As value by key</query>
+| timechart `nmon_span` limit=10 useother=f max(value) As value by key</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -1432,7 +1432,7 @@
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | $show_memprocess$
-| timechart `inline_customspan` limit=10 useother=f max(mem_usage_mb) AS mem_usage_mb by Command</query>
+| timechart `nmon_span` limit=10 useother=f max(mem_usage_mb) AS mem_usage_mb by Command</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -1477,7 +1477,7 @@
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,hostname,Command
 | eval key=hostname+":"+Command
 | $show_memprocess$
-| timechart `inline_customspan` limit=10 useother=f max(mem_usage_mb) As mem_usage_mb by key</query>
+| timechart `nmon_span` limit=10 useother=f max(mem_usage_mb) As mem_usage_mb by key</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -1541,7 +1541,7 @@
                     <query>eventtype=nmon:performance type=NET $OStype$ $hostname$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | $show_net$
-| timechart `inline_customspan` avg(value) AS KBps by traffic_type</query>
+| timechart `nmon_span` avg(value) AS KBps by traffic_type</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
@@ -1583,7 +1583,7 @@
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | eval key=hostname+":"+traffic_type
 | $show_net$
-| timechart `inline_customspan` useother=f limit=0 avg(value) AS KBps by key</query>
+| timechart `nmon_span` useother=f limit=0 avg(value) AS KBps by key</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                 </search>
