@@ -1,37 +1,5 @@
 # props.conf
 
-##################################
-#			nmon2csv stanza			#
-##################################
-
-# IMPORTANT: Since the V1.6.0, the configuration uses the nmon2csv.sh wrapper that will call nmon2csv.py (prefered choice) or nmon2csv.pl if appropriated
-# You can still force the configuration to use the Python or Perl converter (but the nmon2csv.sh wrapper will do the choice for you, enforcing the choice is not required anymore)
-
-# *** BE UPGRADE RESILIENT: *** Copy this stanza to your local/props.conf to prevent futur upgrades from overwriting your setting
-
-# This source stanza will be called by the archive processor to convert NMON raw data into csv files
-# Splunk can manage. See inputs.conf for the associated monitor
-
-# To force nmon2csv parsers to always consider nmon files as realtime data, you can set the option "--mode realtime":
-# unarchive_cmd = C:\Program Files\Splunk\etc\apps\nmon\bin\nmon2csv.py --mode realtime
-# This is normally not necessary as parsers will automatically detect if we are dealing with realtime data
-
-# host name definition: by default, nmon2csv parsers will use the value returned by nmon for the host name definition. (available in the config section - AAA,host)
-# If you want to have hosts using their fully qualified domain name (fqdn) instead of the nmon hostname value, add the option "--use_fqdn" in the source stanza definition
-# the value of host name will be equivalent to the "hostname -f" command on the host.
-# **CAUTION**: Do use this option when managing nmon data generated out of Splunk (central repositories) or all the data being ingested will be identified as coming the host
-# that managed the nmon data
-# This option must be used on host that are only managing their own nmon data.
-
-# To activate fqdn:
-# unarchive_cmd = C:\Program Files\Splunk\etc\apps\nmon\bin\nmon2csv.py --use_fqdn
-
-[source::...\.*.nmon]
-invalid_cause = archive
-unarchive_cmd = C:\Program Files\Splunk\etc\apps\nmon\bin\nmon2csv.py
-sourcetype = nmon_processing
-NO_BINARY_CHECK = true
-
 ###########################################
 #			nmon converted csv stanza			#
 ###########################################
