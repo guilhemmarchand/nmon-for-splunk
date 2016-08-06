@@ -1,18 +1,29 @@
 ###################################################
-###		NMON for SPLUNK			###
+###		NMON for SPLUNK			                ###
 ###################################################
 
-Since the Version 1.6.0 of Nmon Splunk, only the TA-nmon is provided as the choice between Python and Perl converter is done automatically
-by the nmon2csv.sh wrapper.
+### Technical add-on for Splunk Enterprise ###
 
-If you want to create a custom version of the TA-nmon that will use either Python or Perl converter, follow these instructions:
+- TA-nmon : This is the standard Technical Add-on to be used for performance and configuration generation for the Nmon performance app
+- TA-nmon_selfmode : This an alternative version of the TA-nmon, this version will not use the unarchive_cmd Splunk feature but an input script that will monitor nmon files
 
-A Python script utility is provided to allow creating on demand custom TA-nmon packages ready to be deployed, the Python tool allows to: 
+In most cases you will use the standard TA-nmon.
+The TA-nmon_seflmode has been created as a workaround for very rare (in my knowledge) cases where the Splunk Archive Processor does not get called by the TailReader processor after some times. (see https://answers.splunk.com/answers/436991/nmon-performance-monitor-for-unix-and-linux-system-8.html)
 
-Create a new TA-nmon package with the name of your choice
-Customize the target index name if required (eg. for example if you use the customization tool to change the default index name
-Choose between Python Data Processing, or Perl Data Processing
+The alternative TA-nmon_selfmode offers every feature than does the standard TA-nmon, at the exception of managing external nmon files repositories which will be possible only with the TA-nmon.
 
+### create_agent.py : Create multiple copies of the TA-nmon with different configuration ###
+
+A Python script utility is provided to allow creating on demand custom TA-nmon packages ready to be deployed, the Python tool allows to:
+
+- Create a new TA-nmon package with the name of your choice
+- Customize the target index name if required (eg. for example if you use the customization tool to change the default index name
+- Choose between Python Data Processing, or Perl Data Processing
+- Integrate a specific version of nmon.conf to be deployed on specific hosts of your choice to fit your needs
+
+The create_agent.py script is located in the "resources" directory.
+
+### Using the create_agent.py ###
 
 ./create_agent.py 
 
@@ -67,37 +78,3 @@ INFO: ************* Tar creation done of: TA-nmon-perl.tar.gz *************
  - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
 
 Operation terminated.
-
-
-
-############################################################################################################################################################
-
-TA-nmon for Nmon Splunk Performance Monitor:
-
-In the resources directory is provided 3 packages for your deployment:
-
-- TA-nmon: This is the original package provided since the first version of the App, it uses Python for Nmon data processing (Python 2.7.x is best option but 2.6.x is expected to work with no issue in major cases)
-
-- TA-nmon-python: This is the same package that enforces the use of Python (this is the default anyway, provided to prevent confusion for people)
-
-- TA-nmon-perl: This is the TA-nmon package preset to use Perl for Nmon data processing
-
-Wich TA for my systems ?
-
-In main cases, you will want to use:
-
-AIX: TA-nmon-perl 
-
---> AIX has not Python interpreter available by default, unless you can deploy a Python (2.7.x) interpreter to all of your hosts, Perl is the best option
-
-Linux: TA-nmon-python
-
---> Linux distributions always comes with a Python interpreter (at least 2.6.x), most of the time using Python is the best option. (but note that Perl will work in most cases)
-Therefore, old distribution may not work as expected, in such a case, fall back to Perl
-
-Solaris: Version dependent
-
---> For Solaris 10.x : TA-nmon-perl is the best option (Solaris 10.x comes with an old Python interpreter)
-
---> For Solaris 11: TA-nmon-python is the best option
-
