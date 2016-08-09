@@ -199,6 +199,8 @@ groupby MEM.hostname prestats=true
 | foreach *total* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 0) ]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="CPUSearch_summary">
@@ -209,6 +211,8 @@ groupby MEM.hostname prestats=true
 | stats max(usage) AS max_usage avg(usage) AS avg_usage median(usage) AS median_usage | eval max_usage=round(max_usage, 2), avg_usage=round(avg_usage, 2), median_usage=round(median_usage, 2)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="TOPSearch">
@@ -233,6 +237,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 | sort - avg_usage_per_core</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Help the user -->
@@ -283,6 +289,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Max %CPU</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
         <panel>
@@ -304,6 +311,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Avg %CPU</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
         <panel>
@@ -325,6 +333,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Median %CPU</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
     </row>
@@ -448,6 +457,8 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
 | timechart $span$ max(usage) AS "Max CPU usage" avg(usage) AS "Avg CPU usage"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -466,6 +477,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisTitleY.text">$CPU_datasource_minilabel$</option>
                 <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
             </chart>
 
         </panel>
@@ -484,6 +496,8 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | timechart $span$ max(iops) As "max Total I/O", avg(iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -502,6 +516,7 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisTitleY.text">I/O per second</option>
                 <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -553,6 +568,8 @@ avg("CPU.User_PCT") AS "User %",
 avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -582,6 +599,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -602,6 +620,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart $span$ max(usage) As usage max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -630,6 +650,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -648,6 +669,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart $span$ avg(VP_Idle_PCT) AS VP_Idle_PCT, avg(VP_Sys_PCT) AS VP_Sys_PCT, avg(VP_User_PCT) AS VP_User_PCT, avg(VP_Wait_PCT) AS VP_Wait_PCT</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -673,6 +696,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">top</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -691,6 +715,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart $span$ max(usage) As usage max(CPU.poolCPUs) AS poolCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -719,6 +745,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -739,6 +766,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart `nmon_span` max(usage) AS usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -767,6 +796,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -785,6 +815,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart `nmon_span` max(usage) As usage max(CPU.lpar_pool_capacity) AS poolCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -813,6 +845,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -831,6 +864,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | rename "WLM.*" AS * | eval key=hostname+":"+device | timechart $span$ limit=0 useother=f max(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -859,6 +894,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -899,6 +935,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart $span$ avg(value) As iops | trendline sma5(iops) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -927,6 +965,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
         <panel>
@@ -942,6 +981,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart $span$ avg(value) As busy_time | trendline sma5(busy_time) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -970,6 +1011,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -988,6 +1030,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart $span$ avg(value) As avg_transfer_size | trendline sma5(avg_transfer_size) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -1016,6 +1060,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
         <panel>
@@ -1030,6 +1075,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | timechart $span$ avg(value) As avg_data_rate by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -1058,6 +1105,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.legend.placement">top</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="height">500</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -1084,6 +1132,8 @@ groupby _time MEM.hostname prestats=true span=1m
 | timechart $span$ dedup_splitvals=t avg(mem_used_effective_PCT) AS mem_used_PCT, avg(swap_used_effective_PCT) AS swap_used_PCT</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -1103,6 +1153,7 @@ groupby _time MEM.hostname prestats=true span=1m
                 <option name="charting.axisTitleY.text">Percentage (%)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
 
@@ -1128,6 +1179,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 | timechart $span$ useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                     <!-- Progress event has access to job properties only -->
                     <progress>
                         <condition match="'job.resultCount' == 0">
@@ -1155,6 +1208,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Logical Core</option>
+                <option name="refresh.display">none</option>
             </chart>
 
             <html depends="$show_null_top$">
@@ -1204,6 +1258,8 @@ groupby _time MEM.hostname prestats=true span=1m
 | timechart `nmon_span` dedup_splitvals=t avg(*) AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="AIX_mem_memory_stats">
@@ -1218,6 +1274,8 @@ max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_use
 avg(Virtual_total_MB) AS Virtual_total_MB avg(Virtual_used_MB) AS Virtual_used_MB</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="AIX_memnew_memory_stats">
@@ -1234,6 +1292,8 @@ avg(Free_PCT) AS Free_PCT avg(FScache_PCT) AS FScache_PCT avg(memused_PCT) AS me
 avg(Process_PCT) AS Process_PCT avg(System_PCT) AS System_PCT</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="Solaris_MEM_real">
@@ -1248,6 +1308,8 @@ groupby _time, "MEM.hostname" prestats=true span=1m
 avg(memused_MB) AS memused_MB avg(memfree_MB) AS memfree_MB avg(memtotal_MB) AS memtotal_MB</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="Solaris_MEM_swap">
@@ -1262,6 +1324,8 @@ groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
 avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB) AS swaptotal_MB</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
 
@@ -1301,6 +1365,7 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="charting.chart.showDataLabels">none</option>
                 <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
                 <option name="charting.fieldColors">{"mem_total_MB": 0xe50000}</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$is_AIX$">
                 <title>AIX % memory allocation by category</title>
@@ -1325,6 +1390,7 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="charting.axisTitleY.text">Percentage (%)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$is_Solaris$">
                 <title>Solaris memory usage (MB)</title>
@@ -1350,6 +1416,7 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.chart.overlayFields">memtotal_MB</option>
                 <option name="charting.fieldColors">{"memtotal_MB": 0xe50000}</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
 
@@ -1388,6 +1455,7 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="charting.chart.showDataLabels">none</option>
                 <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
                 <option name="charting.fieldColors">{"swap_total_MB": 0xe50000}</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$is_AIX$">
                 <title>AIX paging Space usage (MB)</title>
@@ -1414,6 +1482,7 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="charting.axisTitleY.text">Virtual_total_MB</option>
                 <option name="charting.chart.overlayFields">Virtual_total_MB</option>
                 <option name="charting.fieldColors">{"Virtual_total_MB": 0xe50000}</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$is_Solaris$">
                 <title>Solaris swap usage (MB)</title>
@@ -1439,6 +1508,7 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.chart.overlayFields">swaptotal_MB</option>
                 <option name="charting.fieldColors">{"swaptotal_MB": 0xe50000}</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
@@ -1476,7 +1546,8 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="underLabel">TOP Process</option>
                 <option name="numberPrecision">0.00</option>
                 <option name="unit">Command</option>
-                <option name="unitPosition">debore</option>
+                <option name="unitPosition">before</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                 <link>search?q=| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
@@ -1509,6 +1580,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="numberPrecision">0.00</option>
                 <option name="unit">core conso</option>
                 <option name="unitPosition">before</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?q=| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
@@ -1541,6 +1613,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="numberPrecision">0.00</option>
                 <option name="unit">core conso</option>
                 <option name="unitPosition">before</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
 <link>search?q=| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
@@ -1592,12 +1665,15 @@ groupby _time, "TOP_Linux.frameID", "TOP_Linux.hostname", "TOP_Linux.logical_cpu
 | sort - "max CPU usage per core"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
@@ -1627,12 +1703,15 @@ groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "T
 | sort - "max CPU usage per core"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
@@ -1661,12 +1740,15 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
 | sort - "max CPU usage per core"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
@@ -1697,12 +1779,15 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
 | sort - "max memory usage (MB)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
@@ -1724,12 +1809,15 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
 | rename max_Used_Mem_MB AS "max memory usage (MB)", avg_Used_Mem_MB AS "avg memory usage (MB)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
@@ -1755,12 +1843,15 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
 | sort - "max memory usage (MB)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
@@ -1798,12 +1889,15 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) group
 | rename max_value AS "Max value in period (%)", avg_value AS "Average value in period (%)", min_value AS "Min value in Period (%)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">row</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
 where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) (JFS.device="$click.value$") groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
@@ -1852,6 +1946,8 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) ($fsf
 | timechart $span$ limit=0 useother=f max(value) As value by device</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -1871,6 +1967,7 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) ($fsf
                 <option name="charting.axisTitleY.text">% Used</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
