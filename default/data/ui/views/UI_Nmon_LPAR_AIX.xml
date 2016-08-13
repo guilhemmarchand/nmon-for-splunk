@@ -100,7 +100,7 @@
             <change>
                 <condition value="rename CPU.lpar_vp_usage AS usage">
                     <set token="unity_label">Virtual CPUs (nbr)</set>
-                    <set token="unity_minilabel">vCPUs</set>
+                    <set token="unity_minilabel">cores</set>
                 </condition>
                 <condition value="rename CPU.LPAR.lpar_vp_PCT_usage AS usage">
                     <set token="unity_label">Percentage of capacity (%)</set>
@@ -108,7 +108,7 @@
                 </condition>
                 <condition value="rename CPU.LPAR.lpar_ec_usage AS usage">
                     <set token="unity_label">Virtual CPUs (nbr)</set>
-                    <set token="unity_minilabel">vCPUs</set>
+                    <set token="unity_minilabel">cores</set>
                 </condition>
                 <condition value="rename CPU.LPAR.lpar_ec_PCT_usage AS usage">
                     <set token="unity_label">Percentage of capacity (%)</set>
@@ -140,6 +140,8 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 | rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname | sort limit=0 frameID | eval avg_usage=round(avg_usage,3)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Help the user -->
@@ -272,6 +274,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
                 <option name="unitPosition">after</option>
                 <option name="unit">$unity_minilabel$</option>
                 <option name="numberPrecision">0.00</option>
+                <option name="refresh.display">preview</option>
             </single>
 
             <single>
@@ -282,6 +285,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
                 <option name="unitPosition">after</option>
                 <option name="unit">$unity_minilabel$</option>
                 <option name="numberPrecision">0.00</option>
+                <option name="refresh.display">preview</option>
             </single>
 
             <single>
@@ -292,6 +296,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
                 <option name="unitPosition">after</option>
                 <option name="unit">$unity_minilabel$</option>
                 <option name="numberPrecision">0.00</option>
+                <option name="refresh.display">preview</option>
             </single>
 
             <table>
@@ -303,11 +308,25 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">row</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
                     <option name="fillColor">#CCDDFF</option>
                     <option name="lineWidth">1</option>
                     <option name="height">25</option>
+                </format>
+                <format type="color" field="max_usage">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="avg_usage">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="min_usage">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
                 </format>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `LPAR(max)`
@@ -408,6 +427,8 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 $statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -431,6 +452,7 @@ $statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
                 <option name="charting.axisTitleY2.visibility">visible</option>
                 <option name="charting.axisY2.enabled">false</option>
                 <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `LPAR(max)`
 from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)`
