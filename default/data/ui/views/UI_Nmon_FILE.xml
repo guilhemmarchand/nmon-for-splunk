@@ -115,6 +115,8 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
 | sort limit=0 "FILE.hostname" | rename "FILE.hostname" AS hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Help the user -->
@@ -222,6 +224,8 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">true</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="spk_readch">
                     <option name="lineColor">#5379af</option>
@@ -234,6 +238,14 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
                     <option name="fillColor">#CCDDFF</option>
                     <option name="lineWidth">1</option>
                     <option name="height">25</option>
+                </format>
+                <format type="color" field="readch">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="writech">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
                 </format>
             </table>
         </panel>
@@ -248,6 +260,32 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">true</option>
+                <format type="color" field="iget">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="namei">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="dirblk">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="ttycanch">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="ttyoutch">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="ttyrawch">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
             </table>
         </panel>
     </row>
@@ -330,6 +368,8 @@ groupby _time, "FILE.hostname" prestats=true `nmon_span`
 $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE.hostname</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -348,6 +388,7 @@ $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Rate/Sec</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link11">
                 <title>FILE - Other statistics</title>
@@ -363,6 +404,8 @@ $statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FI
 $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, $statsmode$(FILE.ttyrawch) As ttyrawch by FILE.hostname</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -381,6 +424,7 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Rate/Sec</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
