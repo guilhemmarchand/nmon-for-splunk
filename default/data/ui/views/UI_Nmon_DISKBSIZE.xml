@@ -260,17 +260,33 @@ groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true
 | fields hostname,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">true</option>
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
                     <option name="fillColor">#CCDDFF</option>
                     <option name="lineWidth">1</option>
                     <option name="height">25</option>
+                </format>
+                <format type="color" field="max_value">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="avg_value">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="min_value">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
                 </format>
             </table>
         </panel>
@@ -351,6 +367,8 @@ groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -374,6 +392,7 @@ groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
                 <option name="charting.axisTitleY2.visibility">visible</option>
                 <option name="charting.axisY2.enabled">false</option>
                 <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
