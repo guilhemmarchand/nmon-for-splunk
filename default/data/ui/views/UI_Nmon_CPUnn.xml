@@ -269,6 +269,8 @@
 | fields hostname, logical_core, *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="gaugestats">
@@ -278,6 +280,8 @@
 | stats max("CPU.cpu_PCT") AS max, avg("CPU.cpu_PCT") AS avg, median("CPU.cpu_PCT") AS median by "CPU.hostname"</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- ################################ -->
@@ -302,6 +306,7 @@
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Max %CPU</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
         <panel>
@@ -323,6 +328,7 @@
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Avg %CPU</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
         <panel>
@@ -344,6 +350,7 @@
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Median %CPU</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
     </row>
@@ -359,11 +366,28 @@
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">row</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
                     <option name="fillColor">#CCDDFF</option>
                     <option name="lineWidth">1</option>
                     <option name="height">25</option>
+                </format>
+                <format type="color" field="User (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="Sys (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="Wait (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="cpu (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
                 </format>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)`
@@ -472,6 +496,8 @@ $statsmode$("CPU.Wait_PCT") AS Wait_PCT
 by "CPU.CPUnn.logical_core"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -496,6 +522,7 @@ by "CPU.CPUnn.logical_core"</query>
                 <option name="charting.axisTitleY2.visibility">visible</option>
                 <option name="charting.axisY2.enabled">false</option>
                 <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
 | bucket _time span=1m
