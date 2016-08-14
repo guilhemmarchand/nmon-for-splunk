@@ -1,5 +1,5 @@
 <form stylesheet="ui_simple.css,panel_decoration.css">
-    <label>UI LPAR Pool, Pool Virtual CPU Usage (PowerLinux)</label>
+    <label>UI LPAR Pool, Pool Physical CPU Usage (PowerLinux)</label>
     <description>User Interface for the LPAR monitor and IBM PSeries Pools usage statistics</description>
 
     <fieldset autoRun="false" submitButton="false">
@@ -93,12 +93,12 @@
         <input type="dropdown" token="monitor" searchWhenChanged="true">
             <label>Show CPU load by:</label>
             <default>CPU.lpar_pool_vp_usage</default>
-            <choice value="CPU.lpar_pool_vp_usage">VP Usage</choice>
-            <choice value="CPU.lpar_pool_vp_usage_PCT">VP Usage (% usage of capacity)</choice>
+            <choice value="CPU.lpar_pool_vp_usage">Usage in cores</choice>
+            <choice value="CPU.lpar_pool_vp_usage_PCT">Usage in percentage</choice>
             <change>
                 <condition value="CPU.lpar_pool_vp_usage">
-                    <set token="unity_label">Virtual CPUs (nbr)</set>
-                    <set token="unity_minilabel">vCPUs</set>
+                    <set token="unity_label">Cores</set>
+                    <set token="unity_minilabel">Cores</set>
                 </condition>
                 <condition value="CPU.lpar_pool_vp_usage_PCT">
                     <set token="unity_label">Percentage of capacity (%)</set>
@@ -281,6 +281,7 @@
             </single>
 
             <table>
+                <title>Shared Pool CPU statistics</title>
                 <search base="Global">
                     <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 3) ] | fields hostname,frameID,"CPUs in Pool",max_usage,avg_usage,min_usage,sparkline</query>
                 </search>

@@ -1,5 +1,5 @@
 <form stylesheet="ui_simple.css,panel_decoration.css">
-    <label>UI LPAR, Micro-Partitions Virtual CPU Usage (PowerLinux)</label>
+    <label>UI LPAR, Micro-Partitions Physical CPU Usage (PowerLinux)</label>
     <description>User Interface for the LPAR monitor and IBM Micro-Partitions CPU usage statistics</description>
 
     <fieldset autoRun="false" submitButton="false">
@@ -93,16 +93,18 @@
         <input type="dropdown" token="indicator" searchWhenChanged="true">
             <label>Show CPU load by:</label>
             <default>lpar_vp_usage</default>
-            <choice value="lpar_vp_usage">Usage vs VirtualCPUs</choice>
-            <choice value="lpar_vp_usage_PCT">Usage vs VirtualCPUs % Usage</choice>
+            <choice value="lpar_vp_usage">Usage in cores</choice>
+            <choice value="lpar_vp_usage_PCT">Usage in percentage (%)</choice>
             <change>
                 <condition value="lpar_vp_usage">
-                    <set token="unity_label">Virtual CPUs (nbr)</set>
-                    <set token="unity_minilabel">vCPUs</set>
+                    <set token="unity_label">Cores</set>
+                    <set token="unity_minilabel">Cores</set>
+                    <set token="timechart_label">PhysicalCPU</set>
                 </condition>
                 <condition value="lpar_vp_usage_PCT">
                     <set token="unity_label">Percentage of capacity (%)</set>
                     <set token="unity_minilabel">%</set>
+                    <set token="timechart_label">PhysicalCPU_PCT</set>
                 </condition>
             </change>
         </input>
@@ -183,7 +185,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$ho
 
                                     <div class="list">
                                         <lu>
-                                            <li><b>max/avg/min_usage:</b> CPU usage in Virtual CPU units / Percentage</li>
+                                            <li><b>max/avg/min_usage:</b> CPU physical usage (in cores / percentage of capacity)</li>
                                             <li><b>partition_entitled_capacity:</b> Entitled capacity of the partition</li>
                                             <li><b>partition_active_processors:</b> Number of virtual processors in the LPAR definition</li>
                                         </lu>
@@ -282,6 +284,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$ho
             </single>
 
             <table>
+                <title>Micro-Partitions Physical CPUs statistics</title>
                 <search base="Global">
                     <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 3) ] | fields hostname,frameID,max_usage,avg_usage,min_usage,*,sparkline</query>
                 </search>
@@ -382,7 +385,7 @@ groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 
     <row depends="$charting$">
         <panel id="cpu">
-            <title>Micro-Partitions Virtual CPUs statistics</title>
+            <title>Micro-Partitions Physical CPUs statistics</title>
             <chart>
                 <search id="timechart">
                     <query>| tstats max("CPU.$indicator$") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
@@ -390,7 +393,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$ho
 | bucket _time span=1m | stats dedup_splitvals=t max("CPU.$indicator$") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
 | $charting$
 | timechart $span$ useother=f limit=0
-$statsmode$(usage) AS usage $addindicator$ by "CPU.hostname"</query>
+$statsmode$(usage) AS $timechart_label$ $addindicator$ by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
