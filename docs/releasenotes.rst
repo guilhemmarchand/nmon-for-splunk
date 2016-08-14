@@ -16,6 +16,17 @@ Requirements
 What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+=======
+V1.7.5:
+=======
+
+Please review update notes: http://nmonsplunk.wikidot.com/documentation:userguide:upgrade:upgrade-notes-v17x
+
+- Prevent unwanted server filtering in nmon inventory interfaces due to null fields in nmon_inventory KV
+- Correct labels for LPAR stats (for Powerlinux), correct series name to match Physical raw field names
+- Integrating the TA-nmon_selfmode as an alternative to the standard TA in case of unsolved unarchive processor failure
+- TA-nmon and PA-nmon V1.2.44
+
 =====================
 V1.7.4: Major release
 =====================
