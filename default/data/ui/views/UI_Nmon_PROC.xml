@@ -226,6 +226,8 @@ $statsmode$(fork) As "fork/sec", sparkline($statsmode$(fork)) As "spk_fork/sec",
 $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" by frameID,hostname</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <row>
@@ -240,6 +242,8 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
                 <format type="sparkline" field="spk_RunQueue">
                     <option name="lineColor">#5379af</option>
                     <option name="fillColor">#CCDDFF</option>
@@ -251,6 +255,14 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
                     <option name="fillColor">#CCDDFF</option>
                     <option name="lineWidth">1</option>
                     <option name="height">25</option>
+                </format>
+                <format type="color" field="RunQueue">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="Swap_in">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
                 </format>
             </table>
         </panel>
@@ -267,6 +279,8 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
                 <format type="sparkline" field="spk_pswitch/sec">
                     <option name="lineColor">#5379af</option>
                     <option name="fillColor">#CCDDFF</option>
@@ -290,6 +304,22 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
                     <option name="fillColor">#CCDDFF</option>
                     <option name="lineWidth">1</option>
                     <option name="height">25</option>
+                </format>
+                <format type="color" field="pswitch/sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="syscall/sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="fork/sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="exec/sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
                 </format>
             </table>
         </panel>
@@ -372,6 +402,8 @@ groupby _time, "PROC.hostname" prestats=true $span$
 $statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in by "PROC.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -390,6 +422,7 @@ $statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in 
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Rates per Second</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link11">
                 <title>Context switches and system calls (pswitch, syscall)</title>
@@ -401,6 +434,8 @@ groupby _time, "PROC.hostname" prestats=true $span$
 $statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall by "PROC.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -419,6 +454,7 @@ $statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall by
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Rates per Second</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link12">
                 <title>Fork and Exec system calls (fork, exec)</title>
@@ -430,6 +466,8 @@ groupby _time, "PROC.hostname" prestats=true $span$
 $statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec by "PROC.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -448,6 +486,7 @@ $statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec by "PROC.hostn
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Rates per Second</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
