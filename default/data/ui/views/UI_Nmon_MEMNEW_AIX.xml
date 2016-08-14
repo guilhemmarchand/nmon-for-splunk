@@ -28,7 +28,7 @@
             <label>Frame IDs:</label>
             <!-- Populating Data Model Search -->
             <search id="frameIDSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) groupby "MEMNEW.frameID" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.OStype="AIX") groupby "MEMNEW.frameID" prestats=true
 | stats dedup_splitvals=t count AS Count by "MEMNEW.frameID"
 | sort limit=0 "MEMNEW.frameID"
 | fields - _span | fillnull Count | fields "MEMNEW.frameID"</query>
@@ -53,7 +53,7 @@
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($frameID$) groupby "MEMNEW.hostname" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (MEMNEW.hostname=$hostname-prefilter$) ($frameID$) groupby "MEMNEW.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "MEMNEW.hostname"
 | sort limit=0 "MEMNEW.hostname"
 | fields - _span | fillnull Count | fields "MEMNEW.hostname"</query>
@@ -199,7 +199,7 @@
                     <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT from datamodel=NMON_Data_MEMNEW
-where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
+where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) (MEMNEW.OStype="AIX") `$timefilter$(MEMNEW)`
 groupby _time, "MEMNEW.frameID", "MEMNEW.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
@@ -213,12 +213,36 @@ by "MEMNEW.frameID", "MEMNEW.hostname"
 | rename "MEMNEW.frameID" AS "frameID" "MEMNEW.hostname" AS hostname</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <format type="color" field="Total Mem Used (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="FScache (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="Process (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="System PCT(%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="User (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
             </table>
         </panel>
     </row>
@@ -296,7 +320,7 @@ by "MEMNEW.frameID", "MEMNEW.hostname"
                     <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT from datamodel=NMON_Data_MEMNEW
-where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
+where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) (MEMNEW.OStype="AIX") `$timefilter$(MEMNEW)`
 groupby _time, "MEMNEW.frameID", "MEMNEW.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
@@ -309,6 +333,8 @@ $statsmode$("Process_PCT") AS Process_PCT $statsmode$("System_PCT") AS System_PC
 | $charting$ | $memmode$</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -333,6 +359,7 @@ $statsmode$("Process_PCT") AS Process_PCT $statsmode$("System_PCT") AS System_PC
                 <option name="charting.axisTitleY2.visibility">visible</option>
                 <option name="charting.axisY2.enabled">false</option>
                 <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
