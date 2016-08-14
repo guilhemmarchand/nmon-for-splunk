@@ -6,7 +6,7 @@ Release notes
 Requirements
 ^^^^^^^^^^^^
 
-* Splunk 6.3.x and later Only (Splunk 6.4.x strongly recommended), for prior to 6.2.x download release: V1.6.15, for 6.1.x and prior download release: V1.4.902
+* Splunk 6.5.x and later Only, for 6.4.x and prior download release: V1.7.5, for prior to 6.2.x download release: V1.6.15, for 6.1.x and prior download release: V1.4.902
 
 * Universal Forwarder v6.x is required for clients
 
@@ -15,6 +15,13 @@ Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+=====================
+V1.8.0: Major release
+=====================
+
+- Splunk 6.5 features: All views take benefits from auto dashboard refresh
+- Splunk 6.5 features: Conditional table formatting
 
 =======
 V1.7.5:
