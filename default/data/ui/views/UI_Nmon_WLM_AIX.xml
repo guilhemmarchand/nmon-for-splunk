@@ -250,18 +250,58 @@ groupby _time, "WLM_AIX.hostname", "WLM_AIX.device" prestats=true span=1m
 | foreach "*_value" [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ] | sort - avg_value | rename "*_value" AS "* $label$"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
                 <!-- Set sparkline options here; make sure that field matches field name of the search results -->
                 <format type="sparkline" field="sparkline">
                     <option name="lineColor">#5379af</option>
                     <option name="fillColor">#CCDDFF</option>
                     <option name="lineWidth">1</option>
                     <option name="height">25</option>
+                </format>
+                <format type="color" field="max CPU percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="avg CPU percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="min CPU percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="max Memory percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="avg Memory percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="min Memory percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="max Block IO percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="avg Block IO percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="min Block IO percent (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
                 </format>
             </table>
         </panel>
@@ -346,6 +386,8 @@ groupby _time, "WLM_AIX.hostname", "WLM_AIX.device" prestats=true span=1m
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -364,6 +406,7 @@ groupby _time, "WLM_AIX.hostname", "WLM_AIX.device" prestats=true span=1m
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">$label$</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>

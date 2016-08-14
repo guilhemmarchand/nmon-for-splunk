@@ -99,6 +99,8 @@ groupby _time, "Linux.frameID", "Linux.hostname" prestats=true span=1m
 | rename Linux.* AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Help the user -->
@@ -227,12 +229,16 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
 | stats $statsmode$(*) AS * by frameID, hostname</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
             </table>
         </panel>
     </row>
@@ -326,6 +332,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link2">
                 <title>Pages allocated to page tables, mapped by files or allocated by the kernel slab allocator</title>
@@ -349,6 +356,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link3">
                 <title>Pageins and pageouts (since last boot)</title>
@@ -372,6 +380,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link4">
                 <title>swapins and swapouts (since last boot)</title>
@@ -395,6 +404,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link5">
                 <title>Page allocations per zone (since last boot)</title>
@@ -418,6 +428,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link6">
                 <title>Page frees, activations and deactivations (since last boot)</title>
@@ -441,6 +452,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link7">
                 <title>Minor and major page faults (since last boot)</title>
@@ -464,6 +476,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link8">
                 <title>Page refills (per zone, since last boot):</title>
@@ -487,6 +500,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link9">
                 <title>Page steals (per zone, since last boot)</title>
@@ -510,6 +524,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link10">
                 <title>Pages scanned by kswapd daemon (per zone, since last boot)</title>
@@ -533,6 +548,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link11">
                 <title>Pages reclaimed directly (per zone, since last boot)</title>
@@ -556,6 +572,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart id="link12">
                 <title>Miscellaneous statistics</title>
@@ -579,6 +596,7 @@ where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osf
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>
