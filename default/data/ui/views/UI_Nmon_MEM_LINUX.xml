@@ -249,9 +249,11 @@
         <query>| tstats `memory_linux_dm` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)` groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm` by _time, "MEM.frameID", "MEM.hostname"
 | stats max(mem_used_effective_PCT) AS max_mem, avg(mem_used_effective_PCT) AS avg_mem
-max(swap_used_effective_PCT) AS max_swap, avg(swap_used_effective_PCT) AS avg_swap by MEM.hostname</query>
+max(swap_used_effective_PCT) AS max_swap, avg(swap_used_effective_PCT) AS avg_swap</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="Global">
@@ -265,6 +267,8 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
 | foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="chartstats">
@@ -274,6 +278,8 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
 | $charting$</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="chartstats_bydeployment">
@@ -284,6 +290,8 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
 | $charting$</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
 
@@ -309,6 +317,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Max %Mem</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
         <panel>
@@ -330,6 +339,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Avg %Mem</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
         <panel>
@@ -351,6 +361,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Max %Swap</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
         <panel>
@@ -372,6 +383,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="nmon.radial_meter.maxRangeThreshold">85</option>
                 <option name="nmon.radial_meter.caption">Avg %Swap</option>
                 <option name="height">180</option>
+                <option name="refresh.display">preview</option>
             </viz>
         </panel>
     </row>
@@ -398,6 +410,25 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <format type="color" field="mem_used_effective (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="mem_used_effective (MB)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+
+                <format type="color" field="swap_used_effective (%)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="swap_used_effective (MB)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
             </table>
         </panel>
     </row>
@@ -545,6 +576,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.chart.showDataLabels">none</option>
                 <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
                 <option name="charting.fieldColors">{"mem_total_MB": 0xe50000}</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$chart2$">
                 <title></title>
@@ -569,6 +601,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleY.text">percentage (%)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$chart3$">
                 <title></title>
@@ -594,6 +627,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisTitleY.text">volume (MB)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$chart4$">
                 <title></title>
@@ -620,6 +654,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleY.text">percentage (%)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$chart5$">
                 <title></title>
@@ -645,6 +680,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisTitleY.text">volume (MB)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
             </chart>
             <chart depends="$chart6$">
                 <title></title>
@@ -670,6 +706,7 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisTitleY.text">volume (MB)</option>
                 <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
             </chart>
         </panel>
     </row>

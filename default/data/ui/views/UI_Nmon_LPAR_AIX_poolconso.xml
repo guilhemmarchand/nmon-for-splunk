@@ -150,7 +150,6 @@
 | stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
 | $aggregate$
 | sort limit=0 _time
-| rename CPU.LPAR.Pool_usage AS usage
 | stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id", max("CPU.poolCPUs") AS "CPU.poolCPUs", sparkline($statsmode$(usage)) As sparkline by "CPU.frameID", "CPU.hostname"
 | rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname, "CPU.LPAR.Pool_id" AS "Pool ID", "CPU.poolCPUs" AS "CPUs in Pool" | sort limit=0 frameID | eval avg_usage=round(avg_usage,3)</query>
         <earliest>$timerange.earliest$</earliest>
@@ -423,7 +422,6 @@ groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
 | sort limit=0 _time
 | $aggregate$
-| rename CPU.LPAR.Pool_usage AS usage
 | $charting$
 | timechart $span$ useother=f limit=0
 $statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
