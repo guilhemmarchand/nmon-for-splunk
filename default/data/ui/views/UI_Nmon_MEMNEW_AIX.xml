@@ -28,7 +28,7 @@
             <label>Frame IDs:</label>
             <!-- Populating Data Model Search -->
             <search id="frameIDSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) groupby "MEMNEW.frameID" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.OStype="AIX") groupby "MEMNEW.frameID" prestats=true
 | stats dedup_splitvals=t count AS Count by "MEMNEW.frameID"
 | sort limit=0 "MEMNEW.frameID"
 | fields - _span | fillnull Count | fields "MEMNEW.frameID"</query>
@@ -53,7 +53,7 @@
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($frameID$) groupby "MEMNEW.hostname" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (MEMNEW.hostname=$hostname-prefilter$) ($frameID$) groupby "MEMNEW.hostname" prestats=true
 | stats dedup_splitvals=t count AS Count by "MEMNEW.hostname"
 | sort limit=0 "MEMNEW.hostname"
 | fields - _span | fillnull Count | fields "MEMNEW.hostname"</query>
@@ -199,7 +199,7 @@
                     <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT from datamodel=NMON_Data_MEMNEW
-where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
+where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
 groupby _time, "MEMNEW.frameID", "MEMNEW.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
@@ -296,7 +296,7 @@ by "MEMNEW.frameID", "MEMNEW.hostname"
                     <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT from datamodel=NMON_Data_MEMNEW
-where (nodename = MEMNEW) (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
+where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
 groupby _time, "MEMNEW.frameID", "MEMNEW.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
