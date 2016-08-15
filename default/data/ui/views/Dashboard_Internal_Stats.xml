@@ -26,30 +26,40 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
 | eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="nmon_processing_countnmon">
         <query>| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="nmon_processing_elapsed_bytime">
         <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="nmon_processing_errors">
         <query>| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="nmon_collect_errors">
         <query>eventtype=nmon:collect error | stats count As nbr_errors</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Event Count -->
@@ -58,6 +68,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
         <query>| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Metadata -->
@@ -66,6 +78,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
         <query>| `indexes_datestats`</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Metric -->
@@ -74,18 +88,24 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
         <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1h sum(MB) As "Total_per_hour_MB" | where isnotnull(Total_per_hour_MB) | sort - _time</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="metric_search_per_day">
         <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | rename series As index | timechart span=1d sum(MB) As "Total_per_day_MB" | where isnotnull(Total_per_day_MB) | sort - _time</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <search id="metric_rate_search">
         <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | stats avg(kbps) As avg_kbps, max(kbps) As max_kbps | eval avg_kbps=round(avg_kbps,2) | eval max_kbps=round(max_kbps,2)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Application Activity -->
@@ -96,6 +116,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
         <query>index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home* AND file!=report</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <!-- Scheduler Activity for the Application -->
@@ -104,6 +126,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
         <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
     </search>
 
     <row>
@@ -246,6 +270,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                     <query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_bytes) AS "sum_size_MB" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval sum_size_MB=round((sum_size_MB/1000/1000),2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -313,6 +339,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                     <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -412,7 +440,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
 
             <single>
                 <search base="metadata_search">
-                    <query>fields "First Event"</query>
+                    <query>sort - recentTime | fields "First Event"</query>
                 </search>
                 <option name="underLabel">DATA FIRST EVENT</option>
                 <drilldown target="search">
@@ -422,7 +450,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
 
             <single>
                 <search base="metadata_search">
-                    <query>fields "Last Event"</query>
+                    <query>sort - lastTime | fields "Last Event"</query>
                 </search>
                 <option name="underLabel">DATA LAST EVENT</option>
                 <drilldown target="search">
@@ -432,7 +460,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
 
             <table>
                 <search base="metadata_search">
-                    <query></query>
+                    <query>fields index,sourcetype,*Event</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -527,6 +555,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                     <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart sum(MB) by series | fillnull value=0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -558,6 +588,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                     <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | timechart avg(kbps) As Avg_kbps | fillnull value=0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -593,9 +625,11 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                 <title>Number of hits per page:</title>
                 <search>
                     <query>index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home* AND file!=report
-                        | timechart limit=45 useother=f count by file</query>
+| timechart limit=45 useother=f count by file</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -627,6 +661,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                     <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
