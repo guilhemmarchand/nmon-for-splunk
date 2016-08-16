@@ -1,17 +1,15 @@
-<dashboard stylesheet="ui_simple.css,hover.css" script="active_button.js">
-    <label>Nmon Performance Monitor application - Internal statistics</label>
-    <row>
+<dashboard stylesheet="ui_simple.css,hover.css,panel_decoration.css" script="active_button.js">
+    <label>Nmon Performance Monitor application - Total Cost of Ownership interface</label>
+
+    <row depends="$hidden_element$">
         <panel>
-            <title>LICENCING: Total Cost of Ownership per server</title>
-            <single rejects="$show_admin_required$">
+            <title>Hidden form</title>
+            <single>
+                <!-- This search will be used to verify if the user that run the dashboard has enough privilege to do so -->
                 <search>
-                    <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart span=1h sum(MB) AS volume_MB
-| fillnull value=0 | appendcols [ search eventtype=nmon:performance type=CPU_ALL | timechart span=1h dc(hostname) AS dcount ] | eval cost_per_server_MB=(volume_MB/dcount)
-| stats avg(cost_per_server_MB) AS cost_per_server_MB
-| eval estimated_cost_per_server_MB=round(cost_per_server_MB*24, 2)
-| fields estimated_cost_per_server_MB</query>
-                    <earliest>-7d@d</earliest>
-                    <latest>@d</latest>
+                    <query>index=_internal | head 100 | stats count | where count>0</query>
+                    <earliest>-60m</earliest>
+                    <latest>now</latest>
                     <!-- Progress event has access to job properties only -->
                     <progress>
                         <condition match="'job.resultCount' == 0">
@@ -19,8 +17,42 @@
                         </condition>
                         <condition>
                             <unset token="show_admin_required"/>
+                            <set token="start_admin_searches">True</set>
                         </condition>
                     </progress>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="underLabel">Hidden</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="linkView">search</option>
+            </single>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="cost1">
+            <title>LICENCING: Total Cost of Ownership per server</title>
+            <single rejects="$show_admin_required$">
+                <search>
+                    <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart span=1h sum(MB) AS volume_MB
+| fillnull value=0 | appendcols [ search eventtype=nmon:performance type=CPU_ALL | timechart span=1h dc(hostname) AS dcount ] | eval cost_per_server_MB=(volume_MB/dcount)
+| stats avg(cost_per_server_MB) AS cost_per_server_MB
+| eval estimated_cost_per_server_MB=round(cost_per_server_MB*24, 2)
+| eval user_is_admin=$start_admin_searches$
+| fields estimated_cost_per_server_MB</query>
+                    <earliest>-7d@d</earliest>
+                    <latest>@d</latest>
                 </search>
                 <option name="colorBy">trend</option>
                 <option name="colorMode">none</option>
@@ -40,8 +72,8 @@
                 <option name="linkView">search</option>
             </single>
             <html depends="$show_admin_required$">
-                <div style="color:red;margin-left:30px;font-size:14px;text-align:center;">
-                    <p>Admin privileges required to access these statistics</p>
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
                 </div>
             </html>
             <html>
@@ -50,12 +82,18 @@
                 </div>
             </html>
         </panel>
-        <panel>
+        <panel id="cost2">
             <title>LICENCING: Total Cost of Ownership of global indexing</title>
             <single rejects="$show_admin_required$">
                 <search>
-                    <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval GB = round(kb/1024/1024,2) | timechart span=1d sum(GB) AS volume_GB
-| stats avg(volume_GB) AS avg_volume_per_day_GB</query>
+                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon"
+| where b>0 | bucket _time span=1m
+| stats sum(b) AS b by _time,idx
+| timechart span=1d sum(b) AS b
+| stats avg(b) AS avg_volume_per_day
+| eval avg_volume_per_day_GB=round((avg_volume_per_day/1024/1024/1024),2)
+| eval user_is_admin=$start_admin_searches$
+| fields avg_volume_per_day_GB</query>
                     <earliest>-7d@d</earliest>
                     <latest>@d</latest>
                 </search>
@@ -77,8 +115,8 @@
                 <option name="linkView">search</option>
             </single>
             <html depends="$show_admin_required$">
-                <div style="color:red;margin-left:30px;font-size:14px;text-align:center;">
-                    <p>Admin privileges required to access these statistics</p>
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
                 </div>
             </html>
             <html depends="$show_null_cold$">
@@ -90,12 +128,13 @@
     </row>
     <row>
         <panel>
-            <title>SCHEDULING COST:</title>
+            <title>SCHEDULING COST</title>
             <single rejects="$show_admin_required$">
                 <search>
                     <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
 | bucket _time span=5m
 | stats count AS count by _time
+| eval user_is_admin=$start_admin_searches$
 | stats avg(count) AS avg_scheduled_per_5min</query>
                     <earliest>-24h</earliest>
                     <latest>now</latest>
@@ -121,6 +160,7 @@
                 <search>
                     <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
 | timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
+| eval user_is_admin=$start_admin_searches$
 | stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time | fields avg_run_time</query>
                     <earliest>-24h</earliest>
                     <latest>now</latest>
@@ -146,6 +186,7 @@
                 <search>
                     <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
 | timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
+| eval user_is_admin=$start_admin_searches$
 | stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time | fields max_run_time</query>
                     <earliest>-24h</earliest>
                     <latest>now</latest>
@@ -171,6 +212,7 @@
                 <search>
                     <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
 | timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
+| eval user_is_admin=$start_admin_searches$
 | stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time | fields sum_run_time</query>
                     <earliest>-24h</earliest>
                     <latest>now</latest>
@@ -329,19 +371,22 @@
 avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
 ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
 | eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
-| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</query>
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)
+| eval show_processing=$show_processing$ | fields - show_processing</query>
         <earliest>$timerange_processing.earliest$</earliest>
         <latest>$timerange_processing.latest$</latest>
     </search>
 
     <search id="nmon_processing_countnmon">
-        <query>| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval show_processing=$show_processing$ | fields - show_processing</query>
         <earliest>$timerange_processing.earliest$</earliest>
         <latest>$timerange_processing.latest$</latest>
     </search>
 
     <search id="nmon_processing_elapsed_bytime">
-        <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)</query>
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)
+| eval show_processing=$show_processing$ | fields - show_processing</query>
         <earliest>$timerange_processing.earliest$</earliest>
         <latest>$timerange_processing.latest$</latest>
     </search>
@@ -361,7 +406,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
     <!-- Event Count -->
 
     <search id="eventcount_search">
-        <query>| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</query>
+        <query>| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2)
+| eval show_eventcount=$show_eventcount$ | fields index, server, "Size (MB)", "Millions of Events"</query>
         <earliest>0</earliest>
         <latest>now</latest>
     </search>
@@ -369,7 +415,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
     <!-- Metadata -->
 
     <search id="metadata_search">
-        <query>| `indexes_datestats`</query>
+        <query>| `indexes_datestats` | eval show_eventcount=$show_eventcount$</query>
         <earliest>0</earliest>
         <latest>now</latest>
     </search>
@@ -398,28 +444,28 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_indexing_overtime" data-alt-label="HIDE INDEXING VOLUME OVER TIME" data-token-value="fields _time,*">SHOW INDEXING VOLUME OVER TIME</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_indexing_overtime" data-alt-label="HIDE INDEXING VOLUME OVER TIME" data-token-value="true">SHOW INDEXING VOLUME OVER TIME</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_eventcount" data-alt-label="HIDE INDEX EVENTCOUNT STATS" data-token-value="fields _time,*">SHOW INDEX EVENTCOUNT STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_eventcount" data-alt-label="HIDE INDEX EVENTCOUNT STATS" data-token-value="true">SHOW INDEX EVENTCOUNT STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_scheduled_stats" data-alt-label="HIDE PER REPORT SCHEDULED STATS" data-token-value="fields _time,*">SHOW PER REPORT SCHEDULED STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_scheduled_stats" data-alt-label="HIDE PER REPORT SCHEDULED STATS" data-token-value="true">SHOW PER REPORT SCHEDULED STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_processing" data-alt-label="HIDE NMON PROCESSING STATS" data-token-value="fields _time,*">SHOW NMON PROCESSING STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_processing" data-alt-label="HIDE NMON PROCESSING STATS" data-token-value="true">SHOW NMON PROCESSING STATS</button>
                 </div>
             </html>
         </panel>
@@ -429,7 +475,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
 
     <row depends="$show_indexing_overtime$">
         <panel>
-            <title>Indexing volume over time (MB)</title>
+            <title>Indexing volume over time (GB)</title>
             <input type="time" token="timerange_volume" searchWhenChanged="true">
                 <label>Time Range:</label>
                 <default>
@@ -439,7 +485,13 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
             </input>
             <chart rejects="$show_admin_required$">
                 <search id="metric_timechartsearch">
-                    <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart sum(MB) AS volume_MB</query>
+                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon"
+| where b>0 | bucket _time span=1m
+| stats sum(b) AS b by _time,idx
+| timechart span=1d sum(b) AS b
+| eval avg_volume_per_day_GB=round((b/1024/1024/1024),2)
+| eval user_is_admin=$start_admin_searches$
+| fields _time,avg_volume_per_day_GB</query>
                     <earliest>$timerange_volume.earliest$</earliest>
                     <latest>$timerange_volume.latest$</latest>
                 </search>
@@ -458,7 +510,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">400</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Megabytes</option>
+                <option name="charting.axisTitleY.text">Gigabytes</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -467,8 +519,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                 <option name="charting.axisY2.scale">inherit</option>
             </chart>
             <html depends="$show_admin_required$">
-                <div style="color:red;margin-left:30px;font-size:14px;text-align:center;">
-                    <p>Admin privileges required to access these statistics</p>
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
                 </div>
             </html>
         </panel>
@@ -617,7 +669,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
 
             <chart>
                 <search>
-                    <query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_bytes) AS "sum_size_MB" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval sum_size_MB=round((sum_size_MB/1000/1000),2)</query>
+                    <query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_bytes) AS "sum_size_MB" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval sum_size_MB=round((sum_size_MB/1000/1000),2)
+| eval show_processing=$show_processing$ | fields - show_processing</query>
                     <earliest>$timerange_processing.earliest$</earliest>
                     <latest>$timerange_processing.latest$</latest>
                 </search>
@@ -684,7 +737,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
 
             <chart>
                 <search>
-                    <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)</query>
+                    <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2) | eval show_processing=$show_processing$ | fields - show_processing</query>
                     <earliest>$timerange_processing.earliest$</earliest>
                     <latest>$timerange_processing.latest$</latest>
                 </search>
@@ -789,7 +843,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
     <row depends="$show_scheduled_stats$">
 
         <panel>
-            <title>SCHEDULING - Statistics per report:</title>
+            <title>SCHEDULING - Statistics per report</title>
             <input type="time" token="timerange_scheduled" searchWhenChanged="true">
                 <label>Time Range:</label>
                 <default>
@@ -800,12 +854,17 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
             <table rejects="$show_admin_required$">
                 <search>
                     <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
-| stats avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, latest(run_time) AS latest_run_time, max(_time) AS "last_run (dd/mm/YYYY H:M:S)"  by app,savedsearch_name
+| stats avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, latest(run_time) AS latest_run_time, max(_time) AS "last_run (dd/mm/YYYY H:M:S)" by app,savedsearch_name
 | eval "last_run (dd/mm/YYYY H:M:S)"=strftime('last_run (dd/mm/YYYY H:M:S)', "%d/%m/%Y %H:%M:%S")
 | foreach *_run_time [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]
-| rename *_run_time AS "*_run_time (sec)"
-| sort savedsearch_name
-| rename savedsearch_name AS "report (savedsearch_name)"</query>
+| sort savedsearch_name | rename savedsearch_name AS "report (savedsearch_name)"
+| eval user_is_admin=$start_admin_searches$
+| eval show_scheduled_stats=$show_scheduled_stats$
+| eval duration_avg=tostring(avg_run_time, "duration"), duration_max=tostring(max_run_time, "duration"), duration_latest=tostring(latest_run_time, "duration")
+| eval "Avg run time (seconds / duration)" = avg_run_time + " sec / " + duration_avg + " (HH:MM:SSS)"
+| eval "Max run time (seconds / duration)" = max_run_time + " sec / " + duration_avg + " (HH:MM:SSS)"
+| eval "Latest run time (seconds / duration)" = latest_run_time + " sec / " + duration_avg + " (HH:MM:SSS)"
+| fields app,report*,Avg*,Max*,Latest*,"last_run (dd/mm/YYYY H:M:S)"</query>
                     <earliest>$timerange_scheduled.earliest$</earliest>
                     <latest>$timerange_scheduled.latest$</latest>
                 </search>
@@ -816,8 +875,8 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
                 <option name="count">10</option>
             </table>
             <html depends="$show_admin_required$">
-                <div style="color:red;margin-left:30px;font-size:14px;text-align:center;">
-                    <p>Admin privileges required to access these statistics</p>
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
                 </div>
             </html>
         </panel>
