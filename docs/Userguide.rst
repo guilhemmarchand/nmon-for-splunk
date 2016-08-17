@@ -1246,9 +1246,19 @@ A Python script utility is provided to allow creating on demand custom TA-nmon p
 
 This Python tool is available in the "resources" directory of the Nmon Core Application (as gzip file, uncompress the script before launching)
 
+**Notice for updating the application: using this tool is upgrade resilient, you can create your package and repeat this operation for future release update**
+
+**The tool requires Python 2.7.x or superior to operate, you can check your version with the following command:**
+
 ::
 
-    ./create_agent.py
+    python --version
+
+
+
+::
+
+    python create_agent.py
 
     create_agent.py
 
@@ -1281,7 +1291,7 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
 
 ::
 
-    ./create_agent.py -f nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz --agentname TA-nmon-perl --agentmode perl --indexname myindex
+    python create_agent.py -f nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz --agentname TA-nmon-perl --agentmode perl --indexname myindex
 
     Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz
     INFO: Extracting Agent tgz resources Archives
@@ -1313,14 +1323,26 @@ The Python tool allows to:
 * Customize the PA NMON Root Directory (default: PA-nmon)
 * Customize the local CSV Repository (default:csv_repository)
 * Customize the local Config Repository (default:config_repository)
+* Focus on Linux OS only by hidding other systems specific views and setting a Linux navigation menu
 
 Using this tool over releases, you can easily manage your customizations and update the Application as usual.
 
 This Python tool is available in the "resources" directory of the Nmon Core Application (as gzip file, uncompress the script before launching)
 
+**Notice for updating the application: using this tool is upgrade resilient, you can create your package and repeat this operation for future release update**
+
+**The tool requires Python 2.7.x or superior to operate, you can check your version with the following command:**
+
 ::
 
-    ./Nmon_SplunkApp_Customize.py
+    python --version
+
+
+**Launching the tool with no option:**
+
+::
+
+    python Nmon_SplunkApp_Customize.py
 
     If for some reason you need to customize the Nmon Splunk Application, please follow these instructions:
 
@@ -1329,19 +1351,24 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
     - Place the downloaded tgz Archive and this Python tool in the directory of your choice
     - Run the tool: ./customize_indexname.py and check for available options
 
-    After the execution, the Application (including TA-nmon and PA-nmon in resources) will have been customized are ready to be used
-    ./Nmon_SplunkApp_Customize.py -h
+    After the execution, the Application (including TA-nmon and PA-nmon in resources) will have been customized and are ready to be used
+
+**Getting help with available options:**
+
+::
+
+    python Nmon_SplunkApp_Customize.py --help
 
     usage: Nmon_SplunkApp_Customize.py [-h] [-f INFILE] [-i INDEX_NAME]
                                        [-r ROOT_DIR] [-a TA_NMON] [-p PA_NMON]
                                        [--csvrepo CSV_REPOSITORY]
                                        [--configrepo CONFIG_REPOSITORY]
-                                       [--version]
+                                       [--linux_only] [--version] [--debug]
 
     optional arguments:
       -h, --help            show this help message and exit
       -f INFILE             Name of the Nmon Splunk APP tgz Archive file
-      -i INDEX_NAME         Customize the Appication Index Name (default: nmon)
+      -i INDEX_NAME         Customize the Application Index Name (default: nmon)
       -r ROOT_DIR           Customize the Application Root Directory (default:
                             nmon)
       -a TA_NMON            Customize the TA NMON Root Directory (default: TA-
@@ -1354,30 +1381,84 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
       --configrepo CONFIG_REPOSITORY
                             Customize the local Config Repository (default:
                             config_repository)
+      --linux_only          Deactivate objects for other operating systems than
+                            Linux (AIX / Solaris), use thisoption if you only use
+                            Linux and don't want non Linux related objects to be
+                            visible.
       --version             show program's version number and exit
+      --debug
 
-**Example of utilization:**
+
+Generic example of utilization
+""""""""""""""""""""""""""""""
+
+*Replace "nmon-performance-monitor-for-unix-and-linux-systems_xxx.tgz" with the exact name of the tgz archive*
 
 ::
 
-    ./Nmon_SplunkApp_Customize.py -f nmon-performance-monitor-for-unix-and-linux-systems_146.tgz -i my_custom_index -r my_custom_app -a my_custom_ta -p my_custom_pa --csvrepo my_custom_csvrepo --configrepo my_custom_configrepo
-    Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_146.tgz
-    INFO: Changing the App Root Directory frm default "nmon" to custom "my_custom_app"
+    python Nmon_SplunkApp_Customize.py -f nmon-performance-monitor-for-unix-and-linux-systems_xxx.tgz -i my_custom_index -r my_custom_app -a my_custom_ta -p my_custom_pa --csvrepo my_custom_csvrepo --configrepo my_custom_configrepo
+    Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_175.tgz
+    Extracting tgz Archive: PA-nmon_1244.tgz
+    Extracting tgz Archive: TA-nmon_1244.tgz
+    Extracting tgz Archive: TA-nmon_selfmode_1244.tgz
+    INFO: Changing the App Root Directory from default "nmon" to custom "my_custom_app"
     Achieving files transformation:
     INFO: Customizing any reference to default root directory in files
-    Achieving files conversion
+    Achieving files transformation:
     INFO: Customizing any reference to index name in files
     INFO: Customizing indexes.conf
     INFO: Customizing csv_repository to my_custom_csvrepo
     INFO: Customizing config_repository to my_custom_configrepo
     INFO: Removing tgz resources Archives
     INFO: Customizing the TA-nmon Root directory from the default TA-nmon to my_custom_ta
-    INFO: Tar creation done of: my_custom_ta_custom.tar.gz
+    INFO: ************* Tar creation done of: my_custom_ta_custom.tgz *************
+    INFO: Removing tgz resources Archives
     INFO: Customizing the PA-nmon Root directory from the default PA-nmon to my_custom_pa
-    INFO: Tar creation done of: my_custom_pa_custom.tar.gz
+    INFO: ************* Tar creation done of: my_custom_pa_custom.tgz *************
     INFO: Creating the custom nmon_performance_monitor_custom.spl archive in current root directory
-    INFO: Tar creation done of: nmon_performance_monitor_custom.spl
+    INFO: ************* Tar creation done of: nmon_performance_monitor_custom.spl *************
+
+    *** To install your customized packages: ***
+
+     - Extract the content of nmon_performance_monitor_custom.spl to Splunk Apps directory of your search heads (or use the manager to install the App)
+     - Extract the content of the PA package available in resources directory to your indexers
+     - Extract the content of the TA package available in resources directory to your deployment server or clients
+
     Operation terminated.
+
+
+Linux OS example: build an app for Linux OS support only
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+::
+
+    python Nmon_SplunkApp_Customize.py -f nmon-performance-monitor-for-unix-and-linux-systems_xxx.tgz --linux_only
+
+    INFO: No custom index name were provided, using default "nmon" name for index
+    INFO: No custom root directory of the nmon App core App were provided, using default "nmon" name for root directory
+    INFO: No custom root directory of the TA-nmon were provided, using default "TA-nmon" name for TA-nmon root directory
+    INFO: No custom root directory of the PA-nmon were provided, using default "PA-nmon" name for PA-nmon root directory
+    INFO: No custom csv reposity directory were provided, using default "csv_repository" name for csv repository root directory
+    INFO: No custom csv reposity directory were provided, using default "config_repository" name for csv repository root directory
+    Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_175.tgz
+    Extracting tgz Archive: PA-nmon_1244.tgz
+    Extracting tgz Archive: TA-nmon_1244.tgz
+    Extracting tgz Archive: TA-nmon_selfmode_1244.tgz
+    INFO: Operating systems support, AIX operating system related objects have been deactivated
+    INFO: Operating systems support, Solaris operating system related objects have been deactivated
+    INFO: Linux only management, activate Linux only navigation
+    INFO: Creating the custom nmon_performance_monitor_custom.spl archive in current root directory
+    INFO: ************* Tar creation done of: nmon_performance_monitor_custom.spl *************
+
+    *** To install your customized packages: ***
+
+     - Extract the content of nmon_performance_monitor_custom.spl to Splunk Apps directory of your search heads (or use the manager to install the App)
+     - Extract the content of the PA package available in resources directory to your indexers
+     - Extract the content of the TA package available in resources directory to your deployment server or clients
+
+    Operation terminated.
+
+
 
 -----------------------------------------
 04 - Scenarios of advanced customizations
