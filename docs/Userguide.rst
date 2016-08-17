@@ -1246,6 +1246,8 @@ A Python script utility is provided to allow creating on demand custom TA-nmon p
 
 This Python tool is available in the "resources" directory of the Nmon Core Application (as gzip file, uncompress the script before launching)
 
+**Notice for updating the application: using this tool is upgrade resilient, you can create your package and repeat this operation for future release update**
+
 **The tool requires Python 2.7.x or superior to operate, you can check your version with the following command:**
 
 ::
@@ -1326,6 +1328,8 @@ The Python tool allows to:
 Using this tool over releases, you can easily manage your customizations and update the Application as usual.
 
 This Python tool is available in the "resources" directory of the Nmon Core Application (as gzip file, uncompress the script before launching)
+
+**Notice for updating the application: using this tool is upgrade resilient, you can create your package and repeat this operation for future release update**
 
 **The tool requires Python 2.7.x or superior to operate, you can check your version with the following command:**
 
