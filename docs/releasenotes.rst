@@ -25,6 +25,8 @@ Please review update notes: http://nmonsplunk.wikidot.com/documentation:userguid
 - Prevent unwanted server filtering in nmon inventory interfaces due to null fields in nmon_inventory KV
 - Correct labels for LPAR stats (for Powerlinux), correct series name to match Physical raw field names
 - Integrating the TA-nmon_selfmode as an alternative to the standard TA in case of unsolved unarchive processor failure
+- Rewritten Internal dashboard as the Total Cost of Ownership dashboard
+- Nmon core app Fix Git Issues: #48 to #53
 - TA-nmon and PA-nmon V1.2.44
 
 =====================
