@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css,hover.css,hide_timeindicator.css,panel_decoration.css,table_data_bar.css" script="active_button.js,autodiscover.js,table_data_bar.js">
+<form stylesheet="ui_simple.css,hover.css,hide_timeindicator.css,panel_decoration.css,table_data_bar.css" script="active_button.js,autodiscover.js,table_data_bar.js" isVisible="true">
     <label>NMON Summary Light Analysis</label>
     <fieldset autoRun="false" submitButton="false">
 
@@ -63,6 +63,7 @@
        		<change>
          		<unset token="form.OStype_detection"></unset>
                 <unset token="form.CPU_datasource_detection"></unset>
+                <unset token="form.TOP_detection"></unset>
                 <unset token="CPU_datasource"></unset>
                 <unset token="CPU_datasource_minilabel"></unset>
                 <unset token="is_LPAR"></unset>
@@ -138,7 +139,7 @@
         This input result will be used to inform the user of the CPU data source origin.
         -->
 
-        <input type="dropdown" token="CPU_datasource_detection" depends="$hidden_element2$" searchWhenChanged="true">
+        <input type="dropdown" token="CPU_datasource_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Datasource detected:</label>
             <search id="datasource">
                 <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby "CPU.hostname", "CPU.type" prestats=true
@@ -167,6 +168,32 @@
                     <set token="CPU_datasource">LPAR usage</set>
                     <set token="CPU_datasource_minilabel">partition vCPUs usage</set>
                     <set token="is_LPAR">_time,*</set>
+                </condition>
+            </change>
+        </input>
+
+        <!--
+        This input is an hidden input that will be used to detect if we have TOP events
+        -->
+
+        <input type="dropdown" token="TOP_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Detected TOP events:</label>
+            <search>
+                <query>eventtype=nmon:performance type=TOP hostname=$hostname$ | head 100 | stats count</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>count</fieldForLabel>
+            <fieldForValue>count</fieldForValue>
+            <change>
+                <condition value="0">
+                    <set token="show_null_top">true</set>
+                    <unset token="start_top_searches"></unset>
+                </condition>
+                <condition>
+                    <set token="start_top_searches">_time,*</set>
+                    <unset token="show_null_top"></unset>
                 </condition>
             </change>
         </input>
@@ -742,7 +769,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | fields $show_cpu$
 | fields $is_LPAR$
 | fields $is_Linux$
-| timechart `nmon_span` max(usage) AS usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
+| timechart `nmon_span` max(usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -1131,18 +1158,10 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100) | stats sum(usage_per_core) As usage_per_core by _time,Command
+| fields $start_top_searches$
 | timechart $span$ useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <!-- Progress event has access to job properties only -->
-                    <progress>
-                        <condition match="'job.resultCount' == 0">
-                            <set token="show_null_top">True</set>
-                        </condition>
-                        <condition>
-                            <unset token="show_null_top"/>
-                        </condition>
-                    </progress>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
@@ -1590,6 +1609,7 @@ groupby _time, "TOP_Linux.frameID", "TOP_Linux.hostname", "TOP_Linux.logical_cpu
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
 | fields $is_Linux$
 | fields $show_processes$
+| fields $start_top_searches$
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As value by _time,frameID,hostname,Command
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
@@ -1625,6 +1645,7 @@ groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "T
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
 | fields $is_AIX$
 | fields $show_processes$
+| fields $start_top_searches$
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As value by _time,frameID,hostname,Command
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
@@ -1656,6 +1677,7 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
 | stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
 | fields $is_Solaris$
 | fields $show_processes$
+| fields $start_top_searches$
 | rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
@@ -1695,6 +1717,7 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
 | stats dedup_splitvals=t max("TOP_Linux.ResSet") AS ResSet by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | fields $is_Linux$
 | fields $show_processes$
+| fields $start_top_searches$
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval Used_Mem_MB=((ResSet)/1024)
 | stats sum(Used_Mem_MB) As value by _time,Command
@@ -1722,6 +1745,9 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
                 <search>
                     <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$) groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID"
+| fields $is_AIX$
+| fields $show_processes$
+| fields $start_top_searches$
 | rename "TOP_AIX.*" AS *
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As value by _time,frameID,hostname,Command
@@ -1753,6 +1779,7 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
 | stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
 | fields $is_Solaris$
 | fields $show_processes$
+| fields $start_top_searches$
 | rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As value by _time,frameID,hostname,Command
