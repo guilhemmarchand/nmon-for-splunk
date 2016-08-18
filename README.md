@@ -24,6 +24,9 @@ https://splunkbase.splunk.com/app/1753
 
 http://nmon-for-splunk.readthedocs.io
 
+#### Video available in the Nmon Performance app youtube channel:
+https://www.youtube.com/channel/UCGWHd40x0A7wjk8qskyHQcQ
+
 #### To get support:
 
 http://nmon-for-splunk.readthedocs.io/en/latest/support.html
@@ -37,6 +40,7 @@ http://nmon-for-splunk.readthedocs.io/en/latest/support.html
 
 #### NMON Performance does Global / Summary Analysis per Host, Analysis per type of metric (CPU usage, Memory, I/O...), Predictive, Comparison Analysis, Inventory Collect and Analysis, and more.
 
+[![Alt text](https://img.youtube.com/vi/yHlo0idH3is/0.jpg)](https://www.youtube.com/watch?v=yHlo0idH3is)
 
 ![screen1](./docs/img/screen001.png)
 
