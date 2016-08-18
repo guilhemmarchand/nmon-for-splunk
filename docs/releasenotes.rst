@@ -20,7 +20,7 @@ What has been fixed by release
 V1.7.5:
 =======
 
-Please review update notes: http://nmonsplunk.wikidot.com/documentation:userguide:upgrade:upgrade-notes-v17x
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
 - Prevent unwanted server filtering in nmon inventory interfaces due to null fields in nmon_inventory KV
 - Correct labels for LPAR stats (for Powerlinux), correct series name to match Physical raw field names
@@ -33,7 +33,7 @@ Please review update notes: http://nmonsplunk.wikidot.com/documentation:userguid
 V1.7.4: Major release
 =====================
 
-Please review update notes: http://nmonsplunk.wikidot.com/documentation:userguide:upgrade:upgrade-notes-v17x
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
 - Removing of the django deprecated django stack, all views were migrated to simple xml views
 - New global bootstrap navigation scheme for easy and efficient user experience with the integrated navigation
