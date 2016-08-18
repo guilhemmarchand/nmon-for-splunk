@@ -40,7 +40,11 @@ http://nmon-for-splunk.readthedocs.io/en/latest/support.html
 
 #### NMON Performance does Global / Summary Analysis per Host, Analysis per type of metric (CPU usage, Memory, I/O...), Predictive, Comparison Analysis, Inventory Collect and Analysis, and more.
 
-[![Alt text](https://img.youtube.com/vi/yHlo0idH3is/0.jpg)](https://www.youtube.com/watch?v=yHlo0idH3is)
+**Link to the last main release youtube video presentation:** https://www.youtube.com/watch?v=yHlo0idH3is
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=yHlo0idH3is
+" target="_blank"><img src="http://img.youtube.com/vi/yHlo0idH3is/0.jpg" 
+alt="yHlo0idH3is" width="240" height="180" border="10" /></a>
 
 ![screen1](./docs/img/screen001.png)
 
