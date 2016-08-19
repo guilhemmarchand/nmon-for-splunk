@@ -2,12 +2,6 @@
     <label>AIX Home</label>
     <description>AIX NMON Performance Monitor - Version 1.8.0</description>
 
-    <!-- Global Search -->
-
-    <search id="Global">
-        <query>| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary='First Event' + " - " + 'Last Event'</query>
-    </search>
-
     <!-- Take the tour ! -->
 
 	<row>
@@ -381,6 +375,8 @@
             <single>
                 <search id="HostsCount">
                     <query>| inputlookup nmon_inventory | search OStype="AIX" | stats count</query>
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="underLabel">KNOWN IN NMON INVENTORY</option>
                 <option name="field">count</option>
@@ -826,43 +822,54 @@
     <row>
         <panel>
             <single>
-                <search base="Global">
-                    <query>fields summary</query>
+                <search>
+                    <query>| `indexes_datestats` | where (sourcetype == "nmon_data") | eval summary='First Event' + " - " + 'Last Event' | fields summary</query>
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="underLabel">DATE OF FIRST AND LAST PERF EVENT</option>
-                <option name="refresh.auto.interval">60</option>
                 <option name="drilldown">all</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?q=| `indexes_datestats` | where (sourcetype == "nmon_data")</link>
                 </drilldown>
             </single>
             <single>
-                <search ref="Hosts with data within last 7 days"></search>
+                <search ref="Hosts with data within last 7 days">
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
                 <option name="unit">Host(s) with activity</option>
                 <option name="underLabel">IN THE LAST 7 DAYS</option>
-                <option name="refresh.auto.interval">60</option>
                 <option name="field">count</option>
                 <option name="drilldown">all</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?q=| pivot NMON_Config Nmon_Config dc(hostname) AS "dcount" SPLITROW _time AS _time PERIOD day SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</link>
                 </drilldown>
             </single>
             <single>
-                <search ref="Volume of Data indexed Today"></search>
+                <search ref="Volume of Data indexed Today">
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
                 <option name="numberPrecision">0.00</option>
                 <option name="unit">MB Indexed</option>
                 <option name="underLabel">TODAY / EVOLUTION VS YESTERDAY</option>
-                <option name="refresh.auto.interval">60</option>
                 <option name="field">value</option>
                 <option name="drilldown">all</option>
+                <option name="refresh.display">none</option>
             </single>
             <single>
-                <search ref="Number of Errors in Data Processing or Data Collect since last 24 Hours"></search>
+                <search ref="Number of Errors in Data Processing or Data Collect since last 24 Hours">
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
                 <option name="unit">Errors Reported</option>
                 <option name="underLabel">PROCESSING/COLLECT LAST 24 HOURS</option>
-                <option name="refresh.auto.interval">60</option>
                 <option name="field">value</option>
                 <option name="drilldown">all</option>
+                <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?q=(eventtype=nmon:processing OR eventtype=nmon:collect error) OR (index=_internal sourcetype=splunkd ERROR ExecProcessor nmon) NOT ("There is no python in" OR "python: not found") earliest="-24h" latest="now"</link>
                 </drilldown>
@@ -894,26 +901,35 @@
 
     <row>
         <panel>
-
             <single>
-                <search ref="SAFE CENTER - Number of active CPU alerts"></search>
-                <option name="refresh.auto.interval">60</option>
+                <search ref="SAFE CENTER - Number of active CPU alerts">
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="refresh.display">none</option>
             </single>
             <single>
-                <search ref="SAFE CENTER - Number of active Real Memory alerts"></search>
-                <option name="refresh.auto.interval">60</option>
+                <search ref="SAFE CENTER - Number of active Real Memory alerts">
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="refresh.display">none</option>
             </single>
             <single>
-                <search ref="SAFE CENTER - Number of active Virtual Memory alerts"></search>
-                <option name="refresh.auto.interval">60</option>
+                <search ref="SAFE CENTER - Number of active Virtual Memory alerts">
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="refresh.display">none</option>
             </single>
             <single>
-                <search ref="SAFE CENTER - Number of active FS alerts"></search>
-                <option name="refresh.auto.interval">60</option>
+                <search ref="SAFE CENTER - Number of active FS alerts">
+                    <refresh>60s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="refresh.display">none</option>
             </single>
-
         </panel>
-
     </row>
 
     <row>

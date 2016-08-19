@@ -127,13 +127,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="count">10</option>
-                <option name="list.drilldown">full</option>
-                <option name="list.wrap">1</option>
-                <option name="maxLines">5</option>
-                <option name="raw.drilldown">full</option>
-                <option name="table.drilldown">all</option>
-                <option name="table.wrap">1</option>
-                <option name="type">table</option>
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
@@ -161,12 +154,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                     <query>stats count by version</query>
                 </search>
                 <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
@@ -176,12 +163,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                     <query>stats count by os</query>
                 </search>
                 <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
@@ -191,12 +172,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                     <query>stats count by arch</query>
                 </search>
                 <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
@@ -206,12 +181,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                     <query>stats count by fwdType</query>
                 </search>
                 <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
-                <option name="wrap">true</option>
-                <option name="rowNumbers">false</option>
-                <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">10</option>
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
@@ -229,8 +198,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <search base="Global_interpreter">
                     <query>| lookup nmon_inventory hostname OUTPUT OStype, nmon_version | sort hostname</query>
                 </search>
-                <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
@@ -246,8 +213,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <search base="Global_clients">
                     <query></query>
                 </search>
-                <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
@@ -260,7 +225,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
     </row>
 
     <row>
-
         <panel>
             <html>
                 <div class="custom">
@@ -268,7 +232,28 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                     <h4>Repartition of hosts using the Python/Perl version of the nmon2csv converter</h4>
                 </div>
             </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Python Versions Distribution:</h1>
+                    <h4>Python versions of hosts using the nmon2csv.py converter</h4>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Perl Versions Distribution:</h1>
+                    <h4>Perl versions of hosts using the nmon2csv.pl converter</h4>
+                </div>
+            </html>
+        </panel>
+    </row>
 
+    <row>
+
+        <panel>
             <single>
                 <search base="Global_interpreter">
                     <query>search converter_inuse="Python" | stats dc(hostname) AS dcount</query>
@@ -285,26 +270,20 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="underLabel">HOSTS HAVE USED PERL</option>
                 <option name="refresh.display">preview</option>
             </single>
-
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
                 <div class="link-switcher" data-items="link7,link8">Select a view:<!--Links go here-->
                 </div>
             </html>
-
             <chart id="link7">
                 <title>Pie chart</title>
                 <search base="Global_interpreter">
                     <query>top converter_inuse</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
                 </search>
                 <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
                 <option name="height">300</option>
                 <option name="refresh.display">none</option>
             </chart>
-
             <table id="link8">
                 <title>Table</title>
                 <search base="Global_interpreter">
@@ -317,18 +296,9 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="count">10</option>
                 <option name="refresh.display">none</option>
             </table>
-
         </panel>
 
         <panel>
-
-            <html>
-                <div class="custom">
-                    <h1>Python Versions Distribution:</h1>
-                    <h4>Python versions of hosts using the nmon2csv.py converter</h4>
-                </div>
-            </html>
-
             <single>
                 <search base="Python_interpreter">
                     <query>search converter_inuse="Python" | stats dc(interpreter_version) AS dcount</query>
@@ -337,20 +307,17 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="underLabel">DIFFERENT PYTHON VERSIONS</option>
                 <option name="refresh.display">preview</option>
             </single>
-
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
                 <div class="link-switcher" data-items="link9,link10">Select a view:<!--Links go here-->
                 </div>
             </html>
-
             <chart id="link9">
                 <title>Pie chart</title>
                 <search base="Python_interpreter">
                     <query>top interpreter_version</query>
                 </search>
                 <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
                 <option name="height">300</option>
                 <option name="refresh.display">none</option>
             </chart>
@@ -366,18 +333,9 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="count">10</option>
                 <option name="refresh.display">none</option>
             </table>
-
         </panel>
 
         <panel>
-
-            <html>
-                <div class="custom">
-                    <h1>Perl Versions Distribution:</h1>
-                    <h4>Perl versions of hosts using the nmon2csv.pl converter</h4>
-                </div>
-            </html>
-
             <single>
                 <search base="Perl_interpreter">
                     <query>stats dc(interpreter_version) AS dcount</query>
@@ -386,20 +344,17 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="underLabel">DIFFERENT PERL VERSIONS</option>
                 <option name="refresh.display">preview</option>
             </single>
-
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
                 <div class="link-switcher" data-items="link11,link12">Select a view:<!--Links go here-->
                 </div>
             </html>
-
             <chart id="link11">
                 <title>Pie chart</title>
                 <search base="Perl_interpreter">
                     <query>top interpreter_version</query>
                 </search>
                 <option name="charting.chart">pie</option>
-                <option name="charting.axisY2.enabled">undefined</option>
                 <option name="height">300</option>
                 <option name="refresh.display">none</option>
             </chart>
@@ -416,7 +371,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="refresh.display">none</option>
             </table>
         </panel>
-
     </row>
 
 </form>
