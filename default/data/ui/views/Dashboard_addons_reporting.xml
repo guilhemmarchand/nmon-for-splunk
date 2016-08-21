@@ -1,15 +1,14 @@
 <form stylesheet="ui_simple.css" script="link_switcher.js, autodiscover.js" isVisible="true">
-    <label>TA-NMON Agents</label>
-    <description>TA-NMON Agent Deployment Reporting within last 30 days</description>
+    <label>Add-ons reporting dashboard</label>
+    <description>Deployment Reporting of add-ons within last 30 days</description>
+
+    <search id="addon_report" ref="Add-on version per host">
+    </search>
 
     <search id="Global_deploy" ref="TA-nmon package deployment reporting (requires _internal access)">
-        <refresh>30s</refresh>
-        <refreshType>delay</refreshType>
     </search>
 
     <search id="Global_clients" ref="Universal Forwarders Configuration Report">
-        <refresh>30s</refresh>
-        <refreshType>delay</refreshType>
     </search>
 
     <search id="Global_interpreter">
@@ -17,8 +16,6 @@
 | dedup hostname converter_inuse interpreter_version | fields - _time</query>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
-        <refresh>30s</refresh>
-        <refreshType>delay</refreshType>
     </search>
 
     <search id="Python_interpreter">
@@ -26,8 +23,6 @@
 SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
-        <refresh>30s</refresh>
-        <refreshType>delay</refreshType>
     </search>
 
     <search id="Perl_interpreter">
@@ -35,10 +30,69 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
 SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
         <earliest>-30d@d</earliest>
         <latest>now</latest>
-        <refresh>30s</refresh>
-        <refreshType>delay</refreshType>
     </search>
 
+    <row>
+
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Add-ons deployment reporting:</h1>
+                    <h4>Report of add-ons version currently deployed, this includes TA-nmon, PA-nmon and other variants</h4>
+                </div>
+            </html>
+        </panel>
+
+    </row>
+
+    <row>
+        <panel>
+            <title>Add-on reporting:</title>
+
+            <single>
+                <search base="addon_report">
+                    <query>stats dc(host) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">HOSTS REPORTED</option>
+            </single>
+
+            <single>
+                <search base="addon_report">
+                    <query>stats dc(addon_type) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">DISTINCT ADD-ON TYPES REPORTED</option>
+            </single>
+
+            <single>
+                <search base="addon_report">
+                    <query>stats dc(addon_version) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">DISTINCT VERSIONS REPORTED</option>
+            </single>
+
+            <chart>
+                <search base="addon_report">
+                    <query>top addon_version</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">400</option>
+            </chart>
+
+            <table>
+                <search base="addon_report">
+                    <query>fields host,addon_type,addon_version,latest_time</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+    </row>
 
     <row>
 
@@ -73,7 +127,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">HOSTS HAVE BEEN DEPLOYED</option>
-                <option name="refresh.display">preview</option>
             </single>
             <single>
                 <search base="Global_deploy">
@@ -81,7 +134,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">NUMBER OF DEPLOYMENTS ACTIONS (initial deploy or upgrade)</option>
-                <option name="refresh.display">preview</option>
             </single>
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
@@ -116,7 +168,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="charting.axisTitleY.text">Nbr Hosts</option>
                 <option name="charting.axisTitleY2.text">Nbr Actions</option>
                 <option name="height">400</option>
-                <option name="refresh.display">none</option>
             </chart>
             <table id="link2">
                 <title>Events</title>
@@ -128,7 +179,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="dataOverlayMode">none</option>
                 <option name="count">10</option>
                 <option name="drilldown">cell</option>
-                <option name="refresh.display">none</option>
             </table>
         </panel>
 
@@ -141,7 +191,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">NUMBER OF DEPLOYMENT SERVER CLIENTS</option>
-                <option name="refresh.display">preview</option>
             </single>
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
@@ -155,7 +204,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="charting.chart">pie</option>
                 <option name="height">400</option>
-                <option name="refresh.display">none</option>
             </chart>
             <chart id="link4">
                 <title>Chart by os</title>
@@ -164,7 +212,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="charting.chart">pie</option>
                 <option name="height">400</option>
-                <option name="refresh.display">none</option>
             </chart>
             <chart id="link5">
                 <title>Chart by arch</title>
@@ -173,7 +220,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="charting.chart">pie</option>
                 <option name="height">400</option>
-                <option name="refresh.display">none</option>
             </chart>
             <chart id="link6">
                 <title>Chart by type</title>
@@ -182,7 +228,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="charting.chart">pie</option>
                 <option name="height">400</option>
-                <option name="refresh.display">none</option>
             </chart>
 
 
@@ -203,7 +248,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
-                <option name="refresh.display">none</option>
             </table>
         </panel>
 
@@ -218,7 +262,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
                 <option name="count">10</option>
-                <option name="refresh.display">none</option>
             </table>
         </panel>
 
@@ -260,7 +303,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">HOSTS HAVE USED PYTHON</option>
-                <option name="refresh.display">preview</option>
             </single>
             <single>
                 <search base="Global_interpreter">
@@ -268,7 +310,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">HOSTS HAVE USED PERL</option>
-                <option name="refresh.display">preview</option>
             </single>
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
@@ -282,7 +323,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="charting.chart">pie</option>
                 <option name="height">300</option>
-                <option name="refresh.display">none</option>
             </chart>
             <table id="link8">
                 <title>Table</title>
@@ -294,7 +334,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="drilldown">row</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="count">10</option>
-                <option name="refresh.display">none</option>
             </table>
         </panel>
 
@@ -305,7 +344,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">DIFFERENT PYTHON VERSIONS</option>
-                <option name="refresh.display">preview</option>
             </single>
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
@@ -319,7 +357,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="charting.chart">pie</option>
                 <option name="height">300</option>
-                <option name="refresh.display">none</option>
             </chart>
             <table id="link10">
                 <title>Table</title>
@@ -331,7 +368,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="drilldown">row</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="count">10</option>
-                <option name="refresh.display">none</option>
             </table>
         </panel>
 
@@ -342,7 +378,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="underLabel">DIFFERENT PERL VERSIONS</option>
-                <option name="refresh.display">preview</option>
             </single>
             <html>
                 <!-- Placeholder/container for the link switcher to appear -->
@@ -356,7 +391,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 </search>
                 <option name="charting.chart">pie</option>
                 <option name="height">300</option>
-                <option name="refresh.display">none</option>
             </chart>
             <table id="link12">
                 <title>Table</title>
@@ -368,7 +402,6 @@ SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
                 <option name="drilldown">row</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="count">10</option>
-                <option name="refresh.display">none</option>
             </table>
         </panel>
     </row>
