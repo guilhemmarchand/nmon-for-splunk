@@ -21,20 +21,42 @@
                         </condition>
                     </progress>
                 </search>
-                <option name="colorBy">trend</option>
-                <option name="colorMode">none</option>
-                <option name="drilldown">all</option>
-                <option name="numberPrecision">0.00</option>
-                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
-                <option name="rangeValues">[0,30,70,100]</option>
-                <option name="showSparkline">1</option>
-                <option name="showTrendIndicator">1</option>
-                <option name="trendColorInterpretation">inverse</option>
-                <option name="trendDisplayMode">percent</option>
-                <option name="underLabel">Hidden</option>
-                <option name="unitPosition">after</option>
-                <option name="useColors">0</option>
-                <option name="useThousandSeparators">1</option>
+            </single>
+            <single>
+                <!-- This search will be used to verify if we must show the null global indexing message, this performs best than integrating the progress condition with the search -->
+                <search>
+                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | stats count | where count>0</query>
+                    <earliest>@d</earliest>
+                    <latest>@h</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_per_server_indexing">True</set>
+                        </condition>
+                        <condition>
+                            <set token="start_indexing_per_server_search">True</set>
+                            <unset token="show_null_per_server_indexing"></unset>
+                        </condition>
+                    </progress>
+                </search>
+            </single>
+            <single>
+                <!-- This search will be used to verify if we must show the null global indexing message, this performs best than integrating the progress condition with the search -->
+                <search>
+                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | stats count | where count>0</query>
+                    <earliest>-1d@d</earliest>
+                    <latest>@d</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_global_indexing">True</set>
+                        </condition>
+                        <condition>
+                            <set token="start_global_indexing_search">True</set>
+                            <unset token="show_null_global_indexing"></unset>
+                        </condition>
+                    </progress>
+                </search>
             </single>
         </panel>
     </row>
@@ -42,16 +64,18 @@
     <row>
         <panel id="cost1">
             <title>LICENCING: Total Cost of Ownership per server</title>
-            <single rejects="$show_admin_required$">
+            <single rejects="$show_admin_required$ $show_null_per_server_indexing$">
                 <search>
-                    <query>index=_internal source=*metrics.log group=per_index_thruput series="nmon" | eval MB = round(kb/1024,2) | timechart span=1h sum(MB) AS volume_MB
-| fillnull value=0 | appendcols [ search eventtype=nmon:performance type=CPU_ALL | timechart span=1h dc(hostname) AS dcount ] | eval cost_per_server_MB=(volume_MB/dcount)
-| stats avg(cost_per_server_MB) AS cost_per_server_MB
+                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | where b>0 | timechart span=1h sum(b) AS b  | eval volume_MB = round(b/1024/1024,2)
+| fillnull value=0
+| appendcols [ search eventtype=nmon:performance type=CPU_ALL | timechart span=1h dc(hostname) AS dcount ]
+| eval cost_per_server_MB=(volume_MB/dcount) | stats avg(cost_per_server_MB) AS cost_per_server_MB
 | eval estimated_cost_per_server_MB=round(cost_per_server_MB*24, 2)
 | eval user_is_admin=$start_admin_searches$
+| eval start_indexing_per_server_search=$start_indexing_per_server_search$
 | fields estimated_cost_per_server_MB</query>
                     <earliest>-7d@d</earliest>
-                    <latest>@d</latest>
+                    <latest>@h</latest>
                 </search>
                 <option name="colorBy">trend</option>
                 <option name="colorMode">none</option>
@@ -69,6 +93,11 @@
                 <option name="useColors">0</option>
                 <option name="useThousandSeparators">1</option>
             </single>
+            <html depends="$show_null_per_server_indexing$" rejects="$show_admin_required$">
+                <div style="color:blue;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Data not yet available, calculation is performed on a full per hour basis and will start being available 1 hour after application deployment and indexing activity.</p>
+                </div>
+            </html>
             <html depends="$show_admin_required$">
                 <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
                     <p>Oops ! Admin privileges required to access these statistics !</p>
@@ -82,15 +111,14 @@
         </panel>
         <panel id="cost2">
             <title>LICENCING: Total Cost of Ownership of global indexing</title>
-            <single rejects="$show_admin_required$">
+            <single rejects="$show_admin_required$ $show_null_global_indexing$">
                 <search>
-                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon"
-| where b>0 | bucket _time span=1m
-| stats sum(b) AS b by _time,idx
-| timechart span=1d sum(b) AS b
+                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | where b>0 | timechart span=1d sum(b) AS b
+| fillnull value=0
 | stats avg(b) AS avg_volume_per_day
 | eval avg_volume_per_day_GB=round((avg_volume_per_day/1024/1024/1024),2)
 | eval user_is_admin=$start_admin_searches$
+| eval start_global_indexing_search=$start_global_indexing_search$
 | fields avg_volume_per_day_GB</query>
                     <earliest>-7d@d</earliest>
                     <latest>@d</latest>
@@ -111,14 +139,19 @@
                 <option name="useColors">0</option>
                 <option name="useThousandSeparators">1</option>
             </single>
+            <html depends="$show_null_global_indexing$" rejects="$show_admin_required$">
+                <div style="color:blue;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Data not yet available, calculation is performed on a full per day basis and will start being available 1 day after application deployment.</p>
+                </div>
+            </html>
             <html depends="$show_admin_required$">
                 <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
                     <p>Oops ! Admin privileges required to access these statistics !</p>
                 </div>
             </html>
-            <html depends="$show_null_cold$">
+            <html>
                 <div style="color:grey;margin-left:30px;font-size:12px;font-style:italic">
-                    <p>* TOTAL LICENCING COST PER DAY: Calculation over last 7 days of the per day total volume indexed for the nmon index</p>
+                    <p>* TOTAL LICENCING COST PER DAY: Calculation over last 7 full full days of the per day total volume indexed for the nmon index</p>
                 </div>
             </html>
         </panel>
