@@ -16,26 +16,11 @@ Requirements
 What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-=======
-V1.7.5:
-=======
-
-Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
-
-- Prevent unwanted server filtering in nmon inventory interfaces due to null fields in nmon_inventory KV
-- Correct labels for LPAR stats (for Powerlinux), correct series name to match Physical raw field names
-- Integrating the TA-nmon_selfmode as an alternative to the standard TA in case of unsolved unarchive processor failure
-- Rewritten Internal dashboard as the Total Cost of Ownership dashboard
-- Rewritten Add-ons reporting to provide the global picture of add-ons deployment
-- The Nmon app customization tool now offers the option to build a core app that supports Linux only
-- Nmon core app Fix Git Issues: #48 to #53
-- TA-nmon and PA-nmon V1.2.45
-
 =====================
 V1.7.4: Major release
 =====================
 
-Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+Please review update notes: http://nmonsplunk.wikidot.com/documentation:userguide:upgrade:upgrade-notes-v17x
 
 - Removing of the django deprecated django stack, all views were migrated to simple xml views
 - New global bootstrap navigation scheme for easy and efficient user experience with the integrated navigation
