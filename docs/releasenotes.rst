@@ -29,7 +29,7 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - Rewritten Add-ons reporting to provide the global picture of add-ons deployment
 - The Nmon app customization tool now offers the option to build a core app that supports Linux only
 - Nmon core app Fix Git Issues: #48 to #53
-- TA-nmon and PA-nmon V1.2.44
+- TA-nmon and PA-nmon V1.2.45
 
 =====================
 V1.7.4: Major release
