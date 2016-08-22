@@ -1,4 +1,4 @@
-<form script="autodiscover.js" stylesheet="ui_simple.css">
+<form script="autodiscover.js" stylesheet="ui_simple.css" isVisible="true">
     <label>Dashboard TOP Hosts, Higher CPU Load Hosts for AIX Systems</label>
     <description>Easily visualize hosts with high level of resources utilization using Bubble charts</description>
 
@@ -57,7 +57,6 @@
 
         <input type="dropdown" token="monitor" searchWhenChanged="true">
             <label>Monitor Information:</label>
-            <default>LPAR_usage</default>
             <choice value="CPU_ALL">CPU_ALL - CPU Usage in %</choice>
             <choice value="LPAR_usage">LPAR - CPU Usage (VCPUs)</choice>
             <choice value="LPAR_poolusage">LPAR - Default Pool Usage (1 partition per frameID)</choice>
@@ -132,8 +131,6 @@
                     <query>| eval usage_PCT=if(isnull(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields hostname,usage | head 50
 | eval xlabel=""| chart max(usage) AS usage useother=f limit=0 by xlabel,hostname
 | rename xlabel AS "CPU % usage"</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
                 </search>
                 <option name="charting.chart.columnSpacing">5</option>
                 <option name="charting.axisTitleX.visibility">collapsed</option>
@@ -142,7 +139,7 @@
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">column</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>

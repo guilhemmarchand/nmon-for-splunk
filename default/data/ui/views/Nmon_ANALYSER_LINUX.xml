@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css,hide_timeindicator.css,table_data_bar.css" script="autodiscover.js,table_data_bar.js">
+<form stylesheet="ui_simple.css,hide_timeindicator.css,table_data_bar.css" script="autodiscover.js,table_data_bar.js" isVisible="true">
     <label>NMON Analyser LINUX</label>
 
     <!-- Information panel -->
@@ -195,7 +195,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -248,7 +248,7 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -494,7 +494,7 @@ groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
 max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
 | fields $is_LPAR$
-| timechart `nmon_span` useother=f limit=0 max(lpar_vp_usage) AS lpar_vp_usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</query>
+| timechart `nmon_span` useother=f limit=0 max(lpar_vp_usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -523,7 +523,7 @@ groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
 max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
-| timechart span=1m useother=f limit=0 max(lpar_vp_usage) AS lpar_vp_usage max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</link>
+| timechart span=1m useother=f limit=0 max(lpar_vp_usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</link>
                 </drilldown>
             </chart>
 
@@ -670,7 +670,7 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">area</option>
-                <option name="charting.chart.nullValueMode">stacked</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
                 <option name="charting.chart.stackMode">stacked</option>
                 <option name="charting.chart.style">shiny</option>
@@ -998,7 +998,7 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1056,7 +1056,7 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1286,7 +1286,7 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1315,7 +1315,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1343,7 +1343,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1372,7 +1372,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1401,7 +1401,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1430,7 +1430,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1459,7 +1459,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1488,7 +1488,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1517,7 +1517,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1546,7 +1546,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1575,7 +1575,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1604,7 +1604,7 @@ groupby _time, "Linux.hostname" prestats=true span=1m
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1734,9 +1734,9 @@ groupby _time MEM.hostname prestats=true span=1m
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">bottom</option>
+                <option name="charting.chart.nullValueMode">connect</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1765,9 +1765,9 @@ groupby _time MEM.hostname prestats=true span=1m
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">bottom</option>
+                <option name="charting.chart.nullValueMode">connect</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1791,8 +1791,6 @@ groupby _time MEM.hostname prestats=true span=1m
                 <search base="memory_stats">
                     <query>fields _time, *swap_free_MB*, *swap_used_effective_MB*, *swap_cached_MB*, *swap_total_MB*</query>
                 </search>
-                <earliestTime>$timerange.earliest$</earliestTime>
-                <latestTime>$timerange.latest$</latestTime>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
@@ -1914,7 +1912,7 @@ where (nodename = DISKBSIZE) (DISKBSIZE.$hostname$) groupby _time, "DISKBSIZE.ho
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1954,7 +1952,7 @@ where (nodename = DISKBUSY) (DISKBUSY.$hostname$) groupby _time, "DISKBUSY.hostn
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -1994,7 +1992,7 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2035,7 +2033,7 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2075,7 +2073,7 @@ where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostn
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2163,7 +2161,7 @@ where (nodename = JFS.JFSFILE) (JFS.$hostname$) ($fsfilter$) groupby _time, "JFS
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2233,7 +2231,7 @@ groupby _time, "NET_Data_types.device" prestats=true $span$
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2268,7 +2266,7 @@ where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby 
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2344,7 +2342,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2392,7 +2390,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2440,7 +2438,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2531,7 +2529,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time presta
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2579,7 +2577,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time presta
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
@@ -2627,7 +2625,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time presta
                 <option name="charting.chart">line</option>
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-                <option name="charting.chart.stackMode">unstacked</option>
+                <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>

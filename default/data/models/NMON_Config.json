@@ -1219,6 +1219,52 @@
                 {
                     "outputFields": [
                         {
+                            "fieldName": "Solaris_phy_mem_MB_extract",
+                            "owner": "Nmon_Config",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "Solaris_phy_mem_MB_extract",
+                            "comment": ""
+                        }
+                    ],
+                    "inputField": "_raw",
+                    "calculationID": "qtinojxt2tdxilf0a3qrozuxr",
+                    "owner": "Nmon_Config",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Rex",
+                    "expression": "BBB.,.*,prtdiag,\\\"Memory\\s*size:\\s*(?<Solaris_phy_mem_MB_extract>\\d*)\\s*Megabytes\\\""
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "Solaris_phy_mem_GB_extract",
+                            "owner": "Nmon_Config",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "Solaris_phy_mem_GB_extract",
+                            "comment": ""
+                        }
+                    ],
+                    "inputField": "_raw",
+                    "calculationID": "w8z7pbyss9cxk2c90juelv7vi",
+                    "owner": "Nmon_Config",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Rex",
+                    "expression": "BBB.,.*,prtdiag,\\\"Memory\\s*size:\\s*(?<Solaris_phy_mem_GB_extract>\\d*)\\s*GB"
+                },
+                {
+                    "outputFields": [
+                        {
                             "fieldName": "Solaris_physical_memory_MB",
                             "owner": "Nmon_Config",
                             "type": "string",
@@ -1231,13 +1277,12 @@
                             "comment": ""
                         }
                     ],
-                    "inputField": "_raw",
-                    "calculationID": "qtinojxt2tdxilf0a3qrozuxr",
+                    "calculationID": "syftxzogd8mjqdhdhhhncdi",
                     "owner": "Nmon_Config",
                     "editable": true,
                     "comment": "",
-                    "calculationType": "Rex",
-                    "expression": "BBB.,.*,prtdiag,\\\"Memory\\s*size:\\s*(?<Solaris_physical_memory_MB>\\d*)\\s*Megabytes\\\""
+                    "calculationType": "Eval",
+                    "expression": "case( OStype == \"Solaris\", case(isnotnull(Solaris_phy_mem_MB_extract), Solaris_phy_mem_MB_extract, isnotnull(Solaris_phy_mem_GB_extract), (Solaris_phy_mem_GB_extract/1024)) )"
                 },
                 {
                     "outputFields": [
@@ -1311,7 +1356,7 @@
                 {
                     "outputFields": [
                         {
-                            "fieldName": "Solaris_processor",
+                            "fieldName": "Solaris_processor_primary",
                             "owner": "Nmon_Config",
                             "type": "string",
                             "fieldSearch": "",
@@ -1319,7 +1364,7 @@
                             "multivalue": false,
                             "hidden": false,
                             "editable": true,
-                            "displayName": "Solaris_processor",
+                            "displayName": "Solaris_processor_primary",
                             "comment": ""
                         }
                     ],
@@ -1329,7 +1374,65 @@
                     "editable": true,
                     "comment": "",
                     "calculationType": "Rex",
-                    "expression": "BBB.+,[0-9].+psrinfo\\s\\-pv,\\\"\\s+(?P<Solaris_processor>.+)\\s*\\(.+\\\""
+                    "expression": "BBB.+,[0-9].+psrinfo\\s\\-pv,\\\"\\s+(?P<Solaris_processor_primary>.+)\\s*\\(.+clock.+\\\""
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "Solaris_processor_clock_primary",
+                            "owner": "Nmon_Config",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "Solaris_processor_clock_primary",
+                            "comment": ""
+                        }
+                    ],
+                    "inputField": "_raw",
+                    "calculationID": "spi82j182etawcdi",
+                    "owner": "Nmon_Config",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Rex",
+                    "expression": "BBB.+,[0-9].+psrinfo\\s\\-pv,.+clock\\s(?P<Solaris_processor_clock_primary>.+)\\)\\\""
+                },
+                {
+                    "outputFields": [
+                        {
+                            "fieldName": "Solaris_processor_alt",
+                            "owner": "Nmon_Config",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "Solaris_processor_alt",
+                            "comment": ""
+                        },
+                        {
+                            "fieldName": "Solaris_processor_clock_alt",
+                            "owner": "Nmon_Config",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "editable": true,
+                            "displayName": "Solaris_processor_clock_alt",
+                            "comment": ""
+                        }
+                    ],
+                    "inputField": "_raw",
+                    "calculationID": "fqh7xokpt3yjzkum3ccz4u0udi",
+                    "owner": "Nmon_Config",
+                    "editable": true,
+                    "comment": "",
+                    "calculationType": "Rex",
+                    "expression": "BBB.+,[0-9].+prtdiag,\\\"0\\s*(?<Solaris_processor_clock_alt>[\\d|\\.]*\\s*\\w*)\\s*(?P<Solaris_processor_alt>[\\w|-]*)\\s*"
                 },
                 {
                     "outputFields": [
@@ -1346,13 +1449,12 @@
                             "comment": ""
                         }
                     ],
-                    "inputField": "_raw",
-                    "calculationID": "spi82j182etawcdi",
+                    "calculationID": "5u6bef2gukczqgy780ta603sor",
                     "owner": "Nmon_Config",
                     "editable": true,
                     "comment": "",
-                    "calculationType": "Rex",
-                    "expression": "BBB.+,[0-9].+psrinfo\\s\\-pv,.+clock\\s(?P<Solaris_processor_clockspeed>.+)\\)\\\""
+                    "calculationType": "Eval",
+                    "expression": "case( OStype == \"Solaris\", if(isnotnull(Solaris_processor_clock_primary), Solaris_processor_clock_primary, Solaris_processor_clock_alt) )"
                 },
                 {
                     "outputFields": [
@@ -1440,7 +1542,7 @@
                     "editable": true,
                     "comment": "",
                     "calculationType": "Eval",
-                    "expression": "case(isnotnull(AIX_processor), AIX_processor, isnotnull(Solaris_processor), Solaris_processor, isnotnull(Linux_processor_lscpu), Linux_processor_lscpu + \" (arch: \" + Linux_arch + \")\" , isnull(Linux_processor_lscpu), Linux_processor_cpuinfo)"
+                    "expression": "case(OStype == \"AIX\", AIX_processor, OStype == \"Solaris\", case(isnotnull(Solaris_processor_primary), Solaris_processor_primary, isnotnull(Solaris_processor_alt), Solaris_processor_alt), OStype == \"Linux\",  case(isnotnull(Linux_processor_lscpu), Linux_processor_lscpu + \" (arch: \" + Linux_arch + \")\" , isnull(Linux_processor_lscpu), Linux_processor_cpuinfo) )"
                 },
                 {
                     "outputFields": [

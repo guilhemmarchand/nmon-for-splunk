@@ -1,258 +1,292 @@
-<form stylesheet="ui_simple.css">
-  <label>UI CONFIG, Inventory for Linux OS</label>
-  <description>User Interface for inventory data of Linux systems</description>
+<form stylesheet="ui_simple.css" isVisible="true">
+    <label>UI CONFIG, Inventory for Linux OS</label>
+    <description>User Interface for inventory data of Linux systems</description>
 
-  <search id="Global">
-    <query>| inputlookup nmon_inventory | search OStype=Linux $hostname$ $Linux_vendor$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$</query>
-  </search>
+    <search id="Global">
+        <query>| inputlookup nmon_inventory | search OStype=Linux $hostname$ $Linux_vendor$ $Linux_distribution$ $Processor$ $cpu_cores$ $Linux_kernelversion$ $nmon_version$</query>
+    </search>
 
-  <row>
-    <html>
-      <div style="text-align: center;">
-        <img src="../../static/app/nmon/icons/grey_theme/inventory.png" alt="Inventory"/>
-      </div>
-      <div class="custom">
-        <h1>Linux Inventory Summary</h1>
-      </div>
-    </html>
-  </row>
+    <row>
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <img src="../../static/app/nmon/icons/grey_theme/inventory.png" alt="Inventory"/>
+                </div>
+                <div class="custom">
+                    <h1>Linux Inventory Summary</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
 
-  <row>
-    <panel>
-      <input type="text" token="hostname" searchWhenChanged="true">
-        <label>Hostnames:</label>
-        <prefix>hostname="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>
-      <input type="text" token="Linux_vendor" searchWhenChanged="true">
-        <label>Linux Vendor:</label>
-        <prefix>Linux_vendor="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>
-      <input type="text" token="Linux_distribution" searchWhenChanged="true">
-        <label>Linux Distributions:</label>
-        <prefix>Linux_distribution="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>
-      <input type="text" token="Processor" searchWhenChanged="true">
-        <label>Processor Type:</label>
-        <prefix>Processor="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>
-      <input type="text" token="cpu_cores" searchWhenChanged="true">
-        <label>CPU cores capacity:</label>
-        <prefix>cpu_cores="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>
-      <input type="text" token="Linux_kernelversion" searchWhenChanged="true">
-        <label>Kernel versions:</label>
-        <prefix>Linux_kernelversion="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>
-      <input type="text" token="nmon_version" searchWhenChanged="true">
-        <label>Nmon Versions:</label>
-        <prefix>nmon_version="</prefix>
-        <suffix>"</suffix>
-        <default>*</default>
-      </input>
-      <html>
-        <div style="text-align: left;">
-          <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
-        </div>
-      </html>
-    </panel>
-  </row>
+    <row>
+        <panel>
+            <input type="text" token="hostname" searchWhenChanged="true">
+                <label>Hostnames:</label>
+                <prefix>hostname="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
+            <input type="text" token="Linux_vendor" searchWhenChanged="true">
+                <label>Linux Vendor:</label>
+                <prefix>Linux_vendor="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
+            <input type="text" token="Linux_distribution" searchWhenChanged="true">
+                <label>Linux Distributions:</label>
+                <prefix>Linux_distribution="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
+            <input type="text" token="Processor" searchWhenChanged="true">
+                <label>Processor Type:</label>
+                <prefix>Processor="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
+            <input type="text" token="cpu_cores" searchWhenChanged="true">
+                <label>CPU cores capacity:</label>
+                <prefix>cpu_cores="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
+            <input type="text" token="Linux_kernelversion" searchWhenChanged="true">
+                <label>Kernel versions:</label>
+                <prefix>Linux_kernelversion="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
+            <input type="text" token="nmon_version" searchWhenChanged="true">
+                <label>Nmon Versions:</label>
+                <prefix>nmon_version="</prefix>
+                <suffix>"</suffix>
+                <default>*</default>
+            </input>
+            <html>
+                <div style="text-align: left;">
+                    <b>Optional Filters:</b> To filter results, enter a pattern and press Enter, you use * as wilcard character or absolute patterns
+                </div>
+            </html>
+        </panel>
+    </row>
 
-  <row>
-    <single>
-      <search base="Global">
-        <query>stats count</query>
-      </search>
-      <option name="unit">Hosts known</option>
-      <option name="underLabel">Linux</option>
-      <option name="drilldown">none</option>
-    </single>
-  </row>
-  <row grouping="1,1">
-    <chart>
-      <title>Linux Vendor (requires lsb_release)</title>
-      <search base="Global">
-        <query>stats count by Linux_vendor</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>top limit=0 Linux_vendor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-      </search>
-    </table>
-  </row>
-  <row grouping="1,1">
-    <chart>
-      <title>Linux Distribution (lsb_release or /etc/release)</title>
-      <search base="Global">
-        <query>stats count by Linux_distribution</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>top limit=0 Linux_distribution | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-      </search>
-    </table>
-  </row>
-  <row grouping="1,1">
-    <chart>
-      <title>Processor</title>
-      <search base="Global">
-        <query>stats count by Processor</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-      </search>
-    </table>
-  </row>
-  <row grouping="1,1">
-    <chart>
-      <title>CPUs cores Capacity</title>
-      <search base="Global">
-        <query>stats count by cpu_cores</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-      </search>
-    </table>
-  </row>
-  <row grouping="1,1">
-    <chart>
-      <title>Linux Kernel</title>
-      <search base="Global">
-        <query>stats count by Linux_kernelversion</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>top limit=0 Linux_kernelversion | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-      </search>
-    </table>
-  </row>
-  <row grouping="1,1">
-    <chart>
-      <title>Nmon version</title>
-      <search base="Global">
-        <query>stats count by nmon_version</query>
-      </search>
-      <option name="charting.axisTitleX.visibility">visible</option>
-      <option name="charting.axisTitleY.visibility">visible</option>
-      <option name="charting.axisX.scale">linear</option>
-      <option name="charting.axisY.scale">linear</option>
-      <option name="charting.chart">pie</option>
-      <option name="charting.chart.nullValueMode">gaps</option>
-      <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-      <option name="charting.chart.stackMode">default</option>
-      <option name="charting.chart.style">minimal</option>
-      <option name="charting.drilldown">all</option>
-      <option name="height">300</option>
-      <option name="charting.layout.splitSeries">0</option>
-      <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-      <option name="charting.legend.placement">right</option>
-    </chart>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
-      </search>
-    </table>
-  </row>
-  <row>
-    <table>
-      <title>Table Stats</title>
-      <search base="Global">
-        <query>fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,Linux_distribution,Linux_kernelversion,nmon_version,uptime_seconds,uptime_duration,system_startup_date</query>
-      </search>
-    </table>
-  </row>
+    <row>
+        <panel>
+            <single>
+                <search base="Global">
+                    <query>stats count</query>
+                </search>
+                <option name="unit">Hosts known</option>
+                <option name="underLabel">Linux</option>
+                <option name="drilldown">none</option>
+            </single>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <chart>
+                <title>Linux Vendor (requires lsb_release)</title>
+                <search base="Global">
+                    <query>stats count by Linux_vendor</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="Global">
+                    <query>top limit=0 Linux_vendor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <chart>
+                <title>Linux Distribution (lsb_release or /etc/release)</title>
+                <search base="Global">
+                    <query>stats count by Linux_distribution</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="Global">
+                    <query>top limit=0 Linux_distribution | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <chart>
+                <title>Processor</title>
+                <search base="Global">
+                    <query>stats count by Processor</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="Global">
+                    <query>top limit=0 Processor | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <chart>
+                <title>CPUs cores Capacity</title>
+                <search base="Global">
+                    <query>stats count by cpu_cores</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="Global">
+                    <query>top limit=0 cpu_cores | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <chart>
+                <title>Linux Kernel</title>
+                <search base="Global">
+                    <query>stats count by Linux_kernelversion</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="Global">
+                    <query>top limit=0 Linux_kernelversion | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <chart>
+                <title>Nmon version</title>
+                <search base="Global">
+                    <query>stats count by nmon_version</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">pie</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">minimal</option>
+                <option name="charting.drilldown">all</option>
+                <option name="height">300</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+            </chart>
+        </panel>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="Global">
+                    <query>top limit=0 nmon_version | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
+                </search>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="Global">
+                    <query>fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,Linux_distribution,Linux_kernelversion,nmon_version,uptime_seconds,uptime_duration,system_startup_date</query>
+                </search>
+            </table>
+        </panel>
+    </row>
 </form>

@@ -19,7 +19,9 @@ define(function(require, exports, module) {
 			no_more_label: "Do not show this tour again",
             hide_container: false,
             show_credits: false,
-			cookie_name_suffix: ""
+			cookie_name_suffix: "",
+			backdrop_close: true,
+			keyboard_close: true
         },
 
         initialize: function() {
@@ -186,6 +188,10 @@ define(function(require, exports, module) {
 					isScrollNeeded();
 				});
 
+				// Treat "backdrop_close" and "keyboard_close" settings
+				var modal_backdrop = this.settings.get('backdrop_close') === true ? true : 'static';
+				var modal_keyboard = this.settings.get('keyboard_close') === true ? true : false;		
+					
 				$modal
 				.on('shown.bs.modal', function(e){
 					// Prevents page body scrolling if modal content is scrollable
@@ -201,7 +207,10 @@ define(function(require, exports, module) {
 						setCookie(ck_name);
 					}
 				})
-				.modal('show');
+				.modal({
+					backdrop: modal_backdrop,
+					keyboard: modal_keyboard
+				});
 			}
 
 			return this;

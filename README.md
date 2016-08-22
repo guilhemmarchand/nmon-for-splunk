@@ -18,15 +18,18 @@ limitations under the License.
 
 #### This application is also officially available on Splunk Base:
 
-https://splunkbase.splunk.com/app/1753/
+https://splunkbase.splunk.com/app/1753
 
 #### The documentation for Nmon Performance Monitor is available online at:
 
-http://nmonsplunk.wikidot.com
+http://nmon-for-splunk.readthedocs.io
+
+#### Video available in the Nmon Performance app youtube channel:
+https://www.youtube.com/channel/UCGWHd40x0A7wjk8qskyHQcQ
 
 #### To get support:
 
-http://nmonsplunk.wikidot.com/about-support
+http://nmon-for-splunk.readthedocs.io/en/latest/support.html
 
 #### NMON is short for Nigel's Performance Monitor and is available on AIX, Solaris (With Sarmon), Linux and ARM Systems.
 
@@ -37,6 +40,7 @@ http://nmonsplunk.wikidot.com/about-support
 
 #### NMON Performance does Global / Summary Analysis per Host, Analysis per type of metric (CPU usage, Memory, I/O...), Predictive, Comparison Analysis, Inventory Collect and Analysis, and more.
 
+**Link to the last main release youtube video presentation:** https://www.youtube.com/watch?v=yHlo0idH3is
 
 ![screen1](./docs/img/screen001.png)
 
