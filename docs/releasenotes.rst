@@ -24,6 +24,7 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 
 - Fix TCO scheduling searches analysis when running in Search Head Cluster
 - Updating alerting menu
+- Broken links to removed django views (Issue #54)
 
 =======
 V1.7.5:
