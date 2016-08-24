@@ -17,6 +17,14 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.7.7:
+=======
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Drilldown to inventory issues and improvements (Issue #55)
+
+=======
 V1.7.6:
 =======
 
