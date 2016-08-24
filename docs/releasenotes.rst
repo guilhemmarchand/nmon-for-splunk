@@ -17,6 +17,16 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.7.6:
+=======
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Fix TCO scheduling searches analysis when running in Search Head Cluster
+- Updating alerting menu
+- Broken links to removed django views (Issue #54)
+
+=======
 V1.7.5:
 =======
 

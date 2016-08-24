@@ -2225,6 +2225,14 @@ This release has limited compatibility with Splunk 6.3, if your running on Splun
     cp -p default/data/ui/views/UI_Nmon_MEM_LINUX_compat.xml local/data/ui/views/UI_Nmon_MEM_LINUX.xml
     cp -p default/data/ui/views/UI_RT_Nmon_CPU_ALL_compat.xml local/data/ui/views/UI_RT_Nmon_CPU_ALL.xml
 
+**Provided starting version 1.7.6, you can also apply a Splunk 6.3 limited compatibility version of savedsearches.conf to prevent from having error messagees for invalid stanza at splunk startup:**
+
+*CAUTION: Overwriting the default/savedsearches.conf is not upgrade resilient (but this is the only way to so), you must redo this step after each update of the application*
+
+::
+
+    cp -p resources/various_customization/savedsearches.conf_forsplunk63.txt default/savedsearches.conf
+
 **If you are using a search head cluster, these modification will take place in the SHC deployer:**
 
 ::

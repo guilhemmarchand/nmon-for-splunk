@@ -158,12 +158,24 @@
             </html>
         </panel>
     </row>
+
+    <!-- main search for scheduling cost -->
+    <search id="scheduling_mainsearch">
+        <query>index=_internal host="*" source=*scheduler.log status="*" NOT (status="continued" OR status=delegated*) savedsearch_name!="*_ACCELERATE_*" app="nmon"
+| timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
+| eval user_is_admin=$start_admin_searches$
+| stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time</query>
+        <earliest>-24h</earliest>
+        <latest>now</latest>
+        <sampleRatio>1</sampleRatio>
+    </search>
+
     <row>
         <panel>
             <title>SCHEDULING COST</title>
             <single rejects="$show_admin_required$">
                 <search>
-                    <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
+                    <query>index=_internal host="*" source=*scheduler.log status="*" NOT (status="continued" OR status=delegated*) savedsearch_name!="*_ACCELERATE_*" app="nmon"
 | bucket _time span=5m
 | stats count AS count by _time
 | eval user_is_admin=$start_admin_searches$
@@ -189,14 +201,8 @@
                 <option name="useThousandSeparators">1</option>
             </single>
             <single rejects="$show_admin_required$">
-                <search>
-                    <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
-| timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
-| eval user_is_admin=$start_admin_searches$
-| stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time | fields avg_run_time</query>
-                    <earliest>-24h</earliest>
-                    <latest>now</latest>
-                    <sampleRatio>1</sampleRatio>
+                <search base="scheduling_mainsearch">
+                    <query>fields avg_run_time</query>
                 </search>
                 <option name="colorBy">value</option>
                 <option name="colorMode">none</option>
@@ -215,14 +221,8 @@
                 <option name="useThousandSeparators">1</option>
             </single>
             <single rejects="$show_admin_required$">
-                <search>
-                    <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
-| timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
-| eval user_is_admin=$start_admin_searches$
-| stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time | fields max_run_time</query>
-                    <earliest>-24h</earliest>
-                    <latest>now</latest>
-                    <sampleRatio>1</sampleRatio>
+                <search base="scheduling_mainsearch">
+                    <query>fields max_run_time</query>
                 </search>
                 <option name="colorBy">value</option>
                 <option name="colorMode">none</option>
@@ -241,14 +241,8 @@
                 <option name="useThousandSeparators">1</option>
             </single>
             <single rejects="$show_admin_required$">
-                <search>
-                    <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
-| timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
-| eval user_is_admin=$start_admin_searches$
-| stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time | fields sum_run_time</query>
-                    <earliest>-24h</earliest>
-                    <latest>now</latest>
-                    <sampleRatio>1</sampleRatio>
+                <search base="scheduling_mainsearch">
+                    <query>fields sum_run_time</query>
                 </search>
                 <option name="colorBy">value</option>
                 <option name="colorMode">none</option>
