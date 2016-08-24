@@ -68,7 +68,7 @@
                 <search>
                     <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | where b>0 | timechart span=1h sum(b) AS b  | eval volume_MB = round(b/1024/1024,2)
 | fillnull value=0
-| appendcols [ search eventtype=nmon:performance type=CPU_ALL | timechart span=1h dc(hostname) AS dcount ]
+| appendcols [ | pivot NMON_Data_CPU CPU_ALL dc(hostname) AS "dcount" SPLITROW _time AS _time PERIOD hour SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 ]
 | eval cost_per_server_MB=(volume_MB/dcount) | stats avg(cost_per_server_MB) AS cost_per_server_MB
 | eval estimated_cost_per_server_MB=round(cost_per_server_MB*24, 2)
 | eval user_is_admin=$start_admin_searches$
