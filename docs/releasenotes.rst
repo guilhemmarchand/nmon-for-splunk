@@ -17,6 +17,18 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.7.7:
+=======
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Drilldown to inventory issues and improvements (Issue #55)
+- Performance improvement of the TCO per server search (use datamodel for dcount)
+- Add-ons Perl parser (nmon2csv.pl) is lacking OStype field in raw data for TOP/UARG, causing data to be unavailable
+- Removal of nmon_inventory OStype mapping had removed OStype mapping for historical data
+- Add-ons update (PA-nmon/TA-nmon/TA-nmon_selfmode) to 1.2.46
+
+=======
 V1.7.6:
 =======
 

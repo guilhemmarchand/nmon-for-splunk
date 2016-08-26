@@ -25,7 +25,11 @@
             <option name="underLabel">ANY OS</option>
             <option name="drilldown">all</option>
             <drilldown target="search">
-                <link>search?q=| inputlookup nmon_inventory</link>
+                <link>search?q=| inputlookup nmon_inventory
+| eval "Operating System"=case(OStype=="AIX", ("IBM AIX " %2B AIX_LEVEL), OStype=="Linux", Linux_distribution, OStype=="Solaris", if(isnotnull(Solaris_version), Solaris_version, Solaris_sunOS_version))
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,"Operating System",nmon_version
+| fillnull value="N/A"
+| rename Physical_mem_MB AS "Physical memory (MB)", Virtual_mem_MB AS "Virtual memory (MB)"</link>
             </drilldown>
         </single>
     </row>
@@ -39,8 +43,8 @@
                 <option name="underLabel">AIX</option>
                 <option name="drilldown">all</option>
                 <drilldown target="search">
-                    <link>search?q=|inputlookup nmon_inventory | search OStype=AIX
-| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,entitled,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</link>
+                    <link>search?q=| inputlookup nmon_inventory | search OStype=AIX
+| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_LEVEL,AIX_virtualcpus,AIX_logicalcores,AIX_entitled,Processor,Physical_mem_MB,Virtual_mem_MB,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</link>
                 </drilldown>
             </single>
             <html>
@@ -61,8 +65,8 @@
                 <option name="underLabel">LINUX</option>
                 <option name="drilldown">all</option>
                 <drilldown target="search">
-                    <link>search?q=| inputlookup nmon_inventory | search OStype=Linux
-| fields hostname,OStype,cpu_cores,Processor,Linux_memory_MB,Linux_swap_MB,Linux_distribution,Linux_kernelversion,nmon_version</link>
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="Linux"
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,Linux_distribution,Linux_kernelversion,nmon_version,uptime_seconds,uptime_duration,system_startup_date</link>
                 </drilldown>
             </single>
             <html>
@@ -84,7 +88,7 @@
                 <option name="drilldown">all</option>
                 <drilldown target="search">
                     <link>search?q=| inputlookup nmon_inventory | search OStype=Solaris
-| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,nmon_version</link>
+| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,Physical_mem_MB,nmon_version</link>
                 </drilldown>
             </single>
             <html>
@@ -117,12 +121,27 @@
             <option name="charting.layout.splitSeries">0</option>
             <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
             <option name="charting.legend.placement">right</option>
+            <drilldown target="search">
+                <link>search?q=| inputlookup nmon_inventory | search OStype="$click.value$"
+| eval "Operating System"=case(OStype=="AIX", ("IBM AIX " %2B AIX_LEVEL), OStype=="Linux", Linux_distribution, OStype=="Solaris", if(isnotnull(Solaris_version), Solaris_version, Solaris_sunOS_version))
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,"Operating System",nmon_version
+| fillnull value="N/A"
+| rename Physical_mem_MB AS "Physical memory (MB)", Virtual_mem_MB AS "Virtual memory (MB)"</link>
+            </drilldown>
         </chart>
         <table>
             <title>Table Stats</title>
             <search base="Global">
                 <query>top limit=0 OStype | eval percent=round(percent,2) | rename count As "Number of Hosts" | strcat percent "%" percent | rename percent As "Percent (%)"</query>
             </search>
+            <option name="drilldown">row</option>
+            <drilldown target="search">
+                <link>search?q=| inputlookup nmon_inventory | search OStype="$click.value$"
+| eval "Operating System"=case(OStype=="AIX", ("IBM AIX " %2B AIX_LEVEL), OStype=="Linux", Linux_distribution, OStype=="Solaris", if(isnotnull(Solaris_version), Solaris_version, Solaris_sunOS_version))
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,"Operating System",nmon_version
+| fillnull value="N/A"
+| rename Physical_mem_MB AS "Physical memory (MB)", Virtual_mem_MB AS "Virtual memory (MB)"</link>
+            </drilldown>
         </table>
     </row>
     <row>
@@ -146,6 +165,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="AIX" AIX_LEVEL="$click.value$"
+| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_LEVEL,AIX_virtualcpus,AIX_logicalcores,AIX_entitled,Processor,Physical_mem_MB,Virtual_mem_MB,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</link>
+                </drilldown>
             </chart>
         </panel>
         <panel>
@@ -168,6 +191,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="Linux" Linux_distribution="$click.value$"
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,Linux_distribution,Linux_kernelversion,nmon_version,uptime_seconds,uptime_duration,system_startup_date</link>
+                </drilldown>
             </chart>
         </panel>
         <panel>
@@ -190,6 +217,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="Solaris" Solaris_version="$click.value$"
+| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,Physical_mem_MB,nmon_version</link>
+                </drilldown>
             </chart>
         </panel>
     </row>
@@ -214,6 +245,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="AIX" Processor="$click.value$"
+| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_LEVEL,AIX_virtualcpus,AIX_logicalcores,AIX_entitled,Processor,Physical_mem_MB,Virtual_mem_MB,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</link>
+                </drilldown>
             </chart>
         </panel>
         <panel>
@@ -236,6 +271,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="Linux" Processor="$click.value$"
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,Linux_distribution,Linux_kernelversion,nmon_version,uptime_seconds,uptime_duration,system_startup_date</link>
+                </drilldown>
             </chart>
         </panel>
         <panel>
@@ -258,6 +297,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="Solaris" Processor="$click.value$"
+| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,Physical_mem_MB,nmon_version</link>
+                </drilldown>
             </chart>
         </panel>
     </row>
@@ -282,6 +325,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="AIX" AIX_logicalcores="$click.value$"
+| fields hostname,OStype,AIX_Machine_SerialNumber,AIX_LEVEL,AIX_virtualcpus,AIX_logicalcores,AIX_entitled,Processor,Physical_mem_MB,Virtual_mem_MB,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs</link>
+                </drilldown>
             </chart>
         </panel>
         <panel>
@@ -304,6 +351,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="Linux" cpu_cores="$click.value$"
+| fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,Linux_distribution,Linux_kernelversion,nmon_version,uptime_seconds,uptime_duration,system_startup_date</link>
+                </drilldown>
             </chart>
         </panel>
         <panel>
@@ -326,6 +377,10 @@
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
                 <option name="charting.legend.placement">right</option>
+                <drilldown target="search">
+                    <link>search?q=| inputlookup nmon_inventory | search OStype="Solaris" cpu_cores="$click.value$"
+| fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Processor,Solaris_processor_clockspeed,Physical_mem_MB,nmon_version</link>
+                </drilldown>
             </chart>
         </panel>
     </row>
@@ -343,26 +398,10 @@
             <table>
                 <title>Full AIX Configuration</title>
                 <search base="Global">
-                    <query>search OStype="AIX" | stats
-values(AIX_Machine_SerialNumber) As Machine_SerialNumber,
-values(AIX_virtualcpus) As virtualcpus,
-values(AIX_logicalcores) As logicalcores,
-values(AIX_entitled) As entitled,
-values(OStype) As OStype,
-values(Processor) As Processor,
-values(AIX_processor_mode) As processor_mode,
-values(AIX_processor_clockspeed) As processor_clockspeed,
-values(AIX_cpu_type) As cpu_type,
-values(AIX_kernel_type) As kernel_type,
-values(AIX_plateform_firmware_level) As plateform_firmware_level,
-values(nmon_version) As nmon_version,
-values(AIX_PoolID) As PoolID,
-values(AIX_system_installed_CPUs) As system_installed_CPUs,
-values(AIX_system_active_CPUs) As system_active_CPUs,
-values(AIX_LEVEL) As os_version,
-values(AIX_PoolCPUs) As PoolCPUs by hostname
-| fillnull value=Undeterminated</query>
+                    <query>search OStype="AIX" | fields hostname,AIX_Machine_SerialNumber,AIX_virtualcpus,AIX_logicalcores,AIX_entitled,Physical_mem_MB,Virtual_mem_MB,Processor,AIX_processor_mode,AIX_processor_clockspeed,AIX_cpu_type,AIX_kernel_type,AIX_LEVEL,AIX_plateform_firmware_level,nmon_version,AIX_PoolID,AIX_system_installed_CPUs,AIX_system_active_CPUs,AIX_PoolCPUs
+| rename "AIX_*" AS *</query>
                 </search>
+                <option name="drilldown">none</option>
             </table>
         </panel>
     </row>
@@ -371,19 +410,9 @@ values(AIX_PoolCPUs) As PoolCPUs by hostname
             <table>
                 <title>Full Linux Configuration</title>
                 <search base="Global">
-                    <query>search OStype="Linux" | stats
-values(cpu_cores) As cpu_cores,
-values(OStype) As OStype,
-values(Processor) As Processor,
-values(Linux_memory_MB) As Linux_memory_MB,
-values(Linux_swap_MB) As Linux_swap_MB,
-values(Linux_vendor) AS Linux_vendor,
-values(Linux_distribution) As Linux_distribution,
-values(Linux_kernelversion) As Linux_kernelversion,
-values(nmon_version) As nmon_version by hostname
-| fillnull value=Undeterminated
-| rename "Linux_*" AS *</query>
+                        <query>search OStype="Linux" | fields hostname,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,Linux_distribution,Linux_kernelversion,nmon_version,uptime_seconds,uptime_duration,system_startup_date</query>
                 </search>
+                <option name="drilldown">none</option>
             </table>
         </panel>
     </row>
@@ -392,17 +421,9 @@ values(nmon_version) As nmon_version by hostname
             <table>
                 <title>Full Solaris Configuration</title>
                 <search base="Global">
-                    <query>search OStype="Solaris" | stats
-values(cpu_cores) As cpu_cores,
-values(OStype) As OStype,
-values(Solaris_sunOS_version) As Solaris_sunOS_version,
-values(Solaris_version) As Solaris_version,
-values(Processor) As Processor,
-values(Solaris_processor_clockspeed) As Solaris_processor_clockspeed,
-values(nmon_version) As nmon_version by hostname
-| fillnull value=Undeterminated
-| rename "Solaris_*" AS *</query>
+                    <query>search OStype="Solaris" | fields hostname,OStype,Solaris_sunOS_version,Solaris_version,cpu_cores,Physical_mem_MB,Virtual_mem_MB,Processor,Solaris_processor_clockspeed,nmon_version</query>
                 </search>
+                <option name="drilldown">none</option>
             </table>
         </panel>
     </row>
