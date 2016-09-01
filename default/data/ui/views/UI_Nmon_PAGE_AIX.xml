@@ -1,37 +1,37 @@
 <form stylesheet="ui_simple.css,panel_decoration.css" script="link_switcher.js, autodiscover.js" isVisible="true">
-  <label>UI PAGE, Paging Statistics (AIX)</label>
-  <description>User Interface for the PAGE monitor</description>
+    <label>UI PAGE, Paging Statistics (AIX)</label>
+    <description>User Interface for the PAGE monitor</description>
 
-  <fieldset autoRun="false" submitButton="false">
+    <fieldset autoRun="false" submitButton="false">
 
-    <input type="time" token="timerange" searchWhenChanged="true">
-      <label>Time Range:</label>
-      <default>
-        <earliestTime>-24h</earliestTime>
-        <latestTime>now</latestTime>
-      </default>
-    </input>
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
 
-    <input type="dropdown" token="timefilter" searchWhenChanged="true">
-      <label>Time Filtering:</label>
-      <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
-      <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
-      <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
-      <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
-      <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
-      <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
-      <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
-      <default>No_Filter</default>
-    </input>
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
 
-    <input type="multiselect" token="frameID" searchWhenChanged="true">
-      <label>Frame IDs:</label>
-      <!-- Populating Data Model Search -->
-      <search id="frameIDSearch">
-        <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) groupby "PAGE_AIX.frameID" prestats=true
-| stats dedup_splitvals=t count AS Count by "PAGE_AIX.frameID"
-| sort limit=0 "PAGE_AIX.frameID"
-| fields - _span | fillnull Count | fields "PAGE_AIX.frameID"</query>
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) groupby "PAGE_AIX.frameID" prestats=true
+                    | stats dedup_splitvals=t count AS Count by "PAGE_AIX.frameID"
+                    | sort limit=0 "PAGE_AIX.frameID"
+                    | fields - _span | fillnull Count | fields "PAGE_AIX.frameID"</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -54,9 +54,9 @@
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
                 <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) groupby "PAGE_AIX.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "PAGE_AIX.hostname"
-| sort limit=0 "PAGE_AIX.hostname"
-| fields - _span | fillnull Count | fields "PAGE_AIX.hostname"</query>
+                    | stats dedup_splitvals=t count AS Count by "PAGE_AIX.hostname"
+                    | sort limit=0 "PAGE_AIX.hostname"
+                    | fields - _span | fillnull Count | fields "PAGE_AIX.hostname"</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -438,175 +438,172 @@ by "PAGE_AIX.hostname"</query>
             </chart>
         </panel>
     </row>
-    <earliest>$timerange.earliest$</earliest>
-    <latest>$timerange.latest$</latest>
-  </search>
 
-  <row>
-    <panel>
-      <table>
-        <title>Global Table Stats</title>
-        <search base="tableStats">
-          <query>fields frameID,hostname,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
-        </search>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
-    </panel>
-    <panel>
-      <table>
-        <title>Fs In/Out and Scan Free Ratio Table Stats</title>
-        <search base="tableStats">
-          <query>fields frameID,hostname,fsin,fsout,scanfree_ratio</query>
-        </search>
-        <option name="wrap">true</option>
-        <option name="rowNumbers">false</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="count">10</option>
-      </table>
-    </panel>
-  </row>
+    <row>
+        <panel>
+            <table>
+                <title>Global Table Stats</title>
+                <search base="tableStats">
+                    <query>fields frameID,hostname,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+        <panel>
+            <table>
+                <title>Fs In/Out and Scan Free Ratio Table Stats</title>
+                <search base="tableStats">
+                    <query>fields frameID,hostname,fsin,fsout,scanfree_ratio</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+    </row>
 
-  <row depends="$charting$">
-    <panel id="settings">
-      <title>Charting parameters</title>
-      <input type="dropdown" token="chart" searchWhenChanged="true">
-        <label>Select a type of chart:</label>
-        <default>line</default>
-        <choice value="area">Area</choice>
-        <choice value="line">Line</choice>
-        <choice value="column">Column</choice>
-        <choice value="bar">Bar</choice>
-      </input>
-      <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
-        <label>Missing Data:</label>
-        <default>gaps</default>
-        <choice value="gaps">Gaps</choice>
-        <choice value="connect">Connect</choice>
-        <choice value="zero">Zero</choice>
-      </input>
-      <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
-        <label>Select a stacking mode:</label>
-        <default>unstacked</default>
-        <choice value="stacked">stacked (lines excluded)</choice>
-        <choice value="stacked100">100% stacked (lines excluded)</choice>
-        <choice value="unstacked">unstacked</choice>
-      </input>
-      <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
-        <label>Legend placement:</label>
-        <default>bottom</default>
-        <choice value="bottom">Bottom</choice>
-        <choice value="top">Top</choice>
-        <choice value="left">left</choice>
-        <choice value="right">right</choice>
-        <choice value="center">center</choice>
-        <choice value="none">none</choice>
-      </input>
-      <input type="dropdown" token="span" searchWhenChanged="true">
-        <label>Span:</label>
-        <default>`nmon_span`</default>
-        <choice value="`nmon_span`">auto</choice>
-        <choice value="span=1m">1 minute</choice>
-        <choice value="span=2m">2 minutes</choice>
-        <choice value="span=3m">3 minutes</choice>
-        <choice value="span=4m">4 minutes</choice>
-        <choice value="span=5m">5 minutes</choice>
-        <choice value="span=10m">10 minutes</choice>
-        <choice value="span=15m">15 minutes</choice>
-        <choice value="span=30m">30 minutes</choice>
-        <choice value="span=1h">1 hour</choice>
-        <choice value="span=2h">2 hours</choice>
-        <choice value="span=12h">12 hours</choice>
-        <choice value="span=4h">4 hours</choice>
-        <choice value="span=1d">1 day</choice>
-        <choice value="span=2d">2 days</choice>
-        <choice value="span=1w">7 days</choice>
-        <choice value="span=1mon">1 month</choice>
-      </input>
-    </panel>
-  </row>
+    <row depends="$charting$">
+        <panel id="settings">
+            <title>Charting parameters</title>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+        </panel>
+    </row>
 
-  <row depends="$charting$">
-    <panel id="process">
-      <title>Paging statistics</title>
-      <html>
-        <!-- Placeholder/container for the link switcher to appear -->
-        <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
-        </div>
-      </html>
-      <chart id="link10">
-        <title>Pages In / Pages Out (pgsin / pgsout, pgin / pgout)</title>
-        <search base="timeStats">
-          <query>fields _time,pgsin*,pgsout*,pgin*,pgout*</query>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisY.minimumNumber">0</option>
-        <option name="charting.axisTitleY.text">Pages</option>
-      </chart>
-      <chart id="link11">
-        <title>Fs In / Fs Out (sum of pgin/pgsin and pgout/pgsout per interval)</title>
-        <search base="timeStats">
-          <query>fields _time,fsin*,fsout*</query>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisY.minimumNumber">0</option>
-        <option name="charting.axisTitleY.text">Pages</option>
-      </chart>
-      <chart id="link12">
-        <title>Scan Free Ratio (Pages scans by reclaims per interval)</title>
-        <search base="timeStats">
-          <query>fields _time,scanfree_ratio* | fillnull value=0</query>
-        </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisX.scale">linear</option>
-        <option name="charting.axisY.scale">linear</option>
-        <option name="charting.chart">$chart$</option>
-        <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
-        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
-        <option name="charting.chart.stackMode">$chart.stackingmode$</option>
-        <option name="charting.chart.style">shiny</option>
-        <option name="charting.drilldown">all</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-        <option name="charting.legend.placement">$charting.legend.placement$</option>
-        <option name="height">680</option>
-        <option name="charting.axisTitleX.text">Time</option>
-        <option name="charting.axisY.minimumNumber">0</option>
-        <option name="charting.axisTitleY.text">Pages</option>
-      </chart>
-    </panel>
-  </row>
+    <row depends="$charting$">
+        <panel id="process">
+            <title>Paging statistics</title>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link10,link11,link12">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link10">
+                <title>Pages In / Pages Out (pgsin / pgsout, pgin / pgout)</title>
+                <search base="timeStats">
+                    <query>fields _time,pgsin*,pgsout*,pgin*,pgout*</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisTitleY.text">Pages</option>
+            </chart>
+            <chart id="link11">
+                <title>Fs In / Fs Out (sum of pgin/pgsin and pgout/pgsout per interval)</title>
+                <search base="timeStats">
+                    <query>fields _time,fsin*,fsout*</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisTitleY.text">Pages</option>
+            </chart>
+            <chart id="link12">
+                <title>Scan Free Ratio (Pages scans by reclaims per interval)</title>
+                <search base="timeStats">
+                    <query>fields _time,scanfree_ratio* | fillnull value=0</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisTitleY.text">Pages</option>
+            </chart>
+        </panel>
+    </row>
 </form>
