@@ -17,6 +17,16 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.8.0:
+=======
+
+**For Splunk 6.5 and later**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Implementation of Splunk 6.5 auto refresh features, experience the natural and simple data refresh !
+
+=======
 V1.7.8:
 =======
 
