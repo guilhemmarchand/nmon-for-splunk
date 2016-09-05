@@ -23,6 +23,7 @@ V1.7.8:
 Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
 - Add-ons update to 1.2.47 (Linux_unlimited_capture improvement #9, Nmon binary issue with SLES 11.3 #10)
+- Adding CONFIG df (filesystems stats) reports & dashboard
 
 =======
 V1.7.7:
