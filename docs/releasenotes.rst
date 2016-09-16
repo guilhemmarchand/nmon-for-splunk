@@ -15,6 +15,14 @@ Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=======
+V1.7.9:
+=======
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Adding the PA-nmon_light add-on for indexers that need parsing configuration only (for people that do not want or must not monitor performance of indexers such as Splunk cloud indexers instances)
+- Documentation update
 
 =======
 V1.7.8:
