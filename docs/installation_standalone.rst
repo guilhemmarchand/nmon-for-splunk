@@ -10,12 +10,24 @@ Installation for standalone instance
 
 **Standalone deployment: A single Splunk instance does all**
 
-+------------------------+------------+----------+-------------------+
-| Splunk Instance        | Core App   | PA-nmon  | TA-nmon           |
-| (role description)     |            |          |                   |
-+========================+============+==========+===================+
-| Standalone             |     X      |          | X (optional)      |
-+------------------------+------------+----------+-------------------+
+*Software components:*
+
+* **Core App**: This is the full package you download in Splunk Base (tgz archive)
+
+* **PA-nmon**: Available in the resources directory of the Core App (tgz archive)
+
+* **PA-nmon_light**: Available in the resources directory of the Core App (tgz archive)
+
+* **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
+
+* **TA-nmon_selfmode**: Available in the resources directory of the Core App (tgz archive)
+
++------------------------+------------+---------------+-------------------+
+| Splunk Instance        | Core App   | PA-nmon       | TA-nmon           |
+| (role description)     |            | (and derived) | (and derived)     |
++========================+============+===============+===================+
+| Standalone             |     X      |               | X (optional)      |
++------------------------+------------+---------------+-------------------+
 
 *optional: The TA-nmon provides nmon performance and configuration collection for the host than runs the add-on, which is optional*
 

@@ -11,22 +11,34 @@ Installation for distributed deployments
 
 **Distributed deployment matrix:**
 
-+--------------------------------------------+------------+----------+---------------------+
-| Splunk Instance                            | Core App   | PA-nmon  | TA-nmon             |
-| (role description)                         |            |          |                     |
-+============================================+============+==========+=====================+
-| Search head (single instance or clustered) |     X      |          |    X (optional)     |
-+--------------------------------------------+------------+----------+---------------------+
-| Indexer (single instance or clustered)     |            |    X     |                     |
-+--------------------------------------------+------------+----------+---------------------+
-| Master node                                |            |          |    X (optional)     |
-+--------------------------------------------+------------+----------+---------------------+
-| Deployment servers                         |            |          |    X (optional)     |
-+--------------------------------------------+------------+----------+---------------------+
-| Heavy Forwarder                            |            |          |    X                |
-+--------------------------------------------+------------+----------+---------------------+
-| Universal Forwarder                        |            |          |    X                |
-+--------------------------------------------+------------+----------+---------------------+
+*Software components:*
+
+* **Core App**: This is the full package you download in Splunk Base (tgz archive)
+
+* **PA-nmon**: Available in the resources directory of the Core App (tgz archive)
+
+* **PA-nmon_light**: Available in the resources directory of the Core App (tgz archive)
+
+* **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
+
+* **TA-nmon_selfmode**: Available in the resources directory of the Core App (tgz archive)
+
++-----------------------------------+------------+---------------+---------------------+
+| Splunk Instance                   | Core App   | PA-nmon       | TA-nmon             |
+| (role)                            |            | (and derived) | (and derived)       |
++===================================+============+===============+=====================+
+| Search head (single or clustered) |     X      |               |    X (optional)     |
++-----------------------------------+------------+---------------+---------------------+
+| Indexer (single or clustered)     |            |    X          |                     |
++-----------------------------------+------------+---------------+---------------------+
+| Master node                       |            |               |    X (optional)     |
++-----------------------------------+------------+---------------+---------------------+
+| Deployment servers                |            |               |    X (optional)     |
++-----------------------------------+------------+---------------+---------------------+
+| Heavy Forwarder                   |            |               |    X                |
++-----------------------------------+------------+---------------+---------------------+
+| Universal Forwarder               |            |               |    X                |
++-----------------------------------+------------+---------------+---------------------+
 
 *The TA-nmon provides nmon performance and configuration collection for the host than runs the add-on, which is optional*
 
