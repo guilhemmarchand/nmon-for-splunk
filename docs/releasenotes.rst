@@ -6,7 +6,7 @@ Release notes
 Requirements
 ^^^^^^^^^^^^
 
-* Splunk 6.5.x and later Only, for 6.4.x and prior download release: V1.7.5, for prior to 6.2.x download release: V1.6.15, for 6.1.x and prior download release: V1.4.902
+* Splunk 6.5.x and later Only, for 6.4.x and prior download release: V1.7.9, for prior to 6.2.x download release: V1.6.15, for 6.1.x and prior download release: V1.4.902
 
 * Universal Forwarder v6.x is required for clients
 
@@ -15,6 +15,18 @@ Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+=======
+V1.8.0:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Implementation of Splunk 6.5 auto refresh features
+- Minor improvements and evolutions for best Splunk 6.5 compatibility
+
 =======
 V1.7.9:
 =======
@@ -23,16 +35,6 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 
 - Adding the PA-nmon_light add-on for indexers that need parsing configuration only (for people that do not want or must not monitor performance of indexers such as Splunk cloud indexers instances)
 - Documentation update
-
-=======
-V1.8.0:
-=======
-
-**For Splunk 6.5 and later**
-
-Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
-
-- Implementation of Splunk 6.5 auto refresh features, experience the natural and simple data refresh !
 
 =======
 V1.7.8:
