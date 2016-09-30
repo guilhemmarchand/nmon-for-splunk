@@ -44,4 +44,5 @@ Documentation:
    rsyslog_deployment
    syslogng_deployment
    Userguide
+   total_cost_of_ownership
    reference_materials

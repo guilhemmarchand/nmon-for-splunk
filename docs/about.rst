@@ -19,15 +19,17 @@ The Nmon Performance monitor application for Splunk will generate performance an
 Splunk versions
 ---------------
 
-It is recommended to use Splunk 6.4.x or superior to run the core application. (in distributed deployments, only search heads will have this requirement)
+It is recommended to use Splunk 6.5.x or superior to run the latest core application release. (in distributed deployments, only search heads may have this requirement)
 
 The last release can be downloaded from Splunk base: https://splunkbase.splunk.com/app/1753
 
 **Compatibility matrix for core application:**
 
-* **Current major release Version 1.7.x:** Splunk 6.4.x or superior, limited compatibility with Splunk 6.3.x, see :any:`update_from_version_prior_17`
+* **Current major release Version 1.8.x:** Splunk 6.5.x or superior, see :any:`update_from_version_prior_17`
 
 **Stopped versions for older Splunk releases:**
+
+* Last version compatible with Splunk 6.4.x with release 1.7.9 (Splunk certified): https://github.com/guilhemmarchand/nmon-for-splunk/releases
 
 * Last version compatible with Splunk 6.2.x with release 1.6.15 (Splunk certified): https://github.com/guilhemmarchand/nmon-for-splunk/releases
 
