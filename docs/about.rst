@@ -15,6 +15,15 @@ It is fully available for any Linux flavor, and thanks to the excellent work of 
 
 The Nmon Performance monitor application for Splunk will generate performance and inventory data for your servers, and provides a rich number of monitors and tools to manage your AIX / Linux / Solaris systems.
 
+.. image:: img/Octamis_Logo_v3_no_bg.png
+   :alt: Octamis_Logo_v3_no_bg.png
+   :align: right
+   :target: http://www.octamis.com
+
+**Nmon Performance is now associated with Octamis to provide professional solutions for your business, and professional support for the Nmon Performance solution.**
+
+*For more information:* :ref:`octamis_support`
+
 ---------------
 Splunk versions
 ---------------

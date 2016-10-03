@@ -10,6 +10,15 @@ Welcome to Nmon Performance monitor Splunk app for Unix and Linux systems docume
    :alt: splunk_nmon.png
    :align: center
 
+.. image:: img/Octamis_Logo_v3_no_bg.png
+   :alt: Octamis_Logo_v3_no_bg.png
+   :align: right
+   :target: http://www.octamis.com
+
+**Nmon Performance is now associated with Octamis to provide professional solutions for your business, and professional support for the Nmon Performance solution.**
+
+*For more information:* :ref:`octamis_support`
+
 Overview:
 ---------
 
