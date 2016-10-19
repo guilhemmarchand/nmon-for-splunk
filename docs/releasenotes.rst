@@ -17,6 +17,17 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.8.1:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Technical addons issue with Oracle Solaris 10 using Python interpreter (https://github.com/guilhemmarchand/TA-nmon/issues/11)
+- TA-nmon and PA-nmon update to v1.2.48
+
+=======
 V1.8.0:
 =======
 
