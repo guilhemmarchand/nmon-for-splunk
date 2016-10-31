@@ -19,6 +19,8 @@ However, please note that Splunk does not allow any application to monitor Cloud
 | Indexer (single or clustered)     |            |    X          |
 +-----------------------------------+------------+---------------+
 
+*The TA-nmon must not be deployed on Splunk Cloud instances.*
+
 As a consequence, you cannot use the Nmon application to monitor Splunk Cloud instances, and this is the only limitation in a Splunk Cloud deployment of the Nmon application for Splunk.
 
 You will then deploy the TA-nmon addon to your servers to send nmon data to Splunk Cloud transparently.
