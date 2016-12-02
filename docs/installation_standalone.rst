@@ -106,7 +106,7 @@ If you are running Splunk on **Linux, AIX or Solaris**, then you can generate Nm
 
 **CAUTION:** You cannot install more than one TA-nmon in the same machine, for instance do not deploy the TA-nmon and the TA-nmon_selfmode in teh same time, this won't work.
 
-Replace the TA-nmon_xxx
+*Replace the TA-nmon_XXXX.tgz with current release of the TA-nmon:*
 
 ::
 
