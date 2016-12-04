@@ -34,7 +34,7 @@ Note that The maintenance cost, which refers to operation that Splunk operates p
 
 Also, rolling restart of clustered indexers will generate a partial verification and/or rebuild of data model acceleration, with large set of data this can imply a temporarily high level of resource usage on indexers following the rolling restart.
 
-Finally, take care of not reducing too much the acceleration period, searches out of the acceleration period are still possible but at the price of much more poor performances.
+Finally, take care not to reduce too much the acceleration period, searches out of the acceleration period are still possible but at the price of much more poor performances.
 
 **Restricting the acceleration period of data models:**
 
