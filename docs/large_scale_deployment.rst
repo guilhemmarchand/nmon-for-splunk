@@ -7,6 +7,10 @@ Large scale deployment considerations
 
 Nmon for Splunk Enterprise can easily be deployed to thousands and thousands of nodes, however there are things that should be considered to optimize at the best your Splunk and Nmon deployment.
 
+The following items will help you controlling and optimizing your Nmon deployment at large scale.
+
+Please also review the :ref:`total_cost_of_ownership` documentation.
+
 Data model acceleration
 """""""""""""""""""""""
 
@@ -121,17 +125,59 @@ Note: If you are not using IBM frames, you san safely disable the schedule of th
 **Each customization must be achieved through Splunk Web, or stored in local version of configuration files to be upgrade resilient**
 
 
-Splitting nmon indexes
-""""""""""""""""""""""
+Baseline KVstore management
+"""""""""""""""""""""""""""
 
-**In a very large scale deployment, splitting the nmon data into multiple indexes can represents a great design depending on your needs and environments.**
+**Nmon Performance for Splunk implements different KVstore known as the "baseline KVstores", and used within the baseline interfaces.**
 
-Advantages of a split by index scenario:
+These KVstore are being filled by scheduled reports and provide advanced analysis of usual system resources usage to help you determining anomalies on your systems.
 
-- Manage different retention depending on your needs, like having a long term storage for production servers, and a shorter period for non production
-- Manage different authorizations for your teams
-- Optimize performances by splitting data into multiple indexes
+.. image:: img/baseline2.png
+   :alt: baseline2.png
+   :align: center
 
-An example of design is available in the userguide: :any:`split_by_index`
+By default, the KVstores will contain data for all of the available servers within your deployment, in a large scale deployment you might want to limit these features to important servers, such as production servers only.
 
-Because the application entirely uses eventtypes to define searches, only a very few customization are required to transparently use multiple indexes in the context of the application.
+The following reports are being used to generate KVstore data once a week:
+
+.. image:: img/baseline_reports.png
+   :alt: baseline_reports.png
+   :align: center
+
+You can optionally customize these reports to filter out servers or focus on particular environment such as production servers only, which will limit the volume of data being stored in these KVstores.
+
+**Kvstores are hosted by search heads and do not need to be replicated to your indexers, resources that will be used to host these KVstores:**
+
+- Storage: Very large KVstores containing data for thousands of server may require a few GB of storage on your search heads
+- Physical memory: As well, KVstores have physical memory costs, very large KVstores can impact your memory utilization on search heads
+- Reports runtime: The more server you have, the more time these reports might need to complete, they run by default on Sunday basis, you can manage the scheduling differently according to your own constraints
+
+Open these reports in Splunk Web and modify the root search to limit the scope of the searches, you can also manage the searches in a local version of "savedsearches.conf".
+
+**For upgrade resiliency considerations, do not modify the default/savedsearches.conf configuration file.**
+
+
+Managing nmon collection and volume of data
+"""""""""""""""""""""""""""""""""""""""""""
+
+By default, the technical add-ons provided with the Nmon Performance application will generate performance data with a 1 minute accuracy between 2 performances collection.
+
+These features can be easily controlled through an internal process using a customized version of the "nmon.conf" configuration file.
+
+See: :ref:`manage_volume_per_server`
+
+The Nmon Performance technical add-ons generates csv flows of data, as such the volume of data to be generated is already really optimised and reduced to the maximum.
+
+However, you can choose to limit licence usage and storing costs by increasing the time between 2 performance collections, a common choice might be to increase this time to 2 or 3 minutes.
+
+
+
+
+
+
+
+
+
+
+
+

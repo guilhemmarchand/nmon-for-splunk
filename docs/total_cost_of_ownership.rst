@@ -1,3 +1,7 @@
+
+
+.. _total_cost_of_ownership:
+
 =======================
 Total cost of Ownership
 =======================
