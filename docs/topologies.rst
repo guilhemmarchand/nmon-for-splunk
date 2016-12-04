@@ -30,7 +30,7 @@ This is an example of deployment for standard scenario with multiple *nix client
 
 **Cold data deployment scenario:**
 
-This is an example of deployment for standard scenario with a single Heavy Forwarder Splunk instance running the addon "TA-nmon", indexing Nmon data from central NFS repositories into a Splunk indexer cluser running the addon "PA-nmon", exploiting Nmon data in a Search Head cluster running the core "nmon" application
+This is an example of deployment for standard scenario with a single Splunk forwarder instance (Universal or Heay) running the addon "TA-nmon", indexing Nmon data from central NFS repositories into a Splunk indexer cluser running the addon "PA-nmon", exploiting Nmon data in a Search Head cluster running the core "nmon" application
 
 .. image:: img/topology3_colddata_example.png
    :alt: topology3_colddata_example.png
