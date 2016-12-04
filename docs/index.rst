@@ -45,4 +45,5 @@ Documentation:
    syslogng_deployment
    Userguide
    total_cost_of_ownership
+   large_scale_deployment
    reference_materials
