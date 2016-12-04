@@ -1468,6 +1468,8 @@ Linux OS example: build an app for Linux OS support only
 
 **Advanced Customization**
 
+.. _split_by_index:
+
 ++++++++++++++++++++++++++++++++++++++++++++
 01 - Splitting index by Environment scenario
 ++++++++++++++++++++++++++++++++++++++++++++

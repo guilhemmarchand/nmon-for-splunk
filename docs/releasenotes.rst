@@ -93,15 +93,6 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - Nmon core app Fix Git Issues: #48 to #53
 - TA-nmon and PA-nmon V1.2.45
 
-=====================
-V1.8.0: Major release
-=====================
-
-Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
-
-- Splunk 6.5 features: All views take benefits from auto dashboard refresh
-- Splunk 6.5 features: Conditional table formatting
-
 =======
 V1.7.5:
 =======
