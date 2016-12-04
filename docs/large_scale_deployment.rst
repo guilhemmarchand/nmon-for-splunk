@@ -30,6 +30,8 @@ Restricting the acceleration period will helping reducing:
 - The amount of storage used per data model for the acceleration
 - The amount of time required for initial build or total rebuild of the acceleration, as well as the amount of system resources (CPU, memory) that are temporarily required on indexers to build the acceleration
 
+**CAUTION: Please do not restrict the "NMON Config" data model, it is very small and should always be accelerated over All time!**
+
 Note that The maintenance cost, which refers to operation that Splunk operates periodically to maintain the state of acceleration, will not necessary be different with a large or a small period.
 
 Also, rolling restart of clustered indexers will generate a partial verification and/or rebuild of data model acceleration, with large set of data this can imply a temporarily high level of resource usage on indexers following the rolling restart.
