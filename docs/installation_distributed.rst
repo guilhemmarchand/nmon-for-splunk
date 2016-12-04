@@ -40,7 +40,12 @@ Installation for distributed deployments
 | Universal Forwarder               |            |               |    X                |
 +-----------------------------------+------------+---------------+---------------------+
 
-*The TA-nmon provides nmon performance and configuration collection for the host than runs the add-on, which is optional*
+*The TA-nmon, TA-nmon_selfmode and PA-nmon provide nmon performance and configuration collection for the host than runs the add-on, which is optional.*
+
+*The TA-nmon_selfmode is an alternative version of the TA-nmon that does use Splunk file monitor to manage nmon files, it can be used if you have trouble with the Splunk archive processor.*
+
+*The PA-nmon_light does not generate any collection, but defines the replicated nmon index and contains index time configuration settings.*
+
 
 **The following installation tutorial covers all aspects of a distributed deployment scenario:**
 
