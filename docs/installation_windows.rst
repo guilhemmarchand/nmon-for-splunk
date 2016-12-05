@@ -6,7 +6,7 @@ Running on Windows
    :alt: Windows_72px.png
    :align: center
 
-It is not possible to generate Nmon data of a Windows machine. (nmon is *nix specific !)
+**It is NOT possible to generate Nmon data of a Windows machine!**
 
 **But you can install and run Nmon Performance app over Windows in various conditions:**
 

@@ -14,7 +14,7 @@ Mail support
 
 You can get support directly from me, contact me by mail: guilhem.marchand@gmail.com
 
-I am located in France (Paris local time), expect an answer from me within 24 hours in "best effort"
+I am located in the United Kingdom (London local time), expect an answer from me within 24 hours in "best effort"
 
 With the goal to give the best support possible, please join some information with your mail support request:
 

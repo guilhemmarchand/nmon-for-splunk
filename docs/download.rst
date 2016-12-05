@@ -64,7 +64,7 @@ https://github.com/guilhemmarchand/nmon-for-splunk/blob/last_release_splunk_61x
 
 https://github.com/guilhemmarchand/nmon-for-splunk/releases
 
-* Last version compatible with Splunk 6.4.x and Splunk 6.3.x with release 1.7.5 (Splunk certified)
+* Last version compatible with Splunk 6.4.x and Splunk 6.3.x with release 1.7.9 (Splunk certified)
 
 https://github.com/guilhemmarchand/nmon-for-splunk/releases
 
