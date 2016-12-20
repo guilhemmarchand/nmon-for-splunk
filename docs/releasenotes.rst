@@ -17,6 +17,19 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.8.2:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Drilldown error with Splunk 6.5.1 #60 - Various drilldown errors since 6.5 when a pipeline is split in more than one line (carriage return)
+- Errors in Nmon analyser views (Since 6.5 renming an non existing field removes the existing field, this was causing various Disks charts not to be displayed)
+- TA-nmon update - Allow host name override #58 (feature request)
+- TA-nmon and PA-nmon update to v1.2.50
+
+=======
 V1.8.1:
 =======
 
