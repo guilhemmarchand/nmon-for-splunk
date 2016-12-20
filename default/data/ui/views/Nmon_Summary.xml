@@ -1567,27 +1567,6 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <option name="unit">Command</option>
                 <option name="unitPosition">before</option>
                 <option name="refresh.display">none</option>
-                <drilldown target="search">
-                <link>search?q=| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
-| eval limit=(logical_cpus*100)
-| where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As usage_per_core by _time,Command
-| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
-| eval avg_usage_per_core=round(avg_usage_per_core,2)
-| eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</link>
-                </drilldown>
             </single>
 
             <single>
@@ -1600,27 +1579,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="unit">core conso</option>
                 <option name="unitPosition">before</option>
                 <option name="refresh.display">none</option>
-                <drilldown target="search">
-                    <link>search?q=| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
-| eval limit=(logical_cpus*100)
-| where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As usage_per_core by _time,Command
-| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
-| eval avg_usage_per_core=round(avg_usage_per_core,2)
-| eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</link>
-                </drilldown>
             </single>
 
             <single>
@@ -1633,27 +1591,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <option name="unit">core conso</option>
                 <option name="unitPosition">before</option>
                 <option name="refresh.display">none</option>
-                <drilldown target="search">
-<link>search?q=| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| bucket _time span=1m
-| stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
-| eval limit=(logical_cpus*100)
-| where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
-| eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As usage_per_core by _time,Command
-| stats avg(usage_per_core) as avg_usage_per_core, max(usage_per_core) as max_usage_per_core by Command
-| eval avg_usage_per_core=round(avg_usage_per_core,2)
-| eval max_usage_per_core=round(max_usage_per_core,2)
-| sort - avg_usage_per_core</link>
-                </drilldown>
             </single>
 
         </panel>
@@ -1925,15 +1862,6 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) group
                 <option name="drilldown">row</option>
                 <option name="count">10</option>
                 <option name="refresh.display">none</option>
-                <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) (JFS.device="$click.value$") groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
-| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
-| rename "JFS.*" AS *
-| timechart $span$ limit=0 useother=f max(value) As value by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations</link>
-                </drilldown>
-
-
             </table>
         </panel>
     </row>

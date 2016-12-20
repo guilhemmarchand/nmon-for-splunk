@@ -319,9 +319,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$ho
                     <scale type="minMidMax"></scale>
                 </format>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `LPAR(max)`
-from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$click.value$) `$timefilter$(CPU)`
-groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
 | eval "_time"='_time'
 | stats `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
 | $indicator$
@@ -442,9 +440,7 @@ $statsmode$(usage) AS $timechart_label$ $addindicator$ by "CPU.hostname"</query>
                 <option name="charting.axisY2.scale">inherit</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `LPAR(max)`
-from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)`
-groupby _time,"CPU.frameID","CPU.hostname" prestats=true `custominline_span`
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(CPU)` groupby _time,"CPU.frameID","CPU.hostname" prestats=true `custominline_span`
 | stats `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
 | $indicator$
 | $aggregate$
