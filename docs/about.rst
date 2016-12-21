@@ -61,7 +61,8 @@ Index time operations
 ---------------------
 
 The application operates index time operation, the PA-nmon add-on must be installed in indexers in order for the application to operate normally.
-In complex distributed deployments, Heavy Forwarders (which are full Splunk instances) can operate as intermediate collectors between indexers and Universal Forwarder clients, in such a case Heavy Forwarders with the TA-nmon add-on installed will operate index time parsing and will free indexers from these tasks.
+
+If there are any Heavy forwarders acting as intermediate forwarders between indexers and Universal Forwarders, the TA-nmon add-on must deployed on the intermediate forwarders to achieve successfully index time extractions.
 
 --------------
 Index creation
@@ -71,7 +72,7 @@ Since the major release V1.7, the core application does not create anymore any i
 
 An index called "nmon" must be created manually by Splunk administrators.
 
-In distributed deployments using clusters of indexers, the PA-nmon add-on will automatically creates the "nmon" replicated index
+In distributed deployments using clusters of indexers, the PA-nmon add-on will automatically creates the "nmon" replicated index.
 
 ----------------------------
 Summarization implementation

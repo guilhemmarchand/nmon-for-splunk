@@ -369,8 +369,7 @@
                     <scale type="minMidMax"></scale>
                 </format>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)`
-from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
 | $aggregate$
 | stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname"

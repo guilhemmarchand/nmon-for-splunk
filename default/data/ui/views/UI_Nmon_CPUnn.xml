@@ -391,8 +391,7 @@
                     <scale type="minMidMax"></scale>
                 </format>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)`
-from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
 | $aggregate$
 | stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname", "CPU.CPUnn.logical_core"
@@ -530,7 +529,7 @@ by "CPU.CPUnn.logical_core"</query>
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
 | $aggregate$
 | stats `CPU_ALL($statsmode$)` by _time,"CPU.hostname", "CPU.CPUnn.logical_core"
-| sort limit=0 "CPU.hostname" | rename "CPU.* AS * | `CPU_ALL_rename` | rename CPUnn.* AS *
+| sort limit=0 "CPU.hostname" | rename "CPU.*" AS * | `CPU_ALL_rename` | rename CPUnn.* AS *
 | fields _time,hostname,*</link>
                 </drilldown>
             </chart>

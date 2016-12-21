@@ -1468,6 +1468,8 @@ Linux OS example: build an app for Linux OS support only
 
 **Advanced Customization**
 
+.. _split_by_index:
+
 ++++++++++++++++++++++++++++++++++++++++++++
 01 - Splitting index by Environment scenario
 ++++++++++++++++++++++++++++++++++++++++++++
@@ -2144,11 +2146,11 @@ Please consult the Distributed Deployment manual to get details instructions of 
 **SUMMARY OF MAJOR CHANGES**
 
 * The Nmon core application does not create anymore the "nmon" index at installation time (for app certification purposes), the index must be declared manually
-* The Nmon core application does not implement anymore performance and configuration, if you want to get performance of your search heads you must deploy the TA-nmon
+* The Nmon core application does not implement anymore data collection, if you want to get performance data of your search heads you must deploy the TA-nmon
 * The TA-nmon working directory has been migrated from $SPLUNK_HOME/var/run to $SPLUNK_HOME/var/log for certification purposes
 * The nmon_inventory lookup table is now stored in a KVstore collection, after upgrade you must re-generate the nmon inventory data to fill the KVstore (or wait for the next auto iteration)
 * Different old components were removed from the core application (such a the django views), extracting using tar will not clean these files
-* The span definition macro "custom_inlinespan" where renamed to "nmon_span" for easier usage, if you used to customize the minimal span value previously, you must update your local configuration (the original macro were left in case of users would be using it, but it is not used anymore in views)
+* The span definition macro "custom_inlinespan" where renamed to "nmon_span" for easier usage, if you used to customize the minimal span value previously, you must update your local configuration (the original macro still exists in case of users would be using it, but it is not used anymore in views)
 
 **FILES AND DIRECTORY THAT WERE REMOVED FROM THE CORE APPLICATION**
 
@@ -2180,9 +2182,9 @@ If you are running a Search Head Cluster, remove them the deployer and apply the
 
 **PRE-CHECK - HAVE YOU DECLARED YOUR INDEX ?**
 
-As explained bellow, the nmon core application does create anymore the "nmon" index at startup time.
+The nmon core application does create anymore the "nmon" index at startup time.
 
-The reason comes from Splunk certification requirements as this task should be managed by administrators.
+This is a requirement for Splunk application certification, as this task should be managed by Splunk administrators.
 
 If you running in Indexer cluster, then your index has necessarily be declared and you are not concerned.
 
@@ -2208,10 +2210,10 @@ If you were generating performance and configuration data at the search head lev
 
 **RUNNING SPLUNK 6.3 ?**
 
-This release has limited compatibility with Splunk 6.3, if your running on Splunk 6.3:
+This release has a specific compatibility with Splunk 6.3, a few actions are required:
 
 * Download and update the Nmon Performance application
-* If does not exit, create a local/ui/views and copy compatibility mode versions of the following views from default to local, such that these views will overcharge defaults views:
+* If it does not exit, create a directory "local/ui/views" and copy compatibility mode versions of the following views from default to local, such that these views will overcharge defaults views:
 
 *Example:*
 
@@ -2229,13 +2231,13 @@ This release has limited compatibility with Splunk 6.3, if your running on Splun
 
 **Provided starting version 1.7.6, you can also apply a Splunk 6.3 limited compatibility version of savedsearches.conf to prevent from having error messagees for invalid stanza at splunk startup:**
 
-*CAUTION: Overwriting the default/savedsearches.conf is not upgrade resilient (but this is the only way to so), you must redo this step after each update of the application*
+*CAUTION: Overwriting the default/savedsearches.conf is not upgrade resilient, next update will overwrite the file*
 
 ::
 
     cp -p resources/various_customization/savedsearches.conf_forsplunk63.txt default/savedsearches.conf
 
-**If you are using a search head cluster, these modification will take place in the SHC deployer:**
+**If you are using a search head cluster, these modifications will take place in the SHC deployer:**
 
 ::
 

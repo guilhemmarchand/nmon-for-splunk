@@ -38,8 +38,6 @@ This application and all of its components are provided under the Apache 2.0 lic
 
 Unlike professional services, community support comes in "best effort" with absolutely no warranties.
 
-if you are interested in a professional support, please read professional support information from this page.
-
 Companies using this great piece are kindly invited to subscribe for a professional support contract to help us continuing developing the Nmon Performance solution!
 
 ++++++

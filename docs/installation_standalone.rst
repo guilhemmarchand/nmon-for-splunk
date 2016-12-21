@@ -104,10 +104,14 @@ If you are running Splunk on **Linux, AIX or Solaris**, then you can generate Nm
 
 *Since the major release V1.7.4, the data collection has been removed from the core application, you must deploy the TA-nmon add-on*
 
+**CAUTION:** You cannot install more than one TA-nmon in the same machine, for instance do not deploy the TA-nmon and the TA-nmon_selfmode in teh same time, this won't work.
+
+*Replace the TA-nmon_XXXX.tgz with current release of the TA-nmon:*
+
 ::
 
     cd /opt/splunk/etc/apps/
-    tar -xvf /opt/splunk/etc/apps/nmon/resources/TA-nmon*.tgz
+    tar -xvf /opt/splunk/etc/apps/nmon/resources/TA-nmon_XXXX.tgz
 
 And restart Splunk:
 
