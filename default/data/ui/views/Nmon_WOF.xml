@@ -1263,8 +1263,8 @@
 | stats sum(value) AS value by _time,Command
 | stats avg(value) AS value by Command
 | sort - value</query>
-                    <earliest>-5m</earliest>
-                    <latest>now</latest>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1298,8 +1298,8 @@
 | fields $start_top_searches$
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by Command | sort - mem_usage_mb</query>
-                    <earliest>-5m</earliest>
-                    <latest>now</latest>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1327,8 +1327,8 @@
                 <title>Average deployment KBps network traffic</title>
                 <search>
                     <query>eventtype=nmon:performance type=NET $OStype$ $hostname$ device!=*lo* | eval traffic_type=case(match(device, ".+read.+"), "In", match(device, ".+write.+"), "Out") | chart avg(value) AS value by traffic_type | eval value=round(value, 2) | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
-                    <earliest>-5m</earliest>
-                    <latest>now</latest>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
                     <refreshType>delay</refreshType>
                 </search>
