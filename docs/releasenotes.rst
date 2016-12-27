@@ -17,6 +17,18 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.8.3:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Octamis release
+- Nmon WOF dashboard correction (single forms mot linked to shared time picker)
+- Adding direct link to Data model manager, updating to datasets link
+
+=======
 V1.8.2:
 =======
 
