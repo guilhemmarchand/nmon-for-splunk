@@ -13,18 +13,9 @@ Octamis professional support for business
    :align: right
    :target: http://www.octamis.com
 
-**Nmon Performance is now available with professional support contract by Octamis limited!**
+**Nmon Performance is now available with professional support contract by Octamis limited.**
 
-*For more information and subscription:* http://octamis.com
-
-**Octamis professional support provides:**
-
-- Dedicated support with contractual SLA agreements
-- Enterprise dedicated incidents and requests workflow
-- Professional support for customization and evolution of the application integration in your Splunk deployment
-- Dedicated support contacts with knowledge of your deployment
-
-And many more advantages for your Enterprise class solution, we look forward to welcoming you!
+*Contact us at:* sales@octamis.com
 
 -----------------
 Community support
