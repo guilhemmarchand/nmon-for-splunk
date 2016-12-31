@@ -29,6 +29,7 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - Adding direct link to Data model manager, updating to datasets link
 - Implementation of disk extended statistics (DG* sections), new data model, interfaces
 - Implementation of monitors assets description (monitor description enrichment)
+- Allow nmon.conf on a per server basis (/etc/nmon.conf can be set to customize parameters on a per server basis)
 - TA-nmon and PA-nmon update to v1.2.51
 
 =======
