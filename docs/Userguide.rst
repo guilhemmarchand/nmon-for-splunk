@@ -339,7 +339,13 @@ Technical add-ons will allow you to configure various settings of parameters use
 The "nmon.conf" file is located in the "default" directory of nmon / TA-nmon / PA-nmon Apps, it works in a "Splunk" fashion, to modify these settings, copy the default/non.conf to local/nmon.conf. (upgrade resilient)
 This configuration file is sourced at starting time by the "nmon_helper.sh" input script which apply these settings.
 
-**To set custom properties, create a local/nmon.conf file and set parameters:**
+**Since the version 1.2.51 of add-ons, you can configure on a per server basis using a /etc/nmon.conf, precedence:**
+
+- default/nmon.conf defines parameters on a default basis
+- local/nmon.conf can be embedded in your deployment for your own parameters that will be applied to all servers running the agent version
+- /etc/nmon.conf if exists on the server will be applied to define parammeters on a per server basis
+
+**To set custom properties, create a local/nmon.conf and/or /etc/nmon.conf file and set parameters:**
 
 +++++++++++++++++++
 INTERVAL & SNAPSHOT
@@ -490,7 +496,7 @@ The nmon_helper.sh script will proceed as above:
 
 Recently introduced, you can set nmon linux to run its mode of capture in unlimited mode, specially for the TOP section (processes) and block devices.
 
-*CAUTION: This option is experimental and cause increasing volume of data to be generated*
+*CAUTION: This option is experimental and can cause increasing volume of data to be generated*
 
 ::
 
@@ -516,11 +522,22 @@ The maximum number of disk devices to be taken in charge by nmon for Linux has t
     # Up to 3000 devices will be taken in charge by the Application (hard limit in nmon2csv.py / nmon2csv.pl)
     Linux_devices="1500"
 
+**disk extended statistics:**
+
+::
+
+    # Enable disks extended statistics (DG*)
+    # Default is true, which activates and generates DG statistics
+    Linux_disk_dg_enable="1"
+
+    # Name of the User Defined Disk Groups file, "auto" generates this for you
+    Linux_disk_dg_group="auto"
+
 +++++++++++++++++++++++++++
 Solaris OS specific options
 +++++++++++++++++++++++++++
 
-**Using a local/nmon.conf file, you can for Solaris activate the generation of statistics for VxVM volumes:**
+**Using a local/nmon.conf file, you can activate the generation of statistics for VxVM volumes:**
 
 
 ::
