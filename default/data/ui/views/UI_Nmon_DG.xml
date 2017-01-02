@@ -1,0 +1,489 @@
+<form stylesheet="ui_simple.css,panel_decoration.css" isVisible="true">
+    <label>UI DG, Disks extended statistics</label>
+    <description>User Interface for the disks extended performance monitors</description>
+    <!-- Help the user -->
+    <!-- Help the user -->
+    <!-- ################################ -->
+    <!-- Information panel -->
+    <fieldset autoRun="false" submitButton="false">
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>*</default>
+            <prefix>dg.OStype="</prefix>
+            <suffix>"</suffix>
+            <choice value="*">Any OS</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) (dg.frameID="*") (dg.hostname="*") groupby dg.frameID, host prestats=true
+| stats dedup_splitvals=t count AS count by dg.frameID
+| sort limit=0 dg.frameID
+| fields dg.frameID</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>dg.frameID="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>dg.frameID</fieldForLabel>
+            <fieldForValue>dg.frameID</fieldForValue>
+        </input>
+        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+        <input type="multiselect" token="hostname" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="HostsbaseSearch">
+                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) ($frameID$) ($hostname-prefilter$) groupby dg.frameID, host prestats=true
+| stats dedup_splitvals=t count AS count by dg.hostname
+| sort limit=0 dg.hostname
+| fields dg.hostname</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>dg.hostname="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>dg.hostname</fieldForLabel>
+            <fieldForValue>dg.hostname</fieldForValue>
+        </input>
+        <input type="multiselect" token="device" searchWhenChanged="true">
+            <label>Disks Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="DisksbaseSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "dg.hostname", "dg.device" prestats=true
+| stats dedup_splitvals=t count AS Count by "dg.hostname", "dg.device"
+| sort limit=0 "dg.hostname"
+| fields - _span
+| fillnull Count | fields dg.device | dedup dg.device | sort dg.device</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>dg.device="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <default>*</default>
+            <choice value="*">ALL Devices</choice>
+            <fieldForLabel>dg.device</fieldForLabel>
+            <fieldForValue>dg.device</fieldForValue>
+        </input>
+        <input type="dropdown" token="aggregate" searchWhenChanged="true">
+            <label>Aggregate:</label>
+            <choice value="fields *">Single Series</choice>
+            <choice value="stats dedup_splitvals=t avg(*) AS * by _time, dg.hostname | eval dg.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t avg(*) AS * by _time | eval dg.hostname=&quot;aggreg_hostname&quot; | eval dg.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t max(*) AS * by _time, dg.hostname | eval dg.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t max(*) AS * by _time | eval dg.hostname=&quot;aggreg_hostname&quot; | eval dg.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
+            <choice value="stats dedup_splitvals=t sum(*) AS * by _time, dg.hostname | eval dg.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t sum(*) AS * by _time | eval dg.hostname=&quot;aggreg_hostname&quot; | eval dg.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
+            <default>fields *</default>
+        </input>
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Stats mode:</label>
+            <default>max</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+        <input type="checkbox" token="charting" searchWhenChanged="true">
+            <label>Charting:</label>
+            <default>fields *</default>
+            <choice value="fields *">On</choice>
+        </input>
+    </fieldset>
+    <row rejects="$hostname$">
+        <panel>
+            <html>
+                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+            </html>
+        </panel>
+    </row>
+    <row depends="$hostname$" rejects="$device$">
+        <panel>
+            <html>
+                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+            </html>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <html>
+
+                <div class="imgheader">
+                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+                    <h4>
+                        <a data-toggle="modal" data-target="#Help_modal">Help, information and related links for disks statistics</a>
+                    </h4>
+                </div>
+
+                <!-- Modal -->
+                <div class="modal custom-modal-60 fade" id="Help_modal" tabindex="-1" role="dialog" aria-labelledby="Help_modal_Label">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true"/>
+                                </button>
+                                <div style="text-align: left;">
+                                    <h4 class="modal-title" id="Help_modal_Label">Integrated Navigation:</h4>
+                                </div>
+                            </div>
+                            <div class="modal-body">
+
+                                <div style="text-align: center;">
+                                    <img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="drive"/>
+                                    <h1>Disks extended statistics (DG*)</h1>
+                                </div>
+
+                                <div style="text-align: left;">
+
+                                    <h1>Main metrics/fields:</h1>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>disk_backlog_time_ms:</b> Disk Group Backlog time (ms) - DGBACKLOG </li>
+                                            <li><b>disk_busy_time_pct:</b> Disk Group Busy (% of time) - DGBUSY </li>
+                                            <li><b>disk_block_size_KB:</b> Disk Group Block Size KB - DGSIZE</li>
+                                            <li><b>disk_in_flight_io:</b> Disk Group in flight IO (I/O per sec) - DGINFLIGHT</li>
+                                        </lu>
+                                        <br />
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+
+                                            <li><b>disk_read_KB_per_sec:</b> Disk Group Read KB/s - DGREAD </li>
+                                            <li><b>disk_read_sec:</b> Disk Group read/s - DGREADS </li>
+                                            <li><b>disk_read_service_time_ms:</b> Disk Group read service time (SUM ms) - DGREADSERV </li>
+                                            <li><b>disk_read_iops:</b> Disk Group Read Transfers/s (DGREAD divided by DGSIZE) </li>
+                                        </lu>
+                                        <br />
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+
+                                            <li><b>disk_write_KB_per_sec:</b> Disk Group Write KB/s - DGWRITE </li>
+                                            <li><b>disk_write_service_time_ms:</b> Disk Group write service time (SUM ms) - DGWRITESERV </li>
+                                            <li><b>disk_write_iops:</b> Disk Group Write Transfers/s (DGWRITE divided by DGSIZE) </li>
+                                            <li><b>disk_write_sec:</b> Disk Group write/s - DGWRITES</li>
+                                        </lu>
+                                        <br />
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+
+                                        </lu>
+                                        <br />
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>disk_merge_write_sec:</b> Disk Group merged write/s - DGWRITEMERGE </li>
+                                            <li><b>disk_merge_read_sec:</b> Disk Group merged read/s - DGREADMERGE</li>
+                                            <li><b>disk_total_iops:</b> Disk Group Transfers/s - DGXFER </li>
+                                            <li><b>disk_time_spent_for_io_ms:</b> Disk Group time spent for IO (ms) - DGIOTIME </li>
+                                        </lu>
+                                        <br />
+                                    </div>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related links:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:storage%20type%3DDG*" class="tryitbtnxl">Explore RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="Howto_DISK_spl" class="tryitbtnxl">HOWTO Interface for disks»
+                                    </a>
+
+                                    <a target="_blank" href="pivot?model=%2FservicesNS%2Fnobody%2Fnmon%2Fdatamodel%2Fmodel%2FNMON_Data_disks_dg" class="tryitbtnxl">PIVOT Data model »
+                                    </a>
+
+                                    <a target="_blank" href="UI_data_dictionary?&amp;form.itemfilter=DISKS%20STATISTICS" class="tryitbtnxl">Disks Data Dictionary »
+                                    </a>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related metrics:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:storage%20type%3DDISK*" class="tryitbtnxl">Explore DISK* RAW DATA »
+                                    </a>
+
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </html>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <table>
+                <search id="tablestats">
+                    <query>| tstats max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct max(dg.disk_in_flight_io) as disk_in_flight_io max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
+max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops
+from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(dg)` groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct, max(dg.disk_in_flight_io) as disk_in_flight_io, max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
+max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops by _time, dg.hostname, dg.device
+| $aggregate$
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| stats $statsmode$(disk_*) as "disk_*" by hostname, device</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <format type="color" field="disk_backlog_time_ms">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_busy_time_pct">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_in_flight_io">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_time_spent_for_io_ms">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_read_KB_per_sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_read_sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_read_service_time_ms">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_block_size_KB">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_write_KB_per_sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_merge_write_sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_write_sec">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_read_iops">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="disk_write_iops">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+            </table>
+        </panel>
+    </row>
+    <row depends="$charting$">
+        <panel id="settings">
+            <title>Charting parameters</title>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+        </panel>
+    </row>
+    <row depends="$charting$">
+        <panel id="disk">
+            <title>Disks statistics</title>
+            <input type="multiselect" token="monitor" searchWhenChanged="true">
+                <label>Perf monitors</label>
+                <choice value="disk_read_iops">disk_read_iops</choice>
+                <choice value="disk_write_iops">disk_write_iops</choice>
+                <choice value="disk_total_iops">disk_total_iops</choice>
+                <choice value="disk_backlog_time_ms">disk_backlog_time_ms</choice>
+                <choice value="disk_busy_time_pct">disk_busy_time_pct</choice>
+                <choice value="disk_in_flight_io">disk_in_flight_io</choice>
+                <choice value="disk_time_spent_for_io_ms">disk_time_spent_for_io_ms</choice>
+                <choice value="disk_read_KB_per_sec">disk_read_KB_per_sec</choice>
+                <choice value="disk_merge_read_sec">disk_merge_read_sec</choice>
+                <choice value="disk_read_sec">disk_total_iops</choice>
+                <choice value="disk_read_service_time_ms">disk_read_service_time_ms</choice>
+                <choice value="disk_block_size_KB">disk_block_size_KB</choice>
+                <choice value="disk_write_KB_per_sec">disk_write_KB_per_sec</choice>
+                <choice value="disk_merge_write_sec">disk_merge_write_sec</choice>
+                <choice value="disk_write_sec">disk_write_sec</choice>
+                <choice value="disk_write_service_time_ms">disk_write_service_time_ms</choice>
+                <default>disk_read_iops,disk_write_iops,disk_total_iops</default>
+                <delimiter>, </delimiter>
+            </input>
+            <chart>
+                <search id="timechart">
+                    <query>| tstats max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct max(dg.disk_in_flight_io) as disk_in_flight_io max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
+max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops
+from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(dg)` groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct, max(dg.disk_in_flight_io) as disk_in_flight_io, max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
+max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops by _time, dg.hostname, dg.device
+| $aggregate$
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| fields _time,hostname,device,$monitor$
+| eval key=hostname+":"+device
+| timechart $span$ limit=0 useother=f $statsmode$(disk_backlog_time_ms) as disk_backlog_time_ms, $statsmode$(disk_busy_time_pct) as disk_busy_time_pct, $statsmode$(disk_in_flight_io) as disk_in_flight_io, $statsmode$(disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+$statsmode$(disk_read_KB_per_sec) as disk_read_KB_per_sec, $statsmode$(disk_merge_read_sec) as disk_merge_read_sec, $statsmode$(disk_read_sec) as disk_read_sec, $statsmode$(disk_read_service_time_ms) as disk_read_service_time_ms,
+$statsmode$(disk_block_size_KB) as disk_block_size_KB, $statsmode$(disk_write_KB_per_sec) as disk_write_KB_per_sec, $statsmode$(disk_merge_write_sec) as disk_merge_write_sec,
+$statsmode$(disk_write_sec) as disk_write_sec, $statsmode$(disk_write_service_time_ms) as disk_write_service_time_ms, $statsmode$(disk_total_iops) as disk_total_iops, $statsmode$(disk_read_iops) as disk_read_iops, $statsmode$(disk_write_iops) as disk_write_iops by key</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisTitleY.text">KBytes per transfer</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+</form>
