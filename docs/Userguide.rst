@@ -148,7 +148,19 @@ It is being used in the "Data Dictionary" interface to provide a extensible view
    :alt: data_dic3.png
    :align: center
 
+---------------------------
+nmon_data_asset_description
+---------------------------
 
+**nmon_data_asset_description: Description enrichment of Nmon performance monitors categories**
+
+The "nmon_data_asset_description" lookup is a csv file provided by the Application, it is being used to statically enrich the nmon data.
+
+Depending on the "type" field which determines the type of performance monitor (ex: CPU_ALL for Total CPU usage), a field "description" will contain a human readable description of what does this performance monitor.
+
+.. image:: img/data_description.png
+   :alt: data_description.png
+   :align: center
 
 -------------
 nmon_baseline
