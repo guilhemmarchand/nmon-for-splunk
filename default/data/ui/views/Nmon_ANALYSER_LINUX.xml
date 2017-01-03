@@ -85,6 +85,7 @@ groupby "CPU.hostname" prestats=true
                 -->
                 <change>
                     <unset token="form.is_LPAR_input"></unset>
+                    <unset token="form.DG_detection"></unset>
                 </change>
             </input>
 
@@ -206,11 +207,11 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
                 <option name="charting.axisTitleY.text">CPU Usage</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.type="LPAR") (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.type="LPAR") (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
 | eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
-| timechart span=1m $statsmode$(usage) AS $statsmode$_usage</link>
+| timechart span=1m $statsmode$(usage) AS $statsmode$_usage&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -224,7 +225,95 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
                 <choice value="avg">avg</choice>
             </input>
 
-            <chart>
+            <!--
+            This input is an hidden input that will be used to detect if we have disks extended stats available (DG*)
+            Because DG stats will manage the Linux partitioning duplication, measures are more accurate and should
+            preferred rather than using standard DISK*
+            -->
+
+            <input type="dropdown" token="DG_detection" depends="$hidden_element$" searchWhenChanged="true">
+                <label>Detected DG events:</label>
+                <search>
+                    <query>eventtype=nmon:performance type=DGXFER $hostname$ | head 100 | stats count</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <selectFirstChoice>true</selectFirstChoice>
+                <fieldForLabel>count</fieldForLabel>
+                <fieldForValue>count</fieldForValue>
+                <change>
+                    <condition value="0">
+                        <set token="start_disk_iops_search">_time,*</set>
+                        <unset token="start_dg_iops_search"></unset>
+                    </condition>
+                    <condition>
+                        <set token="start_dg_iops_search">_time,*</set>
+                        <unset token="start_disk_iops_search"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <input type="dropdown" token="dg_monitors" depends="$start_dg_iops_search$">
+              <label></label>
+              <choice value="*">ALL</choice>
+              <choice value="disk_total_iops*">total_iops</choice>
+              <choice value="disk_read_iops*">read_iops</choice>
+              <choice value="disk_write_iops*">write_iops</choice>
+              <default>*</default>
+              <delimiter> ,</delimiter>
+            </input>
+
+            <chart depends="$start_dg_iops_search$">
+                <title>I/O Per second</title>
+                <search>
+                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| stats sum(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_iops_search$
+| timechart `nmon_span` $statsmode$(disk_total_iops) as disk_total_iops, $statsmode$(disk_read_iops) as disk_read_iops, $statsmode$(disk_write_iops) as disk_write_iops
+| fields _time,$dg_monitors$</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.overlayFields">disk_total_iops</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGXFER OR type=DGSIZE OR type=DGREAD OR type=DGWRITE $hostname$
+| stats max(disk_*) as "disk_*" by _time,hostname,device
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| timechart `nmon_span` limit=0 useother=f $statsmode$(disk_total_iops) as disk_total_iops, $statsmode$(disk_read_iops) as disk_read_iops, $statsmode$(disk_write_iops) as disk_write_iops by device
+| fields _time,$dg_monitors$&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$start_disk_iops_search$">
                 <title>I/O Per second</title>
                 <search>
                     <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
@@ -234,6 +323,7 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | rename DISKXFER.hostname AS hostname, DISKXFER.device AS device, DISKXFER.value AS value
 | stats sum(value) As value by _time
+| fields $start_disk_iops_search$
 | timechart $span$ $statsmode$(value) AS $statsmode$_iops_usage</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -253,15 +343,15 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">I/O per Sec</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | rename DISKXFER.hostname AS hostname, DISKXFER.device AS device, DISKXFER.value AS value
 | stats sum(value) As value by _time
-| timechart span=1m $statsmode$(value) AS $statsmode$_iops_usage</link>
+| timechart span=1m $statsmode$(value) AS $statsmode$_iops_usage&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -344,9 +434,9 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
-| timechart span=1m avg("CPU.Idle_PCT") AS "Idle_PCT", avg("CPU.Sys_PCT") AS "Sys_PCT", avg("CPU.User_PCT") AS "User_PCT", avg("CPU.Wait_PCT") AS "Wait_PCT"</link>
+| timechart span=1m avg("CPU.Idle_PCT") AS "Idle_PCT", avg("CPU.Sys_PCT") AS "Sys_PCT", avg("CPU.User_PCT") AS "User_PCT", avg("CPU.Wait_PCT") AS "Wait_PCT"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -374,9 +464,9 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.$hostname$) groupby _time, "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
-| timechart span=1m avg("CPU.cpu_PCT") AS "CPU_PCT"</link>
+| timechart span=1m avg("CPU.cpu_PCT") AS "CPU_PCT"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -409,9 +499,9 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.$hostname$) groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.$hostname$) groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
-| timechart span=1m avg("CPU.Idle_PCT") AS "Idle_PCT", avg("CPU.Sys_PCT") AS "Sys_PCT", avg("CPU.User_PCT") AS "User_PCT", avg("CPU.Wait_PCT") AS "Wait_PCT" by "CPU.CPUnn.logical_core"</link>
+| timechart span=1m avg("CPU.Idle_PCT") AS "Idle_PCT", avg("CPU.Sys_PCT") AS "Sys_PCT", avg("CPU.User_PCT") AS "User_PCT", avg("CPU.Wait_PCT") AS "Wait_PCT" by "CPU.CPUnn.logical_core"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -499,10 +589,10 @@ max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
                 <option name="charting.axisTitleY.text">VirtualCPUs</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.$hostname$) groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.$hostname$) groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
-| timechart span=1m useother=f limit=0 max(lpar_vp_usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"</link>
+| timechart span=1m useother=f limit=0 max(lpar_vp_usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by "CPU.hostname"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -536,9 +626,9 @@ groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
                 <option name="charting.axisTitleY.text">VirtualCPUs</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (CPU.$hostname$) groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (CPU.$hostname$) groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage by _time, "CPU.frameID", "CPU.hostname"
-| timechart span=1m useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by "CPU.hostname"</link>
+| timechart span=1m useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by "CPU.hostname"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -660,14 +750,14 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Logical Core</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_Linux.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Linux.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.pct_CPU") AS pct_CPU by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As usage_per_core by _time,Command
-| timechart span=1m useother=f limit=0 max(usage_per_core) as "CPU Usage per core" by Command</link>
+| timechart span=1m useother=f limit=0 max(usage_per_core) as "CPU Usage per core" by Command&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -711,12 +801,12 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Megabytes (MB)</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_Linux.ResSet") AS ResSet from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Linux.ResSet") AS ResSet from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ResSet") AS ResSet by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval Used_Mem_MB=((ResSet)/1024)
 | stats sum(Used_Mem_MB) As Used_Mem_MB by _time,Command
-| timechart span=1m useother=f limit=0 max(Used_Mem_MB) as "Used_Memory" by Command</link>
+| timechart span=1m useother=f limit=0 max(Used_Mem_MB) as "Used_Memory" by Command&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -760,12 +850,12 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Megabytes (MB)</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_Linux.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Linux.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.Size") AS Size by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(Size) As Size by _time,Command
 | eval Virtual_Mem_MB=(Size/1024)
-| timechart span=1m useother=f limit=0 max(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command</link>
+| timechart span=1m useother=f limit=0 max(Virtual_Mem_MB) as "Virtual_Mem_MB" by Command&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -808,11 +898,11 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Pages/sec</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_Linux.MinorFault") AS MinorFault from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Linux.MinorFault") AS MinorFault from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.MinorFault") AS MinorFault by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(MinorFault) As MinorFault by _time,Command
-| timechart span=1m useother=f limit=0 max(MinorFault) as "MinorFault" by Command</link>
+| timechart span=1m useother=f limit=0 max(MinorFault) as "MinorFault" by Command&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -855,11 +945,11 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Pages/sec</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_Linux.MajorFault") AS MajorFault from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Linux.MajorFault") AS MajorFault from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.MajorFault") AS MajorFault by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(MajorFault) As MajorFault by _time,Command
-| timechart span=1m useother=f limit=0 max(MajorFault) as "MajorFault" by Command</link>
+| timechart span=1m useother=f limit=0 max(MajorFault) as "MajorFault" by Command&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -902,11 +992,11 @@ where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.ho
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Pages/sec</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_Linux.ShdLib") AS ShdLib from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Linux.ShdLib") AS ShdLib from datamodel=NMON_Data_TOP.TOP_Linux where (nodename = TOP_Linux) (TOP_Linux.$hostname$) groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ShdLib") AS ShdLib by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | stats sum(ShdLib) As ShdLib by _time,Command
-| timechart span=1m useother=f limit=0 max(ShdLib) as "ShdLib" by Command</link>
+| timechart span=1m useother=f limit=0 max(ShdLib) as "ShdLib" by Command&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -980,8 +1070,8 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Value</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
-| timechart span=1m max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
+| timechart span=1m max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1008,8 +1098,8 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Rates per Second</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
-| timechart span=1m max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
+| timechart span=1m max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1036,8 +1126,8 @@ max("PROC.fork") AS fork max("PROC.exec") AS exec</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Rates per Second</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("PROC.fork") AS fork max("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
-| timechart span=1m max("PROC.fork") AS fork max("PROC.exec") AS exec</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("PROC.fork") AS fork max("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.$hostname$) groupby _time, "PROC.hostname" prestats=true span=1m
+| timechart span=1m max("PROC.fork") AS fork max("PROC.exec") AS exec&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1265,8 +1355,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1293,8 +1383,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1320,8 +1410,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1348,8 +1438,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1376,8 +1466,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1404,8 +1494,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1432,8 +1522,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1460,8 +1550,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1488,8 +1578,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1516,8 +1606,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1544,8 +1634,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1572,8 +1662,8 @@ groupby _time, "Linux.hostname" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Pages</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
-| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.$hostname$) groupby _time, "Linux.hostname" prestats=true span=1m
+| timechart span=1m `VM_Linux(max)` | rename Linux.* AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1673,9 +1763,9 @@ groupby _time MEM.hostname prestats=true span=1m
                 <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
                 <option name="charting.fieldColors">{"mem_total_MB": 0xe50000}</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
-| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
+| timechart span=1m dedup_splitvals=t avg(*) AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1703,9 +1793,9 @@ groupby _time MEM.hostname prestats=true span=1m
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
-| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
+| timechart span=1m dedup_splitvals=t avg(*) AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1733,9 +1823,9 @@ groupby _time MEM.hostname prestats=true span=1m
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
-| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
+| timechart span=1m dedup_splitvals=t avg(*) AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1774,9 +1864,9 @@ groupby _time MEM.hostname prestats=true span=1m
                 <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
                 <option name="charting.fieldColors">{"swap_total_MB": 0xe50000}</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.$hostname$) groupby _time MEM.hostname prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
-| timechart span=1m dedup_splitvals=t avg(*) AS *</link>
+| timechart span=1m dedup_splitvals=t avg(*) AS *&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1875,12 +1965,12 @@ where (nodename = DISKBSIZE) (DISKBSIZE.$hostname$) groupby _time, "DISKBSIZE.ho
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">KBytes per Transfer</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("DISKBSIZE.value") AS value from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (DISKBSIZE.$hostname$) groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("DISKBSIZE.value") AS value from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (DISKBSIZE.$hostname$) groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("DISKBSIZE.value") AS value by _time, "DISKBSIZE.hostname", "DISKBSIZE.device"
 | rename DISKBSIZE.hostname AS hostname, DISKBSIZE.device AS device
 | stats sum(value) As avg_transfer_size by _time,hostname
-| timechart span=1m max(avg_transfer_size) AS avg_transfer_size</link>
+| timechart span=1m max(avg_transfer_size) AS avg_transfer_size&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1914,11 +2004,11 @@ where (nodename = DISKBUSY) (DISKBUSY.$hostname$) groupby _time, "DISKBUSY.hostn
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">% of Time Busy</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("DISKBUSY.value") AS value from datamodel=NMON_Data_DISKBUSY where (nodename = DISKBUSY) (DISKBUSY.$hostname$) groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("DISKBUSY.value") AS value from datamodel=NMON_Data_DISKBUSY where (nodename = DISKBUSY) (DISKBUSY.$hostname$) groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKBUSY.value") AS value by _time, "DISKBUSY.hostname", "DISKBUSY.device"
 | rename DISKBUSY.hostname AS hostname, DISKBUSY.device AS device
 | stats avg(value) As value by _time,hostname
-| timechart span=1m max(value) AS avg_busy_disk</link>
+| timechart span=1m max(value) AS avg_busy_disk&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1953,11 +2043,11 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">KBytes/Sec</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKREAD) (DISKREADWRITE.$hostname$) groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKREAD) (DISKREADWRITE.$hostname$) groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | rename DISKREADWRITE.hostname AS hostname, DISKREADWRITE.device AS device
 | stats sum(value) As value by _time,hostname,device
-| timechart $span$ max(value) AS disk_read</link>
+| timechart $span$ max(value) AS disk_read&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -1992,11 +2082,11 @@ groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true sp
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">KBytes/Sec</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKWRITE) (DISKREADWRITE.$hostname$) groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.type=DISKWRITE) (DISKREADWRITE.$hostname$) groupby _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.hostname", "DISKREADWRITE.device"
 | rename DISKREADWRITE.hostname AS hostname, DISKREADWRITE.device AS device
 | stats sum(value) As value by _time,hostname
-| timechart span=1m max(value) AS disk_write</link>
+| timechart span=1m max(value) AS disk_write&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2030,11 +2120,459 @@ where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostn
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">I/O per Sec</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("DISKXFER.value") AS value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("DISKXFER.value") AS value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.$hostname$) groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS value by _time, "DISKXFER.hostname", "DISKXFER.device"
 | rename DISKXFER.hostname AS hostname, DISKXFER.device AS device
 | stats sum(value) As value by _time
-| timechart span=1m max(value) AS IOPS</link>
+| timechart span=1m max(value) AS IOPS&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+        </panel>
+    </row>
+
+    <search id="disk_dg_stats">
+        <query>| tstats max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct max(dg.disk_in_flight_io) as disk_in_flight_io max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
+max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops
+from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct, max(dg.disk_in_flight_io) as disk_in_flight_io, max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
+max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| stats avg(disk_*) as "disk_*" by _time,hostname
+| timechart `nmon_span` max(disk_backlog_time_ms) as disk_backlog_time_ms, max(disk_busy_time_pct) as disk_busy_time_pct, max(disk_in_flight_io) as disk_in_flight_io, max(disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
+max(disk_read_KB_per_sec) as disk_read_KB_per_sec, max(disk_merge_read_sec) as disk_merge_read_sec, max(disk_read_sec) as disk_read_sec, max(disk_read_service_time_ms) as disk_read_service_time_ms,
+max(disk_block_size_KB) as disk_block_size_KB, max(disk_write_KB_per_sec) as disk_write_KB_per_sec, max(disk_merge_write_sec) as disk_merge_write_sec,
+max(disk_write_sec) as disk_write_sec, max(disk_write_service_time_ms) as disk_write_service_time_ms, max(disk_total_iops) as disk_total_iops, max(disk_read_iops) as disk_read_iops, max(disk_write_iops) as disk_write_iops</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+        <panel>
+
+            <input type="link" token="disk_dg_linkinput">
+                <label></label>
+                <choice value="disk_dg_chart1">DG, I/O Operations per second (DGXFER/DGREAD-DGWRITE by DGSIZE)</choice>
+                <choice value="disk_dg_chart2">DG, % time busy (DGBUSY)</choice>
+                <choice value="disk_dg_chart3">DG, read/write KB (DGREAD/DGWRITE)</choice>
+                <choice value="disk_dg_chart4">DG, block size KB (DGSIZE)</choice>
+                <choice value="disk_dg_chart5">DG, read/write service time ms (DGREADSERV/DGWRITESERV)</choice>
+                <choice value="disk_dg_chart6">DG, read/write per sec (DGREADS/DGWRITES)</choice>
+                <choice value="disk_dg_chart7">DG, merge read/write per sec (DGREADMERGE/DGWRITEMERGE)</choice>
+                <choice value="disk_dg_chart8">DG, time spent (ms) for I/O (DGIOTIME)</choice>
+                <choice value="disk_dg_chart9">DG, back log time (ms) (DGBACKLOG)</choice>
+                <choice value="disk_dg_chart10">DG, In flight I/O (DGINFLIGHT)</choice>
+                <default>disk_dg_chart1</default>
+                <change>
+                    <condition value="disk_dg_chart1">
+                        <set token="disk_dg_chart1">true</set>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart2">
+                        <set token="disk_dg_chart2">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart3">
+                        <set token="disk_dg_chart3">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart4">
+                        <set token="disk_dg_chart4">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart5">
+                        <set token="disk_dg_chart5">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart6">
+                        <set token="disk_dg_chart6">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart7">
+                        <set token="disk_dg_chart7">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart8">
+                        <set token="disk_dg_chart8">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart9">
+                        <set token="disk_dg_chart9">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart10"></unset>
+                    </condition>
+                    <condition value="disk_dg_chart10">
+                        <set token="disk_dg_chart10">true</set>
+                        <unset token="disk_dg_chart1"></unset>
+                        <unset token="disk_dg_chart2"></unset>
+                        <unset token="disk_dg_chart3"></unset>
+                        <unset token="disk_dg_chart4"></unset>
+                        <unset token="disk_dg_chart5"></unset>
+                        <unset token="disk_dg_chart6"></unset>
+                        <unset token="disk_dg_chart7"></unset>
+                        <unset token="disk_dg_chart8"></unset>
+                        <unset token="disk_dg_chart9"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <chart depends="$disk_dg_chart1$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_read_iops,disk_write_iops,disk_total_iops</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Transfers/s (IOPS)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGXFER OR type=DGSIZE OR type=DGREAD OR type=DGWRITE $hostname$
+| stats max(disk_*) as "disk_*" by _time,hostname,device
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| timechart `nmon_span` limit=0 useother=f max(disk_total_iops) as disk_total_iops, max(disk_read_iops) as disk_read_iops, max(disk_write_iops) as disk_write_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart2$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_busy_time_pct</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Pct busy (%)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGBUSY $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_busy_time_pct) as disk_busy_time_pct by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart3$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_read_KB_per_sec,disk_write_KB_per_sec</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">KB/s</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREAD OR type=DGWRITE $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_read_KB_per_sec) as disk_read_KB_per_sec max(disk_write_KB_per_sec) as disk_write_KB_per_sec by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart4$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_block_size_KB</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Kilobytes (KB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_block_size_KB) as disk_block_size_KB by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart5$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_read_service_time_ms,disk_write_service_time_ms</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Milliseconds (ms)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREADSERV OR type=DGWRITESERV $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_read_service_time_ms) as disk_read_service_time_ms max(disk_write_service_time_ms) as disk_write_service_time_ms by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart6$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_read_sec,disk_write_sec</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">read/write per sec</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREADS OR type=DGWRITES $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_read_sec) as disk_read_sec max(disk_write_sec) as disk_write_sec by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart7$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_merge_read_sec,disk_merge_write_sec</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">read/write per sec</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREADMERGE OR type=DGWRITEMERGE $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_merge_read_sec) as disk_merge_read_sec max(disk_merge_write_sec) as disk_merge_write_sec by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart8$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_time_spent_for_io_ms</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Milliseconds (ms)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGIOTIME $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart9$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_backlog_time_ms</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Milliseconds (ms)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGBACKLOG $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_backlog_time_ms) as disk_backlog_time_ms by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+
+            <chart depends="$disk_dg_chart10$">
+                <title></title>
+                <search base="disk_dg_stats">
+                    <query>fields _time,disk_in_flight_io</query>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Tranfers/sec (IOPS)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGINFLIGHT $hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_in_flight_io) as disk_in_flight_io by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2118,8 +2656,8 @@ where (nodename = JFS.JFSFILE) (JFS.$hostname$) ($fsfilter$) groupby _time, "JFS
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" prestats=true span=1m
-| timechart span=1m limit=0 useother=f max("JFS.value") AS value by "JFS.device"</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.$hostname$) groupby _time, "JFS.device" prestats=true span=1m
+| timechart span=1m limit=0 useother=f max("JFS.value") AS value by "JFS.device"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2186,9 +2724,9 @@ groupby _time, "NET_Data_types.device" prestats=true $span$
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">MBps</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("NET_Data_types.NET.value_MBps") AS value from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NET) (NET_Data_types.$hostname$) groupby _time, "NET_Data_types.device" prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("NET_Data_types.NET.value_MBps") AS value from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NET) (NET_Data_types.$hostname$) groupby _time, "NET_Data_types.device" prestats=true span=1m
 | rex mode=sed field="NET_Data_types.device" "s/KB/MB/"
-| timechart span=1m limit=0 useother=f max("NET_Data_types.NET.value_MBps") AS value by "NET_Data_types.device"</link>
+| timechart span=1m limit=0 useother=f max("NET_Data_types.NET.value_MBps") AS value by "NET_Data_types.device"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2219,8 +2757,8 @@ where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby 
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Network Packets</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby _time, "NET_Data_types.device" prestats=true span=1m
-| timechart span=1m limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device"</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NETPACKET) (NET_Data_types.$hostname$) groupby _time, "NET_Data_types.device" prestats=true span=1m
+| timechart span=1m limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2294,11 +2832,11 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Nbr of Operations</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSSVRV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
+| timechart useother=f limit=0 span=1m max(value) AS value by monitor&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2341,11 +2879,11 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Nbr of Operations</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSSVRV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
+| timechart useother=f limit=0 span=1m max(value) AS value by monitor&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2388,11 +2926,11 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Nbr of Operations</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSSVRV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
+| timechart useother=f limit=0 span=1m max(value) AS value by monitor&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2478,11 +3016,11 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time presta
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Nbr of Operations</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSCLIV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
+| timechart useother=f limit=0 span=1m max(value) AS value by monitor&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2525,11 +3063,11 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time presta
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Nbr of Operations</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSCLIV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
+| timechart useother=f limit=0 span=1m max(value) AS value by monitor&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2572,11 +3110,11 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time presta
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Nbr of Operations</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time prestats=true span=1m
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.$hostname$) groupby _time prestats=true span=1m
 | stats dedup_splitvals=t `NFSCLIV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
-| timechart useother=f limit=0 span=1m max(value) AS value by monitor</link>
+| timechart useother=f limit=0 span=1m max(value) AS value by monitor&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
