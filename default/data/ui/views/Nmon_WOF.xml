@@ -47,6 +47,7 @@
        		<change>
          		<unset token="form.OStype_detection"></unset>
                 <unset token="form.TOP_detection"></unset>
+                <unset token="form.DG_detection"></unset>
        		</change>
         </input>
 
@@ -107,6 +108,34 @@
                 <condition>
                     <set token="start_top_searches">_time,*</set>
                     <unset token="show_null_top"></unset>
+                </condition>
+            </change>
+        </input>
+
+        <!--
+        This input is an hidden input that will be used to detect if we have disks extended stats available (DG*)
+        Because DG stats will manage the Linux partitioning duplication, measures are more accurate and should
+        preferred rather than using standard DISK*
+        -->
+
+        <input type="dropdown" token="DG_detection"  depends="$hidden_element$" searchWhenChanged="true">
+            <label>Detected DG events:</label>
+            <search>
+                <query>eventtype=nmon:performance type=DGXFER $hostname$ | head 100 | stats count</query>
+                <earliest>$time.earliest$</earliest>
+                <latest>$time.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>count</fieldForLabel>
+            <fieldForValue>count</fieldForValue>
+            <change>
+                <condition value="0">
+                    <set token="start_disk_stats_search">fields _time,*</set>
+                    <unset token="start_dg_stats_search"></unset>
+                </condition>
+                <condition>
+                    <set token="start_dg_stats_search">fields _time,*</set>
+                    <unset token="start_disk_stats_search"></unset>
                 </condition>
             </change>
         </input>
@@ -784,12 +813,42 @@
 
     <row>
         <panel>
-            <single>
+            <single depends="$start_dg_stats_search$">
+                <title>Average deployment I/O per sec</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DGXFER $OStype$ $hostname$
+| dedup _time,hostname,device,disk_total_iops
+| stats sum(disk_total_iops) AS disk_total_iops by _time
+| fields $start_dg_stats_search$
+| timechart span=5m avg(disk_total_iops) AS disk_total_iops | where isnotnull(disk_total_iops)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">iops</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="refresh.display">preview</option>
+            </single>
+            <single depends="$start_disk_stats_search$">
                 <title>Average deployment I/O per sec</title>
                 <search>
                     <query>eventtype=nmon:performance type=DISKXFER $OStype$ $hostname$
 | dedup _time,hostname,value
 | stats sum(value) AS value by _time
+| fields $start_disk_stats_search$
 | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -814,11 +873,40 @@
             </single>
         </panel>
         <panel>
-            <single>
+            <single depends="$start_dg_stats_search$">
+                <title>Average deployment % of time busy disks</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DGBUSY $OStype$ $hostname$
+| dedup _time,hostname,device,disk_busy_time_pct
+| fields $start_dg_stats_search$
+| timechart span=5m avg(disk_busy_time_pct) AS disk_busy_time_pct | where isnotnull(disk_busy_time_pct)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">%</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="refresh.display">preview</option>
+            </single>
+            <single depends="$start_disk_stats_search$">
                 <title>Average deployment % of time busy disks</title>
                 <search>
                     <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $hostname$
 | dedup _time,hostname,value
+| fields $start_disk_stats_search$
 | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -843,10 +931,39 @@
             </single>
         </panel>
         <panel>
-            <single>
+            <single depends="$start_dg_stats_search$">
                 <title>Average deployment disk data transfer size</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$ | timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=DGSIZE $OStype$ $hostname$
+| fields $start_dg_stats_search$
+| timechart span=5m avg(disk_block_size_KB) AS disk_block_size_KB | where isnotnull(disk_block_size_KB)</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="unit">KBytes</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+                <option name="refresh.display">preview</option>
+            </single>
+            <single depends="$start_disk_stats_search$">
+                <title>Average deployment disk data transfer size</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$
+| fields $start_disk_stats_search$
+| timechart span=5m avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -906,16 +1023,17 @@
         </panel>
     </row>
 
-    <row depends="$show_diskxfer$">
+    <row depends="$show_diskxfer$ $start_dg_stats_search$">
         <panel>
             <chart>
                 <title>Deployment global I/O per sec over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKXFER $OStype$ $hostname$
-| dedup _time,hostname,device,value
-| stats sum(value) AS value by _time
-| timechart span=5m avg(value) AS iops
+                    <query>eventtype=nmon:performance type=DGXFER $OStype$ $hostname$
+| dedup _time,hostname,device,disk_total_iops
+| stats sum(disk_total_iops) AS disk_total_iops by _time
+| timechart span=5m avg(disk_total_iops) AS iops
 | $show_diskxfer$
+| $start_dg_stats_search$
 | trendline sma5(iops) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -952,7 +1070,101 @@
             </chart>
         </panel>
     </row>
-    <row depends="$show_diskxfer$">
+    <row depends="$show_diskxfer$ $start_dg_stats_search$">
+        <panel>
+            <chart>
+                <title>By host I/O per sec over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DGXFER $OStype$ $hostname$
+| dedup _time,hostname,device,disk_total_iops
+| stats sum(disk_total_iops) AS disk_total_iops by _time,hostname
+| $show_diskxfer$
+| $start_dg_stats_search$
+| timechart span=5m avg(disk_total_iops) AS iops by hostname</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_diskxfer$ $start_disk_stats_search$">
+        <panel>
+            <chart>
+                <title>Deployment global I/O per sec over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKXFER $OStype$ $hostname$
+| dedup _time,hostname,device,value
+| stats sum(value) AS value by _time
+| timechart span=5m avg(value) AS iops
+| $show_diskxfer$
+| $start_disk_stats_search$
+| trendline sma5(iops) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_diskxfer$ $start_disk_stats_search$">
         <panel>
             <chart>
                 <title>By host I/O per sec over time</title>
@@ -960,8 +1172,9 @@
                     <query>eventtype=nmon:performance type=DISKXFER $OStype$ $hostname$
 | dedup _time,hostname,value
 | stats sum(value) AS value by _time,hostname
-| timechart span=5m avg(value) AS iops by hostname
-| $show_diskxfer$</query>
+| $start_disk_stats_search$
+| $show_diskxfer$
+| timechart span=5m avg(value) AS iops by hostname</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1020,15 +1233,16 @@
         </panel>
     </row>
 
-    <row depends="$show_diskbusy$">
+    <row depends="$show_diskbusy$ $start_dg_stats_search$">
         <panel>
             <chart>
                 <title>Deployment global % time busy disk over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $hostname$
-| dedup _time,hostname,value
-| timechart span=5m avg(value) AS busy_disk
+                    <query>eventtype=nmon:performance type=DGBUSY $OStype$ $hostname$
+| dedup _time,hostname,device,disk_busy_time_pct
+| timechart span=5m avg(disk_busy_time_pct) AS busy_disk
 | $show_diskbusy$
+| $start_dg_stats_search$
 | trendline sma5(busy_disk) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -1065,15 +1279,108 @@
             </chart>
         </panel>
     </row>
-    <row depends="$show_diskbusy$">
+    <row depends="$show_diskbusy$ $start_dg_stats_search$">
+        <panel>
+            <chart>
+                <title>By host % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DGBUSY $OStype$ $hostname$
+| dedup _time,hostname,device,disk_busy_time_pct
+| $start_dg_stats_search$
+| $show_diskbusy$
+| timechart span=5m avg(disk_busy_time_pct) AS busydisk by hostname</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% time busy</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_diskbusy$ $start_disk_stats_search$">
+        <panel>
+            <chart>
+                <title>Deployment global % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $hostname$
+| dedup _time,hostname,value
+| timechart span=5m avg(value) AS busy_disk
+| $show_diskbusy$
+| $start_disk_stats_search$
+| trendline sma5(busy_disk) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% time busy</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_diskbusy$ $start_disk_stats_search$">
         <panel>
             <chart>
                 <title>By host % time busy disk over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $hostname$
 | dedup _time,hostname,value
-| timechart span=5m avg(value) AS busydisk by hostname
-| $show_diskbusy$</query>
+| $start_disk_stats_search$
+| $show_diskbusy$
+| timechart span=5m avg(value) AS busydisk by hostname</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1132,14 +1439,15 @@
         </panel>
     </row>
 
-    <row depends="$show_diskbsize$">
+    <row depends="$show_diskbsize$ $start_dg_stats_search$">
         <panel>
             <chart>
                 <title>Deployment global % time busy disk over time</title>
                 <search>
-                    <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$
-| dedup _time,hostname,value
-| timechart span=5m avg(value) AS tranfer_rate
+                    <query>eventtype=nmon:performance type=DGSIZE $OStype$ $hostname$
+| dedup _time,hostname,device,disk_block_size_KB
+| timechart span=5m avg(disk_block_size_KB) AS tranfer_rate
+| $start_dg_stats_search$
 | $show_diskbsize$
 | trendline sma5(tranfer_rate) AS trend</query>
                     <earliest>$time.earliest$</earliest>
@@ -1177,15 +1485,108 @@
             </chart>
         </panel>
     </row>
-    <row depends="$show_diskbsize$">
+    <row depends="$show_diskbsize$ $start_dg_stats_search$">
+        <panel>
+            <chart>
+                <title>By host % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DGSIZE $OStype$ $hostname$
+| dedup _time,hostname,device,disk_block_size_KB
+| $start_dg_stats_search$
+| $show_diskbsize$
+| timechart span=5m avg(disk_block_size_KB) AS tranfer_rate by hostname</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBytes</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_diskbsize$ $start_disk_stats_search$">
+        <panel>
+            <chart>
+                <title>Deployment global % time busy disk over time</title>
+                <search>
+                    <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$
+| dedup _time,hostname,value
+| timechart span=5m avg(value) AS tranfer_rate
+| $start_disk_stats_search$
+| $show_diskbsize$
+| trendline sma5(tranfer_rate) AS trend</query>
+                    <earliest>$time.earliest$</earliest>
+                    <latest>$time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBytes</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="height">400</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$show_diskbsize$ $start_disk_stats_search$">
         <panel>
             <chart>
                 <title>By host % time busy disk over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $hostname$
 | dedup _time,hostname,value
-| timechart span=5m avg(value) AS tranfer_rate by hostname
-| $show_diskbsize$</query>
+| $start_disk_stats_search$
+| $show_diskbsize$
+| timechart span=5m avg(value) AS tranfer_rate by hostname</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
