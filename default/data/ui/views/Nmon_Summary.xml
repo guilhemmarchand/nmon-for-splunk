@@ -64,6 +64,7 @@
          		<unset token="form.OStype_detection"></unset>
                 <unset token="form.CPU_datasource_detection"></unset>
                 <unset token="form.TOP_detection"></unset>
+                <unset token="form.DG_detection"></unset>
                 <unset token="CPU_datasource"></unset>
                 <unset token="CPU_datasource_minilabel"></unset>
                 <unset token="is_LPAR"></unset>
@@ -194,6 +195,34 @@
                 <condition>
                     <set token="start_top_searches">_time,*</set>
                     <unset token="show_null_top"></unset>
+                </condition>
+            </change>
+        </input>
+
+        <!--
+        This input is an hidden input that will be used to detect if we have disks extended stats available (DG*)
+        Because DG stats will manage the Linux partitioning duplication, measures are more accurate and should
+        preferred rather than using standard DISK*
+        -->
+
+        <input type="dropdown" token="DG_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Detected DG events:</label>
+            <search>
+                <query>eventtype=nmon:performance type=DGXFER hostname=$hostname$ | head 100 | stats count</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>count</fieldForLabel>
+            <fieldForValue>count</fieldForValue>
+            <change>
+                <condition value="0">
+                    <set token="start_disk_stats_search">_time,*</set>
+                    <unset token="start_dg_stats_search"></unset>
+                </condition>
+                <condition>
+                    <set token="start_dg_stats_search">_time,*</set>
+                    <unset token="start_disk_stats_search"></unset>
                 </condition>
             </change>
         </input>
@@ -512,7 +541,41 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
         <panel id="disk">
             <title>I/O Operations per second</title>
 
-            <chart>
+            <chart depends="$start_dg_stats_search$">
+                <search>
+                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| stats sum(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_stats_search$
+| timechart `nmon_span` max(disk_total_iops) As "max Total I/O", avg(disk_total_iops) As "avg Total I/O"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">350</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">I/O per second</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
+            </chart>
+
+            <chart depends="$start_disk_stats_search$">
                 <search id="IOPStimechart">
                     <query>| tstats max("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$)
 groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
@@ -520,6 +583,7 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS iops by _time, "DISKXFER.hostname", "DISKXFER.device"
 | dedup _time, "DISKXFER.hostname", "DISKXFER.device", iops
 | stats sum(iops) AS iops by _time, "DISKXFER.hostname"
+| fields $start_disk_stats_search$
 | timechart $span$ max(iops) As "max Total I/O", avg(iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -938,6 +1002,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 
     <!-- ######################################### DISKS #########################################  -->
 
+    <!--  disks extended stats (DG*) -->
+
     <row depends="$show_disks$">
         <panel>
             <html>
@@ -948,7 +1014,328 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         </panel>
     </row>
 
-    <row depends="$show_disks$">
+    <row depends="$show_disks$ $start_dg_stats_search$">
+        <panel>
+            <chart>
+                <title>Avg I/O per sec over time - click on the chart to get by device view</title>
+                <search>
+                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| stats sum(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_stats_search$
+| timechart `nmon_span` avg(disk_total_iops) as disk_total_iops | trendline sma5(disk_total_iops) AS trend</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500</option>
+                <option name="refresh.display">none</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGXFER hostname=$hostname$
+| timechart `nmon_span` limit=0 useother=f avg(disk_total_iops) as disk_total_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Avg read/write I/O per sec over time - click on the chart to get by device view</title>
+                <search>
+                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| stats sum(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_stats_search$
+| timechart `nmon_span` avg(disk_read_iops) as disk_read_iops avg(disk_write_iops) as disk_write_iops</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">I/O per sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500</option>
+                <option name="refresh.display">none</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE OR type=DGREAD OR type=DGWRITE hostname=$hostname$
+| stats max(disk_*) as "disk_*" by _time,hostname,device
+| eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
+| timechart `nmon_span` limit=0 useother=f avg(disk_read_iops) as disk_read_iops, avg(disk_write_iops) as disk_write_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_disks$ $start_dg_stats_search$">
+        <panel>
+            <chart>
+                <title>Avg % busy time - click on the chart to get by device view</title>
+                <search>
+                    <query>| tstats max(dg.disk_busy_time_pct) as disk_busy_time_pct from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_busy_time_pct) as disk_busy_time_pct by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_stats_search$
+| timechart `nmon_span` avg(disk_busy_time_pct) as disk_busy_time_pct | trendline sma5(disk_busy_time_pct) AS trend</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">% of time busy</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500</option>
+                <option name="refresh.display">none</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGBUSY hostname=$hostname$
+| timechart `nmon_span` limit=0 useother=f avg(disk_busy_time_pct) as disk_busy_time_pct by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Avg data transfer size over time - click on the chart to get by device view</title>
+                <search>
+                    <query>| tstats max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_stats_search$
+| timechart `nmon_span` avg(disk_block_size_KB) as disk_block_size_KB | trendline sma5(disk_block_size_KB) AS trend</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBytes per transfer</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500</option>
+                <option name="refresh.display">none</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE hostname=$hostname$
+| timechart `nmon_span` limit=0 useother=f avg(disk_block_size_KB) as disk_block_size_KB by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_disks$ $start_dg_stats_search$">
+        <panel>
+            <chart>
+                <title>Avg read/write data rate (KBytes/sec) - click on the chart to get by device view</title>
+                <search>
+                    <query>| tstats max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_stats_search$
+| timechart `nmon_span` avg(disk_read_KB_per_sec) as disk_read_KB_per_sec avg(disk_write_KB_per_sec) as disk_write_KB_per_sec</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBytes/sec</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500</option>
+                <option name="refresh.display">none</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREAD OR type=DGWRITE hostname=$hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_read_KB_per_sec) as disk_read_KB_per_sec max(disk_write_KB_per_sec) as disk_write_KB_per_sec by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+        </panel>
+        <panel>
+            <chart>
+                <title>Avg read/write service time (ms) - click on the chart to get by device view</title>
+                <search>
+                    <query>| tstats max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms by _time, dg.hostname, dg.device
+| rename "dg.hostname" AS hostname, "dg.device" AS device
+| fields hostname, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,hostname
+| fields $start_dg_stats_search$
+| timechart `nmon_span` avg(disk_read_service_time_ms) as disk_read_service_time_ms avg(disk_write_service_time_ms) as disk_write_service_time_ms</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">Milliseconds (ms)</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="height">500</option>
+                <option name="refresh.display">none</option>
+                <drilldown target="search">
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREADSERV OR type=DGWRITESERV hostname=$hostname$
+| timechart `nmon_span` limit=0 useother=f max(disk_read_service_time_ms) as disk_read_service_time_ms max(disk_write_service_time_ms) as disk_write_service_time_ms by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+                </drilldown>
+            </chart>
+        </panel>
+    </row>
+
+    <!--  disks standard stats (DISK*) -->
+
+    <row depends="$show_disks$ $start_disk_stats_search$">
         <panel>
             <chart>
                 <title>Avg I/O per sec over time</title>
@@ -959,6 +1346,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | dedup _time, hostname, device, value
 | stats dedup_splitvals=t sum(value) AS value by _time, hostname
 | fields $show_disks$
+| fields $start_disk_stats_search$
 | timechart $span$ avg(value) As iops | trendline sma5(iops) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1004,6 +1392,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | rename "DISKBUSY.*" AS *
 | dedup _time, hostname, device, value
 | fields $show_disks$
+| fields $start_disk_stats_search$
 | stats dedup_splitvals=t avg(value) AS value by _time, hostname
 | timechart $span$ avg(value) As busy_time | trendline sma5(busy_time) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1043,7 +1432,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         </panel>
     </row>
 
-    <row depends="$show_disks$">
+    <row depends="$show_disks$ $start_disk_stats_search$">
         <panel>
             <chart>
                 <title>Avg data transfer size over time</title>
@@ -1054,6 +1443,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | dedup _time, hostname, device, value
 | stats dedup_splitvals=t sum(value) AS value by _time, hostname
 | fields $show_disks$
+| fields $start_disk_stats_search$
 | timechart $span$ avg(value) As avg_transfer_size | trendline sma5(avg_transfer_size) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1099,6 +1489,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | dedup _time, key, value
 | stats sum(value) AS value by _time, key
 | fields $show_disks$
+| fields $start_disk_stats_search$
 | timechart $span$ avg(value) As avg_data_rate by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1108,7 +1499,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleX.visibility">visible</option>
-                <option name="charting.axisTitleY.text">(KBytes/sec)</option>
+                <option name="charting.axisTitleY.text">KBytes/sec</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
