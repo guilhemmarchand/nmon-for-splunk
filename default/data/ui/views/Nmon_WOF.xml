@@ -1725,9 +1725,14 @@
         </panel>
         <panel>
             <single>
-                <title>Average deployment KBps network traffic</title>
+                <title>Deployment MBps network traffic (total)</title>
                 <search>
-                    <query>eventtype=nmon:performance type=NET $OStype$ $hostname$ device!=*lo* | eval traffic_type=case(match(device, ".+read.+"), "In", match(device, ".+write.+"), "Out") | chart avg(value) AS value by traffic_type | eval value=round(value, 2) | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=NET $OStype$ $hostname$ device!=*lo*
+| eval traffic_type=case(match(device, ".+read.+"), "In", match(device, ".+write.+"), "Out")
+| stats sum(value) as value by _time,traffic_type
+| eval value=round((value/1000),3)
+| chart latest(value) AS value by traffic_type | eval value=round(value, 3)
+| fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1744,7 +1749,7 @@
                 <option name="showTrendIndicator">1</option>
                 <option name="trendColorInterpretation">inverse</option>
                 <option name="trendDisplayMode">percent</option>
-                <option name="unit">kbps</option>
+                <option name="unit">MBps</option>
                 <option name="unitPosition">after</option>
                 <option name="useColors">0</option>
                 <option name="useThousandSeparators">1</option>
