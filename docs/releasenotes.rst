@@ -25,7 +25,7 @@ V1.8.3:
 Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
 - Octamis release, Nmon Performance suite is now a company supported software
-- ITSI better compatibility (only a few system stats are not yet supported)
+- ITSI better compatibility (most ITSI OS module builtin will work, entities dynamic inventory...)
 - Nmon WOF dashboard correction (single forms mot linked to shared time picker)
 - Adding direct link to Data model manager, updating to datasets link, correction to removed interfaces (UI RT)
 - Implementation of Linux disks extended statistics (DG* sections), new data model, interfaces, Howto
