@@ -24,12 +24,15 @@ V1.8.3:
 
 Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
-- Octamis release
+- Octamis release, Nmon Performance suite is now a company supported software
+- ITSI better compatibility (only a few system stats are not yet supported)
 - Nmon WOF dashboard correction (single forms mot linked to shared time picker)
-- Adding direct link to Data model manager, updating to datasets link
-- Implementation of disk extended statistics (DG* sections), new data model, interfaces
+- Adding direct link to Data model manager, updating to datasets link, correction to removed interfaces (UI RT)
+- Implementation of Linux disks extended statistics (DG* sections), new data model, interfaces, Howto
+- Nmon Analyser update, Nmon Summary and WOF will now automatically choose disks extended statistics when available
 - Implementation of monitors assets description (monitor description enrichment)
 - Allow nmon.conf on a per server basis (/etc/nmon.conf can be set to customize parameters on a per server basis)
+- Generic Nmon binaries not recognized for Linux 32 bits systems
 - TA-nmon and PA-nmon update to v1.2.51
 
 =======
