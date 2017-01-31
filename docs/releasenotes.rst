@@ -24,6 +24,16 @@ V1.8.3:
 
 Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
+- Improvement of multi line event management for syslog inputs
+
+=======
+V1.8.3:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
 - Octamis release, Nmon Performance suite is now a company supported software
 - ITSI better compatibility (most ITSI OS module builtin will work, entities dynamic inventory...)
 - Nmon WOF dashboard correction (single forms mot linked to shared time picker)
