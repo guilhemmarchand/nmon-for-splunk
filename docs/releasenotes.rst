@@ -17,6 +17,17 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.8.4:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+- Improved multi-line events management for rsyslog with nmon-logger agent
+- Removal of the static "nmon" index abstraction layer: the app supports natively any index statrting with the nmon pattern
+
+=======
 V1.8.3:
 =======
 

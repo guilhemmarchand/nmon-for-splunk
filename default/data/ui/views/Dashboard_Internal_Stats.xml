@@ -43,7 +43,7 @@
             <single>
                 <!-- This search will be used to verify if we must show the null global indexing message, this performs best than integrating the progress condition with the search -->
                 <search>
-                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | stats count | where count>0</query>
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx` | stats count | where count>0</query>
                     <earliest>-1d@d</earliest>
                     <latest>@d</latest>
                     <!-- Progress event has access to job properties only -->
@@ -66,7 +66,7 @@
             <title>LICENCING: Total Cost of Ownership per server</title>
             <single rejects="$show_admin_required$ $show_null_per_server_indexing$">
                 <search>
-                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | where b>0 | timechart span=1h sum(b) AS b  | eval volume_MB = round(b/1024/1024,2)
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx` | where b>0 | timechart span=1h sum(b) AS b  | eval volume_MB = round(b/1024/1024,2)
 | fillnull value=0
 | appendcols [ | pivot NMON_Data_CPU CPU_ALL dc(hostname) AS "dcount" SPLITROW _time AS _time PERIOD hour SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 ]
 | eval cost_per_server_MB=(volume_MB/dcount) | stats avg(cost_per_server_MB) AS cost_per_server_MB
@@ -114,7 +114,7 @@
             <title>LICENCING: Total Cost of Ownership of global indexing</title>
             <single rejects="$show_admin_required$ $show_null_global_indexing$">
                 <search>
-                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon" | where b>0 | timechart span=1d sum(b) AS b
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx` | where b>0 | timechart span=1d sum(b) AS b
 | fillnull value=0
 | stats avg(b) AS avg_volume_per_day
 | eval avg_volume_per_day_GB=round((avg_volume_per_day/1024/1024/1024),2)
@@ -264,7 +264,7 @@
     </row>
 
     <search id="dbinspect">
-        <query>| dbinspect index=nmon
+        <query>| dbinspect `nmon_index`
 | eval rawSize_MB=(rawSize/1024/1024)
 | stats sum(rawSize_MB) AS rawSize_MB, sum(sizeOnDiskMB) AS sizeOnDiskMB, dc(bucketId) AS dcount_bucket
 | eval compress_ratio = round(rawSize_MB / sizeOnDiskMB, 2)." : 1"
@@ -327,7 +327,7 @@
             </single>
             <single>
                 <search>
-                    <query>| dbinspect index=nmon
+                    <query>| dbinspect `nmon_index`
 | stats dc(bucketId) AS dcount by state
 | search state=hot | fields dcount</query>
                     <earliest>0</earliest>
@@ -339,7 +339,7 @@
             </single>
             <single rejects="$show_null_warm$">
                 <search>
-                    <query>| dbinspect index=nmon
+                    <query>| dbinspect `nmon_index`
 | stats dc(bucketId) AS dcount by state
 | search state=warm | fields dcount</query>
                     <earliest>0</earliest>
@@ -363,7 +363,7 @@
             </html>
             <single rejects="$show_null_cold$">
                 <search>
-                    <query>| dbinspect index=nmon
+                    <query>| dbinspect `nmon_index`
 | stats dc(bucketId) AS dcount by state
 | search state=cold | fields dcount</query>
                     <earliest>0</earliest>
@@ -511,7 +511,7 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
             </input>
             <chart rejects="$show_admin_required$">
                 <search id="metric_timechartsearch">
-                    <query>index=_internal source=*license_usage.log* type=Usage idx="nmon"
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx`
 | where b>0 | bucket _time span=1m
 | stats sum(b) AS b by _time,idx
 | timechart span=1d sum(b) AS b
