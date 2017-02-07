@@ -36,7 +36,7 @@ styles in <div> tags, similar to Bootstrap's grid system.
     <div id="row1" class="dashboard-row dashboard-row1">
         <div id="panel1" class="dashboard-cell" style="width: 100%;">
             <div class="dashboard-panel clearfix">
-                <h2 class="panel-title">Add a new entry in the mapping collection:</h2>
+                <h2 class="panel-title"># Add # a new entry in the mapping collection:</h2>
 
                 <div class="fieldset">
                     <div class="input input-text" id="input1">
@@ -60,10 +60,40 @@ styles in <div> tags, similar to Bootstrap's grid system.
         </div>
     </div>
 
-    <div id="row2" class="dashboard-row dashboard-row2">
+    <div id="row2" class="dashboard-row dashboard-row1">
         <div id="panel2" class="dashboard-cell" style="width: 100%;">
             <div class="dashboard-panel clearfix">
-                <h2 class="panel-title">Remove an new entry from the mapping collection:</h2>
+                <h2 class="panel-title"># Modify # an existing entry in the mapping collection:</h2>
+
+                <div class="fieldset">
+                    <div class="input input-text" id="input10">
+                        <label>Enter the KeyID:</label>
+                    </div>
+                    <div class="input input-text" id="input11">
+                        <label>Enter the frameID:</label>
+                    </div>
+                    <div class="input input-text" id="input12">
+                        <label>Enter the serialnum:</label>
+                    </div>
+                    <div class="input input-text" id="input13">
+                        <label>Enter the host:</label>
+                    </div>
+                    <div class="input input-text" id="input14">
+                        <label>Enter the host_description:</label>
+                    </div>
+                    <div class="form-submit" id="search_btn2">
+                        <button class="btn btn-primary submit">Submit</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="row3" class="dashboard-row dashboard-row2">
+        <div id="panel3" class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel clearfix">
+                <h2 class="panel-title"># Remove # an new entry from the mapping collection:</h2>
 
                 <div class="fieldset">
                     <div>
@@ -80,8 +110,8 @@ styles in <div> tags, similar to Bootstrap's grid system.
         </div>
     </div>
 
-    <div id="row3" class="dashboard-row dashboard-row3">
-        <div id="panel3" class="dashboard-cell" style="width: 100%;">
+    <div id="row4" class="dashboard-row dashboard-row3">
+        <div id="panel4" class="dashboard-cell" style="width: 100%;">
             <div class="dashboard-panel clearfix">
                 <h2 class="panel-title">Show and search, enter desired values and press enter to update:</h2>
 
@@ -462,6 +492,56 @@ require([
             FormUtils.handleValueChange(input9);
         });
 
+        var input10 = new TextInput({
+            "id": "input10",
+            "value": "$form.modify_key$",
+            "el": $('#input10')
+        }, {tokens: true}).render();
+
+        input10.on("change", function(newValue) {
+            FormUtils.handleValueChange(input10);
+        });
+
+        var input11 = new TextInput({
+            "id": "input11",
+            "value": "$form.modify_frameID$",
+            "el": $('#input11')
+        }, {tokens: true}).render();
+
+        input11.on("change", function(newValue) {
+            FormUtils.handleValueChange(input11);
+        });
+
+        var input12 = new TextInput({
+            "id": "input12",
+            "value": "$form.modify_serialnum$",
+            "el": $('#input12')
+        }, {tokens: true}).render();
+
+        input12.on("change", function(newValue) {
+            FormUtils.handleValueChange(input12);
+        });
+
+        var input13 = new TextInput({
+            "id": "input13",
+            "value": "$form.modify_host$",
+            "el": $('#input13')
+        }, {tokens: true}).render();
+
+        input13.on("change", function(newValue) {
+            FormUtils.handleValueChange(input13);
+        });
+
+        var input14 = new TextInput({
+            "id": "input14",
+            "value": "$form.modify_host_description$",
+            "el": $('#input14')
+        }, {tokens: true}).render();
+
+        input14.on("change", function(newValue) {
+            FormUtils.handleValueChange(input14);
+        });
+
         //
         // SERVICE OBJECT
         //
@@ -476,7 +556,7 @@ require([
         //
 
         // Call this function when the Delete Record button is clicked
-        $("#deleteRecord").click(function() {
+        $("#deleteRecord2").click(function() {
             // Get the value of the key ID field
             var tokens = mvc.Components.get("default");
             var form_keyid = tokens.get("KeyID");
@@ -492,6 +572,27 @@ require([
             return false;
         });
 
+        $("#deleteRecord").click(function() {
+            var x;
+            if (confirm("Do you want to remove this entry ?") == true) {
+                // Get the value of the key ID field
+                var tokens = mvc.Components.get("default");
+                var form_keyid = tokens.get("KeyID");
+
+                // Delete the record that corresponds to the key ID using
+                // the del method to send a DELETE request
+                // to the storage/collections/data/{collection}/ endpoint
+                service.del("storage/collections/data/kv_nmon_frameID_mapping/" + encodeURIComponent(form_keyid))
+                    .done(function() {
+                        // Run the search again to update the table
+                        search1.startSearch();
+                    });
+                return false;
+            } else {
+                x = "You pressed Cancel!";
+            }
+            document.getElementById("#deleteRecord").innerHTML = x;
+        });
 
         //
         // SUBMIT FORM DATA
@@ -524,6 +625,52 @@ require([
             // to the storage/collections/data/{collection}/ endpoint
             service.request(
                 "storage/collections/data/kv_nmon_frameID_mapping/",
+                "POST",
+                null,
+                null,
+                JSON.stringify(record),
+                {"Content-Type": "application/json"},
+                null)
+                    .done(function() {
+                         // Run the search again to update the table
+                        search1.startSearch();
+
+                        // Clear the form fields
+                        $("#formCustomerInfo input[type=text]").val("");
+                    });
+        });
+
+        var submit = new SubmitButton({
+            id: 'submit2',
+            el: $('#search_btn2')
+        }, {tokens: true}).render();
+
+        submit.on("submit", function() {
+            submitTokens();
+
+            // When the Submit button is clicked, get all the form fields by accessing token values
+            var tokens = mvc.Components.get("default");
+            var form_modify_key = tokens.get("modify_key");
+            var form_modify_frameID = tokens.get("modify_frameID");
+            var form_modify_serialnum = tokens.get("modify_serialnum");
+            var form_modify_host = tokens.get("modify_host");
+            var form_modify_host_description = tokens.get("modify_host_description");
+
+            // Create the endpoint URL
+            var myendpoint_URl = "storage/collections/data/kv_nmon_frameID_mapping/" + form_modify_key;
+
+            // Create a dictionary to store the field names and values
+            var record = {
+                "frameID": form_modify_frameID,
+                "serialnum": form_modify_serialnum,
+                "host": form_modify_host,
+                "host_description": form_modify_host_description
+            };
+
+            // Use the request method to send a REST POST request
+            // to the storage/collections/data/{collection}/entry_key endpoint
+            service.request(
+                myendpoint_URl,
                 "POST",
                 null,
                 null,
