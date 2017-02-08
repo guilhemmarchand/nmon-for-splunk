@@ -7,6 +7,9 @@
     <link rel="shortcut icon" href="/en-US/static/@9DEE210D3C0EC367AC37995A355F1389DE0F4C59CE83FF3C7722ABCD83B3FFE0/img/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/build/css/bootstrap-enterprise.css" />
     <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/css/build/pages/dashboard-simple-bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/ui_simple.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/panel_decoration.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/hover.css" />
 
 </head>
 <body class="simplexml preload locale-en" data-splunk-version="6.5.2" data-splunk-product="enterprise">
@@ -36,11 +39,67 @@ styles in <div> tags, similar to Bootstrap's grid system.
                 <h2 class="panel-title"></h2>
 
                 <div class="panel-element-row">
-                    <div id="element2" class="dashboard-element single" style="width: 100%">
+                    <div id="element2" class="dashboard-element single" style="width: 33.33%">
+                        <div class="panel-body"></div>
+                    </div>
+                    <div id="element5" class="dashboard-element single" style="width: 33.33%">
+                        <div class="panel-body"></div>
+                    </div>
+                    <div id="element6" class="dashboard-element single" style="width: 33.33%">
                         <div class="panel-body"></div>
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <div id="row10" class="dashboard-row dashboard-row2">
+        <div id="panel10" class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel clearfix">
+                <h2 class="panel-title"></h2>
+
+                <div class="panel-element-row">
+                    <div id="element3" class="dashboard-element html" style="width: 100%">
+                        <div class="panel-body html">
+                                <div class="custom-sub-nav" style="text-align: center;"><button class="button2_lowpadding glow" data-token-name="show_fulltable" data-alt-label="HIDE LOOKUP CONTENT" data-token-value="fields - _time">SHOW LOOKUP CONTENT</button></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="row22" class="dashboard-row dashboard-row22" data-depends="$show_fulltable$">
+        <div id="panel22" class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel clearfix">
+                <h2 class="panel-title">NMON frameID KVstore content - To search, fill the relevant field(s) and press enter - To pre-fill for modification and deletion, click on any row of the table</h2>
+
+                <div class="panel-element-row">
+                    <div id="element4" class="dashboard-element table" style="width: 100%">
+
+                        <div class="fieldset">
+                            <div class="input input-text" id="input16">
+                                <label>Search keyID:</label>
+                            </div>
+                            <div class="input input-text" id="input6">
+                                <label>Search frameID:</label>
+                            </div>
+                            <div class="input input-text" id="input7">
+                                <label>Search serialnum:</label>
+                            </div>
+                            <div class="input input-text" id="input8">
+                                <label>Search host:</label>
+                            </div>
+                            <div class="input input-text" id="input9">
+                                <label>Search host_description:</label>
+                            </div>
+                        </div>
+
+                        <div class="panel-body"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -95,7 +154,7 @@ styles in <div> tags, similar to Bootstrap's grid system.
     <div id="row6" class="dashboard-row dashboard-row6">
         <div id="panel6" class="dashboard-cell" style="width: 100%;">
             <div class="dashboard-panel clearfix">
-                <h2 class="panel-title"># Modify # an existing entry - Click on any row of the table to pre-fill the fields to be modified</h2>
+                <h2 class="panel-title"># Modify # an existing entry - Click on any row of the table to pre-fill the fields to be modified (bellow the list of unset frameID entries)</h2>
 
                 <div class="fieldset">
                     <div class="input input-text" id="input10">
@@ -280,7 +339,7 @@ require([
             "earliest_time": "0",
             "status_buckets": 0,
             "sample_ratio": 1,
-            "latest_time": "$latest$",
+            "latest_time": "now",
             "cancelOnUnload": true,
             "search": "| inputlookup nmon_frameID_mapping | $user_selection$ | search frameID=* serialnum=* host=* host_description=* | eval  KeyID = _key | table KeyID,frameID,serialnum,host,host_description,*",
             "app": utils.getCurrentApp(),
@@ -297,6 +356,48 @@ require([
             "cancelOnUnload": true,
             "latest_time": "now",
             "search": "| inputlookup nmon_frameID_mapping | where frameID=host | stats dc(host) as count",
+            "app": utils.getCurrentApp(),
+            "auto_cancel": 90,
+            "preview": true,
+            "runWhenTimeIsUndefined": false
+        }, {tokens: true, tokenNamespace: "submitted"});
+
+        var search3 = new SearchManager({
+            "id": "search3",
+            "earliest_time": "0",
+            "status_buckets": 0,
+            "sample_ratio": 1,
+            "latest_time": "now",
+            "cancelOnUnload": true,
+            "search": "| inputlookup nmon_frameID_mapping | search _key=$search_keyID$ frameID=$search_frameID$ serialnum=$search_serialnum$ host=$search_host$ host_description=$search_host_description$ | eval  KeyID = _key | table KeyID,frameID,serialnum,host,host_description,*",
+            "app": utils.getCurrentApp(),
+            "auto_cancel": 90,
+            "preview": true,
+            "runWhenTimeIsUndefined": false
+        }, {tokens: true, tokenNamespace: "submitted"});
+
+        var search4 = new SearchManager({
+            "id": "search4",
+            "earliest_time": "-7d",
+            "status_buckets": 0,
+            "sample_ratio": 1,
+            "latest_time": "now",
+            "cancelOnUnload": true,
+            "search": "| inputlookup nmon_frameID_mapping | stats dc(host) as host_in_lookup | appendcols [ | tstats dc(host) as host_in_data WHERE `nmon_index` sourcetype=nmon_data ] | eval delta=if(host_in_lookup>host_in_data, host_in_lookup-host_in_data, host_in_data-host_in_lookup) | fields delta",
+            "app": utils.getCurrentApp(),
+            "auto_cancel": 90,
+            "preview": true,
+            "runWhenTimeIsUndefined": false
+        }, {tokens: true, tokenNamespace: "submitted"});
+
+        var search5 = new SearchManager({
+            "id": "search5",
+            "earliest_time": "-7d",
+            "status_buckets": 0,
+            "sample_ratio": 1,
+            "latest_time": "now",
+            "cancelOnUnload": true,
+            "search": "| inputlookup nmon_frameID_mapping | stats count by host | where count>1 | stats dc(host) as count",
             "app": utils.getCurrentApp(),
             "auto_cancel": 90,
             "preview": true,
@@ -378,6 +479,83 @@ require([
             "el": $('#element2')
         }, {tokens: true, tokenNamespace: "submitted"}).render();
 
+        var element3 = new HtmlElement({
+            "id": "element3",
+            "useTokens": true,
+            "el": $('#element3')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        DashboardController.addReadyDep(element3.contentLoaded());
+
+        var element4 = new TableElement({
+            "id": "element4",
+            "count": 10,
+            "dataOverlayMode": "none",
+            "drilldown": "row",
+            "percentagesRow": "false",
+            "rowNumbers": "false",
+            "totalsRow": "false",
+            "wrap": "true",
+            "managerid": "search3",
+            "el": $('#element4')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        element4.on("click", function(e) {
+            if (e.field !== undefined) {
+                e.preventDefault();
+                setToken("KeyID", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("host_description", TokenUtils.replaceTokenNames("$row.host_description$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.KeyID", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.host_description", TokenUtils.replaceTokenNames("$row.host_description$", _.extend(submittedTokenModel.toJSON(), e.data)));
+            }
+        });
+
+        var element5 = new SingleElement({
+            "id": "element5",
+            "unitPosition": "after",
+            "numberPrecision": "0",
+            "drilldown": "none",
+            "useColors": "1",
+            "trendDisplayMode": "absolute",
+            "rangeValues": "[0]",
+            "colorBy": "value",
+            "showTrendIndicator": "1",
+            "showSparkline": "1",
+            "colorMode": "none",
+            "trendColorInterpretation": "standard",
+            "underLabel": "Number of host(s) in delta (more hosts in data or more hosts in collection)",
+            "useThousandSeparators": "1",
+            "rangeColors": "[\"0x65a637\",\"0xd93f3c\"]",
+            "managerid": "search4",
+            "el": $('#element5')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        var element6 = new SingleElement({
+            "id": "element6",
+            "unitPosition": "after",
+            "numberPrecision": "0",
+            "drilldown": "none",
+            "useColors": "1",
+            "trendDisplayMode": "absolute",
+            "rangeValues": "[0]",
+            "colorBy": "value",
+            "showTrendIndicator": "1",
+            "showSparkline": "1",
+            "colorMode": "none",
+            "trendColorInterpretation": "standard",
+            "underLabel": "Number of host(s) with duplicated entries in the collection",
+            "useThousandSeparators": "1",
+            "rangeColors": "[\"0x65a637\",\"0xd93f3c\"]",
+            "managerid": "search5",
+            "el": $('#element6')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
         //
         // VIEWS: FORM INPUTS
         //
@@ -432,10 +610,23 @@ require([
             FormUtils.handleValueChange(input5);
         });
 
+        var input16 = new TextInput({
+            "id": "input16",
+            "value": "$form.search_keyID$",
+            "default": "*",
+            "searchWhenChanged": true,
+            "el": $('#input16')
+        }, {tokens: true}).render();
+
+        input16.on("change", function(newValue) {
+            FormUtils.handleValueChange(input16);
+        });
+
         var input6 = new TextInput({
             "id": "input6",
             "value": "$form.search_frameID$",
             "default": "*",
+            "searchWhenChanged": true,
             "el": $('#input6')
         }, {tokens: true}).render();
 
@@ -447,6 +638,7 @@ require([
             "id": "input7",
             "value": "$form.search_serialnum$",
             "default": "*",
+            "searchWhenChanged": true,
             "el": $('#input7')
         }, {tokens: true}).render();
 
@@ -458,6 +650,7 @@ require([
             "id": "input8",
             "value": "$form.search_host$",
             "default": "*",
+            "searchWhenChanged": true,
             "el": $('#input8')
         }, {tokens: true}).render();
 
@@ -469,6 +662,7 @@ require([
             "id": "input9",
             "value": "$form.search_host_description$",
             "default": "*",
+            "searchWhenChanged": true,
             "el": $('#input9')
         }, {tokens: true}).render();
 
@@ -576,6 +770,9 @@ require([
                     // Run the search again to update the table
                     search1.startSearch();
                     search2.startSearch();
+                    search3.startSearch();
+                    search4.startSearch();
+                    search5.startSearch();
                 });
             return false;
         });
@@ -595,6 +792,9 @@ require([
                         // Run the search again to update the table
                         search1.startSearch();
                         search2.startSearch();
+                        search3.startSearch();
+                        search4.startSearch();
+                        search5.startSearch();
                     });
                 return false;
             } else {
@@ -644,6 +844,9 @@ require([
                          // Run the search again to update the table
                         search1.startSearch();
                         search2.startSearch();
+                        search3.startSearch();
+                        search4.startSearch();
+                        search5.startSearch();
 
                         // Clear the form fields
                         $("#formCustomerInfo input[type=text]").val("");
@@ -695,6 +898,9 @@ require([
                          // Run the search again to update the table
                         search1.startSearch();
                         search2.startSearch();
+                        search3.startSearch();
+                        search4.startSearch();
+                        search5.startSearch();
 
                         // Clear the form fields
                         $("#formCustomerInfo input[type=text]").val("");
@@ -722,5 +928,6 @@ require([
 );
 // ]]>
 </script>
+<script src="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/active_button.js" type="text/javascript"></script>
 </body>
 </html>
