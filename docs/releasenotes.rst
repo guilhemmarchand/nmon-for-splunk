@@ -24,8 +24,10 @@ V1.8.4:
 
 Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
+- Removal of the static "nmon" index abstraction layer: the app supports natively any index(es) starting with the "nmon" pattern
+- Native support for multiple indexes
+- Introducing the new frameID management using KVstore, and the frameID mapping management interface
 - Improved multi-line events management for rsyslog with nmon-logger agent
-- Removal of the static "nmon" index abstraction layer: the app supports natively any index statrting with the nmon pattern
 
 =======
 V1.8.3:

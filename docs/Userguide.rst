@@ -233,6 +233,34 @@ Note that this lookup table is case insensitive, can contain wildcards of patter
 If you customize this lookup table, you will need to back it up before upgrading, and recover it from your backup after the update.
 This feature will probably be updated and improved in future releases!
 
+.. _manage_frameID_mapping:
+
+-----------------------
+frameID mapping KVstore
+-----------------------
+
+**nmon_frameID_mapping: logically group hostname in the frameID field**
+
+Since the release 1.8.4 of the Nmon core application, the frameID mapping has been improved and operates now against a KVstore collection.
+
+The KVstore based lookup table "nmon_frameID_mapping" is generated automatically by the scheduled report "Generate NMON frameID mapping lookup table". (runs at Splunk startup and every hour by default)
+
+Using the management interface available in the "Settings" application menu, you can directly edit and update the mapping within Splunk web:
+
+.. image:: img/frameid_mapping_management.png
+   :alt: frameid_mapping_management.png
+   :align: center
+
+By default, the frameID value will be generated using the following rule:
+
+* For AIX, the frameID gets its value from the host serial number (actually the PSeries serial number)
+* For Linux, the frameID values is equal to the host name
+* For Solaris, the frameID values is equal to the host name
+
+Every time that runs the scheduled report, Splunk will automatically update and add the new values to the KVstore, preserving the existing content.
+
+The frameID feature allows you to easily group the servers in logical containers, and provides an easier and improved selection, and better user experience.
+
 ************************
 Main Configuration Files
 ************************
@@ -1195,6 +1223,16 @@ FRAME ID: Mapping hostnames with a Frame Identifier
 +++++++++++++++++++++++++++++++++++++++++++++++++++
 
 **In large deployment scenarios, mapping hostnames with their Frame Identifier can be very useful to help Analysis, or simply finding the required host.**
+
+Before the version 1.8.4, the frameID feature was operated against an optional file based lookup table.
+
+This is has been deprecated and it is now operated against a KVstore collection.
+
+As well, an embedded interface is provided to edit and update the frameID mapping directly within Splunk web.
+
+* See the detailed section: :ref:`manage_frameID_mapping`
+
+**The old fashion file based feature configuration above is left for history purposes:**
 
 Since Version 1.5.0, a Frame ID feature is included within interfaces, in default configuration the frame ID is mapped to the Serial Number of the host.
 
