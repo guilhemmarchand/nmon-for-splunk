@@ -151,7 +151,7 @@ styles in <div> tags, similar to Bootstrap's grid system.
         </div>
     </div>
 
-    <div id="row6" class="dashboard-row dashboard-row6">
+    <div id="row6" class="dashboard-row dashboard-row6" data-rejects="$show_null_unset_frameID$">
         <div id="panel6" class="dashboard-cell" style="width: 100%;">
             <div class="dashboard-panel clearfix">
                 <h2 class="panel-title"># Modify # an existing entry - Click on any row of the table to pre-fill the fields to be modified (bellow the list of unset frameID entries)</h2>
@@ -186,7 +186,34 @@ styles in <div> tags, similar to Bootstrap's grid system.
         </div>
     </div>
 
+    <div id="row7" class="dashboard-row dashboard-row2" data-depends="$show_null_unset_frameID$" data-rejects="$show_null_missing_frameID$">
+        <div id="panel7" class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel clearfix">
 
+                <div class="panel-element-row">
+                    <div id="element7" class="dashboard-element html" style="width: 100%">
+                        <div class="panel-body html">
+                                <div style="color:blue;margin-left:30px;font-size:14px;text-align:left"><br><br><p>There are currently no hosts without frameID being set, that's all good ! (a frameID is unset when it is equal to the serialnum value)</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="row8" class="dashboard-row dashboard-row6" data-depends="$show_null_missing_frameID$">
+        <div id="panel8" class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel clearfix">
+                <h2 class="panel-title">Missing frameIDs - The following host(s) have missing entries in the collection, please run the report "Generate NMON frameID mapping lookup table" or manually add the relevant entry (click on the row to pre-fill fields for addition)</h2>
+
+                <div class="panel-element-row">
+                    <div id="element8" class="dashboard-element table" style="width: 100%">
+                        <div class="panel-body"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 
@@ -348,6 +375,27 @@ require([
             "runWhenTimeIsUndefined": false
         }, {tokens: true, tokenNamespace: "submitted"});
 
+        new SearchEventHandler({
+            managerid: "search1",
+            event: "progress",
+            conditions: [
+                {
+                    attr: "match",
+                    value: "'job.resultCount' == 0",
+                    actions: [
+                        {"type": "set", "token": "show_null_unset_frameID", "value": "True"}
+                    ]
+                },
+                {
+                    attr: "any",
+                    value: "*",
+                    actions: [
+                        {"type": "unset", "token": "show_null_unset_frameID"}
+                    ]
+                }
+            ]
+        });
+
         var search2 = new SearchManager({
             "id": "search2",
             "earliest_time": "-24h",
@@ -403,6 +451,41 @@ require([
             "preview": true,
             "runWhenTimeIsUndefined": false
         }, {tokens: true, tokenNamespace: "submitted"});
+
+        var search6 = new SearchManager({
+            "id": "search6",
+            "earliest_time": "-7d",
+            "status_buckets": 0,
+            "sample_ratio": 1,
+            "latest_time": "now",
+            "cancelOnUnload": true,
+            "search": "| tstats count where `nmon_index` by host,serialnum | fields host,serialnum | lookup nmon_frameID_mapping serialnum AS serialnum, host as host | where isnull(frameID)",
+            "app": utils.getCurrentApp(),
+            "auto_cancel": 90,
+            "preview": true,
+            "runWhenTimeIsUndefined": false
+        }, {tokens: true, tokenNamespace: "submitted"});
+
+        new SearchEventHandler({
+            managerid: "search6",
+            event: "progress",
+            conditions: [
+                {
+                    attr: "match",
+                    value: "'job.resultCount' == 0",
+                    actions: [
+                        {"type": "unset", "token": "show_null_missing_frameID"}
+                    ]
+                },
+                {
+                    attr: "any",
+                    value: "*",
+                    actions: [
+                        {"type": "set", "token": "show_null_missing_frameID", "value": "True"}
+                    ]
+                }
+            ]
+        });
 
         //
         // SPLUNK LAYOUT
@@ -555,6 +638,37 @@ require([
             "managerid": "search5",
             "el": $('#element6')
         }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        var element7 = new HtmlElement({
+            "id": "element7",
+            "useTokens": true,
+            "el": $('#element7')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        DashboardController.addReadyDep(element7.contentLoaded());
+
+        var element8 = new TableElement({
+            "id": "element8",
+            "count": 100,
+            "dataOverlayMode": "none",
+            "drilldown": "row",
+            "percentagesRow": "false",
+            "rowNumbers": "false",
+            "totalsRow": "false",
+            "wrap": "true",
+            "managerid": "search6",
+            "el": $('#element8')
+        }, {tokens: true, tokenNamespace: "submitted"}).render()
+
+        element8.on("click", function(e) {
+            if (e.field !== undefined) {
+                e.preventDefault();
+                setToken("serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+            }
+        });
 
         //
         // VIEWS: FORM INPUTS
@@ -773,6 +887,7 @@ require([
                     search3.startSearch();
                     search4.startSearch();
                     search5.startSearch();
+                    search6.startSearch();
                 });
             return false;
         });
@@ -795,6 +910,7 @@ require([
                         search3.startSearch();
                         search4.startSearch();
                         search5.startSearch();
+                        search6.startSearch();
                     });
                 return false;
             } else {
@@ -847,6 +963,7 @@ require([
                         search3.startSearch();
                         search4.startSearch();
                         search5.startSearch();
+                        search6.startSearch();
 
                         // Clear the form fields
                         $("#formCustomerInfo input[type=text]").val("");
@@ -901,6 +1018,7 @@ require([
                         search3.startSearch();
                         search4.startSearch();
                         search5.startSearch();
+                        search6.startSearch();
 
                         // Clear the form fields
                         $("#formCustomerInfo input[type=text]").val("");
