@@ -125,12 +125,16 @@
             <input type="multiselect" token="frameID" searchWhenChanged="true">
                 <label>frameID Selection:</label>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ $osfilter$ type=$monitor_filter$ | stats count by frameID | dedup frameID | sort frameID</query>
+                    <query>| tstats count where $hostname-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host, serialnum
+| rename host as hostname
+| lookup nmon_frameID_mapping serialnum AS serialnum, host as host OUTPUT frameID
+| eval frameID=if(isnull(frameID), serialnum, frameID)
+| stats count by frameID | fields frameID | dedup frameID | sort frameID</query>
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange2.latest$</latest>
                 </search>
                 <default>*</default>
-                <prefix>eval frameID=if(isnull(frameID), "NC", frameID) | search </prefix>
+                <prefix>lookup nmon_frameID_mapping serialnum AS serialnum, host as host OUTPUT frameID | eval frameID=if(isnull(frameID), serialnum, frameID) | search </prefix>
                 <valuePrefix>frameID="</valuePrefix>
                 <valueSuffix>"</valueSuffix>
                 <delimiter> OR </delimiter>
@@ -140,16 +144,21 @@
             </input>
 
             <input type="text" token="hostname-prefilter" searchWhenChanged="true">
-                <label>Optional: Filter hosts populating</label>
+                <label>Optional: Filter hostnames populating</label>
                 <prefix>hostname="</prefix>
                 <suffix>"</suffix>
                 <default>*</default>
             </input>
 
             <input type="multiselect" token="hostname" searchWhenChanged="true">
-                <label>Hosts Selection:</label>
+                <label>hosts Selection:</label>
                 <search>
-                    <query>eventtype=nmon:performance $hostname-prefilter$ $osfilter$ type=$monitor_filter$ | $frameID$ | stats count by hostname | dedup hostname | sort hostname</query>
+                    <query>| tstats count where $hostname-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host, serialnum
+| rename host as hostname
+| lookup nmon_frameID_mapping serialnum AS serialnum, host as host OUTPUT frameID
+| eval frameID=if(isnull(frameID), serialnum, frameID)
+| $frameID$
+| stats count by hostname | fields hostname | dedup hostname | sort hostname</query>
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange2.latest$</latest>
                 </search>
@@ -158,7 +167,7 @@
                 <delimiter> OR </delimiter>
                 <fieldForLabel>hostname</fieldForLabel>
                 <fieldForValue>hostname</fieldForValue>
-                <choice value="*">ALL Hosts</choice>
+                <choice value="*">ALL hosts</choice>
             </input>
 
             <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -181,7 +190,7 @@
     <row rejects="$hostname$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the hostname selector above - - - - - - - - - -</p>
             </html>
         </panel>
     </row>
