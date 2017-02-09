@@ -22,8 +22,8 @@
             <label>Host(s):</label>
             <choice value="*">ALL</choice>
             <search>
-                <!-- Search only first 10000 results in CPU_ALL which shall be much more enough than required -->
-                <query>eventtype=nmon:performance type=CPU_ALL $OStype$ | head 10000 | stats count by hostname | sort hostname</query>
+                <!-- Use tstats for performance purposes -->
+                <query>| tstats count where `nmon_index` type=CPU_ALL $OStype$ by hostname | sort hostname</query>
                 <earliest>$time.earliest$</earliest>
                 <latest>$time.latest$</latest>
                 <!-- Progress event has access to job properties only -->
