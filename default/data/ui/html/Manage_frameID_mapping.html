@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/ui_simple.css" />
     <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/panel_decoration.css" />
     <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/hover.css" />
-
+    <link rel="stylesheet" type="text/css" media="all" href="{{SPLUNKWEB_URL_PREFIX}}/static/app/nmon/hide_footer.css" />
 </head>
 <body class="simplexml preload locale-en" data-splunk-version="6.5.2" data-splunk-product="enterprise">
 <!--
@@ -526,7 +526,7 @@ require([
             "id": "element_unset_frameID",
             "unitPosition": "after",
             "numberPrecision": "0",
-            "drilldown": "none",
+            "drilldown": "all",
             "useColors": "1",
             "trendDisplayMode": "absolute",
             "rangeValues": "[0]",
@@ -541,6 +541,14 @@ require([
             "managerid": "search2",
             "el": $('#element_unset_frameID')
         }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        element_unset_frameID.on("click", function(e) {
+            if (e.field !== undefined) {
+                e.preventDefault();
+                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_frameID_mapping | where frameID=host", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
+                utils.redirect(url);
+            }
+        });
 
         var element_show_lookup_btn = new HtmlElement({
             "id": "element_show_lookup_btn",
@@ -595,7 +603,7 @@ require([
             "id": "element_delta_frameID",
             "unitPosition": "after",
             "numberPrecision": "0",
-            "drilldown": "none",
+            "drilldown": "all",
             "useColors": "1",
             "trendDisplayMode": "absolute",
             "rangeValues": "[0]",
@@ -611,11 +619,19 @@ require([
             "el": $('#element_delta_frameID')
         }, {tokens: true, tokenNamespace: "submitted"}).render();
 
+        element_delta_frameID.on("click", function(e) {
+            if (e.field !== undefined) {
+                e.preventDefault();
+                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_frameID_mapping | stats dc(host) as host_in_lookup | appendcols [ | tstats dc(host) as host_in_data WHERE `nmon_index` sourcetype=nmon_data ] | eval delta=if(host_in_lookup>host_in_data, host_in_lookup-host_in_data, host_in_data-host_in_lookup)", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
+                utils.redirect(url);
+            }
+        });
+
         var element_duplicated_hosts = new SingleElement({
             "id": "element_duplicated_hosts",
             "unitPosition": "after",
             "numberPrecision": "0",
-            "drilldown": "none",
+            "drilldown": "all",
             "useColors": "1",
             "trendDisplayMode": "absolute",
             "rangeValues": "[0]",
@@ -630,6 +646,14 @@ require([
             "managerid": "search5",
             "el": $('#element_duplicated_hosts')
         }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        element_duplicated_hosts.on("click", function(e) {
+            if (e.field !== undefined) {
+                e.preventDefault();
+                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_frameID_mapping | stats count by host | where count>1", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
+                utils.redirect(url);
+            }
+        });
 
         var element_table_missing_content = new TableElement({
             "id": "element_table_missing_content",
