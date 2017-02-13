@@ -28,6 +28,7 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - Native support for multiple indexes
 - Introducing the new frameID management using KVstore, and the frameID mapping management interface
 - Improved multi-line events management for rsyslog with nmon-logger agent
+- TA-nmon issue: implementation of linux disks groups caused issues with old nmon releases
 
 =======
 V1.8.3:
