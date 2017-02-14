@@ -61,7 +61,7 @@
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="HostsbaseSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) ($frameID$) ($hostname-prefilter$) groupby dg.frameID, host prestats=true
+                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) ($frameID$) ($hostname-prefilter$) groupby dg.hostname, host prestats=true
 | stats dedup_splitvals=t count AS count by dg.hostname
 | sort limit=0 dg.hostname
 | fields dg.hostname</query>
@@ -79,9 +79,9 @@
             <label>Disks Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "dg.hostname", "dg.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "dg.hostname", "dg.device"
-| sort limit=0 "dg.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "dg.device" prestats=true
+| stats dedup_splitvals=t count AS Count by "dg.device"
+| sort limit=0 "dg.device"
 | fields - _span
 | fillnull Count | fields dg.device | dedup dg.device | sort dg.device</query>
                 <earliest>$timerange.earliest$</earliest>
