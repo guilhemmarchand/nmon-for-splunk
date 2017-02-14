@@ -29,16 +29,8 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - Introducing the new frameID management using KVstore, and the frameID mapping management interface
 - Improved multi-line events management for rsyslog with nmon-logger agent
 - TA-nmon issue: implementation of linux disks groups caused issues with old nmon releases
-
-=======
-V1.8.3:
-=======
-
-**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
-
-Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
-
-- Improvement of multi line event management for syslog inputs
+- Improvement of multi line event management for rsyslog deployments
+- populating forms issues in DG interface
 
 =======
 V1.8.3:
