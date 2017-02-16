@@ -1378,15 +1378,15 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
 
     Operation terminated.
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Nmon_SplunkApp_Customize.py: Customize the Application
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 **If for some reason you need to customize the Nmon Splunk Application, A Python command line tool is provided in the resources directory which will help you easily achieving your customizations.**
 
 The Python tool allows to:
 
-* Customize the Appication Index Name (default: nmon)
+* Customize the Application Index Name (deprecated since 1.8.4, prefer using the nmon pattern, see notes bellow)
 * Customize the Application Root Directory (default: nmon)
 * Customize the TA NMON Root Directory (default: TA-nmon)
 * Customize the PA NMON Root Directory (default: PA-nmon)
@@ -1395,6 +1395,10 @@ The Python tool allows to:
 * Focus on Linux OS only by hidding other systems specific views and setting a Linux navigation menu
 
 Using this tool over releases, you can easily manage your customizations and update the Application as usual.
+
+**Since the release 1.8.4, the application is compatible with any indexes starting with the pattern "nmon" (one or x indexes)**
+
+As such, it is not required anymore to customize the application is you intend to use one or more custom indexes, as long as the indexes names start by "nmon".
 
 This Python tool is available in the "resources" directory of the Nmon Core Application (as gzip file, uncompress the script before launching)
 
@@ -1545,7 +1549,7 @@ Linux OS example: build an app for Linux OS support only
 
 *The goal:*
 
-Split the default main Nmon index into multiple indexes to fit different needs, such as having Production data into a dedicated index (with its own retention) and others environment in an other dedicated index
+Manage Nmon data into multiple indexes to fit different needs, such as having Production data into a dedicated index (with its own retention) and others environment in an other dedicated index
 Every Universal Forwarder will send data to using a custom TA package depending on their environment, indexer(s) target(s) can be same indexers for all environments, or dedicated indexer(s) per environment
 The main Application will be customized to be able to manage data from different indexes using a logical index naming (all indexes must share the same starting prefix)
 
@@ -1560,7 +1564,11 @@ Indexer(s) can be dedicated by environment, or manage all environment and can ru
 
 **Start:**
 
-**Step 1: Extract Python customization tools**
+**Step 1 (optional depending on your constraints): Extract Python customization tools**
+
+Since the version 1.8.4, the application supports multiple indexes without any modification, as long as the index(es) name(s) start by the "nmon" pattern.
+
+As such, those steps are still valid to prepare the TA-nmon and PA-nmon packages, but the repackage of the core application is not required as long as long as the indexes names are compatibles.
 
 * Download the App here:
 
