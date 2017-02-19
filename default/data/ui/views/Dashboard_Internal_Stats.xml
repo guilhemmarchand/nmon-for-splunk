@@ -432,7 +432,9 @@ ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_si
     <!-- Event Count -->
 
     <search id="eventcount_search">
-        <query>| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2)
+        <query>| eventcount summarize=false report_size=true `nmon_index`
+| stats sum(count) as count, sum(size_bytes) as size_bytes
+| eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2)
 | eval show_eventcount=$show_eventcount$ | fields index, server, "Size (MB)", "Millions of Events"</query>
         <earliest>0</earliest>
         <latest>now</latest>
