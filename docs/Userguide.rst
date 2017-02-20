@@ -1835,6 +1835,126 @@ Clean working directory:
 
 Now that all your custom packages are ready, proceed to deployment the same way as usual, review deployment documentations if required
 
+.. _split_by_datacenter:
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+02 - Splitting index for different users populations
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+*The goal:*
+
+The goal of this scenario is to ingest nmon data coming from different data centers that will managed by different Unix administrator teams.
+As such, each user of those teams will be able to see and analyse only the data of the servers under their management.
+
+For the demonstration purpose, we will assume:
+
+* **Data center 1: datacenter_US**
+
+    * **index name:** nmon_perf_unix_datacenter_US
+    * **Technical addon name:** TA-nmon-datacenter-US
+    * **role name for Unix admin users:** team-unix-admin-us
+
+* **Data center 2: datacenter_UK**
+
+    * **index name:** nmon_perf_unix_datacenter_UK
+    * **Technical addon name:** TA-nmon-datacenter-UK
+    * **role name for Unix admin users:** team-unix-admin-uk
+
+**STEP 1: Prepare your indexers**
+
+Every indexer supposed to receive data from your incoming servers, for the demonstration purpose we assume having a single standalone indexer with the following indexes.conf:
+
+::
+
+    [nmon_perf_unix_datacenter_UK]
+    coldPath = $SPLUNK_DB/nmon_perf_unix_datacenter_UK/colddb
+    homePath = $SPLUNK_DB/nmon_perf_unix_datacenter_UK/db
+    thawedPath = $SPLUNK_DB/nmon_perf_unix_datacenter_UK/thaweddb
+
+    [nmon_perf_unix_datacenter_US]
+    coldPath = $SPLUNK_DB/nmon_perf_unix_datacenter_US/colddb
+    homePath = $SPLUNK_DB/nmon_perf_unix_datacenter_US/db
+    thawedPath = $SPLUNK_DB/nmon_perf_unix_datacenter_US/thaweddb
+
+**STEP 2: Prepare the TA-nmon packages**
+
+We will want to have 2 different versions of the TA-nmon, one for each data center.
+
+For the example purpose, I will assume you upload the tgz archive to /tmp
+
+::
+
+    mkdir $HOME/nmon_workingdir
+    cd $HOME/nmon_workingdir
+    tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz -C $HOME/nmon_workingdir
+    cp nmon/resources/create_agent.py.gz .
+    gunzip -v create_agent.py.gz
+
+*Create the packages:*
+
+::
+
+    python create_agent.py --indexname nmon_perf_unix_datacenter_US --agentname TA-nmon-datacenter-US -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
+    python create_agent.py --indexname nmon_perf_unix_datacenter_UK --agentname TA-nmon-datacenter-UK -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
+
+*This will generate 2 TA-nmon packages to be deployed to each group of data center servers:*
+
+::
+
+    TA-nmon-datacenter-UK.tgz
+    TA-nmon-datacenter-US.tgz
+
+**STEP 3: Deploy the TA-nmon packages**
+
+*Configure your deployment servers to deploy the packages to your servers:*
+
+.. image:: img/split_indexes_deployment_server.png
+   :alt: img/split_indexes_deployment_server.png
+   :align: center
+
+**STEP 4: On the search heads, configure the roles and users**
+
+We will create 2 roles, each role inherits from the default user role and provides access to the relevant indexes.
+
+Because by default the user role provides access to any indexes, you will want as well to restrict it:
+
+*local authorized.conf content:*
+
+::
+
+    [role_team-unix-admin-us]
+    importRoles = user
+    srchIndexesAllowed = nmon_perf_unix_datacenter_US
+    srchIndexesDefault = nmon_perf_unix_datacenter_US
+
+    [role_team-unix-admin-uk]
+    importRoles = user
+    srchIndexesAllowed = nmon_perf_unix_datacenter_UK
+    srchIndexesDefault = nmon_perf_unix_datacenter_UK
+
+    # Restrict standard user role to main index only
+    [role_user]
+    srchIndexesAllowed = main
+
+Finally, have your users belonging to the relevant roles, for the demonstration purpose:
+
+.. image:: img/split_indexes_users.png
+   :alt: img/split_indexes_users.png
+   :align: center
+
+**FINAL: Splunk is ready**
+
+A user belonging to the role "team-unix-admin-us" will only see and access to data from the US data center:
+
+.. image:: img/split_indexes_users_test1.png
+   :alt: img/split_indexes_users_test1.png
+   :align: center
+
+And a user belonging to the role "team-unix-admin-uk" will have access to servers from the UK data center only:
+
+.. image:: img/split_indexes_users_test2.png
+   :alt: img/split_indexes_users_test2.png
+   :align: center
 
 ************
 Troubleshoot
