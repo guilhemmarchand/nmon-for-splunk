@@ -1559,7 +1559,7 @@ See: https://github.com/guilhemmarchand/splunk-vagrant-ansible-collections
 
 *The goal:*
 
-The goal of this scenario is to ingest nmon data coming from different data centers that will managed by different Unix administrator teams.
+The goal of this scenario is to ingest nmon data coming from different data centers that will be managed by different Unix administrator teams.
 As such, each user of those teams will be able to see and analyse only the data of the servers under their management.
 
 For the demonstration purpose, we will assume:
@@ -1578,7 +1578,7 @@ For the demonstration purpose, we will assume:
 
 **STEP 1: Prepare your indexers**
 
-Every indexer supposed to receive data from your incoming servers, for the demonstration purpose we assume having a single standalone indexer with the following indexes.conf:
+For the demonstration purpose, we assume having a single standalone indexer receiving data from both data centers, with the following indexes.conf:
 
 ::
 
