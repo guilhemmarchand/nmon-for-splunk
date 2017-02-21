@@ -259,7 +259,13 @@ By default, the frameID value will be generated using the following rule:
 
 Every time that runs the scheduled report, Splunk will automatically update and add the new values to the KVstore, preserving the existing content.
 
-The frameID feature allows you to easily group the servers in logical containers, and provides an easier and improved selection, and better user experience.
+The frameID feature allows you to easily group the servers in logical containers, and provides an easier and improved selection for a better user experience.
+
+**INFORMATION:**
+
+When modifying the frameID lookup definition, this will be applied almost immediately for any operation at search time.
+
+Interfaces using data models will as well immediately reflect changes, however you will have to rebuild the data model acceleration if you want these changes to be applied for previously indexed data.
 
 ************************
 Main Configuration Files
@@ -1539,302 +1545,132 @@ Linux OS example: build an app for Linux OS support only
 
 **Advanced Customization**
 
-.. _split_by_index:
+.. _split_by_datacenter:
 
-++++++++++++++++++++++++++++++++++++++++++++
-01 - Splitting index by Environment scenario
-++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+01 - Splitting index for different users populations
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-**Customization scenario: Split indexes**
+**Vagrant testing:**
+
+Easily test this deployment scenario with Vagrant and Ansible !
+
+See: https://github.com/guilhemmarchand/splunk-vagrant-ansible-collections
 
 *The goal:*
 
-Manage Nmon data into multiple indexes to fit different needs, such as having Production data into a dedicated index (with its own retention) and others environment in an other dedicated index
-Every Universal Forwarder will send data to using a custom TA package depending on their environment, indexer(s) target(s) can be same indexers for all environments, or dedicated indexer(s) per environment
-The main Application will be customized to be able to manage data from different indexes using a logical index naming (all indexes must share the same starting prefix)
+The goal of this scenario is to ingest nmon data coming from different data centers that will managed by different Unix administrator teams.
+As such, each user of those teams will be able to see and analyse only the data of the servers under their management.
 
-**Indexes:**
+For the demonstration purpose, we will assume:
 
-* Production data will be stored in "nmon_prod" index
-* Qualification data will be stored in "nmon_qua" index
+* **Data center 1: datacenter_US**
 
-Both indexes can be searched by the main Nmon Application
+    * **index name:** nmon_perf_unix_datacenter_US
+    * **Technical addon name:** TA-nmon-datacenter-US
+    * **role name for Unix admin users:** team-unix-admin-us
 
-Indexer(s) can be dedicated by environment, or manage all environment and can run in standalone or clusters
+* **Data center 2: datacenter_UK**
 
-**Start:**
+    * **index name:** nmon_perf_unix_datacenter_UK
+    * **Technical addon name:** TA-nmon-datacenter-UK
+    * **role name for Unix admin users:** team-unix-admin-uk
 
-**Step 1 (optional depending on your constraints): Extract Python customization tools**
+**STEP 1: Prepare your indexers**
 
-Since the version 1.8.4, the application supports multiple indexes without any modification, as long as the index(es) name(s) start by the "nmon" pattern.
-
-As such, those steps are still valid to prepare the TA-nmon and PA-nmon packages, but the repackage of the core application is not required as long as long as the indexes names are compatibles.
-
-* Download the App here:
-
-https://splunkbase.splunk.com/app/1753/
-
-* Extract the content of the archive in a temporary directory:
-
-For the example purpose, i will assume you upload the tgz archive to /tmp
+Every indexer supposed to receive data from your incoming servers, for the demonstration purpose we assume having a single standalone indexer with the following indexes.conf:
 
 ::
 
-    cd /tmp
-    tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
+    [nmon_perf_unix_datacenter_UK]
+    coldPath = $SPLUNK_DB/nmon_perf_unix_datacenter_UK/colddb
+    homePath = $SPLUNK_DB/nmon_perf_unix_datacenter_UK/db
+    thawedPath = $SPLUNK_DB/nmon_perf_unix_datacenter_UK/thaweddb
 
-Create a working directory, copy and extract Python tools:
+    [nmon_perf_unix_datacenter_US]
+    coldPath = $SPLUNK_DB/nmon_perf_unix_datacenter_US/colddb
+    homePath = $SPLUNK_DB/nmon_perf_unix_datacenter_US/db
+    thawedPath = $SPLUNK_DB/nmon_perf_unix_datacenter_US/thaweddb
 
-CAUTION: Python tools requires Python 2.7.x version
+**STEP 2: Prepare the TA-nmon packages**
 
-::
+We will want to have 2 different versions of the TA-nmon, one for each data center.
 
-    mkdir $HOME/nmon_workingdir && cd $HOME/nmon_workingdir
-    cp /tmp/nmon/resources/Nmon_SplunkApp_Customize.py.gz .
-    cp /tmp/nmon/resources/create_agent.py.gz .
-    gunzip -v *.gz
-
-**Step 2: Create the custom global (core) Application package (for search heads) and PA packages (for indexers)**
-
-Let's create a package for the application to use "nmon_*" as the index declaration:
+For the example purpose, I will assume you upload the tgz archive to /tmp
 
 ::
 
-    ./Nmon_SplunkApp_Customize.py -i nmon_* -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
-    Sample processing output:
+    mkdir $HOME/nmon_workingdir
+    cd $HOME/nmon_workingdir
+    tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz -C $HOME/nmon_workingdir
+    cp nmon/resources/create_agent.py.gz .
+    gunzip -v create_agent.py.gz
 
-    INFO: No custom root directory of the nmon App core App were provided, using default "nmon" name for root directory
-    INFO: No custom root directory of the TA-nmon were provided, using default "TA-nmon" name for TA-nmon root directory
-    INFO: No custom root directory of the PA-nmon were provided, using default "PA-nmon" name for PA-nmon root directory
-    INFO: No custom csv reposity directory were provided, using default "csv_repository" name for csv repository root directory
-    INFO: No custom csv reposity directory were provided, using default "config_repository" name for csv repository root directory
-    Extracting tgz Archive: /media/BIGDATA/Software_Deposit/Splunk/nmon/nmon-performance-monitor-for-unix-and-linux-systems_1606.tgz
-    Extracting tgz Archive: PA-nmon_V1.2.27.tar.gz
-    Extracting tgz Archive: TA-nmon_V1.2.27.tar.gz
-    Achieving files transformation:
-    INFO: Customizing any reference to index name in files
-    INFO: Customizing indexes.conf
-    INFO: Creating the custom nmon_performance_monitor_custom.spl archive in current root directory
-    INFO: ************* Tar creation done of: nmon_performance_monitor_custom.spl *************
-
-    *** To install your customized packages: ***
-
-     - Extract the content of nmon_performance_monitor_custom.spl to Splunk Apps directory of your search heads (or use the manager to install the App)
-     - Extract the content of the PA package available in resources directory to your indexers
-     - Extract the content of the TA package available in resources directory to your deployment server or clients
-
-    Operation terminated.
-
-**The Application package to be deployed in search heads is available within the working directory:**
+*Create the packages:*
 
 ::
 
-    /tmp/nmon_workingdir/nmon_performance_monitor_custom.spl
+    python create_agent.py --indexname nmon_perf_unix_datacenter_US --agentname TA-nmon-datacenter-US -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
+    python create_agent.py --indexname nmon_perf_unix_datacenter_UK --agentname TA-nmon-datacenter-UK -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
 
-**Depending on your architecture:**
-
-*Splunk single instance (same server for indexer / search head role):*
-
-* Edit the default indexes.conf to match final index names:
-* Edit nmon/default/indexes.conf
-
-Correct the provided index (nmon_*) and create other index(es), example:
+*This will generate 2 TA-nmon packages to be deployed to each group of data center servers:*
 
 ::
 
-    [nmon_prod]
-    coldPath = $SPLUNK_DB/nmon_prod/colddb
-    homePath = $SPLUNK_DB/nmon_prod/db
-    thawedPath = $SPLUNK_DB/nmon_prod/thaweddb
+    TA-nmon-datacenter-UK.tgz
+    TA-nmon-datacenter-US.tgz
 
-    [nmon_qua]
-    coldPath = $SPLUNK_DB/nmon_qua/colddb
-    homePath = $SPLUNK_DB/nmon_qua/db
-    thawedPath = $SPLUNK_DB/nmon_qua/thaweddb
+**STEP 3: Deploy the TA-nmon packages**
 
-Manually re-package:
+*Configure your deployment servers to deploy the packages to your servers:*
 
-::
+.. image:: img/split_indexes_deployment_server.png
+   :alt: img/split_indexes_deployment_server.png
+   :align: center
 
-    tar -cvzf nmon nmon_performance_monitor_custom.spl
+**STEP 4: On the search heads, configure the roles and users**
 
-Store the spl package a final directory:
+We will create 2 roles, each role inherits from the default user role and provides access to the relevant indexes.
 
-::
+Because by default the user role provides access to any indexes, you will want as well to restrict it:
 
-    mkdir /tmp/nmon_finaldir
-    mv /tmp/nmon_workingdir/nmon_performance_monitor_custom.spl /tmp/nmon_finaldir/
-
-Dedicated indexer(s) per environment (indexers for Prod, indexers for Qua), standalone or in cluster:
-
-**First Store the spl package a final directory, this package is ready to be deployed in search heads:**
+*local authorized.conf content:*
 
 ::
 
-    mkdir /tmp/nmon_finaldir
-    mv /tmp/nmon_workingdir/nmon_performance_monitor_custom.spl /tmp/nmon_finaldir/
+    [role_team-unix-admin-us]
+    importRoles = user
+    srchIndexesAllowed = nmon_perf_unix_datacenter_US
+    srchIndexesDefault = nmon_perf_unix_datacenter_US
 
-Re-run the process to create the first PA package, for nmon_prod index:
+    [role_team-unix-admin-uk]
+    importRoles = user
+    srchIndexesAllowed = nmon_perf_unix_datacenter_UK
+    srchIndexesDefault = nmon_perf_unix_datacenter_UK
 
-::
+    # Restrict standard user role to main index only
+    [role_user]
+    srchIndexesAllowed = main
 
-    rm -rf nmon nmon*.spl
-    ./Nmon_SplunkApp_Customize.py -i nmon_prod -p PA-nmon-prod -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
+Finally, have your users belonging to the relevant roles, for the demonstration purpose:
 
-**Store the PA package to final directory:**
+.. image:: img/split_indexes_users.png
+   :alt: img/split_indexes_users.png
+   :align: center
 
-::
+**FINAL: Splunk is ready**
 
-    mv /tmp/nmon_workingdir/nmon/resources/PA-nmon-prod_custom.tar.gz /tmp/nmon_finaldir/
+A user belonging to the role "team-unix-admin-us" will only see and access to data from the US data center:
 
-Re-run the process to create the second PA package, for nmon_qua index:
+.. image:: img/split_indexes_users_test1.png
+   :alt: img/split_indexes_users_test1.png
+   :align: center
 
-::
+And a user belonging to the role "team-unix-admin-uk" will have access to servers from the UK data center only:
 
-    rm -rf nmon nmon*.spl
-    ./Nmon_SplunkApp_Customize.py -i nmon_prod -p PA-nmon-qua -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
-
-**Store the PA package to final directory:**
-
-::
-
-    mv /tmp/nmon_workingdir/nmon/resources/PA-nmon-qua_custom.tar.gz /tmp/nmon_finaldir/
-
-**These 2 packages are ready to be deployed on each typology of indexers (Prod and Qua):**
-
-::
-
-    PA-nmon-prod_custom.tar.gz
-    PA-nmon-qua_custom.tar.gz
-
-**Dedicated indexer(s) for all environments, standalone or in cluster:**
-
-First Store the spl package a final directory, this package is ready to be deployed in search heads:
-
-::
-
-    mkdir /tmp/nmon_finaldir
-    mv /tmp/nmon_workingdir/nmon_performance_monitor_custom.spl /tmp/nmon_finaldir/
-
-Re-run the process to create the PA package, if indexers generates performance data (on by default), data will be stored in nmon_prod:
-
-::
-
-    rm -rf nmon nmon*.spl
-    ./Nmon_SplunkApp_Customize.py -i nmon_prod -p PA-nmon-prod -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
-
-**Add the nmon_qua index, edit the indexes.conf file and re-package:**
-
-::
-
-    cd nmon/resources/
-
-**Edit PA-nmon-prod/default/indexes.conf:**
-
-::
-
-    [nmon_prod]
-    coldPath = $SPLUNK_DB/nmon_prod/colddb
-    homePath = $SPLUNK_DB/nmon_prod/db
-    thawedPath = $SPLUNK_DB/nmon_prod/thaweddb
-    repFactor = auto
-
-    [nmon_qua]
-    coldPath = $SPLUNK_DB/nmon_qua/colddb
-    homePath = $SPLUNK_DB/nmon_qua/db
-    thawedPath = $SPLUNK_DB/nmon_qua/thaweddb
-    repFactor = auto
-
-**Re-package:**
-
-::
-
-    tar -cvzf PA-nmon-prod PA-nmon-prod_custom.tar.gz
-
-**Store the PA package to final directory:**
-
-::
-
-    mv /tmp/nmon_workingdir/nmon/resources/PA-nmon-prod_custom.tar.gz /tmp/nmon_finaldir/
-
-**This PA package is ready to be deployed in indexers:**
-
-::
-
-    PA-nmon-prod_custom.tar.gz
-
-**Step 3: Create TA packages to be deployed in Universal Forwarders clients**
-
-We will create 2 packages, 1 for Production clients and 1 for Qualification:
-
-Clean working directory:
-
-::
-
-    cd /tmp/nmon_workingdir
-    rm -rf nmon nmon*.spl
-
-**Create the Production TA package:**
-
-::
-
-    ./create_agent.py --indexname nmon_prod --agentname TA-nmon-prod -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_1606.tgz
-
-    Extracting tgz Archive: /media/BIGDATA/Software_Deposit/Splunk/nmon/nmon-performance-monitor-for-unix-and-linux-systems_1606.tgz
-    INFO: Extracting Agent tgz resources Archives
-    INFO: Renaming TA-nmon default agent to TA-nmon-prod
-    Achieving files transformation...
-    Done.
-    INFO: Customizing any reference to index name in files
-    INFO: ************* Tar creation done of: TA-nmon-prod.tar.gz *************
-
-    *** Agent Creation terminated: To install the agent: ***
-
-     - Upload the tgz Archive TA-nmon-prod.tar.gz to your Splunk deployment server
-     - Extract the content of the TA package in $SPLUNK_HOME/etc/deployment-apps/
-     - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
-
-    Operation terminated.
-
-**Create the Qualification TA package:**
-
-::
-
-    ./create_agent.py --indexname nmon_qua --agentname TA-nmon-qua -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_1606.tgz
-
-    Extracting tgz Archive: /media/BIGDATA/Software_Deposit/Splunk/nmon/nmon-performance-monitor-for-unix-and-linux-systems_1606.tgz
-    INFO: Extracting Agent tgz resources Archives
-    INFO: Renaming TA-nmon default agent to TA-nmon-qua
-    Achieving files transformation...
-    Done.
-    INFO: Customizing any reference to index name in files
-    INFO: ************* Tar creation done of: TA-nmon-qua.tar.gz *************
-
-    *** Agent Creation terminated: To install the agent: ***
-
-     - Upload the tgz Archive TA-nmon-qua.tar.gz to your Splunk deployment server
-     - Extract the content of the TA package in $SPLUNK_HOME/etc/deployment-apps/
-     - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
-
-    Operation terminated.
-
-**We have now 2 TA packages ready to be deployed:**
-
-::
-
-    TA-nmon-prod.tar.gz
-    TA-nmon-qua.tar.gz
-
-**Move these packages to the final directory:**
-
-::
-
-    mv /tmp/nmon_workingdir/TA-nmon*.tar.gz /tmp/nmon_finaldir/
-
-**Step 4: Deployment**
-
-Now that all your custom packages are ready, proceed to deployment the same way as usual, review deployment documentations if required
-
+.. image:: img/split_indexes_users_test2.png
+   :alt: img/split_indexes_users_test2.png
+   :align: center
 
 ************
 Troubleshoot
