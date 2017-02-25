@@ -17,7 +17,7 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
-V1.8.5:
+V1.8.6:
 =======
 
 **CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
@@ -27,16 +27,7 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - Invalid error number of events count in TCO dashboard when running multiple indexes
 - Update of Nmon baseline generation for Disk I/O, and relevant macro update (use DG stats when available)
 - app certification failure correction (custom viz issues in savedsearches.conf)
-- Addons update to version 1.2.53
-
-=======
-V1.8.4:
-=======
-
-**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
-
-Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
-
+- Addons update to version 1.2.54
 - Removal of the static "nmon" index abstraction layer: the app supports natively any index(es) starting with the "nmon" pattern
 - Native support for multiple indexes
 - Introducing the new frameID management using KVstore, and the frameID mapping management interface
@@ -44,6 +35,18 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - TA-nmon issue: implementation of linux disks groups caused issues with old nmon releases
 - Improvement of multi line event management for rsyslog deployments
 - populating forms issues in DG interface
+
+=======
+V1.8.5:
+=======
+
+- Intermediate release unpublished
+
+=======
+V1.8.4:
+=======
+
+- Intermediate release unpublished
 
 =======
 V1.8.3:
