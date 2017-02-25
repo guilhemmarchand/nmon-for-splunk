@@ -401,53 +401,42 @@ INTERVAL & SNAPSHOT
 
 ::
 
-    shortperiod_low
+   # The "longperiod_high" mode is a good compromise between accuracy, CPU / licensing cost and operational intelligence, and can be used in most case
+   # Reducing CPU foot print can be achieved using one of the following modes, increasing the interval value and limiting the snapshot value are the factors that will impact the TA footprint
+   # If you observe a too large CPU footprint on your servers, please choose a different mode, or a custom mode
 
-    interval="60"
-    snapshot="10"
+   # Available modes for proposal below:
 
-    shortperiod_middle
+   #	shortperiod_low)
+   #			interval="60"
+   #			snapshot="10"
 
-    interval="30"
-    snapshot="20"
+   #	shortperiod_middle)
+   #			interval="30"
+   #			snapshot="20"
 
-    shortperiod_high
+   #	shortperiod_high)
+   #			interval="20"
+   #			snapshot="30"
 
-    interval="20"
-    snapshot="30"
+   #	longperiod_low)
+   #			interval="240"
+   #			snapshot="120"
 
-    longperiod_low
+   #	longperiod_middle)
+   #			interval="120"
+   #			snapshot="120"
 
-    interval="240"
-    snapshot="120"
+   #	longperiod_high)
+   #			interval="60"
+   #			snapshot="120"
 
-    longperiod_middle
+   # custom --> Set a custom interval and snapshot value, if unset short default values will be used (see custom_interval and custom_snapshot)
 
-    interval="120"
-    snapshot="120"
+   # Default is longperiod_high
+   mode="longperiod_high"
 
-    longperiod_high
 
-    interval="60"
-    snapshot="120"
-
-    The default mode is set to "longperiod_high", which is a good compromise between accuracy, CPU / licensing cost and operational intelligence, and should be relevant for very large deployment in Production environments
-
-    # custom --> Set a custom interval and snapshot value, if unset short default values will be used (see custom_interval and custom_snapshot)
-
-    # Default is longperiod_low
-    mode="longperiod_low"
-    A custom mode combining custom values for snapshot and interval can be set:
-
-    mode="custom"
-
-    # Refresh interval in seconds, Nmon will this value to refresh data each X seconds
-    # UNUSED IF NOT SET TO custom MODE
-    custom_interval="20"
-
-    # Number of Data refresh occurrences, Nmon will refresh data X times
-    # UNUSED IF NOT SET TO custom MODE
-    custom_snapshot="90"
     Note that the CPU usage associated with Nmon and Splunk processing steps, the data volume to be generated and the licensing cost are a combination of these factors
 
 
