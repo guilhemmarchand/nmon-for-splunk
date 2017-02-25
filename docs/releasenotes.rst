@@ -27,6 +27,7 @@ Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/User
 - Invalid error number of events count in TCO dashboard when running multiple indexes
 - Update of Nmon baseline generation for Disk I/O, and relevant macro update (use DG stats when available)
 - app certification failure correction (custom viz issues in savedsearches.conf)
+- Addons update to version 1.2.53
 
 =======
 V1.8.4:
