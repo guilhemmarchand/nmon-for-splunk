@@ -53,28 +53,28 @@
             <fieldForValue>AIX.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE where (nodename = AIX) (AIX.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "AIX.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "AIX.hostname"
-| sort limit=0 "AIX.hostname"
-| fields - _span | fillnull Count | fields "AIX.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE where (nodename = AIX) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>AIX.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>AIX.hostname</fieldForLabel>
-            <fieldForValue>AIX.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -98,10 +98,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -217,19 +219,19 @@ max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm
 max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient
 max("AIX.PCTnumperm") AS PCTnumperm
 from datamodel=NMON_Data_MEMUSE
-where (nodename = AIX) ($osfilter$) (AIX.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(AIX)`
-groupby _time, "AIX.frameID", "AIX.hostname" prestats=true span=1m
+where (nodename = AIX) ($osfilter$) (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(AIX)`
+groupby _time, "AIX.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t
 max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm
 max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient
-max("AIX.PCTnumperm") AS PCTnumperm by _time, "AIX.frameID", "AIX.hostname"
+max("AIX.PCTnumperm") AS PCTnumperm by _time, "AIX.frameID", host
 | stats dedup_splitvals=t
 $statsmode$("PCTmaxclient") AS PCTmaxclient $statsmode$("PCTmaxperm") AS PCTmaxperm
 $statsmode$("PCTminperm") AS PCTminperm $statsmode$("PCTnumclient") AS PCTnumclient
-$statsmode$("PCTnumperm") AS PCTnumperm by "AIX.frameID", "AIX.hostname"
-| rename "AIX.frameID" AS "frameID" "AIX.hostname" AS hostname
-| sort frameID, hostname
-| fields frameID, hostname, PCTmaxclient, PCTmaxperm, PCTminperm, PCTnumclient, PCTnumperm</query>
+$statsmode$("PCTnumperm") AS PCTnumperm by "AIX.frameID", host
+| rename "AIX.frameID" AS "frameID"
+| sort frameID, host
+| fields frameID, host, PCTmaxclient, PCTmaxperm, PCTminperm, PCTnumclient, PCTnumperm</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -335,16 +337,16 @@ max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm
 max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient
 max("AIX.PCTnumperm") AS PCTnumperm
 from datamodel=NMON_Data_MEMUSE
-where (nodename = AIX) ($osfilter$) (AIX.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(AIX)`
-groupby _time, "AIX.frameID", "AIX.hostname" prestats=true span=1m
+where (nodename = AIX) ($osfilter$) (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(AIX)`
+groupby _time, "AIX.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t
 max("AIX.PCTmaxclient") AS PCTmaxclient max("AIX.PCTmaxperm") AS PCTmaxperm
 max("AIX.PCTminperm") AS PCTminperm max("AIX.PCTnumclient") AS PCTnumclient
-max("AIX.PCTnumperm") AS PCTnumperm by _time, "AIX.frameID", "AIX.hostname"
+max("AIX.PCTnumperm") AS PCTnumperm by _time, "AIX.frameID", host
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("PCTmaxclient") AS PCTmaxclient $statsmode$("PCTmaxperm") AS PCTmaxperm
 $statsmode$("PCTminperm") AS PCTminperm $statsmode$("PCTnumclient") AS PCTnumclient
-$statsmode$("PCTnumperm") AS PCTnumperm by "AIX.hostname"</query>
+$statsmode$("PCTnumperm") AS PCTnumperm by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

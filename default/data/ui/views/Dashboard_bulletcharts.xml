@@ -77,7 +77,7 @@
        		</change>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
             <!--
@@ -90,14 +90,14 @@
        		</change>
         </input>
 
-        <input type="dropdown" token="hostname" searchWhenChanged="true">
+        <input type="dropdown" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname-prefilter$) (CPU.frameID=$frameID$) ($osfilter$) groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname"
-| sort limit=0 "CPU.hostname"
-| fields - _span | fillnull Count | fields "CPU.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host-prefilter$) (CPU.frameID=$frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -106,8 +106,8 @@
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
             <default>*</default>
-            <fieldForLabel>CPU.hostname</fieldForLabel>
-            <fieldForValue>CPU.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
             <!--
             Reset the form token changed
             -->
@@ -133,12 +133,11 @@
     </row>
 
     <search id="main_cpu">
-        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname-prefilter$) (CPU.frameID=$frameID$) (CPU.OStype=$osfilter$) (CPU.hostname=$hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname" prestats=true span=1m
+        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host-prefilter$) (CPU.frameID=$frameID$) (CPU.OStype=$osfilter$) (host=$host$) `$timefilter$(CPU)` groupby _time, host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, host
 | eval usage=if(isnotnull(vp_usage_pct), vp_usage_pct, pct_usage)
-| stats max(usage) AS max_usage avg(usage) AS avg_usage median(usage) AS median_usage by "CPU.hostname"
-| rename "CPU.hostname" AS host
+| stats max(usage) AS max_usage avg(usage) AS avg_usage median(usage) AS median_usage by host
 | foreach *_usage [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -147,10 +146,9 @@
     </search>
 
     <search id="main_memory">
-        <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname-prefilter$) (MEM.frameID=$frameID$) (MEM.OStype=$osfilter$) (MEM.hostname=$hostname$) `$timefilter$(MEM)` groupby _time MEM.hostname prestats=true span=1m
-| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, MEM.hostname
-| stats avg(mem_used_effective_PCT) AS mem_usage_pct, avg(swap_used_effective_PCT) AS swap_usage_pct by MEM.hostname
-| rename "MEM.hostname" AS host
+        <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host-prefilter$) (MEM.frameID=$frameID$) (MEM.OStype=$osfilter$) (host=$host$) `$timefilter$(MEM)` groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, host
+| stats avg(mem_used_effective_PCT) AS mem_usage_pct, avg(swap_used_effective_PCT) AS swap_usage_pct by host
 | foreach *_usage_pct [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -276,9 +274,9 @@
             </input>
             <chart>
                 <search>
-                    <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$drilldown_cpuhost$) groupby _time, "CPU.hostname" prestats=true span=1m
+                    <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$drilldown_cpuhost$) groupby _time, host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, host
 | eval usage=if(isnotnull(vp_usage_pct), vp_usage_pct, pct_usage)
 | timechart $span$ avg(usage) AS avg_pct_cpu | trendline sma5(avg_pct_cpu) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -375,8 +373,8 @@
             </input>
             <chart>
                 <search>
-        <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$drilldown_memhost$) groupby _time MEM.hostname prestats=true span=1m
-| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT by _time, MEM.hostname
+        <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$drilldown_memhost$) groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT by _time, host
 | timechart $span$ avg(mem_used_effective_PCT) AS avg_mem_used_pct | trendline sma5(avg_mem_used_pct) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -472,8 +470,8 @@
             </input>
             <chart>
                 <search>
-        <query>| tstats max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$drilldown_swaphost$) groupby _time MEM.hostname prestats=true span=1m
-| stats dedup_splitvals=t max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, MEM.hostname
+        <query>| tstats max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$drilldown_swaphost$) groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, host
 | timechart $span$ avg(swap_used_effective_PCT) AS avg_swap_used_pct | trendline sma5(avg_swap_used_pct) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -511,15 +509,15 @@
     <!-- ############################# TOP stats ############################# -->
 
     <search id="TOPSearch_cpu">
-        <query>| tstats max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname-prefilter$) (TOP_ALLOS.frameID=$frameID$) (TOP_ALLOS.OStype=$osfilter$) (TOP_ALLOS.hostname=$hostname$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+        <query>| tstats max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (host=$host-prefilter$) (TOP_ALLOS.frameID=$frameID$) (TOP_ALLOS.OStype=$osfilter$) (host=$host$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
-| dedup _time,frameID,hostname,Command,pct_CPU
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| dedup _time,frameID,host,Command,pct_CPU
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | stats sum(value) As value, sum(logical_cpus) As logical_cpus by _time,Command
 | eval usage_pct=(value/logical_cpus)*100
 | stats max(usage_pct) AS max_usage_pct, avg(usage_pct) AS avg_usage_pct by Command
@@ -645,15 +643,15 @@
             <chart>
                 <search>
         <query>| tstats max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS)
-(TOP_ALLOS.Command=$drilldown_topcpu$) (TOP_ALLOS.frameID=$frameID$) (TOP_ALLOS.OStype=$osfilter$) (TOP_ALLOS.hostname=$hostname-prefilter$) (TOP_ALLOS.hostname=$hostname$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+(TOP_ALLOS.Command=$drilldown_topcpu$) (TOP_ALLOS.frameID=$frameID$) (TOP_ALLOS.OStype=$osfilter$) (host=$host-prefilter$) (host=$host$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
-| dedup _time,frameID,hostname,Command,pct_CPU
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| dedup _time,frameID,host,Command,pct_CPU
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | stats sum(value) As value, sum(logical_cpus) As logical_cpus by _time,Command
 | eval usage_pct=(value/logical_cpus)*100
 | timechart $span$ $top_statsmode$(usage_pct) AS max_usage_pct by Command</query>
@@ -752,18 +750,18 @@
             <chart>
                 <search>
         <query>| tstats max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS)
-(TOP_ALLOS.Command=$drilldown_topcpu$) (TOP_ALLOS.frameID=$frameID$) (TOP_ALLOS.OStype=$osfilter$) (TOP_ALLOS.hostname=$hostname-prefilter$) (TOP_ALLOS.hostname=$hostname$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+(TOP_ALLOS.Command=$drilldown_topcpu$) (TOP_ALLOS.frameID=$frameID$) (TOP_ALLOS.OStype=$osfilter$) (host=$host-prefilter$) (host=$host$) `$timefilter$(TOP_ALLOS)` groupby _time, "TOP_ALLOS.frameID", host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.frameID", host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.frameID" AS frameID, "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
-| dedup _time,frameID,hostname,Command,pct_CPU
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| dedup _time,frameID,host,Command,pct_CPU
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
-| stats sum(value) As value, sum(logical_cpus) As logical_cpus by _time,hostname,Command
+| stats sum(usage_per_core) As value,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
+| stats sum(value) As value, sum(logical_cpus) As logical_cpus by _time,host,Command
 | eval usage_pct=(value/logical_cpus)*100
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $top_statsmode$(usage_pct) AS max_usage_pct by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

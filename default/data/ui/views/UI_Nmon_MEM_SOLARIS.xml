@@ -53,30 +53,30 @@
             <fieldForValue>MEM.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
-            <prefix>MEM.hostname="</prefix>
+            <prefix>host="</prefix>
             <suffix>"</suffix>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) groupby "MEM.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "MEM.hostname"
-| sort limit=0 "MEM.hostname"
-| fields - _span | fillnull Count | fields "MEM.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>MEM.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>MEM.hostname</fieldForLabel>
-            <fieldForValue>MEM.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -94,8 +94,8 @@
             <label>Show Mem load by:</label>
             <default>fields - *_PCT*</default>
             <choice value="fields - *_PCT*">Activity in Data Volume (MB)</choice>
-            <choice value="fields _time,frameID,hostname,memused_PCT*,swapused_PCT*">Usage in percentage (%)</choice>
-            <choice value="fields _time,frameID,hostname,memfree_PCT*,swapfree_PCT*">Free in percentage (%)</choice>
+            <choice value="fields _time,frameID,host,memused_PCT*,swapused_PCT*">Usage in percentage (%)</choice>
+            <choice value="fields _time,frameID,host,memfree_PCT*,swapfree_PCT*">Free in percentage (%)</choice>
         </input>
 
         <input type="checkbox" token="charting" searchWhenChanged="true">
@@ -111,22 +111,22 @@
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
 max("MEM.memtotal") AS memtotal_MB max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
-from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
 max("MEM.memtotal") AS memtotal_MB max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
-by _time, "MEM.frameID", "MEM.hostname" | sort limit=0 "MEM.hostname"
+by _time, "MEM.frameID", host | sort limit=0 host
 | fields - _span
-| rename "MEM.hostname" AS hostname "MEM.frameID" AS "frameID"
+| rename "MEM.frameID" AS "frameID"
 | stats dedup_splitvals=t
 $statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT
 $statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB
 $statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB
-by frameID, hostname | sort limit=0 frameID,hostname
-| fields frameID, hostname, memused_MB, memused_PCT, memfree_MB, memfree_PCT, memtotal_MB, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT, swaptotal_MB
+by frameID, host | sort limit=0 frameID,host
+| fields frameID, host, memused_MB, memused_PCT, memfree_MB, memfree_PCT, memtotal_MB, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT, swaptotal_MB
 | foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
 | foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
         <earliest>$timerange.earliest$</earliest>
@@ -137,10 +137,12 @@ by frameID, hostname | sort limit=0 frameID,hostname
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -185,7 +187,7 @@ by frameID, hostname | sort limit=0 frameID,hostname
             <table>
                 <title>MEM - Memory Table Stats</title>
                 <search base="Global">
-                    <query>fields frameID, hostname, mem* | $memmode$ | fields - _time</query>
+                    <query>fields frameID, host, mem* | $memmode$ | fields - _time</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -208,7 +210,7 @@ by frameID, hostname | sort limit=0 frameID,hostname
             <table>
                 <title>MEM - Swap Table Stats</title>
                 <search base="Global">
-                    <query>fields frameID, hostname, swap* | $memmode$ | fields - _time</query>
+                    <query>fields frameID, host, swap* | $memmode$ | fields - _time</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -302,17 +304,17 @@ by frameID, hostname | sort limit=0 frameID,hostname
                     <query>| tstats
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
 max("MEM.memtotal") AS memtotal_MB
-from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
 max("MEM.memtotal") AS memtotal_MB
-by _time, "MEM.frameID", "MEM.hostname"
+by _time, "MEM.frameID", host
 | $charting$
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT
-$statsmode$("memtotal_MB") AS memtotal_MB by "MEM.hostname" | $memmode$</query>
+$statsmode$("memtotal_MB") AS memtotal_MB by host | $memmode$</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -343,17 +345,17 @@ $statsmode$("memtotal_MB") AS memtotal_MB by "MEM.hostname" | $memmode$</query>
                     <query>| tstats
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
-from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
 max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
-by _time, "MEM.frameID", "MEM.hostname"
+by _time, "MEM.frameID", host
 | $charting$
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB
-$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB by "MEM.hostname" | $memmode$</query>
+$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB by host | $memmode$</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

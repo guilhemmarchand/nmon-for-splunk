@@ -53,28 +53,28 @@
             <fieldForValue>TOP_Solaris.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) groupby "TOP_Solaris.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "TOP_Solaris.hostname"
-| sort $limit$ "TOP_Solaris.hostname"
-| fields - _span | fillnull Count | fields "TOP_Solaris.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort $limit$ host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>TOP_Solaris.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>TOP_Solaris.hostname</fieldForLabel>
-            <fieldForValue>TOP_Solaris.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -91,8 +91,8 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t sum(value) AS value by _time,Command | eval hostname=&quot;aggreg&quot;">Sum by Time interval</choice>
-            <choice value="stats dedup_splitvals=t avg(value) AS value by _time,Command | eval hostname=&quot;aggreg&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t sum(value) AS value by _time,Command | eval host=&quot;aggreg&quot;">Sum by Time interval</choice>
+            <choice value="stats dedup_splitvals=t avg(value) AS value by _time,Command | eval host=&quot;aggreg&quot;">Average by Time interval</choice>
             <default>fields *</default>
         </input>
 
@@ -114,10 +114,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -382,16 +384,16 @@
                 <title></title>
                 <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
                 <search>
-                    <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+                    <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,hostname,Command
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,host,Command
 | eval value=(pct_CPU/100)
 | $top_chart1$
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -417,13 +419,13 @@
                 <option name="charting.axisTitleY.text">Logical Core</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,hostname,Command,PID
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,host,Command,PID
 | eval value=(pct_CPU/100)
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -432,16 +434,16 @@
             <chart depends="$top_chart2$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(ResSize) As ResSize by _time,hostname,Command
+                    <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(ResSize) As ResSize by _time,host,Command
 | eval value=round(((ResSize)/1024),2)
 | $top_chart2$
 | $aggregate$
 | search $valuefilter$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -467,12 +469,12 @@
                 <option name="charting.axisTitleY.text">Megabytes (MB)</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(ResSize) As ResSize by _time,hostname,Command,PID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(ResSize) As ResSize by _time,host,Command,PID
 | eval value=round(((ResSize)/1024),2)
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ useother=f $limit$ $statsmode$(value) As value by key | rename "aggreg:*" AS "*"
 | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
@@ -482,15 +484,15 @@
             <chart depends="$top_chart3$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_Solaris.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.Size") AS Size by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(Size) As Size by _time,hostname,Command
+                    <query>| tstats max("TOP_Solaris.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.Size") AS Size by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Size) As Size by _time,host,Command
 | eval value=round(((Size)/1024),2)
 | $top_chart3$
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -516,12 +518,12 @@
                 <option name="charting.axisTitleY.text">Megabytes (MB)</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.Size") AS Size by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(Size) As Size by _time,hostname,Command,PID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.Size") AS Size from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.Size") AS Size by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Size) As Size by _time,host,Command,PID
 | eval value=round(((Size)/1024),2)
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -530,14 +532,14 @@
             <chart depends="$top_chart4$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_Solaris.Paging") AS Paging from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.Paging") AS Paging by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(Paging) As value by _time,hostname,Command
+                    <query>| tstats max("TOP_Solaris.Paging") AS Paging from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.Paging") AS Paging by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Paging) As value by _time,host,Command
 | $top_chart4$
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -563,11 +565,11 @@
                 <option name="charting.axisTitleY.text">Number of Page</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.Paging") AS Paging from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.Paging") AS Paging by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(Paging) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.Paging") AS Paging from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.Paging") AS Paging by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Paging) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -576,14 +578,14 @@
             <chart depends="$top_chart5$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_Solaris.Threads") AS Threads from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.Threads") AS Threads by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(Threads) As value by _time,hostname,Command
+                    <query>| tstats max("TOP_Solaris.Threads") AS Threads from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.Threads") AS Threads by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Threads) As value by _time,host,Command
 | $aggregate$
 | $top_chart5$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -609,11 +611,11 @@
                 <option name="charting.axisTitleY.text">Number of Threads</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.Threads") AS Threads from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.Threads") AS Threads by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(Threads) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.Threads") AS Threads from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.Threads") AS Threads by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(Threads) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -622,15 +624,15 @@
             <chart depends="$top_chart6$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_Solaris.CharIO") AS CharIO from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.CharIO") AS CharIO by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(CharIO) As value by _time,hostname,Command
+                    <query>| tstats max("TOP_Solaris.CharIO") AS CharIO from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.CharIO") AS CharIO by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(CharIO) As value by _time,host,Command
 | eval value=value/1024/1024
 | $aggregate$
 | $top_chart6$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -656,11 +658,11 @@
                 <option name="charting.axisTitleY.text">Megabytes/sec</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.CharIO") AS CharIO from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.CharIO") AS CharIO by _time, "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
-| stats sum(CharIO) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_Solaris.CharIO") AS CharIO from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)` groupby _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.CharIO") AS CharIO by _time, host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| stats sum(CharIO) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | eval value=value/1024/1024
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
@@ -675,17 +677,17 @@
             <table>
                 <title>Table stats: CPU Usage per logical core</title>
                 <search>
-                    <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
-groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+                    <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| stats sum(usage_per_core) As value by _time,frameID,host,Command
 | $aggregate$
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
-| stats $statsmode$(value) as usage_per_core, sparkline($statsmode$(value)) As sparkline by frameID,hostname,Command
+| stats $statsmode$(value) as usage_per_core, sparkline($statsmode$(value)) As sparkline by frameID,host,Command
 | rename usage_per_core As "CPU Usage per Logical Cores"
 | sort - "CPU Usage per Logical Cores"</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -718,16 +720,16 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
                 <title>Table stats: Physical Memory Usage per command invocation</title>
                 <search>
                     <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris
-where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
-groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+where (nodename = TOP_Solaris) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_Solaris)`
+groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
-| stats sum(Phys_Mem_MB) As value by _time,frameID,hostname,Command
+| stats sum(Phys_Mem_MB) As value by _time,frameID,host,Command
 | $aggregate$
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
-| stats $statsmode$(value) As Phys_Mem_MB, sparkline($statsmode$(value)) As sparkline by frameID,hostname,Command
-| sort - Phys_Mem_MB, hostname | rename Phys_Mem_MB As "Physical Memory (MB)"</query>
+| stats $statsmode$(value) As Phys_Mem_MB, sparkline($statsmode$(value)) As sparkline by frameID,host,Command
+| sort - Phys_Mem_MB, host | rename Phys_Mem_MB As "Physical Memory (MB)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

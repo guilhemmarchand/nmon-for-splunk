@@ -55,35 +55,35 @@
             <fieldForValue>CPU.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search>
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname"
-| sort limit=0 "CPU.hostname"
-| fields - _span | fillnull Count | fields "CPU.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>CPU.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>CPU.hostname</fieldForLabel>
-            <fieldForValue>CPU.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="multiselect" token="logical_core" searchWhenChanged="true">
             <label>Core Selection:</label>
             <!-- Populating Data Model Search -->
             <search>
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($osfilter$) groupby "CPU.CPUnn.logical_core" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($host$) ($osfilter$) groupby "CPU.CPUnn.logical_core" prestats=true
 | stats dedup_splitvals=t count AS Count by "CPU.CPUnn.logical_core"
 | sort limit=0 "CPU.CPUnn.logical_core"
 | fields - _span | fillnull Count | fields "CPU.CPUnn.logical_core"</query>
@@ -103,8 +103,8 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats `CPU_ALL(avg)` by _time | eval CPU.hostname=&quot;aggreg_hostname&quot; | eval CPU.CPUnn.logical_core=&quot;aggreg_logical_core&quot;">Average by Time interval</choice>
-            <choice value="stats `CPU_ALL(max)` by _time | eval CPU.hostname=&quot;aggreg_hostname&quot; | eval CPU.CPUnn.logical_core=&quot;aggreg_logical_core&quot;">Max by Time interval</choice>
+            <choice value="stats `CPU_ALL(avg)` by _time | eval host=&quot;aggreg_host&quot; | eval CPU.CPUnn.logical_core=&quot;aggreg_logical_core&quot;">Average by Time interval</choice>
+            <choice value="stats `CPU_ALL(max)` by _time | eval host=&quot;aggreg_host&quot; | eval CPU.CPUnn.logical_core=&quot;aggreg_logical_core&quot;">Max by Time interval</choice>
             <default>fields *</default>
         </input>
 
@@ -129,10 +129,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -260,13 +262,13 @@
     <!-- Base Searches for PostProcessing -->
 
     <search id="tablestats">
-        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
-| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
+        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
-| stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname", "CPU.CPUnn.logical_core"
-| sort limit=0 "CPU.hostname" | rename CPU.* AS * | rename CPUnn.* AS *
+| stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by host, "CPU.CPUnn.logical_core"
+| sort limit=0 host | rename CPU.* AS * | rename CPUnn.* AS *
 | foreach *_PCT [ eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2) ] | rename *_PCT AS "* (%)"
-| fields hostname, logical_core, *</query>
+| fields host, logical_core, *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -274,10 +276,10 @@
     </search>
 
     <search id="gaugestats">
-        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
-| stats dedup_splitvals=t max("CPU.cpu_PCT") AS CPU.cpu_PCT by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
+        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.cpu_PCT") AS CPU.cpu_PCT by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
-| stats max("CPU.cpu_PCT") AS max, avg("CPU.cpu_PCT") AS avg, median("CPU.cpu_PCT") AS median by "CPU.hostname"</query>
+| stats max("CPU.cpu_PCT") AS max, avg("CPU.cpu_PCT") AS avg, median("CPU.cpu_PCT") AS median by host</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -391,11 +393,11 @@
                     <scale type="minMidMax"></scale>
                 </format>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$click.value$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
-| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$click.value$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
-| stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by "CPU.hostname", "CPU.CPUnn.logical_core"
-| sort limit=0 "CPU.hostname" | rename CPU.* AS * | rename CPUnn.* AS *</link>
+| stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by host, "CPU.CPUnn.logical_core"
+| sort limit=0 host | rename CPU.* AS * | rename CPUnn.* AS *</link>
                 </drilldown>
             </table>
         </panel>
@@ -406,9 +408,9 @@
             <title>Charting parameters</title>
             <input type="dropdown" token="cpumode" searchWhenChanged="true">
                 <label>Show CPU load by:</label>
-                <default>fields _time,CPU.hostname,CPU.CPUnn.logical_core,CPU.cpu_PCT</default>
-                <choice value="fields _time,CPU.hostname,CPU.CPUnn.logical_core,CPU.cpu_PCT">Global CPU Percent Utilization</choice>
-                <choice value="fields _time,CPU.hostname,CPU.CPUnn.logical_core,CPU.Idle_PCT,CPU.Sys_PCT,CPU.User_PCT,CPU.Wait_PCT">MultiSeries: Sys,User,Wait,Idle</choice>
+                <default>fields _time,host,CPU.CPUnn.logical_core,CPU.cpu_PCT</default>
+                <choice value="fields _time,host,CPU.CPUnn.logical_core,CPU.cpu_PCT">Global CPU Percent Utilization</choice>
+                <choice value="fields _time,host,CPU.CPUnn.logical_core,CPU.Idle_PCT,CPU.Sys_PCT,CPU.User_PCT,CPU.Wait_PCT">MultiSeries: Sys,User,Wait,Idle</choice>
             </input>
             <input type="dropdown" token="chart" searchWhenChanged="true">
                 <label>Select a type of chart:</label>
@@ -481,9 +483,9 @@
             </input>
             <chart>
                 <search id="timechart">
-                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)`
-groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
-| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
+                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)`
+groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
 | $charting$
 | $cpumode$
@@ -524,13 +526,13 @@ by "CPU.CPUnn.logical_core"</query>
                 <option name="charting.axisY2.scale">inherit</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, "CPU.hostname", "CPU.CPUnn.logical_core" prestats=true span=1m
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname", "CPU.CPUnn.logical_core"
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
-| stats `CPU_ALL($statsmode$)` by _time,"CPU.hostname", "CPU.CPUnn.logical_core"
-| sort limit=0 "CPU.hostname" | rename "CPU.*" AS * | `CPU_ALL_rename` | rename CPUnn.* AS *
-| fields _time,hostname,*</link>
+| stats `CPU_ALL($statsmode$)` by _time,host, "CPU.CPUnn.logical_core"
+| sort limit=0 host | rename "CPU.*" AS * | `CPU_ALL_rename` | rename CPUnn.* AS *
+| fields _time,host,*</link>
                 </drilldown>
             </chart>
         </panel>

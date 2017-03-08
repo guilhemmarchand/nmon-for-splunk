@@ -52,27 +52,27 @@
             <fieldForValue>Solaris.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search>
-                <query>| tstats count AS Count from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) ($frameID$) (Solaris.hostname=$hostname-prefilter$) ($osfilter$) groupby "Solaris.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "Solaris.hostname"
-| sort limit=0 "Solaris.hostname"
-| fields Solaris.hostname, Count</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) ($frameID$) (host=$host-prefilter$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>Solaris.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
-            <fieldForLabel>Solaris.hostname</fieldForLabel>
-            <fieldForValue>Solaris.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -95,11 +95,11 @@
     </fieldset>
 
     <search id="Global">
-        <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Solaris)` groupby _time, "Solaris.hostname" prestats=true span=1m
+        <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris where (nodename = Solaris) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(Solaris)` groupby _time, host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.hostname"
+| stats dedup_splitvals=t `VM_Solaris(max)` by _time, host
 | $charting$
-| timechart $span$ useother=f limit=0 `VM_Solaris($statsmode$)` by Solaris.hostname
+| timechart $span$ useother=f limit=0 `VM_Solaris($statsmode$)` by host
 | rename Solaris.* AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -109,10 +109,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -224,11 +226,11 @@
                 <title>Table Stats</title>
                 <search>
                     <query>| tstats `VM_Solaris(max)` from datamodel=NMON_Data_VM.Solaris
-where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Solaris)` groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+where (nodename = Solaris) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(Solaris)` groupby _time, "Solaris.frameID", host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.frameID", "Solaris.hostname"
+| stats dedup_splitvals=t `VM_Solaris(max)` by _time, "Solaris.frameID", host
 | rename Solaris.* AS *
-| stats $statsmode$(*) AS * by frameID, hostname</query>
+| stats $statsmode$(*) AS * by frameID, host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

@@ -44,38 +44,38 @@
             <fieldForValue>JFS.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="HostsbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "JFS.hostname", "JFS.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "JFS.hostname", "JFS.device"
-| sort limit=0 "JFS.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host, "JFS.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "JFS.device"
+| sort limit=0 host
 | fields - _span
-| fillnull Count | fields JFS.hostname | dedup JFS.hostname | sort JFS.hostname</query>
+| fillnull Count | fields host | dedup host | sort host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>JFS.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>JFS.hostname</fieldForLabel>
-            <fieldForValue>JFS.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="multiselect" token="device" searchWhenChanged="true">
             <label>FS Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "JFS.hostname", "JFS.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "JFS.hostname", "JFS.device"
-| sort limit=0 "JFS.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby host, "JFS.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "JFS.device"
+| sort limit=0 host
 | fields - _span
 | fillnull Count | fields JFS.device | dedup JFS.device | sort JFS.device</query>
                 <earliest>$timerange.earliest$</earliest>
@@ -100,10 +100,10 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time, JFS.hostname | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time | eval JFS.hostname=&quot;aggreg_hostname&quot; | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
-            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time, JFS.hostname | eval JFS.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time | eval JFS.hostname=&quot;aggreg_hostname&quot; | eval JFS.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
+            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time, host | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t avg(JFS.value) AS JFS.value by _time | eval host=&quot;aggreg_host&quot; | eval JFS.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time, host | eval JFS.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t max(JFS.value) AS JFS.value by _time | eval host=&quot;aggreg_host&quot; | eval JFS.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
             <default>fields *</default>
         </input>
 
@@ -128,20 +128,24 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
 
     <!-- Help the user -->
 
-    <row depends="$hostname$" rejects="$device$">
+    <row depends="$host$" rejects="$device$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -228,14 +232,14 @@
             <table id="tablebar">
                 <search>
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
-| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) ($fsfilter$) groupby _time, host, "JFS.device" prestats=true
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
 | $aggregate$
-| rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
-| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by  "hostname", "device"
-| sort limit=0 "hostname"
+| rename "JFS.device" AS device, "JFS.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by  host, "device"
+| sort limit=0 host
 | eval value=round(value,2)
-| fields hostname,device,max_value, avg_value, min_value, UsedPct | eval avg_value=round(avg_value,2)</query>
+| fields host,device,max_value, avg_value, min_value, UsedPct | eval avg_value=round(avg_value,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -329,12 +333,12 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilt
             <chart>
                 <search>
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
-| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) ($fsfilter$) groupby _time, host, "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
 | $aggregate$
 | $charting$
 | rename "JFS.*" AS *
-| eval key=hostname+":"+device
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

@@ -56,28 +56,28 @@ groupby "NFS.frameID" prestats=true
             <fieldForValue>NFS.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_NFS where (nodename = NFS) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "NFS.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "NFS.hostname"
-| sort limit=0 "NFS.hostname"
-| fields - _span | fillnull Count | fields "NFS.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_NFS where (nodename = NFS) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>NFS.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>NFS.hostname</fieldForLabel>
-            <fieldForValue>NFS.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -95,10 +95,12 @@ groupby "NFS.frameID" prestats=true
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -221,7 +223,7 @@ groupby "NFS.frameID" prestats=true
                 <title>NFS Server V4</title>
                 <search>
                     <query>| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_SERVER.NFS_V4) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSSVRV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
@@ -251,7 +253,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.hostname=$hostname-prefilter$) ($f
                 <title>NFS Server V3</title>
                 <search>
                     <query>| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_SERVER.NFS_V3) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSSVRV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
@@ -281,7 +283,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.hostname=$hostname-prefilter$) ($f
                 <title>NFS Server V2</title>
                 <search>
                     <query>| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_SERVER.NFS_V2) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSSVRV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
@@ -312,7 +314,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.hostname=$hostname-prefilter$) ($f
                 <title>NFS Client V4</title>
                 <search>
                     <query>| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSCLIV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
@@ -342,7 +344,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.hostname=$hostname-prefilter$) (
                 <title>NFS Client V3</title>
                 <search>
                     <query>| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSCLIV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
@@ -372,7 +374,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.hostname=$hostname-prefilter$) (
                 <title>NFS Client V2</title>
                 <search>
                     <query>| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSCLIV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor
@@ -469,7 +471,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.hostname=$hostname-prefilter$) (
                 <title>NFS Server V4</title>
                 <search>
                     <query>| tstats `NFSSVRV4(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_SERVER.NFS_V4) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSSVRV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
@@ -502,7 +504,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (NFS.hostname=$hostname-prefilter$) ($f
                 <title>NFS Server V3</title>
                 <search>
                     <query>| tstats `NFSSVRV3(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_SERVER.NFS_V3) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSSVRV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
@@ -535,7 +537,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (NFS.hostname=$hostname-prefilter$) ($f
                 <title>NFS Server V2</title>
                 <search>
                     <query>| tstats `NFSSVRV2(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_SERVER.NFS_V2) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSSVRV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
@@ -568,7 +570,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (NFS.hostname=$hostname-prefilter$) ($f
                 <title>NFS Client V4</title>
                 <search>
                     <query>| tstats `NFSCLIV4(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSCLIV4(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
@@ -601,7 +603,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (NFS.hostname=$hostname-prefilter$) (
                 <title>NFS Client V3</title>
                 <search>
                     <query>| tstats `NFSCLIV3(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSCLIV3(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0
@@ -634,7 +636,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (NFS.hostname=$hostname-prefilter$) (
                 <title>NFS Client V2</title>
                 <search>
                     <query>| tstats `NFSCLIV2(max)` from datamodel=NMON_Data_NFS
-where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (NFS.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby _time prestats=true
+where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby _time prestats=true
 | stats dedup_splitvals=t `NFSCLIV2(max)` by _time
 | sort limit=0 _time
 | rename max(*) As * | rename NFS.* AS * | untable _time monitor value | stats sum(*) AS * by _time,monitor | where value>0

@@ -54,38 +54,38 @@
             <fieldForValue>DISKBSIZE.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="HostsbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (DISKBSIZE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISKBSIZE.hostname", "DISKBSIZE.device"
-| sort limit=0 "DISKBSIZE.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host, "DISKBSIZE.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "DISKBSIZE.device"
+| sort limit=0 host
 | fields - _span
-| fillnull Count | fields DISKBSIZE.hostname | dedup DISKBSIZE.hostname | sort DISKBSIZE.hostname</query>
+| fillnull Count | fields host | dedup host | sort host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>DISKBSIZE.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>DISKBSIZE.hostname</fieldForLabel>
-            <fieldForValue>DISKBSIZE.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="multiselect" token="device" searchWhenChanged="true">
             <label>Disks Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (DISKBSIZE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISKBSIZE.hostname", "DISKBSIZE.device"
-| sort limit=0 "DISKBSIZE.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby host, "DISKBSIZE.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "DISKBSIZE.device"
+| sort limit=0 host
 | fields - _span
 | fillnull Count | fields DISKBSIZE.device | dedup DISKBSIZE.device | sort DISKBSIZE.device</query>
                 <earliest>$timerange.earliest$</earliest>
@@ -102,12 +102,12 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t avg(DISKBSIZE.value) AS DISKBSIZE.value by _time, DISKBSIZE.hostname | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t avg(DISKBSIZE.value) AS DISKBSIZE.value by _time | eval DISKBSIZE.hostname=&quot;aggreg_hostname&quot; | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
-            <choice value="stats dedup_splitvals=t max(DISKBSIZE.value) AS DISKBSIZE.value by _time, DISKBSIZE.hostname | eval DISKBSIZE.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t max(DISKBSIZE.value) AS DISKBSIZE.value by _time | eval DISKBSIZE.hostname=&quot;aggreg_hostname&quot; | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
-            <choice value="stats dedup_splitvals=t sum(DISKBSIZE.value) AS DISKBSIZE.value by _time, DISKBSIZE.hostname | eval DISKBSIZE.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t sum(DISKBSIZE.value) AS DISKBSIZE.value by _time | eval DISKBSIZE.hostname=&quot;aggreg_hostname&quot; | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
+            <choice value="stats dedup_splitvals=t avg(DISKBSIZE.value) AS DISKBSIZE.value by _time, host | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t avg(DISKBSIZE.value) AS DISKBSIZE.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t max(DISKBSIZE.value) AS DISKBSIZE.value by _time, host | eval DISKBSIZE.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t max(DISKBSIZE.value) AS DISKBSIZE.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
+            <choice value="stats dedup_splitvals=t sum(DISKBSIZE.value) AS DISKBSIZE.value by _time, host | eval DISKBSIZE.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t sum(DISKBSIZE.value) AS DISKBSIZE.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKBSIZE.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
             <default>fields *</default>
         </input>
 
@@ -132,20 +132,24 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
 
     <!-- Help the user -->
 
-    <row depends="$hostname$" rejects="$device$">
+    <row depends="$host$" rejects="$device$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -249,15 +253,15 @@
             <table>
                 <search id="tablestats">
                     <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE
-where (nodename = DISKBSIZE) (DISKBSIZE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKBSIZE)`
-groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true
-| stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "DISKBSIZE.hostname", "DISKBSIZE.device"
+where (nodename = DISKBSIZE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKBSIZE)`
+groupby _time, host, "DISKBSIZE.device" prestats=true
+| stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, host, "DISKBSIZE.device"
 | $aggregate$
-| rename "DISKBSIZE.hostname" AS hostname, "DISKBSIZE.device" AS device, "DISKBSIZE.value" AS value
-| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
-| sort limit=0 "hostname"
+| rename "DISKBSIZE.device" AS device, "DISKBSIZE.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  host, "device"
+| sort limit=0 host
 | eval value=round(value,2)
-| fields hostname,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
+| fields host,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -357,13 +361,13 @@ groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true
             <chart>
                 <search id="timechart">
                     <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE
-where (nodename = DISKBSIZE) (DISKBSIZE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKBSIZE)`
-groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
-| stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "DISKBSIZE.hostname", "DISKBSIZE.device"
+where (nodename = DISKBSIZE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKBSIZE)`
+groupby _time, host, "DISKBSIZE.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, host, "DISKBSIZE.device"
 | $aggregate$
 | $charting$
 | rename "DISKBSIZE.*" AS *
-| eval key=hostname+":"+device
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

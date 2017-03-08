@@ -55,38 +55,38 @@
             <fieldForValue>DISKRIOWRIO.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="HostsbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_DISKRIOWRIO where (nodename = DISKRIOWRIO) (DISKRIOWRIO.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISKRIOWRIO.hostname", "DISKRIOWRIO.device"
-| sort limit=0 "DISKRIOWRIO.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_DISKRIOWRIO where (nodename = DISKRIOWRIO) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host, "DISKRIOWRIO.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "DISKRIOWRIO.device"
+| sort limit=0 host
 | fields - _span
-| fillnull Count | fields DISKRIOWRIO.hostname | dedup DISKRIOWRIO.hostname | sort DISKRIOWRIO.hostname</query>
+| fillnull Count | fields host | dedup host | sort host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>DISKRIOWRIO.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>DISKRIOWRIO.hostname</fieldForLabel>
-            <fieldForValue>DISKRIOWRIO.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="multiselect" token="device" searchWhenChanged="true">
             <label>Disks Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_DISKRIOWRIO where (nodename = DISKRIOWRIO) (DISKRIOWRIO.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISKRIOWRIO.hostname", "DISKRIOWRIO.device"
-| sort limit=0 "DISKRIOWRIO.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_DISKRIOWRIO where (nodename = DISKRIOWRIO) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby host, "DISKRIOWRIO.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "DISKRIOWRIO.device"
+| sort limit=0 host
 | fields - _span
 | fillnull Count | fields DISKRIOWRIO.device | dedup DISKRIOWRIO.device | sort DISKRIOWRIO.device</query>
                 <earliest>$timerange.earliest$</earliest>
@@ -103,12 +103,12 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t avg(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time, DISKRIOWRIO.hostname | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t avg(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time | eval DISKRIOWRIO.hostname=&quot;aggreg_hostname&quot; | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
-            <choice value="stats dedup_splitvals=t max(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time, DISKRIOWRIO.hostname | eval DISKRIOWRIO.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t max(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time | eval DISKRIOWRIO.hostname=&quot;aggreg_hostname&quot; | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
-            <choice value="stats dedup_splitvals=t sum(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time, DISKRIOWRIO.hostname | eval DISKRIOWRIO.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t sum(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time | eval DISKRIOWRIO.hostname=&quot;aggreg_hostname&quot; | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
+            <choice value="stats dedup_splitvals=t avg(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time, host | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t avg(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t max(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time, host | eval DISKRIOWRIO.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t max(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
+            <choice value="stats dedup_splitvals=t sum(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time, host | eval DISKRIOWRIO.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t sum(DISKRIOWRIO.value) AS DISKRIOWRIO.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKRIOWRIO.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
             <default>fields *</default>
         </input>
 
@@ -133,20 +133,24 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
 
     <!-- Help the user -->
 
-    <row depends="$hostname$" rejects="$device$">
+    <row depends="$host$" rejects="$device$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -252,15 +256,15 @@
                 <title>DISKRIO - Disk Read I/O per second</title>
                 <search id="tablestats_read">
                     <query>| tstats max("DISKRIOWRIO.value") AS DISKRIOWRIO.value from datamodel=NMON_Data_DISKRIOWRIO
-where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKRIO) (DISKRIOWRIO.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKRIOWRIO)`
-groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true
-| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device"
+where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKRIO) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKRIOWRIO)`
+groupby _time, host, "DISKRIOWRIO.device" prestats=true
+| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, host, "DISKRIOWRIO.device"
 | $aggregate$
-| rename "DISKRIOWRIO.hostname" AS hostname, "DISKRIOWRIO.device" AS device, "DISKRIOWRIO.value" AS value
-| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
-| sort limit=0 "hostname"
+| rename "DISKRIOWRIO.device" AS device, "DISKRIOWRIO.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  host, "device"
+| sort limit=0 host
 | eval value=round(value,2)
-| fields hostname,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
+| fields host,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -299,15 +303,15 @@ groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true
                 <title>DISKWIO - Disk Write I/O per second</title>
                 <search id="tablestats_write">
                     <query>| tstats max("DISKRIOWRIO.value") AS DISKRIOWRIO.value from datamodel=NMON_Data_DISKRIOWRIO
-where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKWIO) (DISKRIOWRIO.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKRIOWRIO)`
-groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true
-| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device"
+where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKWIO) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKRIOWRIO)`
+groupby _time, host, "DISKRIOWRIO.device" prestats=true
+| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, host, "DISKRIOWRIO.device"
 | $aggregate$
-| rename "DISKRIOWRIO.hostname" AS hostname, "DISKRIOWRIO.device" AS device, "DISKRIOWRIO.value" AS value
-| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
-| sort limit=0 "hostname"
+| rename "DISKRIOWRIO.device" AS device, "DISKRIOWRIO.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  host, "device"
+| sort limit=0 host
 | eval value=round(value,2)
-| fields hostname,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
+| fields host,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -412,13 +416,13 @@ groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true
                 <title>DISKRIO - Disk Read I/O per second</title>
                 <search id="timechart_read">
                     <query>| tstats max("DISKRIOWRIO.value") AS DISKRIOWRIO.value from datamodel=NMON_Data_DISKRIOWRIO
-where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKRIO) (DISKRIOWRIO.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKRIOWRIO)`
-groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true span=1m
-| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device"
+where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKRIO) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKRIOWRIO)`
+groupby _time, host, "DISKRIOWRIO.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, host, "DISKRIOWRIO.device"
 | $aggregate$
 | $charting$
 | rename "DISKRIOWRIO.*" AS *
-| eval key=hostname+":"+device
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -448,13 +452,13 @@ groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true span=1
                 <title>DISKWIO - Disk Write I/O per second</title>
                 <search id="timechart_write">
                     <query>| tstats max("DISKRIOWRIO.value") AS DISKRIOWRIO.value from datamodel=NMON_Data_DISKRIOWRIO
-where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKWIO) (DISKRIOWRIO.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKRIOWRIO)`
-groupby _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device" prestats=true span=1m
-| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, "DISKRIOWRIO.hostname", "DISKRIOWRIO.device"
+where (nodename = DISKRIOWRIO) (DISKRIOWRIO.type=DISKWIO) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKRIOWRIO)`
+groupby _time, host, "DISKRIOWRIO.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKRIOWRIO.value") AS DISKRIOWRIO.value by _time, host, "DISKRIOWRIO.device"
 | $aggregate$
 | $charting$
 | rename "DISKRIOWRIO.*" AS *
-| eval key=hostname+":"+device
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

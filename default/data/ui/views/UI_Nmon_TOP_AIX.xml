@@ -53,28 +53,28 @@
             <fieldForValue>TOP_AIX.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) groupby "TOP_AIX.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "TOP_AIX.hostname"
-| sort $limit$ "TOP_AIX.hostname"
-| fields - _span | fillnull Count | fields "TOP_AIX.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort $limit$ host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>TOP_AIX.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>TOP_AIX.hostname</fieldForLabel>
-            <fieldForValue>TOP_AIX.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -98,8 +98,8 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t sum(value) AS value by _time,Command | eval hostname=&quot;aggreg&quot;">Sum by Time interval</choice>
-            <choice value="stats dedup_splitvals=t avg(value) AS value by _time,Command | eval hostname=&quot;aggreg&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t sum(value) AS value by _time,Command | eval host=&quot;aggreg&quot;">Sum by Time interval</choice>
+            <choice value="stats dedup_splitvals=t avg(value) AS value by _time,Command | eval host=&quot;aggreg&quot;">Average by Time interval</choice>
             <default>fields *</default>
         </input>
 
@@ -121,10 +121,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -374,18 +376,18 @@
                 <title></title>
                 <!-- We need to agregate CPU percent usage by PID, ensure we don't any have any duppl and ensure we exclude bad data -->
                 <search>
-                    <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+                    <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | $majorsmt$
 | $top_chart1$
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,hostname,Command
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,host,Command
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value by _time,hostname,Command
+| stats sum(usage_per_core) As value by _time,host,Command
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -411,15 +413,15 @@
                 <option name="charting.axisTitleY.text">Logical Core</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | $majorsmt$
-| stats max(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,hostname,Command,PID
+| stats max(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,host,Command,PID
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+| stats sum(usage_per_core) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -429,15 +431,15 @@
             <chart depends="$top_chart2$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+                    <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval Used_Mem_MB=((ResData+ResText)/1024)
-| stats sum(Used_Mem_MB) As value by _time,hostname,Command
+| stats sum(Used_Mem_MB) As value by _time,host,Command
 | $top_chart2$
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -463,12 +465,12 @@
                 <option name="charting.axisTitleY.text">Megabytes (MB)</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval Used_Mem_MB=((ResData%2BResText)/1024)
-| stats sum(Used_Mem_MB) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+| stats sum(Used_Mem_MB) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -477,14 +479,14 @@
             <chart depends="$top_chart3$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_AIX.CharIO") AS CharIO from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.CharIO") AS CharIO by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| stats sum(CharIO) As value by _time,hostname,Command
+                    <query>| tstats max("TOP_AIX.CharIO") AS CharIO from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.CharIO") AS CharIO by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+| stats sum(CharIO) As value by _time,host,Command
 | $top_chart3$
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -510,11 +512,11 @@
                 <option name="charting.axisTitleY.text">Char I/O</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.CharIO") AS CharIO from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.CharIO") AS CharIO by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| stats sum(CharIO) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.CharIO") AS CharIO from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.CharIO") AS CharIO by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+| stats sum(CharIO) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -523,14 +525,14 @@
             <chart depends="$top_chart4$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_AIX.Paging") AS Paging from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.Paging") AS Paging by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| stats sum(Paging) As value by _time,Command,hostname
+                    <query>| tstats max("TOP_AIX.Paging") AS Paging from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.Paging") AS Paging by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+| stats sum(Paging) As value by _time,Command,host
 | $top_chart4$
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -556,11 +558,11 @@
                 <option name="charting.axisTitleY.text">Number of Page</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.Paging") AS Paging from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.Paging") AS Paging by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| stats sum(Paging) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.Paging") AS Paging from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.Paging") AS Paging by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+| stats sum(Paging) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -569,14 +571,14 @@
             <chart depends="$top_chart5$">
                 <title></title>
                 <search>
-                    <query>| tstats max("TOP_AIX.Threads") AS Threads from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.Threads") AS Threads by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| stats sum(Threads) As value by _time,hostname,Command
+                    <query>| tstats max("TOP_AIX.Threads") AS Threads from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.Threads") AS Threads by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+| stats sum(Threads) As value by _time,host,Command
 | $top_chart5$
 | $aggregate$
 | search $valuefilter$
-| eval key=hostname+":"+Command
+| eval key=host+":"+Command
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -602,11 +604,11 @@
                 <option name="charting.axisTitleY.text">Number of Threads</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.Threads") AS Threads from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.Threads") AS Threads by _time, "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
-| stats sum(Threads) As value by _time,hostname,Command,PID
-| eval key=hostname%2B":"%2BCommand%2B":"%2BPID
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("TOP_AIX.Threads") AS Threads from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)` groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.Threads") AS Threads by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+| stats sum(Threads) As value by _time,host,Command,PID
+| eval key=host%2B":"%2BCommand%2B":"%2BPID
 | search $valuefilter$
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*" | fields _time,*$click.name2$*&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.chart.stackMode=stacked</link>
                 </drilldown>
@@ -620,18 +622,18 @@
                 <title>Table stats: CPU Usage per logical core</title>
                 <search>
                     <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP
-where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
+groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | $majorsmt$
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| stats sum(usage_per_core) As value by _time,frameID,host,Command
 | $aggregate$
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
-| stats $statsmode$(value) as usage_per_core, sparkline($statsmode$(value)) As sparkline by frameID,hostname,Command
+| stats $statsmode$(value) as usage_per_core, sparkline($statsmode$(value)) As sparkline by frameID,host,Command
 | rename usage_per_core As "CPU Usage per Logical Cores"
 | sort - "CPU Usage per Logical Cores"</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -664,18 +666,18 @@ groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "T
                 <title>Table stats: Memory Usage per command invocation</title>
                 <search>
                     <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP
-where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname-prefilter$) ($osfilter$) ($frameID$) ($hostname$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
-groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+where (nodename = TOP_AIX) (host=$host-prefilter$) ($osfilter$) ($frameID$) ($host$) ($Command$) ($PID$) `$timefilter$(TOP_AIX)`
+groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval Used_Mem_MB=((ResData+ResText)/1024)
-| stats sum(Used_Mem_MB) As value by _time,frameID,hostname,Command
+| stats sum(Used_Mem_MB) As value by _time,frameID,host,Command
 | $aggregate$
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
-| stats $statsmode$(value) as Used_Mem_MB, sparkline($statsmode$(value)) as sparkline by frameID,hostname,Command
+| stats $statsmode$(value) as Used_Mem_MB, sparkline($statsmode$(value)) as sparkline by frameID,host,Command
 | eval Used_Mem_MB=round(Used_Mem_MB,2)
 | rename Used_Mem_MB As "Used Memory per Command (MB)"
-| sort - "Used Memory per Command (MB)",hostname</query>
+| sort - "Used Memory per Command (MB)",host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

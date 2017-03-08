@@ -44,28 +44,28 @@
             <fieldForValue>MEMNEW.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (MEMNEW.hostname=$hostname-prefilter$) ($frameID$) groupby "MEMNEW.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "MEMNEW.hostname"
-| sort limit=0 "MEMNEW.hostname"
-| fields - _span | fillnull Count | fields "MEMNEW.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMNEW where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (host=$host-prefilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>MEMNEW.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>MEMNEW.hostname</fieldForLabel>
-            <fieldForValue>MEMNEW.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -89,10 +89,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -199,18 +201,18 @@
                     <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT from datamodel=NMON_Data_MEMNEW
-where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
-groupby _time, "MEMNEW.frameID", "MEMNEW.hostname" prestats=true span=1m
+where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(MEMNEW)`
+groupby _time, "MEMNEW.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT
-by _time, "MEMNEW.frameID", "MEMNEW.hostname"
+by _time, "MEMNEW.frameID", host
 | stats dedup_splitvals=t
 $statsmode$("memused_PCT") AS "Total Mem Used (%)" $statsmode$("Free_PCT") AS "Free (%)" $statsmode$("FScache_PCT") AS "FScache (%)"
 $statsmode$("Process_PCT") AS "Process (%)" $statsmode$("System_PCT") AS "System PCT(%)" $statsmode$("User_PCT") AS "User (%)"
-by "MEMNEW.frameID", "MEMNEW.hostname"
-| rename "MEMNEW.frameID" AS "frameID" "MEMNEW.hostname" AS hostname</query>
+by "MEMNEW.frameID", host
+| rename "MEMNEW.frameID" AS "frameID"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -320,16 +322,16 @@ by "MEMNEW.frameID", "MEMNEW.hostname"
                     <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT from datamodel=NMON_Data_MEMNEW
-where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (MEMNEW.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(MEMNEW)`
-groupby _time, "MEMNEW.frameID", "MEMNEW.hostname" prestats=true span=1m
+where (nodename = MEMNEW) (MEMNEW.OStype="AIX") (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(MEMNEW)`
+groupby _time, "MEMNEW.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT max("MEMNEW.User_PCT") AS User_PCT
-by _time, "MEMNEW.frameID", "MEMNEW.hostname"
+by _time, "MEMNEW.frameID", host
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
 $statsmode$("Free_PCT") AS Free_PCT $statsmode$("FScache_PCT") AS FScache_PCT $statsmode$("memused_PCT") AS memused_PCT
-$statsmode$("Process_PCT") AS Process_PCT $statsmode$("System_PCT") AS System_PCT $statsmode$("User_PCT") AS User_PCT by "MEMNEW.hostname"
+$statsmode$("Process_PCT") AS Process_PCT $statsmode$("System_PCT") AS System_PCT $statsmode$("User_PCT") AS User_PCT by host
 | $charting$ | $memmode$</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

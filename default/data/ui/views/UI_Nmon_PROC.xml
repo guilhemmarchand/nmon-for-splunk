@@ -56,29 +56,29 @@
             <fieldForValue>PROC.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "PROC.hostname" prestats=true
-| stats dedup_splitvals=t count AS count by "PROC.hostname"
-| sort limit=0 "PROC.hostname"
+                <query>| tstats count AS count from datamodel=NMON_Data_PROC where (nodename = PROC) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS count by host
+| sort limit=0 host
 | fields - _span
-| fillnull count | fields "PROC.hostname"</query>
+| fillnull count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>PROC.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>PROC.hostname</fieldForLabel>
-            <fieldForValue>PROC.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -102,10 +102,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -212,18 +214,18 @@
         <query>| tstats
 max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
 max("PROC.fork") AS fork max("PROC.exec") AS exec
-from datamodel=NMON_Data_PROC where (nodename = PROC) (PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.frameID", "PROC.hostname" prestats=true
+from datamodel=NMON_Data_PROC where (nodename = PROC) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(PROC)`
+groupby _time, "PROC.frameID", host prestats=true
 | stats dedup_splitvals=t max("PROC.Runnable") AS Runnable max("PROC.Swap_in") AS Swap_in max("PROC.pswitch") AS pswitch max("PROC.syscall") AS syscall
-max("PROC.fork") AS fork max("PROC.exec") AS exec by _time, "PROC.frameID", "PROC.hostname"
-| rename "PROC.frameID" AS "frameID", "PROC.hostname" AS "hostname"
+max("PROC.fork") AS fork max("PROC.exec") AS exec by _time, "PROC.frameID", host
+| rename "PROC.frameID" AS "frameID"
 | stats
 $statsmode$(Runnable) As "RunQueue", sparkline($statsmode$(Runnable)) As "spk_RunQueue",
 $statsmode$(Swap_in) As "Swap_in", sparkline($statsmode$(Swap_in)) As "spk_Swap_in",
 $statsmode$(pswitch) As "pswitch/sec", sparkline($statsmode$(pswitch)) As "spk_pswitch/sec",
 $statsmode$(syscall) As "syscall/sec", sparkline($statsmode$(syscall)) As "spk_syscall/sec",
 $statsmode$(fork) As "fork/sec", sparkline($statsmode$(fork)) As "spk_fork/sec",
-$statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" by frameID,hostname</query>
+$statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" by frameID,host</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -235,7 +237,7 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
             <table>
                 <title>Kernel Threads in run queue and to be paged - Table Stats</title>
                 <search base="baseSearch">
-                    <query>fields frameID,hostname,"RunQueue","Swap_in","spk_RunQueue","spk_Swap_in"</query>
+                    <query>fields frameID,host,"RunQueue","Swap_in","spk_RunQueue","spk_Swap_in"</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -272,7 +274,7 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
             <table>
                 <title>Context switches, System / Fork / Exec calls - Table Stats</title>
                 <search base="baseSearch">
-                    <query>fields frameID,hostname,"pswitch/sec","syscall/sec","fork/sec","exec/sec","spk_pswitch/sec","spk_syscall/sec","spk_fork/sec","spk_exec/sec"</query>
+                    <query>fields frameID,host,"pswitch/sec","syscall/sec","fork/sec","exec/sec","spk_pswitch/sec","spk_syscall/sec","spk_fork/sec","spk_exec/sec"</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -396,10 +398,10 @@ $statsmode$(exec) As "exec/sec", sparkline($statsmode$(exec)) As "spk_exec/sec" 
                 <title>Kernel Threads in run queue and to be paged (RunQueue, Swap-In)</title>
                 <search id="timechart">
                     <query>| tstats $statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in from datamodel=NMON_Data_PROC where (nodename = PROC)
-(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.hostname" prestats=true $span$
+(host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(PROC)`
+groupby _time, host prestats=true $span$
 | timechart $span$ useother=f limit=0
-$statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in by "PROC.hostname"</query>
+$statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -428,10 +430,10 @@ $statsmode$("PROC.Runnable") AS Runnable $statsmode$("PROC.Swap_in") AS Swap_in 
                 <title>Context switches and system calls (pswitch, syscall)</title>
                 <search>
                     <query>| tstats $statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall from datamodel=NMON_Data_PROC where (nodename = PROC)
-(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.hostname" prestats=true $span$
+(host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(PROC)`
+groupby _time, host prestats=true $span$
 | timechart $span$ useother=f limit=0
-$statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall by "PROC.hostname"</query>
+$statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -460,10 +462,10 @@ $statsmode$("PROC.pswitch") AS pswitch $statsmode$("PROC.syscall") AS syscall by
                 <title>Fork and Exec system calls (fork, exec)</title>
                 <search>
                     <query>| tstats $statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec from datamodel=NMON_Data_PROC where (nodename = PROC)
-(PROC.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(PROC)`
-groupby _time, "PROC.hostname" prestats=true $span$
+(host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(PROC)`
+groupby _time, host prestats=true $span$
 | timechart $span$ useother=f limit=0
-$statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec by "PROC.hostname"</query>
+$statsmode$("PROC.fork") AS fork $statsmode$("PROC.exec") AS exec by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

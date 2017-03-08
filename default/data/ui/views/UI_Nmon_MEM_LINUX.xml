@@ -53,30 +53,30 @@
             <fieldForValue>MEM.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
-            <prefix>MEM.hostname="</prefix>
+            <prefix>host="</prefix>
             <suffix>"</suffix>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($hostname-prefilter$) ($frameID$) ($osfilter$) groupby "MEM.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "MEM.hostname"
-| sort limit=0 "MEM.hostname"
-| fields - _span | fillnull Count | fields "MEM.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>MEM.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>MEM.hostname</fieldForLabel>
-            <fieldForValue>MEM.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -100,10 +100,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -246,8 +248,8 @@
     <!-- Base Searches for PostProcessing -->
 
     <search id="gaugestats">
-        <query>| tstats `memory_linux_dm` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)` groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| stats dedup_splitvals=t `memory_linux_dm` by _time, "MEM.frameID", "MEM.hostname"
+        <query>| tstats `memory_linux_dm` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)` groupby _time, "MEM.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm` by _time, "MEM.frameID", host
 | stats max(mem_used_effective_PCT) AS max_mem, avg(mem_used_effective_PCT) AS avg_mem
 max(swap_used_effective_PCT) AS max_swap, avg(swap_used_effective_PCT) AS avg_swap</query>
         <earliest>$timerange.earliest$</earliest>
@@ -258,11 +260,11 @@ max(swap_used_effective_PCT) AS max_swap, avg(swap_used_effective_PCT) AS avg_sw
 
     <search id="Global">
         <query>| tstats `memory_linux_dm`
-from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`  groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| stats dedup_splitvals=t `memory_linux_dm` by _time, "MEM.frameID", "MEM.hostname"
+from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`  groupby _time, "MEM.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm` by _time, "MEM.frameID", host
 | rename "MEM.*" AS "*"
-| stats dedup_splitvals=t $statsmode$("*") AS * by frameID, hostname
-| sort limit=0 frameID,hostname
+| stats dedup_splitvals=t $statsmode$("*") AS * by frameID, host
+| sort limit=0 frameID,host
 | foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
 | foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
         <earliest>$timerange.earliest$</earliest>
@@ -273,8 +275,8 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
 
     <search id="chartstats">
         <query>| tstats `memory_linux_dm($statsmode$)`
-from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)`  groupby _time, "MEM.frameID", "MEM.hostname" prestats=true $span$
-| timechart $span$ useother=f limit=0 dedup_splitvals=t `memory_linux_dm($statsmode$)` by "MEM.hostname"
+from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`  groupby _time, "MEM.frameID", host prestats=true $span$
+| timechart $span$ useother=f limit=0 dedup_splitvals=t `memory_linux_dm($statsmode$)` by host
 | $charting$</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -283,8 +285,8 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
     </search>
 
     <search id="chartstats_bydeployment">
-        <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(MEM)` groupby _time MEM.hostname prestats=true span=1m
-| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+        <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)` groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, host
 | stats sum(*MB) AS "*MB", avg(*PCT) AS "*PCT" by _time
 | timechart $span$ dedup_splitvals=t $statsmode$(*) AS *
 | $charting$</query>
@@ -393,16 +395,16 @@ from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) ($hostname-prefilter$)
             <title>Memory table stats</title>
             <input type="dropdown" token="memmode" searchWhenChanged="true">
                 <label></label>
-                <default>fields _time,frameID,hostname,*_PCT*</default>
-                <choice value="fields _time,frameID,hostname,*_PCT*">Usage in percentage (%)</choice>
-                <choice value="fields _time,frameID,hostname,*_MB*">Activity in Data Volume (MB)</choice>
+                <default>fields _time,frameID,host,*_PCT*</default>
+                <choice value="fields _time,frameID,host,*_PCT*">Usage in percentage (%)</choice>
+                <choice value="fields _time,frameID,host,*_MB*">Activity in Data Volume (MB)</choice>
             </input>
             <table>
                 <title></title>
                 <search base="Global">
                     <query>$memmode$ | $memmode$
 | fields - _time
-| fields frameID,hostname,"mem*total*","mem*used*","mem*free*","mem*active*","mem*inactive*","mem*buffers*","mem*cached*","swap*total*","swap*used*","swap*free*",*
+| fields frameID,host,"mem*total*","mem*used*","mem*free*","mem*active*","mem*inactive*","mem*buffers*","mem*cached*","swap*total*","swap*used*","swap*free*",*
 | rename "mem_*_PCT" AS "mem_* (%)", "swap_*_PCT" AS "swap_* (%)", "mem_*_MB" AS "mem_* (MB)", "swap_*_MB" AS "swap_* (MB)"</query>
                 </search>
                 <option name="wrap">true</option>

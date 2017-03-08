@@ -38,7 +38,7 @@
             <label>Frame IDs:</label>
             <!-- Populating Data Model Search -->
             <search id="frameIDSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) (dg.frameID="*") (dg.hostname="*") groupby dg.frameID, host prestats=true
+                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) (dg.frameID="*") (host="*") groupby dg.frameID, host prestats=true
 | stats dedup_splitvals=t count AS count by dg.frameID
 | sort limit=0 dg.frameID
 | fields dg.frameID</query>
@@ -53,33 +53,33 @@
             <fieldForLabel>dg.frameID</fieldForLabel>
             <fieldForValue>dg.frameID</fieldForValue>
         </input>
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="HostsbaseSearch">
-                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) ($frameID$) ($hostname-prefilter$) groupby dg.hostname, host prestats=true
-| stats dedup_splitvals=t count AS count by dg.hostname
-| sort limit=0 dg.hostname
-| fields dg.hostname</query>
+                <query>| tstats count AS count from datamodel=NMON_Data_disks_dg where (nodename = dg) ($osfilter$) ($frameID$) ($host-prefilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS count by host
+| sort limit=0 host
+| fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>dg.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>dg.hostname</fieldForLabel>
-            <fieldForValue>dg.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
         <input type="multiselect" token="device" searchWhenChanged="true">
             <label>Disks Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "dg.device" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby "dg.device" prestats=true
 | stats dedup_splitvals=t count AS Count by "dg.device"
 | sort limit=0 "dg.device"
 | fields - _span
@@ -98,12 +98,12 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t avg(*) AS * by _time, dg.hostname | eval dg.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t avg(*) AS * by _time | eval dg.hostname=&quot;aggreg_hostname&quot; | eval dg.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
-            <choice value="stats dedup_splitvals=t max(*) AS * by _time, dg.hostname | eval dg.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t max(*) AS * by _time | eval dg.hostname=&quot;aggreg_hostname&quot; | eval dg.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
-            <choice value="stats dedup_splitvals=t sum(*) AS * by _time, dg.hostname | eval dg.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t sum(*) AS * by _time | eval dg.hostname=&quot;aggreg_hostname&quot; | eval dg.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
+            <choice value="stats dedup_splitvals=t avg(*) AS * by _time, host | eval dg.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t avg(*) AS * by _time | eval host=&quot;aggreg_host&quot; | eval dg.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t max(*) AS * by _time, host | eval dg.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t max(*) AS * by _time | eval host=&quot;aggreg_host&quot; | eval dg.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
+            <choice value="stats dedup_splitvals=t sum(*) AS * by _time, host | eval dg.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t sum(*) AS * by _time | eval host=&quot;aggreg_host&quot; | eval dg.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
             <default>fields *</default>
         </input>
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -122,20 +122,31 @@
             <choice value="fields *">On</choice>
         </input>
     </fieldset>
-    <row rejects="$hostname$">
+
+    <!-- Help the user -->
+
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
-    <row depends="$hostname$" rejects="$device$">
+
+    <!-- Help the user -->
+
+    <row depends="$host$" rejects="$device$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
+
     <row>
         <panel>
             <html>
@@ -269,17 +280,17 @@
 max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
 max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
 max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops
-from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(dg)` groupby _time, dg.hostname, dg.device prestats=true span=1m
+from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(dg)` groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct, max(dg.disk_in_flight_io) as disk_in_flight_io, max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
 max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
 max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
-max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops by _time, dg.hostname, dg.device
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops by _time, host, dg.device
 | $aggregate$
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
+| rename "host" AS host, "dg.device" AS device
+| fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
-| stats $statsmode$(disk_*) as "disk_*" by hostname, device</query>
+| stats $statsmode$(disk_*) as "disk_*" by host, device</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -435,18 +446,18 @@ max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as 
 max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
 max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
 max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops
-from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(dg)` groupby _time, dg.hostname, dg.device prestats=true span=1m
+from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(dg)` groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_backlog_time_ms) as disk_backlog_time_ms, max(dg.disk_busy_time_pct) as disk_busy_time_pct, max(dg.disk_in_flight_io) as disk_in_flight_io, max(dg.disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
 max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec, max(dg.disk_merge_read_sec) as disk_merge_read_sec, max(dg.disk_read_sec) as disk_read_sec, max(dg.disk_read_service_time_ms) as disk_read_service_time_ms,
 max(dg.disk_block_size_KB) as disk_block_size_KB, max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec, max(dg.disk_merge_write_sec) as disk_merge_write_sec,
-max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops by _time, dg.hostname, dg.device
+max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as disk_write_service_time_ms, max(dg.disk_total_iops) as disk_total_iops by _time, host, dg.device
 | $aggregate$
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
+| rename "dg.device" AS device
+| fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
-| fields _time,hostname,device,$monitor$
-| eval key=hostname+":"+device
+| fields _time,host,device,$monitor$
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(disk_backlog_time_ms) as disk_backlog_time_ms, $statsmode$(disk_busy_time_pct) as disk_busy_time_pct, $statsmode$(disk_in_flight_io) as disk_in_flight_io, $statsmode$(disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
 $statsmode$(disk_read_KB_per_sec) as disk_read_KB_per_sec, $statsmode$(disk_merge_read_sec) as disk_merge_read_sec, $statsmode$(disk_read_sec) as disk_read_sec, $statsmode$(disk_read_service_time_ms) as disk_read_service_time_ms,
 $statsmode$(disk_block_size_KB) as disk_block_size_KB, $statsmode$(disk_write_KB_per_sec) as disk_write_KB_per_sec, $statsmode$(disk_merge_write_sec) as disk_merge_write_sec,

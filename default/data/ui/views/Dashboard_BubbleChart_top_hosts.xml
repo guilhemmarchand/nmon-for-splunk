@@ -53,27 +53,27 @@
             <fieldForValue>CPU.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname"
-| sort limit=0 "CPU.hostname"
-| fields - _span | fillnull Count | fields "CPU.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>CPU.hostname=</valuePrefix>
+            <valuePrefix>host=</valuePrefix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>CPU.hostname</fieldForLabel>
-            <fieldForValue>CPU.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
             <default>*</default>
         </input>
 
@@ -94,10 +94,10 @@
 
     <search id="baseSearch">
         <query>| tstats max(CPU.cpu_PCT) AS cpu_PCT from datamodel=NMON_Data_CPU
-where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(CPU)` groupby _time, CPU.frameID, CPU.hostname prestats=true span=1m
-| stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, CPU.hostname
-| stats $statsmode$(cpu_PCT) AS usage by CPU.frameID, CPU.hostname | rename CPU.frameID AS frameID CPU.hostname AS hostname
-| fields frameID,hostname,usage,*</query>
+where (nodename = CPU.CPU_ALL) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, CPU.frameID, host prestats=true span=1m
+| stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, host
+| stats $statsmode$(cpu_PCT) AS usage by CPU.frameID, host | rename CPU.frameID AS frameID
+| fields frameID,host,usage,*</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -113,9 +113,9 @@ where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) ($frameID$) (
                     "search": {
 								"type": "token_safe",
                     		"value": "| tstats max(CPU.cpu_PCT) AS cpu_PCT from datamodel=NMON_Data_CPU
-where (nodename = CPU.CPU_ALL) (CPU.hostname=$$hostname-prefilter$$) ($$frameID$$) ($$osfilter$$) ($$hostname$$) `$$timefilter$$(CPU)` groupby _time, CPU.frameID, CPU.hostname prestats=true span=1m
-| stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, CPU.hostname
-| stats $$statsmode$$(cpu_PCT) AS usage by CPU.frameID, CPU.hostname | rename CPU.frameID AS frameID CPU.hostname AS hostname | sort - usage | head 100"
+where (nodename = CPU.CPU_ALL) (host=$$host-prefilter$$) ($$frameID$$) ($$osfilter$$) ($$host$$) `$$timefilter$$(CPU)` groupby _time, CPU.frameID, host prestats=true span=1m
+| stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, host
+| stats $$statsmode$$(cpu_PCT) AS usage by CPU.frameID, host | rename CPU.frameID AS frameID | sort - usage | head 100"
 						  },
           			  "earliest_time": {
             				"type": "token_safe",
@@ -134,8 +134,8 @@ where (nodename = CPU.CPU_ALL) (CPU.hostname=$$hostname-prefilter$$) ($$frameID$
                      data-require="app/nmon/components/bubblechart/bubblechart"
                      data-options='{
                     "managerid": "bubbleSearch",
-                    "nameField": "hostname",
-                    "categoryField": "hostname",
+                    "nameField": "host",
+                    "categoryField": "host",
                     "valueField": "usage",
                     "height": 600
                  }'>
@@ -149,8 +149,8 @@ where (nodename = CPU.CPU_ALL) (CPU.hostname=$$hostname-prefilter$$) ($$frameID$
             <title>TOP 50 CPU Usage Hosts (ordered by CPU Usage percentage of capacity)</title>
             <chart>
                 <search base="baseSearch">
-                    <query>| eval usage_PCT=if(isnull(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields hostname,usage | head 50
-| eval xlabel=""| chart max(usage) AS usage useother=f limit=0 by xlabel,hostname
+                    <query>| eval usage_PCT=if(isnull(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields host,usage | head 50
+| eval xlabel=""| chart max(usage) AS usage useother=f limit=0 by xlabel,host
 | rename xlabel AS "CPU % usage"</query>
                 </search>
                 <option name="charting.chart.columnSpacing">5</option>
@@ -182,11 +182,11 @@ where (nodename = CPU.CPU_ALL) (CPU.hostname=$$hostname-prefilter$$) ($$frameID$
 
     <row>
         <panel>
-            <title>Hosts CPU Usage Table Stats (ordered by hostname)</title>
+            <title>Hosts CPU Usage Table Stats (ordered by host)</title>
 
             <table>
                 <search base="baseSearch">
-                    <query>| eval usage=round(usage, 3) | eval usage_PCT=round(usage_PCT, 3) | sort frameID,hostname</query>
+                    <query>| eval usage=round(usage, 3) | eval usage_PCT=round(usage_PCT, 3) | sort frameID,host</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>

@@ -71,38 +71,38 @@
             <fieldForValue>CPU.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) ($Pool_id$) ($appfilter$) (CPU.hostname=$hostname-prefilter$) ($frameID$) groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname"
-| sort limit=0 "CPU.hostname" | fields - _span
-| fillnull Count | fields CPU.hostname, Count</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) ($Pool_id$) ($appfilter$) (host=$host-prefilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host | fields - _span
+| fillnull Count | fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>CPU.hostname=</valuePrefix>
+            <valuePrefix>host=</valuePrefix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>CPU.hostname</fieldForLabel>
-            <fieldForValue>CPU.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
-            <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(usage) AS usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Average by Time interval,frameID</choice>
-            <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
-            <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(usage) AS usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Max by Time interval,frameID</choice>
-            <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval CPU.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>
-            <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(usage) AS usage by _time,CPU.frameID | eval CPU.hostname='CPU.frameID'">Sum by Time interval,frameID</choice>
+            <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval host=&quot;aggreg_host&quot;">Average by Time interval</choice>
+            <choice value="stats avg(CPU.poolCPUs) AS CPU.poolCPUs, avg(usage) AS usage by _time,CPU.frameID | eval host='CPU.frameID'">Average by Time interval,frameID</choice>
+            <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval host=&quot;aggreg_host&quot;">Max by Time interval</choice>
+            <choice value="stats max(CPU.poolCPUs) AS CPU.poolCPUs, max(usage) AS usage by _time,CPU.frameID | eval host='CPU.frameID'">Max by Time interval,frameID</choice>
+            <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(usage) AS usage by _time | eval CPU.frameID=&quot;aggreg_frameID&quot; | eval host=&quot;aggreg_host&quot;">Sum by Time interval</choice>
+            <choice value="stats sum(CPU.poolCPUs) AS CPU.poolCPUs, sum(usage) AS usage by _time,CPU.frameID | eval host='CPU.frameID'">Sum by Time interval,frameID</choice>
             <default>fields *</default>
         </input>
 
@@ -146,12 +146,12 @@
 
     <search id="Global">
         <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR)
-(CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
+(host=$host-prefilter$) ($frameID$) ($host$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)` groupby _time, "CPU.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", host
 | $aggregate$
 | sort limit=0 _time
-| stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id", max("CPU.poolCPUs") AS "CPU.poolCPUs", sparkline($statsmode$(usage)) As sparkline by "CPU.frameID", "CPU.hostname"
-| rename "CPU.frameID" AS frameID, "CPU.hostname" AS hostname, "CPU.LPAR.Pool_id" AS "Pool ID", "CPU.poolCPUs" AS "CPUs in Pool" | sort limit=0 frameID | eval avg_usage=round(avg_usage,3)</query>
+| stats min(usage) As min_usage, avg(usage) As avg_usage, max(usage) As max_usage, values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id", max("CPU.poolCPUs") AS "CPU.poolCPUs", sparkline($statsmode$(usage)) As sparkline by "CPU.frameID", host
+| rename "CPU.frameID" AS frameID, "CPU.LPAR.Pool_id" AS "Pool ID", "CPU.poolCPUs" AS "CPUs in Pool" | sort limit=0 frameID | eval avg_usage=round(avg_usage,3)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -160,10 +160,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -314,7 +316,7 @@
 
             <table>
                 <search base="Global">
-                    <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 3) ] | fields hostname,frameID,"Pool ID","CPUs in Pool",max_usage,avg_usage,min_usage,sparkline</query>
+                    <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 3) ] | fields host,frameID,"Pool ID","CPUs in Pool",max_usage,avg_usage,min_usage,sparkline</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -417,14 +419,14 @@
             <chart>
                 <search id="timechart">
                     <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR)
-(CPU.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)`
-groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
+(host=$host-prefilter$) ($frameID$) ($host$) ($Pool_id$) ($appfilter$) `$timefilter$(CPU)`
+groupby _time, "CPU.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("$monitor$") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", host
 | sort limit=0 _time
 | $aggregate$
 | $charting$
 | timechart $span$ useother=f limit=0
-$statsmode$(usage) As usage $addindicator$ by "CPU.hostname"</query>
+$statsmode$(usage) As usage $addindicator$ by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

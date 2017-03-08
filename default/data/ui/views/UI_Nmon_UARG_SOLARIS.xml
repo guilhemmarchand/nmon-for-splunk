@@ -18,30 +18,29 @@
             <choice value="Solaris">Solaris</choice>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_UARG where (nodename = UARG) (UARG.hostname="$hostname-prefilter$") (UARG.OStype="$osfilter$") groupby "UARG.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "UARG.hostname"
-| sort limit=0 "UARG.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_UARG where (nodename = UARG) (host="$host-prefilter$") (UARG.OStype="$osfilter$") groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
 | fields - _span
-| rename "UARG.hostname" AS hostname
-| fillnull Count | fields hostname, Count</query>
+| fillnull Count | fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>hostname</fieldForLabel>
-            <fieldForValue>hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="text" token="PID" searchWhenChanged="true">
@@ -83,13 +82,15 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
-    </row>
+    </row>s
 
     <!-- Information panel -->
 
@@ -207,7 +208,7 @@
             <event>
                 <title>Events:</title>
                 <search>
-                    <query>eventtype=nmon:performance type=UARG $hostname$ $PID$ $COMM$ $USER$ $GROUP$ $FullCommand$ | search $customsearch$</query>
+                    <query>eventtype=nmon:performance type=UARG $host$ $PID$ $COMM$ $USER$ $GROUP$ $FullCommand$ | search $customsearch$</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -228,7 +229,7 @@
             <table>
                 <title>Table:</title>
                 <search>
-                    <query>eventtype=nmon:performance type=UARG $hostname$ $PID$ $COMM$ $USER$ $GROUP$ $FullCommand$ | table _time,hostname,PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand</query>
+                    <query>eventtype=nmon:performance type=UARG $host$ $PID$ $COMM$ $USER$ $GROUP$ $FullCommand$ | table _time,host,PID,PPID,COMM,THCOUNT,USER,GROUP,FullCommand</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

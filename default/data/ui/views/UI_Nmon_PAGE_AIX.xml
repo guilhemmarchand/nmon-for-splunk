@@ -29,9 +29,9 @@
             <!-- Populating Data Model Search -->
             <search id="frameIDSearch">
                 <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) groupby "PAGE_AIX.frameID" prestats=true
-                    | stats dedup_splitvals=t count AS Count by "PAGE_AIX.frameID"
-                    | sort limit=0 "PAGE_AIX.frameID"
-                    | fields - _span | fillnull Count | fields "PAGE_AIX.frameID"</query>
+| stats dedup_splitvals=t count AS Count by "PAGE_AIX.frameID"
+| sort limit=0 "PAGE_AIX.frameID"
+| fields - _span | fillnull Count | fields "PAGE_AIX.frameID"</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -44,28 +44,28 @@
             <fieldForValue>PAGE_AIX.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) groupby "PAGE_AIX.hostname" prestats=true
-                    | stats dedup_splitvals=t count AS Count by "PAGE_AIX.hostname"
-                    | sort limit=0 "PAGE_AIX.hostname"
-                    | fields - _span | fillnull Count | fields "PAGE_AIX.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (host=$host-prefilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>PAGE_AIX.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>PAGE_AIX.hostname</fieldForLabel>
-            <fieldForValue>PAGE_AIX.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -89,10 +89,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -185,17 +187,17 @@
         <query>| tstats max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin max("PAGE_AIX.pgsout") AS pgsout
 max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles
 max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
-from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
-groupby "PAGE_AIX.frameID", "PAGE_AIX.hostname" prestats=true
+from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (host=$host-prefilter$) ($frameID$) ($host$) `$timefilter$(PAGE_AIX)`
+groupby "PAGE_AIX.frameID", host prestats=true
 | stats dedup_splitvals=t
 max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin
 max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans
 max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
-by "PAGE_AIX.frameID", "PAGE_AIX.hostname"
+by "PAGE_AIX.frameID", host
 | sort limit=0 "PAGE_AIX.frameID"
 | fields - _span
-| rename "PAGE_AIX.frameID" AS "frameID" "PAGE_AIX.hostname" AS hostname
-| fields frameID, hostname, faults, pgin, pgout, pgsin, pgsout, reclaims, scans, cycles, fsin, fsout, scanfree_ratio</query>
+| rename "PAGE_AIX.frameID" AS "frameID"
+| fields frameID, host, faults, pgin, pgout, pgsin, pgsout, reclaims, scans, cycles, fsin, fsout, scanfree_ratio</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -206,13 +208,13 @@ by "PAGE_AIX.frameID", "PAGE_AIX.hostname"
         <query>| tstats max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin max("PAGE_AIX.pgsout") AS pgsout
 max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans max("PAGE_AIX.cycles") AS cycles
 max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
-from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (PAGE_AIX.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PAGE_AIX)`
-groupby _time, "PAGE_AIX.hostname" prestats=true `nmon_span`
+from datamodel=NMON_Data_PAGE where (nodename = PAGE_AIX) (host=$host-prefilter$) ($frameID$) ($host$) `$timefilter$(PAGE_AIX)`
+groupby _time, host prestats=true `nmon_span`
 | timechart $span$ useother=f limit=0
 max("PAGE_AIX.faults") AS faults max("PAGE_AIX.pgin") AS pgin max("PAGE_AIX.pgout") AS pgout max("PAGE_AIX.pgsin") AS pgsin
 max("PAGE_AIX.pgsout") AS pgsout max("PAGE_AIX.reclaims") AS reclaims max("PAGE_AIX.scans") AS scans
 max("PAGE_AIX.cycles") AS cycles max("PAGE_AIX.fsin") AS fsin max("PAGE_AIX.fsout") AS fsout max("PAGE_AIX.scanfree_ratio") AS scanfree_ratio
-by "PAGE_AIX.hostname"</query>
+by host</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -224,7 +226,7 @@ by "PAGE_AIX.hostname"</query>
             <table>
                 <title>Global Table Stats</title>
                 <search base="tableStats">
-                    <query>fields frameID,hostname,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
+                    <query>fields frameID,host,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -272,7 +274,7 @@ by "PAGE_AIX.hostname"</query>
             <table>
                 <title>Fs In/Out and Scan Free Ratio Table Stats</title>
                 <search base="tableStats">
-                    <query>fields frameID,hostname,fsin,fsout,scanfree_ratio</query>
+                    <query>fields frameID,host,fsin,fsout,scanfree_ratio</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -444,7 +446,7 @@ by "PAGE_AIX.hostname"</query>
             <table>
                 <title>Global Table Stats</title>
                 <search base="tableStats">
-                    <query>fields frameID,hostname,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
+                    <query>fields frameID,host,faults,pgin,pgout,pgsin,pgsout,reclaims,scans,cyles</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -457,7 +459,7 @@ by "PAGE_AIX.hostname"</query>
             <table>
                 <title>Fs In/Out and Scan Free Ratio Table Stats</title>
                 <search base="tableStats">
-                    <query>fields frameID,hostname,fsin,fsout,scanfree_ratio</query>
+                    <query>fields frameID,host,fsin,fsout,scanfree_ratio</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>

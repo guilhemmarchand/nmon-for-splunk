@@ -25,7 +25,7 @@
                 <!-- Populating Data Model Search -->
                 <search id="frameIDSearch">
                     <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) ($osfilter$)
-groupby "CPU.frameID", "CPU.hostname" prestats=true
+groupby "CPU.frameID", host prestats=true
 | stats dedup_splitvals=t count AS count by "CPU.frameID"
 | rename "CPU.frameID" AS "frameID" | fields frameID | sort frameID</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -36,25 +36,24 @@ groupby "CPU.frameID", "CPU.hostname" prestats=true
                 <fieldForLabel>frameID</fieldForLabel>
                 <fieldForValue>frameID</fieldForValue>
             </input>
-            <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <input type="text" token="host-prefilter" searchWhenChanged="true">
                 <label>Optional: Filter hosts populating</label>
                 <default>*</default>
             </input>
-            <input type="dropdown" token="hostname" searchWhenChanged="true">
+            <input type="dropdown" token="host" searchWhenChanged="true">
                 <label>Host:</label>
                 <!-- Populating Data Model Search -->
                 <search id="baseSearch">
-                    <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) ($osfilter$) (CPU.frameID=$frameID$) (CPU.hostname=$hostname-prefilter$)
-groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t count AS count by "CPU.hostname"
-| rename "CPU.hostname" AS hostname
-| fields hostname | sort hostname</query>
+                    <query>| tstats count AS count from datamodel=NMON_Data_CPU where (nodename = CPU) ($osfilter$) (CPU.frameID=$frameID$) (host=$host-prefilter$)
+groupby host prestats=true
+| stats dedup_splitvals=t count AS count by host
+| fields host | sort host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
-                <fieldForLabel>hostname</fieldForLabel>
-                <fieldForValue>hostname</fieldForValue>
-                <prefix>hostname="</prefix>
+                <fieldForLabel>host</fieldForLabel>
+                <fieldForValue>host</fieldForValue>
+                <prefix>host="</prefix>
                 <suffix>"</suffix>
             </input>
         </panel>
@@ -70,7 +69,7 @@ groupby "CPU.hostname" prestats=true
 | eval "uptime (human duration)"=tostring(last_known_uptime, "duration")
 | fields host,last_known_uptime,"uptime (human duration)","Date of last system startup (mm/dd/Y HH:MM)",reporting_date | fields - _time
 | rename last_known_uptime AS "uptime (in seconds)", reporting_date AS "Last reporting date (mm/dd/Y HH:MM)"
-| rename host AS hostname | search $hostname$</query>
+| search $host$</query>
         <earliest>-7d@h</earliest>
         <latest>now</latest>
     </search>
@@ -116,11 +115,11 @@ groupby "CPU.hostname" prestats=true
             </single>
             <chart>
                 <search>
-                    <query>| tstats latest("Nmon_Config.uptime") AS uptime latest("Nmon_Config.event_epoch") AS event_epoch from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.$hostname$) groupby _time, "Nmon_Config.hostname" prestats=true span=1d
+                    <query>| tstats latest("Nmon_Config.uptime") AS uptime latest("Nmon_Config.event_epoch") AS event_epoch from datamodel=NMON_Config where (nodename = Nmon_Config) ($host$) groupby _time, host prestats=true span=1d
 | bucket _time span=1d
-| stats dedup_splitvals=t latest("Nmon_Config.uptime") AS uptime latest("Nmon_Config.event_epoch") AS event_epoch by _time, "Nmon_Config.hostname"| rename "Nmon_Config.hostname" AS hostname
+| stats dedup_splitvals=t latest("Nmon_Config.uptime") AS uptime latest("Nmon_Config.event_epoch") AS event_epoch by _time, host
 | eval uptime=(uptime/86400)
-| timechart span=1d limit=0 useother=f min(uptime) AS uptime by hostname</query>
+| timechart span=1d limit=0 useother=f min(uptime) AS uptime by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>

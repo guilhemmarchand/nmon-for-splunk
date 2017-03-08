@@ -53,28 +53,28 @@
             <fieldForValue>Linux.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search>
-                <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = Linux) ($frameID$) (Linux.hostname=$hostname-prefilter$) ($osfilter$) groupby "Linux.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "Linux.hostname"
-| sort limit=0 "Linux.hostname"
-| fields Linux.hostname, Count</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_VM where (nodename = Linux) ($frameID$) (host=$host-prefilter$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>Linux.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>Linux.hostname</fieldForLabel>
-            <fieldForValue>Linux.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -91,11 +91,11 @@
     </fieldset>
 
     <search id="Global">
-        <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Linux)`
-groupby _time, "Linux.frameID", "Linux.hostname" prestats=true span=1m
+        <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(Linux)`
+groupby _time, "Linux.frameID", host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.frameID", "Linux.hostname"
-| timechart $span$ useother=f limit=0 `VM_Linux($statsmode$)` by Linux.hostname
+| stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.frameID", host
+| timechart $span$ useother=f limit=0 `VM_Linux($statsmode$)` by host
 | rename Linux.* AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -105,10 +105,12 @@ groupby _time, "Linux.frameID", "Linux.hostname" prestats=true span=1m
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -222,11 +224,11 @@ groupby _time, "Linux.frameID", "Linux.hostname" prestats=true span=1m
                 <title>Table Stats</title>
                 <search>
                     <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM
-where (nodename = Linux) (Linux.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(Linux)` groupby _time, "Linux.frameID", "Linux.hostname" prestats=true span=1m
+where (nodename = Linux) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(Linux)` groupby _time, "Linux.frameID", host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.frameID", "Linux.hostname"
+| stats dedup_splitvals=t `VM_Linux(max)` by _time, "Linux.frameID", host
 | rename Linux.* AS *
-| stats $statsmode$(*) AS * by frameID, hostname</query>
+| stats $statsmode$(*) AS * by frameID, host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

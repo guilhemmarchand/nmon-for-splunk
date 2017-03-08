@@ -53,28 +53,28 @@
             <fieldForValue>Solaris.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) (Solaris.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "Solaris.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "Solaris.hostname"
-| sort limit=0 "Solaris.hostname"
-| fields - _span | fillnull Count | fields "Solaris.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>Solaris.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>Solaris.hostname</fieldForLabel>
-            <fieldForValue>Solaris.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -98,10 +98,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -147,18 +149,18 @@
                     <query>| tstats
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
-from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
-max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by "Solaris.frameID", "Solaris.hostname"
+max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by "Solaris.frameID", host
 | stats dedup_splitvals=t
 $statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache $statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite
-$statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite $statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by "Solaris.frameID", "Solaris.hostname"
-| rename "Solaris.frameID" AS "frameID" "Solaris.hostname" AS hostname
-| sort frameID, hostname
-| fields frameID, hostname, PCT*,*</query>
+$statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite $statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by "Solaris.frameID", host
+| rename "Solaris.frameID" AS "frameID"
+| sort frameID, host
+| fields frameID, host, PCT*,*</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -280,13 +282,13 @@ $statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite $statsmode$("bread
                 <search>
                     <query>| tstats
 max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache
-from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache by _time, "Solaris.frameID", "Solaris.hostname"
+max("Solaris.PCTrcache") AS PCTrcache max("Solaris.PCTwcache") AS PCTwcache by _time, "Solaris.frameID", host
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache by "Solaris.hostname"</query>
+$statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -317,13 +319,13 @@ $statsmode$("PCTrcache") AS PCTrcache $statsmode$("PCTwcache") AS PCTwcache by "
                 <search>
                     <query>| tstats
 max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite
-from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite by _time, "Solaris.frameID", "Solaris.hostname"
+max("Solaris.lread") AS lread max("Solaris.lwrite") AS lwrite by _time, "Solaris.frameID", host
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite by "Solaris.hostname"</query>
+$statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -352,13 +354,13 @@ $statsmode$("lread") AS lread $statsmode$("lwrite") AS lwrite by "Solaris.hostna
                 <search>
                     <query>| tstats
 max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite
-from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite by _time, "Solaris.frameID", "Solaris.hostname"
+max("Solaris.pread") AS pread max("Solaris.pwrite") AS pwrite by _time, "Solaris.frameID", host
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite by "Solaris.hostname"</query>
+$statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -387,13 +389,13 @@ $statsmode$("pread") AS pread $statsmode$("pwrite") AS pwrite by "Solaris.hostna
                 <search>
                     <query>| tstats
 max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite
-from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (Solaris.hostname=$hostname-prefilter$) ($hostname$) ($frameID$) `$timefilter$(Solaris)`
-groupby _time, "Solaris.frameID", "Solaris.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEMUSE.Solaris where (nodename = Solaris) ($osfilter$) (host=$host-prefilter$) ($host$) ($frameID$) `$timefilter$(Solaris)`
+groupby _time, "Solaris.frameID", host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by _time, "Solaris.frameID", "Solaris.hostname"
+max("Solaris.bread") AS bread max("Solaris.bwrite") AS bwrite by _time, "Solaris.frameID", host
 | timechart $span$ useother=f limit=0 dedup_splitvals=t
-$statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by "Solaris.hostname"</query>
+$statsmode$("bread") AS bread $statsmode$("bwrite") AS bwrite by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

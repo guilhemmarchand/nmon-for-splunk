@@ -101,7 +101,7 @@
                 <!-- Enforce unset of token when host choice is done -->
                 <change>
                     <unset token="form.frameID"></unset>
-                    <unset token="form.hostname"></unset>
+                    <unset token="form.host"></unset>
                     <unset token="form.OStype_detection"></unset>
                     <unset token="form.holdback_choice"></unset>
                     <unset token="form.futurespan_choice"></unset>
@@ -133,7 +133,7 @@
                 <fieldForValue>frameID</fieldForValue>
                 <!-- Enforce unset of token when host choice is done -->
                 <change>
-                    <unset token="form.hostname"></unset>
+                    <unset token="form.host"></unset>
                     <unset token="form.OStype_detection"></unset>
                     <unset token="form.holdback_choice"></unset>
                     <unset token="form.futurespan_choice"></unset>
@@ -145,28 +145,27 @@
                 </change>
             </input>
 
-            <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+            <input type="text" token="host-prefilter" searchWhenChanged="true">
                 <label>Optional: Filter hosts populating</label>
                 <default>*</default>
             </input>
 
-            <input type="dropdown" token="hostname" searchWhenChanged="true">
+            <input type="dropdown" token="host" searchWhenChanged="true">
                 <label>Hosts Selection:</label>
                 <!-- Populating Data Model Search -->
                 <search>
-                    <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname-prefilter$) (CPU.$frameID$) (CPU.$osfilter$) groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname"
-| sort limit=0 "CPU.hostname"
-| fields - _span | fillnull Count | fields "CPU.hostname"
-| rename "CPU.hostname" AS hostname</query>
+                    <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (host=$host-prefilter$) (CPU.$frameID$) (CPU.$osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
-                <prefix>hostname="</prefix>
+                <prefix>host="</prefix>
                 <suffix>"</suffix>
                 <choice value="*">ALL Hosts</choice>
-                <fieldForLabel>hostname</fieldForLabel>
-                <fieldForValue>hostname</fieldForValue>
+                <fieldForLabel>host</fieldForLabel>
+                <fieldForValue>host</fieldForValue>
                 <!-- Enforce unset of token when host choice is done -->
                 <change>
                     <unset token="form.OStype_detection"></unset>
@@ -183,7 +182,7 @@
             <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
                 <label>Detected OS:</label>
                 <search>
-                    <query>eventtype=nmon:performance type=CPU_ALL $hostname$ OStype=* | head 1 | stats count by OStype | fields OStype | head 1</query>
+                    <query>eventtype=nmon:performance $host$ | head 1 | stats count by OStype | fields OStype</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -450,7 +449,7 @@
                 <label>Device Selection:</label>
                 <!-- Populating Data Model Search -->
                 <search>
-                    <query>| tstats count AS Count from datamodel=$datamodel$ where (nodename = $datamodel_nodename$) ($datamodel_prefix$.hostname=$hostname-prefilter$) ($datamodel_prefix$.$frameID$) ($datamodel_prefix$.$osfilter$) ($datamodel_prefix$.$hostname$) groupby "$datamodel_prefix$.device" prestats=true
+                    <query>| tstats count AS Count from datamodel=$datamodel$ where (nodename = $datamodel_nodename$) ($datamodel_prefix$.host=$host-prefilter$) ($datamodel_prefix$.$frameID$) ($datamodel_prefix$.$osfilter$) ($datamodel_prefix$.$host$) groupby "$datamodel_prefix$.device" prestats=true
 | stats dedup_splitvals=t count AS Count by "$datamodel_prefix$.device"
 | sort limit=0 "$datamodel_prefix$.device"
 | fields - _span | fillnull Count | fields "$datamodel_prefix$.device"
@@ -467,20 +466,28 @@
                 </change>
             </input>
 
-            <html depends="$hostname$" rejects="$is_detected$">
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - Please wait while identifying the operating system... - - - - - - - - - - </p>
+            <html depends="$host$" rejects="$is_detected$">
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - Please wait while identifying the operating system... - - - - - - - - - - </p>
+                </div>
             </html>
 
-            <html rejects="$hostname$">
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select a server name in the host selector above - - - - - - - - - - </p>
+            <html rejects="$host$">
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select a server name in the host selector above - - - - - - - - - - </p>
+                </div>
             </html>
 
             <html depends="$is_detected$" rejects="$metric$">
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select a performance monitor in the selector above - - - - - - - - - - </p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select a performance monitor in the selector above - - - - - - - - - - </p>
+                </div>
             </html>
 
             <html depends="$show_device$" rejects="$device$">
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select the associated device to be analysed - - - - - - - - - - </p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select the associated device to be analysed - - - - - - - - - - </p>
+                </div>
             </html>
 
         </panel>
@@ -584,22 +591,28 @@
             </input>
 
             <html depends="$show_holdback$" rejects="$holdback$">
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please enter the number of data points from the end that are not to be used, and press Enter - - - - - - - - - - </p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please enter the number of data points from the end that are not to be used, and press Enter - - - - - - - - - - </p>
+                </div>
             </html>
 
             <html depends="$show_futurespan$" rejects="$futurespan$">
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please enter the number of data points to be predicted, depending on the interval value this will influence the future prediction (for example with 1d as the interval, 90 means predicting for next 90 days), and press Enter - - - - - - - - - - </p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please enter the number of data points to be predicted, depending on the interval value this will influence the future prediction (for example with 1d as the interval, 90 means predicting for next 90 days), and press Enter - - - - - - - - - - </p>
+                </div>
             </html>
 
             <html depends="$show_upperlower$" rejects="$upperlower$">
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please enter lower and upper settings under the form  "upperXX=high lowerXX=high" and press Enter - - - - - - - - - - </p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please enter lower and upper settings under the form  "upperXX=high lowerXX=high" and press Enter - - - - - - - - - - </p>
+                </div>
             </html>
 
         </panel>
     </row>
 
-    <search id="show_hostname">
-        <query>| stats count | eval $hostname$ | fields hostname</query>
+    <search id="show_host">
+        <query>| stats count | eval $host$ | fields host</query>
     </search>
 
     <row depends="$charting$">
@@ -632,7 +645,7 @@
         <panel>
             <title>$label_metric$</title>
             <single depends="$metric$">
-                <search base="show_hostname">
+                <search base="show_host">
                     <query></query>
                 </search>
                 <option name="colorBy">value</option>
@@ -653,7 +666,7 @@
             <chart>
                 <title></title>
                 <search>
-                    <query>eventtype=nmon:performance type=$metric$ (hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$)
+                    <query>eventtype=nmon:performance type=$metric$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$)
 | eval no_device="$no_device$"
 | timechart $interval$ $statsmode$($value_field$) AS $value_field$
 | predict $value_field$ As predict algorithm=$algo$ $holdback$ $futurespan$ $upperlower$</query>
@@ -688,7 +701,7 @@
         <panel>
             <title>$label_metric$</title>
             <single depends="$metric$">
-                <search base="show_hostname">
+                <search base="show_host">
                     <query></query>
                 </search>
                 <option name="colorBy">value</option>
@@ -709,7 +722,7 @@
             <chart>
                 <title></title>
                 <search>
-                    <query>eventtype=nmon:performance type=$metric$ (hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$)
+                    <query>eventtype=nmon:performance type=$metric$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$)
 | eval show_device="$show_device$"
 | timechart $interval$ $statsmode$($value_field$) AS $value_field$
 | predict $value_field$ As predict algorithm=$algo$ $holdback$ $futurespan$ $upperlower$</query>

@@ -36,27 +36,26 @@
             <fieldForValue>CPU.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="dropdown" token="hostname" searchWhenChanged="true">
+        <input type="dropdown" token="host" searchWhenChanged="true">
             <label>Host:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID="$frameID$") (CPU.hostname="$hostname-prefilter$") (CPU.OStype="$osfilter$") groupby "CPU.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname"
-| sort limit=0 "CPU.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.frameID="$frameID$") (host="$host-prefilter$") (CPU.OStype="$osfilter$") groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
 | fields - _span
-| rename "CPU.hostname" AS hostname
 | fillnull Count
-| fields hostname, Count</query>
+| fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <fieldForLabel>hostname</fieldForLabel>
-            <fieldForValue>hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
             <!--
             Reset the form token changed
             -->
@@ -100,13 +99,13 @@
         <!--
         This input is an hidden input that will be used to detect the type of operating system depending on the user
         selection.
-        This requires the associated form.hostname to be reset when changed
+        This requires the associated form.host to be reset when changed
         -->
 
         <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Detected OS:</label>
             <search>
-                <query>eventtype=nmon:performance type=CPU_ALL $hostname$ OStype=* | head 1 | stats count by OStype | fields OStype | head 1</query>
+                <query>eventtype=nmon:performance $host$ | head 1 | stats count by OStype | fields OStype</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -143,13 +142,13 @@
         <input type="dropdown" token="CPU_datasource_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Datasource detected:</label>
             <search id="datasource">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) groupby "CPU.hostname", "CPU.type" prestats=true
-| stats dedup_splitvals=t count AS Count by "CPU.hostname", "CPU.type"
-| sort limit=0 "CPU.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host$) groupby host, "CPU.type" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "CPU.type"
+| sort limit=0 host
 | fields - _span
-| rename "CPU.hostname" AS hostname "CPU.type" AS type
+| rename "CPU.type" AS type
 | fillnull Count
-| fields hostname, type, Count
+| fields host, type, Count
 | sort - type
 | head 1
 | eval datasource=case(match(type, "LPAR"), "LPAR", match(type, "CPU_ALL"), "CPU_ALL")</query>
@@ -180,7 +179,7 @@
         <input type="dropdown" token="TOP_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Detected TOP events:</label>
             <search>
-                <query>eventtype=nmon:performance type=TOP hostname=$hostname$ | head 100 | stats count</query>
+                <query>eventtype=nmon:performance type=TOP host=$host$ | head 100 | stats count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -208,7 +207,7 @@
         <input type="dropdown" token="DG_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Detected DG events:</label>
             <search>
-                <query>eventtype=nmon:performance type=DGXFER hostname=$hostname$ | head 100 | stats count</query>
+                <query>eventtype=nmon:performance type=DGXFER host=$host$ | head 100 | stats count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
@@ -235,22 +234,21 @@
         <query>| tstats last("Nmon_Config.OStype") AS OStype
 last("Nmon_Config.OS_Level") AS OS_Level
 last("Nmon_Config.cpu_cores") AS cpu_cores
-last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (Nmon_Config.hostname=$hostname$) groupby "Nmon_Config.hostname" prestats=true
+last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (host=$host$) groupby host prestats=true
 | stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
 last("Nmon_Config.OS_Level") AS OS_Level
-last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by "Nmon_Config.hostname"
-| sort limit=0 "Nmon_Config.hostname" | fields - _span | rename "Nmon_Config.hostname" AS hostname | eval OS_summary=upper(OStype)+" / "+OS_Level
+last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by host
+| sort limit=0 host | eval OS_summary=upper(OStype)+" / "+OS_Level
 | $show_configuration$
-| fields hostname, OStype, OS_Level, OS_summary, cpu_cores, Processor</query>
+| fields host, OStype, OS_Level, OS_summary, cpu_cores, Processor</query>
         <earliest>0</earliest>
         <latest>$timerange.latest$</latest>
     </search>
 
     <search id="MEMSearch">
-        <query>| tstats latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
-groupby MEM.hostname prestats=true
-| stats dedup_splitvals=t latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB by MEM.hostname
-| rename MEM.hostname AS hostname
+        <query>| tstats latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$)
+groupby host prestats=true
+| stats dedup_splitvals=t latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB by host
 | $show_configuration$
 | foreach *total* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 0) ]</query>
         <earliest>$timerange.earliest$</earliest>
@@ -260,9 +258,9 @@ groupby MEM.hostname prestats=true
     </search>
 
     <search id="CPUSearch_summary">
-        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, "CPU.hostname" prestats=true span=1m
+        <query>| tstats max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage_PCT") AS vp_usage_pct avg("CPU.cpu_PCT") AS pct_usage by _time, host
 | eval usage=if(isnotnull(vp_usage_pct), vp_usage_pct, pct_usage)
 | stats max(usage) AS max_usage avg(usage) AS avg_usage median(usage) AS median_usage | eval max_usage=round(max_usage, 2), avg_usage=round(avg_usage, 2), median_usage=round(median_usage, 2)</query>
         <earliest>$timerange.earliest$</earliest>
@@ -273,13 +271,13 @@ groupby MEM.hostname prestats=true
 
     <search id="TOPSearch">
         <query>| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (host=$host$)
+groupby _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields host, logical_cpus, Command, PID, pct_CPU
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
 | eval smt_threads=(logical_cpus/virtual_cpus)
@@ -299,17 +297,19 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - Action required: please select a server name in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
 
     <!-- Information panel -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
 
@@ -505,10 +505,10 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
                 <search id="cputimechart">
                     <query>| tstats
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
-from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.hostname=$hostname$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, "CPU.hostname" prestats=true span=1m
+from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "CPU.hostname"
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
 | eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
 | timechart $span$ max(usage) AS "Max CPU usage" avg(usage) AS "Avg CPU usage"</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -543,13 +543,13 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
 
             <chart depends="$start_dg_stats_search$">
                 <search>
-                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
+| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
+| rename "dg.device" AS device
+| fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
-| stats sum(disk_*) as "disk_*" by _time,hostname
+| stats sum(disk_*) as "disk_*" by _time,host
 | fields $start_dg_stats_search$
 | timechart `nmon_span` max(disk_total_iops) As "max Total I/O", avg(disk_total_iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -579,12 +579,12 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, "
 
             <chart depends="$start_disk_stats_search$">
                 <search id="IOPStimechart">
-                    <query>| tstats max("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname=$hostname$)
-groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
+                    <query>| tstats max("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (host=$host$)
+groupby _time, host, "DISKXFER.device" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max("DISKXFER.value") AS iops by _time, "DISKXFER.hostname", "DISKXFER.device"
-| dedup _time, "DISKXFER.hostname", "DISKXFER.device", iops
-| stats sum(iops) AS iops by _time, "DISKXFER.hostname"
+| stats dedup_splitvals=t max("DISKXFER.value") AS iops by _time, host, "DISKXFER.device"
+| dedup _time, host, "DISKXFER.device", iops
+| stats sum(iops) AS iops by _time, host
 | fields $start_disk_stats_search$
 | timechart $span$ max(iops) As "max Total I/O", avg(iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -650,9 +650,9 @@ groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
             <chart>
                 <title>% CPU stats over time per category</title>
                 <search>
-                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (CPU.hostname=$hostname$)
-groupby _time, "CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t `CPU_ALL(max)` by _time, "CPU.hostname"
+                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (host=$host$)
+groupby _time, host prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, host
 | fields $show_cpu$
 | timechart $span$
 avg("CPU.Idle_PCT") AS "Idle %",
@@ -704,8 +704,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>AIX LPAR statistics</title>
                 <search>
-                    <query>| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname$) groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t `LPAR(max)` by _time,"CPU.frameID","CPU.hostname"
+                    <query>| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (host=$host$) groupby _time,"CPU.frameID",host prestats=true span=1m
+| stats dedup_splitvals=t `LPAR(max)` by _time,"CPU.frameID",host
 | rename CPU.lpar_vp_usage AS usage
 | fields $show_cpu$
 | fields $is_LPAR$
@@ -753,8 +753,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>AIX LPAR statistics per category</title>
                 <search>
-                    <query>| tstats max(CPU.VP_Idle_PCT) AS VP_Idle_PCT, max(CPU.VP_Sys_PCT) AS VP_Sys_PCT, max(CPU.VP_User_PCT) AS VP_User_PCT, max(CPU.VP_Wait_PCT) AS VP_Wait_PCT from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname$) groupby _time,"CPU.frameID","CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max(CPU.VP_Idle_PCT) AS VP_Idle_PCT, max(CPU.VP_Sys_PCT) AS VP_Sys_PCT, max(CPU.VP_User_PCT) AS VP_User_PCT, max(CPU.VP_Wait_PCT) AS VP_Wait_PCT by _time,"CPU.frameID","CPU.hostname"
+                    <query>| tstats max(CPU.VP_Idle_PCT) AS VP_Idle_PCT, max(CPU.VP_Sys_PCT) AS VP_Sys_PCT, max(CPU.VP_User_PCT) AS VP_User_PCT, max(CPU.VP_Wait_PCT) AS VP_Wait_PCT from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (host=$host$) groupby _time,"CPU.frameID",host prestats=true span=1m
+| stats dedup_splitvals=t max(CPU.VP_Idle_PCT) AS VP_Idle_PCT, max(CPU.VP_Sys_PCT) AS VP_Sys_PCT, max(CPU.VP_User_PCT) AS VP_User_PCT, max(CPU.VP_Wait_PCT) AS VP_Wait_PCT by _time,"CPU.frameID",host
 | rename CPU.lpar_vp_usage AS usage
 | fields $show_cpu$
 | fields $is_LPAR$
@@ -799,8 +799,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>AIX LPAR Pools statistics</title>
                 <search>
-                    <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (CPU.hostname=$hostname$) (CPU.PoolIdle!=0) groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", "CPU.hostname"
+                    <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (host=$host$) (CPU.PoolIdle!=0) groupby _time, "CPU.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", host
 | rename CPU.LPAR.Pool_usage AS usage
 | fields $show_cpu$
 | fields $is_LPAR$
@@ -850,9 +850,9 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>PowerLinux LPAR statistics</title>
                 <search>
-                    <query>| tstats max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (CPU.hostname=$hostname$) groupby _time, "CPU.hostname", "CPU.frameID" prestats=true span=1m
+                    <query>| tstats max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (host=$host$) groupby _time, host, "CPU.frameID" prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, "CPU.hostname", "CPU.frameID"
+| stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, host, "CPU.frameID"
 | fields $show_cpu$
 | fields $is_LPAR$
 | fields $is_Linux$
@@ -899,8 +899,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>PowerLinux LPAR Pools statistics</title>
                 <search>
-                    <query>| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (CPU.hostname=$hostname$) groupby _time, "CPU.frameID", "CPU.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage by _time, "CPU.frameID", "CPU.hostname"
+                    <query>| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (host=$host$) groupby _time, "CPU.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage by _time, "CPU.frameID", host
 | rename CPU.lpar_pool_vp_usage AS usage
 | fields $show_cpu$
 | fields $is_LPAR$
@@ -950,11 +950,11 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Solaris WML statistics per zone</title>
                 <search>
-                    <query>| tstats max("WLM.value") AS value from datamodel=NMON_Data_WLM where (nodename = WLM.WLMZONECPU) (WLM.hostname=$hostname$) groupby _time, "WLM.hostname", "WLM.device" prestats=true span=1m
-| stats dedup_splitvals=t max("WLM.value") AS value by _time, "WLM.hostname", "WLM.device"
+                    <query>| tstats max("WLM.value") AS value from datamodel=NMON_Data_WLM where (nodename = WLM.WLMZONECPU) (host=$host$) groupby _time, host, "WLM.device" prestats=true span=1m
+| stats dedup_splitvals=t max("WLM.value") AS value by _time, host, "WLM.device"
 | fields $show_cpu$
 | fields $is_Solaris$
-| rename "WLM.*" AS * | eval key=hostname+":"+device | timechart $span$ limit=0 useother=f max(value) As value by key</query>
+| rename "WLM.*" AS * | eval key=host+":"+device | timechart $span$ limit=0 useother=f max(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -1021,13 +1021,13 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg I/O per sec over time - click on the chart to get by device view</title>
                 <search>
-                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
+| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
+| rename "dg.device" AS device
+| fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
-| stats sum(disk_*) as "disk_*" by _time,hostname
+| stats sum(disk_*) as "disk_*" by _time,host
 | fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_total_iops) as disk_total_iops | trendline sma5(disk_total_iops) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1064,7 +1064,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="height">500</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGXFER hostname=$hostname$
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGXFER host=$host$
 | timechart `nmon_span` limit=0 useother=f avg(disk_total_iops) as disk_total_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
@@ -1073,13 +1073,13 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg read/write I/O per sec over time - click on the chart to get by device view</title>
                 <search>
-                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
+| stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
+| rename "dg.device" AS device
+| fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
-| stats sum(disk_*) as "disk_*" by _time,hostname
+| stats sum(disk_*) as "disk_*" by _time,host
 | fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_read_iops) as disk_read_iops avg(disk_write_iops) as disk_write_iops</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1116,8 +1116,8 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="height">500</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE OR type=DGREAD OR type=DGWRITE hostname=$hostname$
-| stats max(disk_*) as "disk_*" by _time,hostname,device
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE OR type=DGREAD OR type=DGWRITE host=$host$
+| stats max(disk_*) as "disk_*" by _time,host,device
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | timechart `nmon_span` limit=0 useother=f avg(disk_read_iops) as disk_read_iops, avg(disk_write_iops) as disk_write_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
@@ -1130,12 +1130,12 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg % busy time - click on the chart to get by device view</title>
                 <search>
-                    <query>| tstats max(dg.disk_busy_time_pct) as disk_busy_time_pct from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_busy_time_pct) as disk_busy_time_pct from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max(dg.disk_busy_time_pct) as disk_busy_time_pct by _time, dg.hostname, dg.device
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
-| stats avg(disk_*) as "disk_*" by _time,hostname
+| stats dedup_splitvals=t max(dg.disk_busy_time_pct) as disk_busy_time_pct by _time, host, dg.device
+| rename "dg.device" AS device
+| fields host, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,host
 | fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_busy_time_pct) as disk_busy_time_pct | trendline sma5(disk_busy_time_pct) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1172,7 +1172,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="height">500</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGBUSY hostname=$hostname$
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGBUSY host=$host$
 | timechart `nmon_span` limit=0 useother=f avg(disk_busy_time_pct) as disk_busy_time_pct by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
@@ -1181,12 +1181,12 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg data transfer size over time - click on the chart to get by device view</title>
                 <search>
-                    <query>| tstats max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max(dg.disk_block_size_KB) as disk_block_size_KB by _time, dg.hostname, dg.device
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
-| stats avg(disk_*) as "disk_*" by _time,hostname
+| stats dedup_splitvals=t max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
+| rename "dg.device" AS device
+| fields host, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,host
 | fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_block_size_KB) as disk_block_size_KB | trendline sma5(disk_block_size_KB) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1223,7 +1223,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="height">500</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE hostname=$hostname$
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE host=$host$
 | timechart `nmon_span` limit=0 useother=f avg(disk_block_size_KB) as disk_block_size_KB by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
@@ -1235,12 +1235,12 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg read/write data rate (KBytes/sec) - click on the chart to get by device view</title>
                 <search>
-                    <query>| tstats max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec by _time, dg.hostname, dg.device
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
-| stats avg(disk_*) as "disk_*" by _time,hostname
+| stats dedup_splitvals=t max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec by _time, host, dg.device
+| rename "dg.device" AS device
+| fields host, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,host
 | fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_read_KB_per_sec) as disk_read_KB_per_sec avg(disk_write_KB_per_sec) as disk_write_KB_per_sec</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1277,7 +1277,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="height">500</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREAD OR type=DGWRITE hostname=$hostname$
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREAD OR type=DGWRITE host=$host$
 | timechart `nmon_span` limit=0 useother=f max(disk_read_KB_per_sec) as disk_read_KB_per_sec max(disk_write_KB_per_sec) as disk_write_KB_per_sec by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
@@ -1286,12 +1286,12 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg read/write service time (ms) - click on the chart to get by device view</title>
                 <search>
-                    <query>| tstats max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.hostname=$hostname$) groupby _time, dg.hostname, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms by _time, dg.hostname, dg.device
-| rename "dg.hostname" AS hostname, "dg.device" AS device
-| fields hostname, device, disk_*
-| stats avg(disk_*) as "disk_*" by _time,hostname
+| stats dedup_splitvals=t max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms by _time, host, dg.device
+| rename "dg.device" AS device
+| fields host, device, disk_*
+| stats avg(disk_*) as "disk_*" by _time,host
 | fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_read_service_time_ms) as disk_read_service_time_ms avg(disk_write_service_time_ms) as disk_write_service_time_ms</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1328,7 +1328,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="height">500</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREADSERV OR type=DGWRITESERV hostname=$hostname$
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREADSERV OR type=DGWRITESERV host=$host$
 | timechart `nmon_span` limit=0 useother=f max(disk_read_service_time_ms) as disk_read_service_time_ms max(disk_write_service_time_ms) as disk_write_service_time_ms by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
@@ -1342,11 +1342,11 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg I/O per sec over time</title>
                 <search>
-                    <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (DISKXFER.hostname="$hostname$") groupby _time, "DISKXFER.hostname", "DISKXFER.device" prestats=true span=1m
-| stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, "DISKXFER.hostname", "DISKXFER.device"
+                    <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (host="$host$") groupby _time, host, "DISKXFER.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, host, "DISKXFER.device"
 | rename "DISKXFER.*" AS *
-| dedup _time, hostname, device, value
-| stats dedup_splitvals=t sum(value) AS value by _time, hostname
+| dedup _time, host, device, value
+| stats dedup_splitvals=t sum(value) AS value by _time, host
 | fields $show_disks$
 | fields $start_disk_stats_search$
 | timechart $span$ avg(value) As iops | trendline sma5(iops) AS trend</query>
@@ -1389,13 +1389,13 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg % time busy disk over time</title>
                 <search>
-                    <query>| tstats max("DISKBUSY.value") AS DISKBUSY.value from datamodel=NMON_Data_DISKBUSY where (nodename = DISKBUSY) (DISKBUSY.hostname="$hostname$") groupby _time, "DISKBUSY.hostname", "DISKBUSY.device" prestats=true span=1m
-| stats dedup_splitvals=t max("DISKBUSY.value") AS DISKBUSY.value by _time, "DISKBUSY.hostname", "DISKBUSY.device"
+                    <query>| tstats max("DISKBUSY.value") AS DISKBUSY.value from datamodel=NMON_Data_DISKBUSY where (nodename = DISKBUSY) (host="$host$") groupby _time, "host", "DISKBUSY.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKBUSY.value") AS DISKBUSY.value by _time, "host", "DISKBUSY.device"
 | rename "DISKBUSY.*" AS *
-| dedup _time, hostname, device, value
+| dedup _time, host, device, value
 | fields $show_disks$
 | fields $start_disk_stats_search$
-| stats dedup_splitvals=t avg(value) AS value by _time, hostname
+| stats dedup_splitvals=t avg(value) AS value by _time, host
 | timechart $span$ avg(value) As busy_time | trendline sma5(busy_time) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1439,11 +1439,11 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg data transfer size over time</title>
                 <search>
-                    <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (DISKBSIZE.hostname="$hostname$") groupby _time, "DISKBSIZE.hostname", "DISKBSIZE.device" prestats=true span=1m
-| stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "DISKBSIZE.hostname", "DISKBSIZE.device"
+                    <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (host="$host$") groupby _time, "host", "DISKBSIZE.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "host", "DISKBSIZE.device"
 | rename "DISKBSIZE.*" AS *
-| dedup _time, hostname, device, value
-| stats dedup_splitvals=t sum(value) AS value by _time, hostname
+| dedup _time, host, device, value
+| stats dedup_splitvals=t sum(value) AS value by _time, host
 | fields $show_disks$
 | fields $start_disk_stats_search$
 | timechart $span$ avg(value) As avg_transfer_size | trendline sma5(avg_transfer_size) AS trend</query>
@@ -1486,7 +1486,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg read/write data rate (KBytes/sec) over time</title>
                 <search>
-                    <query>| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (DISKREADWRITE.hostname="$hostname$") groupby _time, "DISKREADWRITE.type", "DISKREADWRITE.hostname", "DISKREADWRITE.device" prestats=true span=1m | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.type", "DISKREADWRITE.hostname", "DISKREADWRITE.device" | sort limit=0 _time | rename "DISKREADWRITE.type" AS type "DISKREADWRITE.hostname" AS hostname "DISKREADWRITE.device" AS device | fields _time, type, hostname, device, value
+                    <query>| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (host="$host$") groupby _time, "DISKREADWRITE.type", "host", "DISKREADWRITE.device" prestats=true span=1m | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.type", "host", "DISKREADWRITE.device" | sort limit=0 _time | rename "DISKREADWRITE.type" AS type "host" AS host "DISKREADWRITE.device" AS device | fields _time, type, host, device, value
 | eval key=case(type=="DISKREAD", "read", type=="DISKWRITE", "write")
 | dedup _time, key, value
 | stats sum(value) AS value by _time, key
@@ -1546,9 +1546,9 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 
             <chart>
                 <search id="MEMtimechart">
-                    <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
-groupby _time MEM.hostname prestats=true span=1m
-| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, MEM.hostname
+                    <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$)
+groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, host
 | timechart $span$ dedup_splitvals=t avg(mem_used_effective_PCT) AS mem_used_PCT, avg(swap_used_effective_PCT) AS swap_used_PCT</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1583,13 +1583,13 @@ groupby _time MEM.hostname prestats=true span=1m
             <chart rejects="$show_null_top$">
                 <search id="TOPtimechart">
                     <query>| tstats
-max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (TOP_ALLOS.hostname=$hostname$)
-groupby _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (host=$host$)
+groupby _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.hostname" AS hostname "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields hostname, logical_cpus, Command, PID, pct_CPU
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields host, logical_cpus, Command, PID, pct_CPU
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
 | eval smt_threads=(logical_cpus/virtual_cpus)
@@ -1662,9 +1662,9 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, "TOP_ALLOS.hostname", "TOP_ALLOS.l
     </row>
 
     <search id="linux_memory_stats">
-        <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (MEM.hostname=$hostname$)
-groupby _time MEM.hostname prestats=true span=1m
-| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, MEM.hostname
+        <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (host=$host$)
+groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t `memory_linux_dm(max)` by _time, host
 | fields $show_memory$
 | fields $is_Linux$
 | timechart `nmon_span` dedup_splitvals=t avg(*) AS *</query>
@@ -1677,9 +1677,9 @@ groupby _time MEM.hostname prestats=true span=1m
     <search id="AIX_mem_memory_stats">
         <query>| tstats max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Real_used_MB") AS Real_used_MB
 max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_used_MB") AS Virtual_used_MB
-from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$) groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
+from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$) groupby _time, "MEM.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Real_used_MB") AS Real_used_MB
-max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_used_MB") AS Virtual_used_MB by _time,MEM.hostname
+max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_used_MB") AS Virtual_used_MB by _time,host
 | fields $show_memory$
 | fields $is_AIX$
 | timechart $span$ avg(Real_total_MB) AS Real_total_MB avg(Real_used_MB) AS Real_used_MB
@@ -1694,9 +1694,9 @@ avg(Virtual_total_MB) AS Virtual_total_MB avg(Virtual_used_MB) AS Virtual_used_M
         <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT from datamodel=NMON_Data_MEMNEW
-where (nodename = MEMNEW) (MEMNEW.hostname=$hostname$) groupby _time, "MEMNEW.hostname" prestats=true span=1m
+where (nodename = MEMNEW) (host=$host$) groupby _time, host prestats=true span=1m
 | stats max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
-max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT by _time,MEMNEW.hostname
+max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT by _time,host
 | fields $show_memory$
 | fields $is_AIX$
 | timechart $span$
@@ -1711,9 +1711,9 @@ avg(Process_PCT) AS Process_PCT avg(System_PCT) AS System_PCT</query>
     <search id="Solaris_MEM_real">
         <query>| tstats
 max("MEM.memused") AS memused_MB max("MEM.memfree") AS memfree_MB max("MEM.memtotal") AS memtotal_MB
-from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
-groupby _time, "MEM.hostname" prestats=true span=1m
-| stats max("MEM.memused") AS memused_MB max("MEM.memfree") AS memfree_MB max("MEM.memtotal") AS memtotal_MB by _time, MEM.hostname
+from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$)
+groupby _time, host prestats=true span=1m
+| stats max("MEM.memused") AS memused_MB max("MEM.memfree") AS memfree_MB max("MEM.memtotal") AS memtotal_MB by _time, host
 | fields $show_memory$
 | fields $is_Solaris$
 | timechart $span$
@@ -1727,9 +1727,9 @@ avg(memused_MB) AS memused_MB avg(memfree_MB) AS memfree_MB avg(memtotal_MB) AS 
     <search id="Solaris_MEM_swap">
         <query>| tstats
 max("MEM.swapused") AS swapused_MB max("MEM.swapfree") AS swapfree_MB max("MEM.swaptotal") AS swaptotal_MB
-from datamodel=NMON_Data_MEM where (nodename = MEM) (MEM.hostname=$hostname$)
-groupby _time, "MEM.frameID", "MEM.hostname" prestats=true span=1m
-| stats max("MEM.swapused") AS swapused_MB max("MEM.swapfree") AS swapfree_MB max("MEM.swaptotal") AS swaptotal_MB by _time, MEM.hostname
+from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$)
+groupby _time, "MEM.frameID", host prestats=true span=1m
+| stats max("MEM.swapused") AS swapused_MB max("MEM.swapfree") AS swapfree_MB max("MEM.swaptotal") AS swaptotal_MB by _time, host
 | fields $show_memory$
 | fields $is_Solaris$
 | timechart $span$
@@ -1998,17 +1998,17 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
                 <title>Table stats: CPU Usage in logical core per Command invocation</title>
                 <search>
                     <query>| tstats max("TOP_Linux.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Linux
-where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname$)
-groupby _time, "TOP_Linux.frameID", "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Linux.pct_CPU") AS pct_CPU by _time, "TOP_Linux.frameID", "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
-| rename "TOP_Linux.frameID" AS frameID, "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
+where (nodename = TOP_Linux) (host=$host$)
+groupby _time, "TOP_Linux.frameID", host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Linux.pct_CPU") AS pct_CPU by _time, "TOP_Linux.frameID", host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
+| rename "TOP_Linux.frameID" AS frameID, "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | fields $is_Linux$
 | fields $show_processes$
 | fields $start_top_searches$
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| stats sum(usage_per_core) As value by _time,frameID,host,Command
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
 | stats max(value) as "max CPU usage per core", avg(value) as "avg CPU usage per core", sparkline(max(value)) As sparkline by Command
 | foreach *CPU* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 3) ]
@@ -2036,18 +2036,18 @@ groupby _time, "TOP_Linux.frameID", "TOP_Linux.hostname", "TOP_Linux.logical_cpu
                 <title>Table stats: CPU Usage in logical core per Command invocation</title>
                 <search>
                     <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP
-where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$)
-groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.hostname" AS hostname "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+where (nodename = TOP_AIX) (host=$host$)
+groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.frameID" AS frameID, "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | fields $is_AIX$
 | fields $show_processes$
 | fields $start_top_searches$
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| stats sum(usage_per_core) As value by _time,frameID,host,Command
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
 | stats max(value) as "max CPU usage per core", avg(value) as "avg CPU usage per core", sparkline(max(value)) As sparkline by Command
 | foreach *CPU* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 3) ]
@@ -2075,17 +2075,17 @@ groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.logical_cpus", "T
                 <title>Table stats: CPU Usage in logical core per Command invocation</title>
                 <search>
                     <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris
-where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname$)
-groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+where (nodename = TOP_Solaris) (host=$host$)
+groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
 | fields $is_Solaris$
 | fields $show_processes$
 | fields $start_top_searches$
-| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,hostname,Command
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
 | eval usage_per_core=(pct_CPU/100)
-| stats sum(usage_per_core) As value by _time,frameID,hostname,Command
+| stats sum(usage_per_core) As value by _time,frameID,host,Command
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
 | stats max(value) as "max CPU usage per core", avg(value) as "avg CPU usage per core", sparkline(max(value)) As sparkline by Command
 | foreach *CPU* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 3) ]
@@ -2118,13 +2118,13 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
                 <title>Table stats: Memory Usage per command invocation</title>
                 <search>
                     <query>| tstats max("TOP_Linux.ResSet") AS ResSet from datamodel=NMON_Data_TOP.TOP_Linux
-where (nodename = TOP_Linux) (TOP_Linux.hostname=$hostname$)
-groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Linux.ResSet") AS ResSet by _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
+where (nodename = TOP_Linux) (host=$host$)
+groupby _time, host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Linux.ResSet") AS ResSet by _time, host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
 | fields $is_Linux$
 | fields $show_processes$
 | fields $start_top_searches$
-| rename "TOP_Linux.hostname" AS hostname "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
+| rename "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval Used_Mem_MB=((ResSet)/1024)
 | stats sum(Used_Mem_MB) As value by _time,Command
 | stats max(value) as "max memory usage (MB)", avg(value) as "avg memory usage (MB)", sparkline(max(value)) as sparkline by Command
@@ -2152,14 +2152,14 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
             <table depends="$is_AIX$">
                 <title>Table stats: Memory Usage per command invocation</title>
                 <search>
-                    <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (TOP_AIX.hostname=$hostname$) groupby _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", "TOP_AIX.hostname", "TOP_AIX.Command", "TOP_AIX.PID"
+                    <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host$) groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", host, "TOP_AIX.Command", "TOP_AIX.PID"
 | fields $is_AIX$
 | fields $show_processes$
 | fields $start_top_searches$
 | rename "TOP_AIX.*" AS *
 | eval Used_Mem_MB=((ResData+ResText)/1024)
-| stats sum(Used_Mem_MB) As value by _time,frameID,hostname,Command
+| stats sum(Used_Mem_MB) As value by _time,frameID,host,Command
 | stats max(value) as max_Used_Mem_MB, avg(value) as avg_Used_Mem_MB, sparkline(max(value)) as sparkline by Command | eval max_Used_Mem_MB=round(max_Used_Mem_MB,2) | eval avg_Used_Mem_MB=round(avg_Used_Mem_MB,2)
 | sort - "avg_Used_Mem_MB"
 | rename max_Used_Mem_MB AS "max memory usage (MB)", avg_Used_Mem_MB AS "avg memory usage (MB)"</query>
@@ -2186,15 +2186,15 @@ groupby _time, "TOP_Linux.hostname", "TOP_Linux.logical_cpus", "TOP_Linux.Comman
                 <title>Table stats: Physical Memory Usage per command invocation</title>
                 <search>
                     <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris
-where (nodename = TOP_Solaris) (TOP_Solaris.hostname=$hostname$)
-groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
+where (nodename = TOP_Solaris) (host=$host$)
+groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
 | fields $is_Solaris$
 | fields $show_processes$
 | fields $start_top_searches$
-| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.hostname" AS hostname "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
+| rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
-| stats sum(Phys_Mem_MB) As value by _time,frameID,hostname,Command
+| stats sum(Phys_Mem_MB) As value by _time,frameID,host,Command
 | stats max(value) as "max memory usage (MB)", avg(value) as "avg memory usage (MB)", sparkline(max(value)) as sparkline by Command
 | foreach *MB* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 0) ]
 | sort - "max memory usage (MB)"</query>
@@ -2236,9 +2236,9 @@ groupby _time, "TOP_Solaris.frameID", "TOP_Solaris.hostname", "TOP_Solaris.logic
             <table id="tablebar">
                 <search>
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) groupby _time, "JFS.hostname", "JFS.device" prestats=true
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) groupby _time, host, "JFS.device" prestats=true
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.device"
-| rename "JFS.hostname" AS hostname, "JFS.device" AS device, "JFS.value" AS value
+| rename "JFS.device" AS device, "JFS.value" AS value
 | stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by "device"
 | sort limit=0 device | rename device AS "Mount point"
 | eval value=round(value,2)
@@ -2287,8 +2287,8 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) group
             <chart>
                 <search>
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.hostname=$hostname$) ($fsfilter$) groupby _time, "JFS.hostname", "JFS.device" prestats=true span=1m
-| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.hostname", "JFS.device"
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) ($fsfilter$) groupby _time, host, "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
 | $show_filesystem$
 | rename "JFS.*" AS *
 | timechart $span$ limit=0 useother=f max(value) As value by device</query>

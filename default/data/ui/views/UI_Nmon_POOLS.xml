@@ -71,38 +71,38 @@
             <fieldForValue>POOLS.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) ($Pool_id$) ($appfilter$) (POOLS.hostname=$hostname-prefilter$) ($frameID$) groupby "POOLS.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "POOLS.hostname"
-| sort limit=0 "POOLS.hostname" | fields - _span
-| fillnull Count | fields POOLS.hostname, Count</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) ($Pool_id$) ($appfilter$) (host=$host-prefilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host | fields - _span
+| fillnull Count | fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>POOLS.hostname=</valuePrefix>
+            <valuePrefix>host=</valuePrefix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>POOLS.hostname</fieldForLabel>
-            <fieldForValue>POOLS.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats avg(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval POOLS.hostname=&quot;aggreg_hostname&quot;">Average by Time interval</choice>
-            <choice value="stats avg(*) AS * by _time,POOLS.frameID | eval POOLS.hostname='POOLS.frameID'">Average by Time interval,frameID</choice>
-            <choice value="stats max(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval POOLS.hostname=&quot;aggreg_hostname&quot;">Max by Time interval</choice>
-            <choice value="stats max(*) AS * by _time,POOLS.frameID | eval POOLS.hostname='POOLS.frameID'">Max by Time interval,frameID</choice>
-            <choice value="stats sum(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval POOLS.hostname=&quot;aggreg_hostname&quot;">Sum by Time interval</choice>
-            <choice value="stats sum(*) AS * by _time,POOLS.frameID | eval POOLS.hostname='POOLS.frameID'">Sum by Time interval,frameID</choice>
+            <choice value="stats avg(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval host=&quot;aggreg_host&quot;">Average by Time interval</choice>
+            <choice value="stats avg(*) AS * by _time,POOLS.frameID | eval host='POOLS.frameID'">Average by Time interval,frameID</choice>
+            <choice value="stats max(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval host=&quot;aggreg_host&quot;">Max by Time interval</choice>
+            <choice value="stats max(*) AS * by _time,POOLS.frameID | eval host='POOLS.frameID'">Max by Time interval,frameID</choice>
+            <choice value="stats sum(*) AS * by _time | eval POOLS.frameID=&quot;aggreg_frameID&quot; | eval host=&quot;aggreg_host&quot;">Sum by Time interval</choice>
+            <choice value="stats sum(*) AS * by _time,POOLS.frameID | eval host='POOLS.frameID'">Sum by Time interval,frameID</choice>
             <default>fields *</default>
         </input>
 
@@ -136,11 +136,11 @@
 
     <search id="Global">
         <query>| tstats max("POOLS.max_pool_capacity") AS "max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "Pool_id" from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS)
-(POOLS.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)` groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS "max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "Pool_id" by _time, "POOLS.frameID", "POOLS.hostname"
+(host=$host-prefilter$) ($frameID$) ($host$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)` groupby _time, "POOLS.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS "max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "Pool_id" by _time, "POOLS.frameID", host
 | $aggregate$
 | sort limit=0 _time
-| stats min($monitor$) As min_usage, avg($monitor$) As avg_usage, max($monitor$) As max_usage, values(Pool_id) AS Pool_id max(entitled_pool_capacity) AS entitled_pool_capacity max(max_pool_capacity) AS max_pool_capacity, sparkline($statsmode$($monitor$)) As sparkline by POOLS.frameID, POOLS.hostname
+| stats min($monitor$) As min_usage, avg($monitor$) As avg_usage, max($monitor$) As max_usage, values(Pool_id) AS Pool_id max(entitled_pool_capacity) AS entitled_pool_capacity max(max_pool_capacity) AS max_pool_capacity, sparkline($statsmode$($monitor$)) As sparkline by POOLS.frameID, host
 | rename POOLS.* AS *
 | sort limit=0 frameID | eval avg_usage=round(avg_usage,2)</query>
         <earliest>$timerange.earliest$</earliest>
@@ -151,10 +151,12 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -304,7 +306,7 @@
             <table>
                 <search base="Global">
                     <query>foreach max_usage,avg_usage,min_usage [ eval "&lt;&lt;FIELD&gt;&gt;"=round('&lt;&lt;FIELD&gt;&gt;', 2) ]
-| fields frameID, hostname, min_usage, avg_usage, max_usage, Pool_id, entitled_pool_capacity, max_pool_capacity, sparkline</query>
+| fields frameID, host, min_usage, avg_usage, max_usage, Pool_id, entitled_pool_capacity, max_pool_capacity, sparkline</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -409,13 +411,13 @@
             <chart>
                 <search id="timechart">
                     <query>| tstats max("POOLS.max_pool_capacity") AS "POOLS.max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "POOLS.entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "POOLS.Pool_id"
-from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) (POOLS.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)`
-groupby _time, "POOLS.frameID", "POOLS.hostname" prestats=true span=1m
-| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS "POOLS.max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "POOLS.entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "POOLS.Pool_id" by _time, "POOLS.frameID", "POOLS.hostname"
+from datamodel=NMON_Data_CPU.POOLS where (nodename = POOLS) (host=$host-prefilter$) ($frameID$) ($host$) ($Pool_id$) ($appfilter$) `$timefilter$(POOLS)`
+groupby _time, "POOLS.frameID", host prestats=true span=1m
+| stats dedup_splitvals=t max("POOLS.max_pool_capacity") AS "POOLS.max_pool_capacity" max("POOLS.entitled_pool_capacity") AS "POOLS.entitled_pool_capacity" max("$monitor$") AS $monitor$ values("POOLS.Pool_id") AS "POOLS.Pool_id" by _time, "POOLS.frameID", host
 | sort limit=0 _time
 | $aggregate$
 | $charting$
-| timechart $span$ useother=f limit=0 $statsmode$($monitor$) As usage $addindicator$ by POOLS.hostname</query>
+| timechart $span$ useother=f limit=0 $statsmode$($monitor$) As usage $addindicator$ by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

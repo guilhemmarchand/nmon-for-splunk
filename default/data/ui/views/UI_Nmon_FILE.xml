@@ -54,29 +54,29 @@
             <fieldForValue>FILE.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_FILE where (nodename = FILE) (FILE.hostname="$hostname-prefilter$") ($frameID$) ($osfilter$)
-groupby "FILE.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "FILE.hostname"
-| sort limit=0 "FILE.hostname"
-| fields - _span | rename "FILE.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_FILE where (nodename = FILE) (host="$host-prefilter$") ($frameID$) ($osfilter$)
+groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>FILE.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>hostname</fieldForLabel>
-            <fieldForValue>hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -104,15 +104,15 @@ groupby "FILE.hostname" prestats=true
         <query>| tstats max(FILE.readch) As FILE.readch, max(FILE.writech) As FILE.writech,
 max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk,
 $statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch from datamodel=NMON_Data_FILE
-where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
-groupby _time, "FILE.hostname" prestats=true
+where (nodename = FILE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(FILE)`
+groupby _time, host prestats=true
 | stats dedup_splitvals=t max(FILE.readch) As FILE.readch, max(FILE.writech) As FILE.writech,
 max(FILE.iget) As FILE.iget, max(FILE.namei) As FILE.namei, max(FILE.dirblk) As FILE.dirblk,
-$statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch by _time, "FILE.hostname"
+$statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch by _time, host
 | stats $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech, sparkline(max(FILE.readch)) As spk_readch, sparkline(max(FILE.writech)) As spk_writech
 $statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk,
-$statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, $statsmode$(FILE.ttyrawch) As ttyrawch by "FILE.hostname"
-| sort limit=0 "FILE.hostname" | rename "FILE.hostname" AS hostname</query>
+$statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, $statsmode$(FILE.ttyrawch) As ttyrawch by host
+| sort limit=0 host</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -121,10 +121,12 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -217,7 +219,7 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
             <table>
                 <title>FILE - Kernel Statistics Table Stats</title>
                 <search base="tablestats">
-                    <query>fields hostname,readch,writech,spk_readch,spk_writech</query>
+                    <query>fields host,readch,writech,spk_readch,spk_writech</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -253,7 +255,7 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
             <table>
                 <title>FILE - Kernel Statistics Table Stats</title>
                 <search base="tablestats">
-                    <query>fields hostname,iget,namei,dirblk,tty* by hostname</query>
+                    <query>fields host,iget,namei,dirblk,tty* by host</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -361,11 +363,11 @@ $statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, 
                 <title>FILE - Read/Write system calls</title>
                 <search>
                     <query>| tstats $statsmode$(FILE.readch) As FILE.readch, $statsmode$(FILE.writech) As FILE.writech from datamodel=NMON_Data_FILE
-where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
-groupby _time, "FILE.hostname" prestats=true `nmon_span`
+where (nodename = FILE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(FILE)`
+groupby _time, host prestats=true `nmon_span`
 | $charting$
 | timechart $span$ useother=f limit=0
-$statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE.hostname</query>
+$statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -396,12 +398,12 @@ $statsmode$(FILE.readch) As readch, $statsmode$(FILE.writech) As writech by FILE
                     <query>| tstats
 $statsmode$(FILE.iget) As FILE.iget, $statsmode$(FILE.namei) As FILE.namei, $statsmode$(FILE.dirblk) As FILE.dirblk
 $statsmode$(FILE.ttycanch) As FILE.ttycanch, $statsmode$(FILE.ttyoutch) As FILE.ttyoutch, $statsmode$(FILE.ttyrawch) As FILE.ttyrawch from datamodel=NMON_Data_FILE
-where (nodename = FILE) (FILE.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) `$timefilter$(FILE)`
-groupby _time, "FILE.hostname" prestats=true `nmon_span`
+where (nodename = FILE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(FILE)`
+groupby _time, host prestats=true `nmon_span`
 | $charting$
 | timechart $span$ useother=f limit=0
 $statsmode$(FILE.iget) As iget, $statsmode$(FILE.namei) As namei, $statsmode$(FILE.dirblk) As dirblk
-$statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, $statsmode$(FILE.ttyrawch) As ttyrawch by FILE.hostname</query>
+$statsmode$(FILE.ttycanch) As ttycanch, $statsmode$(FILE.ttyoutch) As ttyoutch, $statsmode$(FILE.ttyrawch) As ttyrawch by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

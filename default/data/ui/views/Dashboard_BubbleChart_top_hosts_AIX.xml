@@ -50,7 +50,7 @@
             <fieldForValue>CPU.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname" searchWhenChanged="true">
+        <input type="text" token="host" searchWhenChanged="true">
             <label>Optional: Hosts filtering</label>
             <default>*</default>
         </input>
@@ -79,7 +79,7 @@
     <!-- Search based for post processing -->
 
     <search id="baseSearch">
-        <query>| tstats `$monitor$($statsmode$,$frameID$,$osfilter$,$hostname$,$timefilter$)` | fields frameID,hostname,usage,*</query>
+        <query>| tstats `$monitor$($statsmode$,$frameID$,$osfilter$,$host$,$timefilter$)` | fields frameID,host,usage,*</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
     </search>
@@ -94,7 +94,7 @@
                      data-options='{
                     "search": {
 								"type": "token_safe",
-                    		"value": "| tstats `$$monitor$$($$statsmode$$,$$frameID$$,$$osfilter$$,$$hostname$$,$$timefilter$$)` | sort - usage | head 100"
+                    		"value": "| tstats `$$monitor$$($$statsmode$$,$$frameID$$,$$osfilter$$,$$host$$,$$timefilter$$)` | sort - usage | head 100"
 						  },
           			  "earliest_time": {
             				"type": "token_safe",
@@ -113,8 +113,8 @@
                      data-require="app/nmon/components/bubblechart/bubblechart"
                      data-options='{
                     "managerid": "bubbleSearch",
-                    "nameField": "hostname",
-                    "categoryField": "hostname",
+                    "nameField": "host",
+                    "categoryField": "host",
                     "valueField": "usage",
                     "height": 600
                  }'>
@@ -128,8 +128,8 @@
             <title>TOP 50 CPU Usage Hosts (ordered by CPU Usage percentage of capacity)</title>
             <chart>
                 <search base="baseSearch">
-                    <query>| eval usage_PCT=if(isnull(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields hostname,usage | head 50
-| eval xlabel=""| chart max(usage) AS usage useother=f limit=0 by xlabel,hostname
+                    <query>| eval usage_PCT=if(isnull(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields host,usage | head 50
+| eval xlabel=""| chart max(usage) AS usage useother=f limit=0 by xlabel,host
 | rename xlabel AS "CPU % usage"</query>
                 </search>
                 <option name="charting.chart.columnSpacing">5</option>
@@ -160,11 +160,11 @@
 
     <row>
         <panel>
-            <title>Hosts CPU Usage Table Stats (ordered by hostname)</title>
+            <title>Hosts CPU Usage Table Stats (ordered by host)</title>
 
             <table>
                 <search base="baseSearch">
-                    <query>| eval usage=round(usage, 3) | eval usage_PCT=round(usage_PCT, 3) | sort frameID,hostname</query>
+                    <query>| eval usage=round(usage, 3) | eval usage_PCT=round(usage_PCT, 3) | sort frameID,host</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>

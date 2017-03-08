@@ -55,38 +55,38 @@
             <fieldForValue>DISKSVCTM.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="HostsbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_DISKSVCTM where (nodename = DISKSVCTM) (DISKSVCTM.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) groupby "DISKSVCTM.hostname", "DISKSVCTM.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISKSVCTM.hostname", "DISKSVCTM.device"
-| sort limit=0 "DISKSVCTM.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_DISKSVCTM where (nodename = DISKSVCTM) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host, "DISKSVCTM.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "DISKSVCTM.device"
+| sort limit=0 host
 | fields - _span
-| fillnull Count | fields DISKSVCTM.hostname | dedup DISKSVCTM.hostname | sort DISKSVCTM.hostname</query>
+| fillnull Count | fields host | dedup host | sort host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>DISKSVCTM.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>DISKSVCTM.hostname</fieldForLabel>
-            <fieldForValue>DISKSVCTM.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="multiselect" token="device" searchWhenChanged="true">
             <label>Disks Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="DisksbaseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_DISKSVCTM where (nodename = DISKSVCTM) (DISKSVCTM.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) groupby "DISKSVCTM.hostname", "DISKSVCTM.device" prestats=true
-| stats dedup_splitvals=t count AS Count by "DISKSVCTM.hostname", "DISKSVCTM.device"
-| sort limit=0 "DISKSVCTM.hostname"
+                <query>| tstats count AS Count from datamodel=NMON_Data_DISKSVCTM where (nodename = DISKSVCTM) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby host, "DISKSVCTM.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "DISKSVCTM.device"
+| sort limit=0 host
 | fields - _span
 | fillnull Count | fields DISKSVCTM.device | dedup DISKSVCTM.device | sort DISKSVCTM.device</query>
                 <earliest>$timerange.earliest$</earliest>
@@ -103,12 +103,12 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats dedup_splitvals=t avg(DISKSVCTM.value) AS DISKSVCTM.value by _time, DISKSVCTM.hostname | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t avg(DISKSVCTM.value) AS DISKSVCTM.value by _time | eval DISKSVCTM.hostname=&quot;aggreg_hostname&quot; | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
-            <choice value="stats dedup_splitvals=t max(DISKSVCTM.value) AS DISKSVCTM.value by _time, DISKSVCTM.hostname | eval DISKSVCTM.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t max(DISKSVCTM.value) AS DISKSVCTM.value by _time | eval DISKSVCTM.hostname=&quot;aggreg_hostname&quot; | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
-            <choice value="stats dedup_splitvals=t sum(DISKSVCTM.value) AS DISKSVCTM.value by _time, DISKSVCTM.hostname | eval DISKSVCTM.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
-            <choice value="stats dedup_splitvals=t sum(DISKSVCTM.value) AS DISKSVCTM.value by _time | eval DISKSVCTM.hostname=&quot;aggreg_hostname&quot; | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
+            <choice value="stats dedup_splitvals=t avg(DISKSVCTM.value) AS DISKSVCTM.value by _time, host | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Average by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t avg(DISKSVCTM.value) AS DISKSVCTM.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Average by Time interval</choice>
+            <choice value="stats dedup_splitvals=t max(DISKSVCTM.value) AS DISKSVCTM.value by _time, host | eval DISKSVCTM.device=&quot;aggregate&quot;">Max by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t max(DISKSVCTM.value) AS DISKSVCTM.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Max by Time interval</choice>
+            <choice value="stats dedup_splitvals=t sum(DISKSVCTM.value) AS DISKSVCTM.value by _time, host | eval DISKSVCTM.device=&quot;aggregate&quot;">Sum by Time interval, host</choice>
+            <choice value="stats dedup_splitvals=t sum(DISKSVCTM.value) AS DISKSVCTM.value by _time | eval host=&quot;aggreg_host&quot; | eval DISKSVCTM.device=&quot;aggreg_device&quot;">Sum by Time interval</choice>
             <default>fields *</default>
         </input>
 
@@ -133,20 +133,24 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
 
     <!-- Help the user -->
 
-    <row depends="$hostname$" rejects="$device$">
+    <row depends="$host$" rejects="$device$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -257,15 +261,15 @@
             <table>
                 <search id="tablestats">
                     <query>| tstats max("DISKSVCTM.value") AS DISKSVCTM.value from datamodel=NMON_Data_DISKSVCTM
-where (nodename = DISKSVCTM) (DISKSVCTM.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKSVCTM)`
-groupby _time, "DISKSVCTM.hostname", "DISKSVCTM.device" prestats=true
-| stats dedup_splitvals=t max("DISKSVCTM.value") AS DISKSVCTM.value by _time, "DISKSVCTM.hostname", "DISKSVCTM.device"
+where (nodename = DISKSVCTM) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKSVCTM)`
+groupby _time, host, "DISKSVCTM.device" prestats=true
+| stats dedup_splitvals=t max("DISKSVCTM.value") AS DISKSVCTM.value by _time, host, "DISKSVCTM.device"
 | $aggregate$
-| rename "DISKSVCTM.hostname" AS hostname, "DISKSVCTM.device" AS device, "DISKSVCTM.value" AS value
-| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  "hostname", "device"
-| sort limit=0 "hostname"
+| rename "DISKSVCTM.device" AS device, "DISKSVCTM.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, sparkline($statsmode$(value)) As sparkline by  host, "device"
+| sort limit=0 host
 | eval value=round(value,2)
-| fields hostname,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
+| fields host,device,max_value, avg_value, min_value,sparkline | eval avg_value=round(avg_value,2)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -365,13 +369,13 @@ groupby _time, "DISKSVCTM.hostname", "DISKSVCTM.device" prestats=true
             <chart>
                 <search id="timechart">
                     <query>| tstats max("DISKSVCTM.value") AS DISKSVCTM.value from datamodel=NMON_Data_DISKSVCTM
-where (nodename = DISKSVCTM) (DISKSVCTM.hostname=$hostname-prefilter$) ($frameID$) ($osfilter$) ($hostname$) ($device$) `$timefilter$(DISKSVCTM)`
-groupby _time, "DISKSVCTM.hostname", "DISKSVCTM.device" prestats=true span=1m
-| stats dedup_splitvals=t max("DISKSVCTM.value") AS DISKSVCTM.value by _time, "DISKSVCTM.hostname", "DISKSVCTM.device"
+where (nodename = DISKSVCTM) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) `$timefilter$(DISKSVCTM)`
+groupby _time, host, "DISKSVCTM.device" prestats=true span=1m
+| stats dedup_splitvals=t max("DISKSVCTM.value") AS DISKSVCTM.value by _time, host, "DISKSVCTM.device"
 | $aggregate$
 | $charting$
 | rename "DISKSVCTM.*" AS *
-| eval key=hostname+":"+device
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

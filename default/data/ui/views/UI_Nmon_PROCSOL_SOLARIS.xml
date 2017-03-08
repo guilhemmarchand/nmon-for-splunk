@@ -44,28 +44,28 @@
             <fieldForValue>PROCSOL.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="hostsSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (PROCSOL.hostname=$hostname-prefilter$) ($frameID$) groupby "PROCSOL.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "PROCSOL.hostname"
-| sort limit=0 "PROCSOL.hostname"
-| fields - _span | fillnull Count | fields "PROCSOL.hostname"</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (host=$host-prefilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>PROCSOL.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>PROCSOL.hostname</fieldForLabel>
-            <fieldForValue>PROCSOL.hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -91,17 +91,17 @@
         <query>| tstats
 max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
 max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT
-from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (PROCSOL.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PROCSOL)`
-groupby _time, "PROCSOL.frameID", "PROCSOL.hostname" prestats=true
+from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (host=$host-prefilter$) ($frameID$) ($host$) `$timefilter$(PROCSOL)`
+groupby _time, "PROCSOL.frameID", host prestats=true
 | stats dedup_splitvals=t max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
-max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, "PROCSOL.hostname"
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, host
 | stats
 $statsmode$(USR) As "USR (%time in User Mode)", sparkline($statsmode$(USR)) As "spk_USR",
 $statsmode$(SYS) As "SYS (%time in System Mode)", sparkline($statsmode$(SYS)) As "spk_SYS",
 $statsmode$(TRP) As "TRP (%time Processing system traps)", sparkline($statsmode$(TRP)) As "spk_TRP",
 $statsmode$(TFL) As "TFL (%time Processing text page faults)", sparkline($statsmode$(TFL)) As "spk_TFL",
 $statsmode$(DFL) As "DFL (%time Processing data page faults)", sparkline($statsmode$(DFL)) As "spk_DFL",
-$statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) As "spk_LAT" by PROCSOL.hostname</query>
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) As "spk_LAT" by host</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>30s</refresh>
@@ -110,10 +110,12 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -221,7 +223,7 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
             <table>
                 <title>Table Stats</title>
                 <search base="BaseSearch">
-                    <query>fields hostname, "USR (%time in User Mode)", "spk_USR","SYS (%time in System Mode)", "spk_SYS","TRP (%time Processing system traps)","spk_TRP"</query>
+                    <query>fields host, "USR (%time in User Mode)", "spk_USR","SYS (%time in System Mode)", "spk_SYS","TRP (%time Processing system traps)","spk_TRP"</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -268,7 +270,7 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
             <table>
                 <title/>
                 <search base="BaseSearch">
-                    <query>fields, hostname, "TFL (%time Processing text page faults)", "spk_TFL", "DFL (%time Processing data page faults)", "spk_DFL", "LAT (%time Waiting for CPU)", "spk_LAT"</query>
+                    <query>fields, host, "TFL (%time Processing text page faults)", "spk_TFL", "DFL (%time Processing data page faults)", "spk_DFL", "LAT (%time Waiting for CPU)", "spk_LAT"</query>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -380,14 +382,14 @@ $statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) A
                     <query>| tstats
 max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
 max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT
-from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (PROCSOL.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) `$timefilter$(PROCSOL)`
-groupby _time, "PROCSOL.frameID", "PROCSOL.hostname" prestats=true
+from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (host=$host-prefilter$) ($frameID$) ($host$) `$timefilter$(PROCSOL)`
+groupby _time, "PROCSOL.frameID", host prestats=true
 | stats dedup_splitvals=t max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
-max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, "PROCSOL.hostname"
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, host
 | timechart $span$ limit=0 useother=f
 $statsmode$(USR) As "USR (%time in User Mode)", $statsmode$(SYS) As "SYS (%time in System Mode)", $statsmode$(TRP) As "TRP (%time Processing system traps)",
 $statsmode$(TFL) As "TFL (%time Processing text page faults)", $statsmode$(DFL) As "DFL (%time Processing data page faults)",
-$statsmode$(LAT) As "LAT (%time Waiting for CPU)" by PROCSOL.hostname</query>
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)" by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>

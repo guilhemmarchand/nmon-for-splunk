@@ -44,35 +44,35 @@
             <fieldForValue>FC.frameID</fieldForValue>
         </input>
 
-        <input type="text" token="hostname-prefilter" searchWhenChanged="true">
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
             <label>Optional: Filter hosts populating</label>
             <default>*</default>
         </input>
 
-        <input type="multiselect" token="hostname" searchWhenChanged="true">
+        <input type="multiselect" token="host" searchWhenChanged="true">
             <label>Hosts Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch">
-                <query>| tstats count AS Count from datamodel=NMON_Data_FC where (nodename = FC) ($frameID$) (FC.hostname="$hostname-prefilter$") groupby "FC.hostname" prestats=true
-| stats dedup_splitvals=t count AS Count by "FC.hostname"
-| sort limit=0 "FC.hostname"
-| rename "FC.hostname" AS hostname | fillnull Count | fields hostname, Count</query>
+                <query>| tstats count AS Count from datamodel=NMON_Data_FC where (nodename = FC) ($frameID$) (host="$host-prefilter$") groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fillnull Count | fields host, Count</query>
                 <earliest>$timerange.earliest$</earliest>
                 <latest>$timerange.latest$</latest>
             </search>
-            <valuePrefix>FC.hostname="</valuePrefix>
+            <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
             <choice value="*">ALL Hosts</choice>
-            <fieldForLabel>hostname</fieldForLabel>
-            <fieldForValue>hostname</fieldForValue>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
         </input>
 
         <input type="multiselect" token="device" searchWhenChanged="true">
             <label>Interfaces Selection:</label>
             <!-- Populating Data Model Search -->
             <search id="baseSearch2">
-                <query>| tstats count AS Count from datamodel=NMON_Data_FC where (nodename = FC) ($frameID$) (FC.hostname="$hostname-prefilter$") ($hostname$) groupby "FC.hostname", "FC.device" prestats=true
+                <query>| tstats count AS Count from datamodel=NMON_Data_FC where (nodename = FC) ($frameID$) (host="$host-prefilter$") ($host$) groupby host, "FC.device" prestats=true
 | stats dedup_splitvals=t count AS Count by "FC.device"
 | sort limit=0 "FC.device"
 | rename "FC.device" AS device | fields device | dedup device | sort device</query>
@@ -90,12 +90,12 @@
         <input type="dropdown" token="aggregate" searchWhenChanged="true">
             <label>Aggregate:</label>
             <choice value="fields *">Single Series</choice>
-            <choice value="stats avg(FC.value) As FC.value by _time,FC.hostname | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Average by Time interval, host</choice>
-            <choice value="stats avg(FC.value) As FC.value by _time | eval FC.hostname=aggregated_host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Average by Time interval</choice>
-            <choice value="stats max(FC.value) As FC.value by _time,FC.hostname | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_device&quot;">Max by Time interval, host</choice>
-            <choice value="stats max(FC.value) As FC.value by _time | eval FC.hostname=aggregated_host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Max by Time interval</choice>
-            <choice value="stats sum(FC.value) As FC.value by _time,FC.hostname | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Sum by Time interval, host</choice>
-            <choice value="stats sum(FC.value) As FC.value by _time | eval FC.hostname=aggregated_host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Sum by Time interval</choice>
+            <choice value="stats avg(FC.value) As FC.value by _time,host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Average by Time interval, host</choice>
+            <choice value="stats avg(FC.value) As FC.value by _time | eval host=aggregated_host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Average by Time interval</choice>
+            <choice value="stats max(FC.value) As FC.value by _time,host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_device&quot;">Max by Time interval, host</choice>
+            <choice value="stats max(FC.value) As FC.value by _time | eval host=aggregated_host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Max by Time interval</choice>
+            <choice value="stats sum(FC.value) As FC.value by _time,host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Sum by Time interval, host</choice>
+            <choice value="stats sum(FC.value) As FC.value by _time | eval host=aggregated_host | eval FC.device=&quot;aggregated_device&quot; | eval FC.type=&quot;aggregated_type&quot;">Sum by Time interval</choice>
             <default>fields *</default>
         </input>
         <input type="dropdown" token="statsmode" searchWhenChanged="true">
@@ -117,20 +117,24 @@
 
     <!-- Help the user -->
 
-    <row rejects="$hostname$">
+    <row rejects="$host$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
 
     <!-- Help the user -->
 
-    <row depends="$hostname$" rejects="$device$">
+    <row depends="$host$" rejects="$device$">
         <panel>
             <html>
-                <p style="color:red;text-align:center;font-size:14px"> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select associated devices to be analysed in the device selector above - - - - - - - - - -</p>
+                </div>
             </html>
         </panel>
     </row>
@@ -230,13 +234,13 @@
                 <title>Read/Write Operations Table Stats (KB/s)</title>
                 <search>
                     <query>| tstats max(FC.value) As FC.value from datamodel=NMON_Data_FC
-where (nodename = FC.READWRITE) (FC.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(FC)`
-groupby _time, "FC.hostname", "FC.type", "FC.device" prestats=true
-| stats dedup_splitvals=t max(FC.value) As FC.value by _time, "FC.hostname", "FC.type", "FC.device"
+where (nodename = FC.READWRITE) (host=$host-prefilter$) ($frameID$) ($host$) ($device$) `$timefilter$(FC)`
+groupby _time, host, "FC.type", "FC.device" prestats=true
+| stats dedup_splitvals=t max(FC.value) As FC.value by _time, host, "FC.type", "FC.device"
 | $aggregate$
-| stats max(FC.value) As max_value, avg(FC.value) As avg_value, min(FC.value) As min_value, sparkline(max(FC.value)) As sparkline by "FC.hostname", "FC.type", "FC.device"
+| stats max(FC.value) As max_value, avg(FC.value) As avg_value, min(FC.value) As min_value, sparkline(max(FC.value)) As sparkline by host, "FC.type", "FC.device"
 | foreach *_value [ eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0) ]
-| sort limit=0 "FC.hostname" | rename "FC.hostname" AS hostname, "FC.type" AS type, "FC.device" AS device</query>
+| sort limit=0 host | rename "FC.type" AS type, "FC.device" AS device</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -275,13 +279,13 @@ groupby _time, "FC.hostname", "FC.type", "FC.device" prestats=true
                 <title>Total I/O Operations Table Stats (tps)</title>
                 <search>
                     <query>| tstats max(FC.value) As FC.value from datamodel=NMON_Data_FC
-where (nodename = FC.XFERINOUT) (FC.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(FC)`
-groupby _time, "FC.hostname", "FC.type", "FC.device" prestats=true
-| stats dedup_splitvals=t max(FC.value) As FC.value by _time, "FC.hostname", "FC.type", "FC.device"
+where (nodename = FC.XFERINOUT) (host=$host-prefilter$) ($frameID$) ($host$) ($device$) `$timefilter$(FC)`
+groupby _time, host, "FC.type", "FC.device" prestats=true
+| stats dedup_splitvals=t max(FC.value) As FC.value by _time, host, "FC.type", "FC.device"
 | $aggregate$
-| stats max(FC.value) As max_value, avg(FC.value) As avg_value, min(FC.value) As min_value, sparkline(max(FC.value)) As sparkline by "FC.hostname", "FC.type", "FC.device"
+| stats max(FC.value) As max_value, avg(FC.value) As avg_value, min(FC.value) As min_value, sparkline(max(FC.value)) As sparkline by host, "FC.type", "FC.device"
 | foreach *_value [ eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0) ]
-| sort limit=0 "FC.hostname" | rename "FC.hostname" AS hostname, "FC.type" AS type, "FC.device" AS device</query>
+| sort limit=0 host | rename "FC.type" AS type, "FC.device" AS device</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -387,14 +391,14 @@ groupby _time, "FC.hostname", "FC.type", "FC.device" prestats=true
                 <title>Read / Write transfer rate (KB/sec)</title>
                 <search>
                     <query>| tstats max(FC.value) As FC.value from datamodel=NMON_Data_FC
-where (nodename = FC.READWRITE) (FC.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(FC)`
-groupby _time, "FC.hostname", "FC.type", "FC.device" prestats=true span=1m
-| stats dedup_splitvals=t max(FC.value) As FC.value by _time, "FC.hostname", "FC.type", "FC.device"
+where (nodename = FC.READWRITE) (host=$host-prefilter$) ($frameID$) ($host$) ($device$) `$timefilter$(FC)`
+groupby _time, host, "FC.type", "FC.device" prestats=true span=1m
+| stats dedup_splitvals=t max(FC.value) As FC.value by _time, host, "FC.type", "FC.device"
 | $aggregate$
-| stats $statsmode$(FC.value) As value by _time,FC.hostname,FC.type, FC.device
+| stats $statsmode$(FC.value) As value by _time,host,FC.type, FC.device
 | rename "FC.*" AS *
 | $charting$
-| eval key=hostname+":"+device
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -429,14 +433,14 @@ groupby _time, "FC.hostname", "FC.type", "FC.device" prestats=true span=1m
                 <title>In/Out I/O transfer</title>
                 <search>
                     <query>| tstats max(FC.value) As FC.value from datamodel=NMON_Data_FC
-where (nodename = FC.XFERINOUT) (FC.hostname=$hostname-prefilter$) ($frameID$) ($hostname$) ($device$) `$timefilter$(FC)`
-groupby _time, "FC.hostname", "FC.type", "FC.device" prestats=true span=1m
-| stats dedup_splitvals=t max(FC.value) As FC.value by _time, "FC.hostname", "FC.type", "FC.device"
+where (nodename = FC.XFERINOUT) (host=$host-prefilter$) ($frameID$) ($host$) ($device$) `$timefilter$(FC)`
+groupby _time, host, "FC.type", "FC.device" prestats=true span=1m
+| stats dedup_splitvals=t max(FC.value) As FC.value by _time, host, "FC.type", "FC.device"
 | $aggregate$
-| stats $statsmode$(FC.value) As value by _time,FC.hostname,FC.type, FC.device
+| stats $statsmode$(FC.value) As value by _time,host,FC.type, FC.device
 | rename "FC.*" AS *
 | $charting$
-| eval key=hostname+":"+device
+| eval key=host+":"+device
 | timechart $span$ limit=0 useother=f $statsmode$(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
