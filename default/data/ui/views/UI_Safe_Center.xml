@@ -102,7 +102,7 @@
     </search>
     <row>
         <panel>
-            <html>
+            <html id="cpu">
                 <div class="safecenter">
                     <h1>CPU</h1>
                 </div>
@@ -175,14 +175,68 @@
         </panel>
         <panel id="panela3_setWidth_48">
             <title>Last 24 hours summary</title>
-
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="linkA1,linkA2,linkA3,linkA4,linkA5,linkA6"><!--Links go here-->
-                </div>
-            </html>
-            <chart id="linkA1" rejects="$show_null_alert_cpu$">
-                <title>Chart over time (top 10)</title>
+            <input type="link" token="cpu_linkinput">
+                <label></label>
+                <choice value="cpu_chart1">Chart over time (top 10)</choice>
+                <choice value="cpu_chart2">Events</choice>
+                <choice value="cpu_chart3">TOP chart count</choice>
+                <choice value="cpu_chart4">TOP Stats count</choice>
+                <choice value="cpu_chart5">TOP chart value</choice>
+                <choice value="cpu_chart6">TOP Stats value</choice>
+                <default>cpu_chart1</default>
+                <change>
+                    <condition value="cpu_chart1">
+                        <set token="cpu_chart1">true</set>
+                        <unset token="cpu_chart2"></unset>
+                        <unset token="cpu_chart3"></unset>
+                        <unset token="cpu_chart4"></unset>
+                        <unset token="cpu_chart5"></unset>
+                        <unset token="cpu_chart6"></unset>
+                    </condition>
+                    <condition value="cpu_chart2">
+                        <set token="cpu_chart2">true</set>
+                        <unset token="cpu_chart1"></unset>
+                        <unset token="cpu_chart3"></unset>
+                        <unset token="cpu_chart4"></unset>
+                        <unset token="cpu_chart5"></unset>
+                        <unset token="cpu_chart6"></unset>
+                    </condition>
+                    <condition value="cpu_chart3">
+                        <set token="cpu_chart3">true</set>
+                        <unset token="cpu_chart1"></unset>
+                        <unset token="cpu_chart2"></unset>
+                        <unset token="cpu_chart4"></unset>
+                        <unset token="cpu_chart5"></unset>
+                        <unset token="cpu_chart6"></unset>
+                    </condition>
+                    <condition value="cpu_chart4">
+                        <set token="cpu_chart4">true</set>
+                        <unset token="cpu_chart1"></unset>
+                        <unset token="cpu_chart2"></unset>
+                        <unset token="cpu_chart3"></unset>
+                        <unset token="cpu_chart5"></unset>
+                        <unset token="cpu_chart6"></unset>
+                    </condition>
+                    <condition value="cpu_chart5">
+                        <set token="cpu_chart5">true</set>
+                        <unset token="cpu_chart1"></unset>
+                        <unset token="cpu_chart2"></unset>
+                        <unset token="cpu_chart3"></unset>
+                        <unset token="cpu_chart4"></unset>
+                        <unset token="cpu_chart6"></unset>
+                    </condition>
+                    <condition value="cpu_chart6">
+                        <set token="cpu_chart6">true</set>
+                        <unset token="cpu_chart1"></unset>
+                        <unset token="cpu_chart2"></unset>
+                        <unset token="cpu_chart3"></unset>
+                        <unset token="cpu_chart4"></unset>
+                        <unset token="cpu_chart5"></unset>
+                    </condition>
+                </change>
+            </input>
+            <chart depends="$cpu_chart1$" rejects="$show_null_alert_cpu$">
+                <title></title>
                 <search base="CPU_Global">
                     <query>search $frameID$ $hostname$ | timechart useother=t limit=10 count by hostname</query>
                     <!-- Progress event has access to job properties only -->
@@ -220,8 +274,8 @@
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkA2" rejects="$show_null_alert_cpu$">
-                <title>Events</title>
+            <table depends="$cpu_chart2$" rejects="$show_null_alert_cpu$">
+                <title></title>
                 <search base="CPU_Global">
                     <query>search $frameID$ $hostname$</query>
                 </search>
@@ -232,8 +286,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkA3" rejects="$show_null_alert_cpu$">
-                <title>TOP chart count</title>
+            <chart depends="$cpu_chart3$" rejects="$show_null_alert_cpu$">
+                <title></title>
                 <search base="CPU_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -260,8 +314,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkA4" rejects="$show_null_alert_cpu$">
-                <title>TOP Stats count</title>
+            <table depends="$cpu_chart4$" rejects="$show_null_alert_cpu$">
+                <title></title>
                 <search base="CPU_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -272,8 +326,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkA5" rejects="$show_null_alert_cpu$">
-                <title>TOP chart value</title>
+            <chart depends="$cpu_chart5$" rejects="$show_null_alert_cpu$">
+                <title></title>
                 <search base="CPU_Global">
                     <query>search $frameID$ $hostname$ | stats max(cpu_PCT) AS cpu_PCT by hostname | sort - cpu_PCT</query>
                 </search>
@@ -300,8 +354,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkA6" rejects="$show_null_alert_cpu$">
-                <title>TOP Stats value</title>
+            <table depends="$cpu_chart6$" rejects="$show_null_alert_cpu$">
+                <title></title>
                 <search base="CPU_Global">
                     <query>search $frameID$ $hostname$ | stats max(cpu_PCT) AS cpu_PCT by hostname | sort - cpu_PCT</query>
                 </search>
@@ -325,7 +379,7 @@
     </search>
     <row>
         <panel>
-            <html>
+            <html id="mem">
                 <div class="safecenter">
                     <h1>MEM</h1>
                 </div>
@@ -398,13 +452,70 @@
         </panel>
         <panel id="panelb3_setWidth_48">
             <title>Last 24 hours summary</title>
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="linkB1,linkB2,linkB3,linkB4,linkB5,linkB6"><!--Links go here-->
-                </div>
-            </html>
-            <chart id="linkB1" rejects="$show_null_alert_realmem$">
-                <title>Chart over time (top 10)</title>
+
+            <input type="link" token="mem_linkinput">
+                <label></label>
+                <choice value="mem_chart1">Chart over time (top 10)</choice>
+                <choice value="mem_chart2">Events</choice>
+                <choice value="mem_chart3">TOP chart count</choice>
+                <choice value="mem_chart4">TOP Stats count</choice>
+                <choice value="mem_chart5">TOP chart value</choice>
+                <choice value="mem_chart6">TOP Stats value</choice>
+                <default>mem_chart1</default>
+                <change>
+                    <condition value="mem_chart1">
+                        <set token="mem_chart1">true</set>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart4"></unset>
+                        <unset token="mem_chart5"></unset>
+                        <unset token="mem_chart6"></unset>
+                    </condition>
+                    <condition value="mem_chart2">
+                        <set token="mem_chart2">true</set>
+                        <unset token="mem_chart1"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart4"></unset>
+                        <unset token="mem_chart5"></unset>
+                        <unset token="mem_chart6"></unset>
+                    </condition>
+                    <condition value="mem_chart3">
+                        <set token="mem_chart3">true</set>
+                        <unset token="mem_chart1"></unset>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart4"></unset>
+                        <unset token="mem_chart5"></unset>
+                        <unset token="mem_chart6"></unset>
+                    </condition>
+                    <condition value="mem_chart4">
+                        <set token="mem_chart4">true</set>
+                        <unset token="mem_chart1"></unset>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart5"></unset>
+                        <unset token="mem_chart6"></unset>
+                    </condition>
+                    <condition value="mem_chart5">
+                        <set token="mem_chart5">true</set>
+                        <unset token="mem_chart1"></unset>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart4"></unset>
+                        <unset token="mem_chart6"></unset>
+                    </condition>
+                    <condition value="mem_chart6">
+                        <set token="mem_chart6">true</set>
+                        <unset token="mem_chart1"></unset>
+                        <unset token="mem_chart2"></unset>
+                        <unset token="mem_chart3"></unset>
+                        <unset token="mem_chart4"></unset>
+                        <unset token="mem_chart5"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <chart depends="$mem_chart1$" rejects="$show_null_alert_realmem$">
+                <title></title>
                 <search base="RealMem_Global">
                     <query>search $frameID$ $hostname$ | timechart useother=t limit=10 count by hostname</query>
                     <progress>
@@ -441,8 +552,8 @@
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkB2" rejects="$show_null_alert_realmem$">
-                <title>Events</title>
+            <table depends="$mem_chart2$" rejects="$show_null_alert_realmem$">
+                <title></title>
                 <search base="RealMem_Global">
                     <query>search $frameID$ $hostname$</query>
                 </search>
@@ -453,8 +564,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkB3" rejects="$show_null_alert_realmem$">
-                <title>TOP chart count</title>
+            <chart depends="$mem_chart3$" rejects="$show_null_alert_realmem$">
+                <title></title>
                 <search base="RealMem_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -481,8 +592,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkB4" rejects="$show_null_alert_realmem$">
-                <title>TOP Stats count</title>
+            <table depends="$mem_chart4$" rejects="$show_null_alert_realmem$">
+                <title></title>
                 <search base="RealMem_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -493,8 +604,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkB5" rejects="$show_null_alert_realmem$">
-                <title>TOP chart value</title>
+            <chart depends="$mem_chart5$" rejects="$show_null_alert_realmem$">
+                <title></title>
                 <search base="RealMem_Global">
                     <query>search $frameID$ $hostname$ | stats max("real_memory_usage (%)") AS "real_memory_usage (%)" by hostname | sort - "real_memory_usage (%)"</query>
                 </search>
@@ -521,8 +632,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkB6" rejects="$show_null_alert_realmem$">
-                <title>TOP Stats value</title>
+            <table depends="$mem_chart6$" rejects="$show_null_alert_realmem$">
+                <title></title>
                 <search base="RealMem_Global">
                     <query>search $frameID$ $hostname$ | stats max("real_memory_usage (%)") AS "real_memory_usage (%)" by hostname | sort - "real_memory_usage (%)"</query>
                 </search>
@@ -547,7 +658,7 @@
     </search>
     <row>
         <panel>
-            <html>
+            <html id="swap">
                 <div class="safecenter">
                     <h1>SWAP</h1>
                 </div>
@@ -620,13 +731,68 @@
         </panel>
         <panel id="panelc3_setWidth_48">
             <title>Last 24 hours summary</title>
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="linkC1,linkC2,linkC3,linkC4,linkC5,linkC6"><!--Links go here-->
-                </div>
-            </html>
-            <chart id="linkC1" rejects="$show_null_alert_virtualmem$">
-                <title>Chart over time (top 10)</title>
+            <input type="link" token="swap_linkinput">
+                <label></label>
+                <choice value="swap_chart1">Chart over time (top 10)</choice>
+                <choice value="swap_chart2">Events</choice>
+                <choice value="swap_chart3">TOP chart count</choice>
+                <choice value="swap_chart4">TOP Stats count</choice>
+                <choice value="swap_chart5">TOP chart value</choice>
+                <choice value="swap_chart6">TOP Stats value</choice>
+                <default>swap_chart1</default>
+                <change>
+                    <condition value="swap_chart1">
+                        <set token="swap_chart1">true</set>
+                        <unset token="swap_chart2"></unset>
+                        <unset token="swap_chart3"></unset>
+                        <unset token="swap_chart4"></unset>
+                        <unset token="swap_chart5"></unset>
+                        <unset token="swap_chart6"></unset>
+                    </condition>
+                    <condition value="swap_chart2">
+                        <set token="swap_chart2">true</set>
+                        <unset token="swap_chart1"></unset>
+                        <unset token="swap_chart3"></unset>
+                        <unset token="swap_chart4"></unset>
+                        <unset token="swap_chart5"></unset>
+                        <unset token="swap_chart6"></unset>
+                    </condition>
+                    <condition value="swap_chart3">
+                        <set token="swap_chart3">true</set>
+                        <unset token="swap_chart1"></unset>
+                        <unset token="swap_chart2"></unset>
+                        <unset token="swap_chart4"></unset>
+                        <unset token="swap_chart5"></unset>
+                        <unset token="swap_chart6"></unset>
+                    </condition>
+                    <condition value="swap_chart4">
+                        <set token="swap_chart4">true</set>
+                        <unset token="swap_chart1"></unset>
+                        <unset token="swap_chart2"></unset>
+                        <unset token="swap_chart3"></unset>
+                        <unset token="swap_chart5"></unset>
+                        <unset token="swap_chart6"></unset>
+                    </condition>
+                    <condition value="swap_chart5">
+                        <set token="swap_chart5">true</set>
+                        <unset token="swap_chart1"></unset>
+                        <unset token="swap_chart2"></unset>
+                        <unset token="swap_chart3"></unset>
+                        <unset token="swap_chart4"></unset>
+                        <unset token="swap_chart6"></unset>
+                    </condition>
+                    <condition value="swap_chart6">
+                        <set token="swap_chart6">true</set>
+                        <unset token="swap_chart1"></unset>
+                        <unset token="swap_chart2"></unset>
+                        <unset token="swap_chart3"></unset>
+                        <unset token="swap_chart4"></unset>
+                        <unset token="swap_chart5"></unset>
+                    </condition>
+                </change>
+            </input>
+            <chart depends="$swap_chart1$" rejects="$show_null_alert_virtualmem$">
+                <title></title>
                 <search base="VirtualMem_Global">
                     <query>search $frameID$ $hostname$ | timechart useother=t limit=10 count by hostname</query>
                     <progress>
@@ -663,8 +829,8 @@
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkC2" rejects="$show_null_alert_virtualmem$">
-                <title>Events</title>
+            <table depends="$swap_chart2$" rejects="$show_null_alert_virtualmem$">
+                <title></title>
                 <search base="VirtualMem_Global">
                     <query>search $frameID$ $hostname$</query>
                 </search>
@@ -675,8 +841,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkC3" rejects="$show_null_alert_virtualmem$">
-                <title>TOP chart count</title>
+            <chart depends="$swap_chart3$" rejects="$show_null_alert_virtualmem$">
+                <title></title>
                 <search base="VirtualMem_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -703,8 +869,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkC4" rejects="$show_null_alert_virtualmem$">
-                <title>TOP Stats count</title>
+            <table depends="$swap_chart4$" rejects="$show_null_alert_virtualmem$">
+                <title></title>
                 <search base="VirtualMem_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -715,8 +881,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkC5" rejects="$show_null_alert_virtualmem$">
-                <title>TOP chart value</title>
+            <chart depends="$swap_chart5$" rejects="$show_null_alert_virtualmem$">
+                <title></title>
                 <search base="VirtualMem_Global">
                     <query>search $frameID$ $hostname$ | stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
                 </search>
@@ -743,8 +909,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkC6" rejects="$show_null_alert_virtualmem$">
-                <title>TOP Stats value</title>
+            <table depends="$swap_chart6$" rejects="$show_null_alert_virtualmem$">
+                <title></title>
                 <search base="VirtualMem_Global">
                     <query>search $frameID$ $hostname$ | stats max("virtual_memory_usage (%)") AS "virtual_memory_usage (%)" by hostname | sort - "virtual_memory_usage (%)"</query>
                 </search>
@@ -769,9 +935,9 @@
     </search>
     <row>
         <panel>
-            <html>
+            <html id="filesystem">
                 <div class="safecenter">
-                    <h1>FS</h1>
+                    <h1>FILE-SYSTEMS</h1>
                 </div>
             </html>
         </panel>
@@ -842,13 +1008,68 @@
         </panel>
         <panel id="paneld3_setWidth_48">
             <title>Last 24 hours summary</title>
-            <html>
-                <!-- Placeholder/container for the link switcher to appear -->
-                <div class="link-switcher" data-items="linkD1,linkD2,linkD3,linkD4,linkD5,linkD6"><!--Links go here-->
-                </div>
-            </html>
-            <chart id="linkD1" rejects="$show_null_alert_fs$">
-                <title>Chart over time (top 10)</title>
+            <input type="link" token="fs_linkinput">
+                <label></label>
+                <choice value="fs_chart1">Chart over time (top 10)</choice>
+                <choice value="fs_chart2">Events</choice>
+                <choice value="fs_chart3">TOP chart count</choice>
+                <choice value="fs_chart4">TOP Stats count</choice>
+                <choice value="fs_chart5">TOP chart value</choice>
+                <choice value="fs_chart6">TOP Stats value</choice>
+                <default>fs_chart1</default>
+                <change>
+                    <condition value="fs_chart1">
+                        <set token="fs_chart1">true</set>
+                        <unset token="fs_chart2"></unset>
+                        <unset token="fs_chart3"></unset>
+                        <unset token="fs_chart4"></unset>
+                        <unset token="fs_chart5"></unset>
+                        <unset token="fs_chart6"></unset>
+                    </condition>
+                    <condition value="fs_chart2">
+                        <set token="fs_chart2">true</set>
+                        <unset token="fs_chart1"></unset>
+                        <unset token="fs_chart3"></unset>
+                        <unset token="fs_chart4"></unset>
+                        <unset token="fs_chart5"></unset>
+                        <unset token="fs_chart6"></unset>
+                    </condition>
+                    <condition value="fs_chart3">
+                        <set token="fs_chart3">true</set>
+                        <unset token="fs_chart1"></unset>
+                        <unset token="fs_chart2"></unset>
+                        <unset token="fs_chart4"></unset>
+                        <unset token="fs_chart5"></unset>
+                        <unset token="fs_chart6"></unset>
+                    </condition>
+                    <condition value="fs_chart4">
+                        <set token="fs_chart4">true</set>
+                        <unset token="fs_chart1"></unset>
+                        <unset token="fs_chart2"></unset>
+                        <unset token="fs_chart3"></unset>
+                        <unset token="fs_chart5"></unset>
+                        <unset token="fs_chart6"></unset>
+                    </condition>
+                    <condition value="fs_chart5">
+                        <set token="fs_chart5">true</set>
+                        <unset token="fs_chart1"></unset>
+                        <unset token="fs_chart2"></unset>
+                        <unset token="fs_chart3"></unset>
+                        <unset token="fs_chart4"></unset>
+                        <unset token="fs_chart6"></unset>
+                    </condition>
+                    <condition value="fs_chart6">
+                        <set token="fs_chart6">true</set>
+                        <unset token="fs_chart1"></unset>
+                        <unset token="fs_chart2"></unset>
+                        <unset token="fs_chart3"></unset>
+                        <unset token="fs_chart4"></unset>
+                        <unset token="fs_chart5"></unset>
+                    </condition>
+                </change>
+            </input>
+            <chart depends="$fs_chart1$" rejects="$show_null_alert_fs$">
+                <title></title>
                 <search base="FileSystem_Global">
                     <query>search $frameID$ $hostname$ | timechart useother=t limit=40 count by hostname</query>
                     <progress>
@@ -885,8 +1106,8 @@
                 <option name="height">400</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkD2" rejects="$show_null_alert_fs$">
-                <title>Events</title>
+            <table depends="$fs_chart2$" rejects="$show_null_alert_fs$">
+                <title></title>
                 <search base="FileSystem_Global">
                     <query>search $frameID$ $hostname$</query>
                 </search>
@@ -897,8 +1118,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkD3" rejects="$show_null_alert_fs$">
-                <title>TOP chart count</title>
+            <chart depends="$fs_chart3$" rejects="$show_null_alert_fs$">
+                <title></title>
                 <search base="FileSystem_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -925,8 +1146,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkD4" rejects="$show_null_alert_fs$">
-                <title>TOP Stats count</title>
+            <table depends="$fs_chart4$" rejects="$show_null_alert_fs$">
+                <title></title>
                 <search base="FileSystem_Global">
                     <query>search $frameID$ $hostname$ | top hostname</query>
                 </search>
@@ -937,8 +1158,8 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart id="linkD5" rejects="$show_null_alert_fs$">
-                <title>TOP chart value</title>
+            <chart depends="$fs_chart15" rejects="$show_null_alert_fs$">
+                <title></title>
                 <search base="FileSystem_Global">
                     <query>search $frameID$ $hostname$ | stats max("% usage") AS "% usage" by hostname | sort - "% usage"</query>
                 </search>
@@ -965,8 +1186,8 @@
                 <option name="charting.legend.placement">right</option>
                 <option name="refresh.display">none</option>
             </chart>
-            <table id="linkD6" rejects="$show_null_alert_fs$">
-                <title>TOP Stats value</title>
+            <table depends="$fs_chart6$" rejects="$show_null_alert_fs$">
+                <title></title>
                 <search base="FileSystem_Global">
                     <query>search $frameID$ $hostname$ | stats max("% usage") AS "% usage" by hostname,device | sort - "% usage"</query>
                 </search>
