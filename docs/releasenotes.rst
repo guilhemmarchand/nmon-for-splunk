@@ -15,6 +15,22 @@ Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=======
+V1.9.0:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
+
+This is a major release of the Nmon application:
+
+- Major release of technical add-ons v1.3.0: fifo implementation for AIX and Linux drastically reduce the CPU footprint on client servers
+- Choose between legacy csv and json data generation: you can now choose to generate performance data in json format and prioritize storage over performance and licensing volume
+- Searches optimization and rationalisation (globally use the host Splunk Metadata instead of hostname field)
+- TA-nmon issues (Removal of recursive stanza in inputs.conf #21, Increase the interval for nmon_cleaning #18)
+
+
 
 =======
 V1.8.6:
