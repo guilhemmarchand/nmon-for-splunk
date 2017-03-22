@@ -59,8 +59,8 @@ groupby host prestats=true
         </panel>
     </row>
     <search id="GlobalSearch">
-        <query>| multisearch
-[ | tstats latest("Nmon_Config.uptime") AS uptime_seconds, latest("Nmon_Config.event_epoch") AS last_report from datamodel=NMON_Config where (nodename = Nmon_Config) (sourcetype=nmon_config) (Nmon_Config.OStype = "Linux") ($host$) groupby host prestats=true ]
+        <query>| tstats latest("Nmon_Config.uptime") AS uptime_seconds, latest("Nmon_Config.event_epoch") AS last_report from datamodel=NMON_Config where (nodename = Nmon_Config) (sourcetype=nmon_config) (Nmon_Config.OStype = "Linux") ($host$) groupby host prestats=true
+| append
 [ | tstats latest("Uptime.uptime") AS external_uptime latest(Uptime.event_epoch) as external_last_report from datamodel=NMON_Config.Uptime where (nodename = Uptime) (Uptime.OStype = "Linux") (Uptime.uptime = "*") ($host$) groupby host prestats=true ]
 | stats dedup_splitvals=t
 latest("Nmon_Config.uptime") AS uptime_seconds, latest("Nmon_Config.event_epoch") AS last_report, latest("Uptime.uptime") AS external_uptime latest(Uptime.event_epoch) as external_last_report by host
@@ -121,8 +121,8 @@ latest("Nmon_Config.uptime") AS uptime_seconds, latest("Nmon_Config.event_epoch"
             </single>
             <chart>
                 <search>
-                    <query>| multisearch
-[ | tstats latest("Nmon_Config.uptime") AS uptime_seconds from datamodel=NMON_Config where (nodename = Nmon_Config) (sourcetype=nmon_config) (Nmon_Config.OStype = "Linux") ($host$) groupby _time, host prestats=true span=1d ]
+                    <query>| tstats latest("Nmon_Config.uptime") AS uptime_seconds from datamodel=NMON_Config where (nodename = Nmon_Config) (sourcetype=nmon_config) (Nmon_Config.OStype = "Linux") ($host$) groupby _time, host prestats=true span=1d
+| append
 [ | tstats latest("Uptime.uptime") AS external_uptime_seconds from datamodel=NMON_Config.Uptime where (nodename = Uptime) (Uptime.OStype = "Linux") (Uptime.uptime = "*") ($host$) groupby _time, host prestats=true span=1d ]
 | stats dedup_splitvals=t
 latest("Nmon_Config.uptime") AS uptime_seconds, latest("Uptime.uptime") AS external_uptime_seconds by _time, host
