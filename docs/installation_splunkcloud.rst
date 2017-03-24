@@ -6,9 +6,11 @@ Deploy to Splunk Cloud
 
 Nmon Performance Monitor is entirely compatible with a Splunk Cloud deployment, offering 100% of app functionality to monitor your own servers.
 
-However, please note that Splunk does not allow any application to monitor Cloud instances performances, such as the deployment matrix differs from on premise installations:
+However, please note that Splunk does not allow any application to monitor Cloud instances performances, such as the deployment matrix differs from on premise installations.
 
-*On Splunk Cloud instances you will deploy (or ask Splunk to deploy):*
+**Nmon Performance Monitor is a vetted Cloud application, that will be deployed by Splunk Cloud staff on demand.**
+
+*Matrix deployment for Splunk Cloud:*
 
 +-----------------------------------+------------+---------------+
 | Splunk Instance                   | Core App   | PA-nmon_light |
@@ -28,71 +30,23 @@ You will then deploy the TA-nmon addon to your servers to send nmon data to Splu
 Step 1: Deploy Nmon Core Application to Splunk Cloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Install Nmon Core App
-"""""""""""""""""""""
-
-Once connected to your Splunk Cloud instance, go to the Application menu management:
-
-.. image:: img/install_splunkcloud1.png
-   :alt: install_splunkcloud1.png
-   :align: center
-
-Search for the Nmon App and confirm installation:
-
-.. image:: img/install_splunkcloud2.png
-   :alt: install_splunkcloud2.png
-   :align: center
-
-Finally, Nmon Performance Monitor is installed:
-
-.. image:: img/install_splunkcloud3.png
-   :alt: install_splunkcloud3.png
-   :align: center
+Splunk Cloud staff will deploy the Nmon core application to your search head nodes.
 
 Step 2: Deploy the PA-nmon_light to indexers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are running indexers independently from Cloud search heads, you must deploy (or ask Splunk to deploy) the PA-nmon_light package which is included in the resources directory of the Nmon core application.
-
+The PA-nmon_light has to be deployed on Splunk inndexers by Splunk Cloud staff.
 This package creates the nmon index and embeds all configuration required at indexing time.
 
-If you have only a standalone Splunk Cloud instance, there is no need to deploy the PA-nmon_light, just ensure to create the nmon index after the installation of the core application. (step 1)
-
-Step 3: Deploy TA-nmon to your Universal Forwarders
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 3: Deploy the TA-nmon to your Universal Forwarders
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The last step is to deploy the TA-nmon (or derived) to your servers running a Splunk Universal forwarder.
 
 Configure Forwarding to Splunk Cloud
 """"""""""""""""""""""""""""""""""""
 
-If you haven't already, open the Universal Forwarder Application and follow instructions to install and configure your Universal Forwarder instances to send data to Splunk Cloud:
-
-**Open the Universal Forwarder App:**
-
-.. image:: img/install_splunkcloud6.png
-   :alt: install_splunkcloud6.png
-   :align: center
-
-**Follow instructions and install Splunk Credentials:**
-
-.. image:: img/install_splunkcloud7.png
-   :alt: install_splunkcloud7.png
-   :align: center
-
-*If this is your first Universal Forwarder deployment to Splunk Cloud, you can easily validate your installation by confirming the Universal Forwarders sends data to Splunk Cloud:*
-
-**Search Splunk internal events:**
-
-::
-
-    index=_internal
-
-**As exposed above, you should see incoming events from your host, example:**
-
-.. image:: img/install_splunkcloud8.png
-   :alt: install_splunkcloud8.png
-   :align: center
+This step is part of a Splunk Cloud deployment, your Universal Forwarders instances have to be configured with the authentication application provded by Splunk Cloud staff.
 
 Deploying the TA-nmon
 """""""""""""""""""""

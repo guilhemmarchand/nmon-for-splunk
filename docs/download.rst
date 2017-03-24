@@ -16,11 +16,6 @@ The Nmon Performance Monitor is hosted on a Github project, you can freely downl
 
 The TA-nmon has also its own Github project: https://github.com/guilhemmarchand/TA-nmon
 
-An alternative version of the TA-nmon called "TA-nmon_selfmode" is also available for download from Github: https://github.com/guilhemmarchand/TA-nmon_selfmode
-
-*This TA-nmon alternative package is supported on Splunk instances and will implement an input script to monitor nmon files instead of the Splunk TailRead / ArchiveProcessor, you should only use in case of unexpected issue with Splunk.*
-
-
 **About main branches and associated versions:**
 
 +------------------------------------------------------------+------------+----------+----------+
