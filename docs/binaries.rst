@@ -4,25 +4,49 @@ Scripts and Binaries
 
 **Scripts and Binaries embedded in Nmon Performance Monitor**
 
-The Application has various scripts and binaries that are required for data generation, data processing and management.
+Only the technical addons contains binaries and scripts materials.
 
 *Since the major release V1.7.4, the core application does bring any data generation releated components*
 
 Scripts and binaries are shared in exactly same versions between the PA-nmon add-on and the TA-nmon add-on.
 
-****************
-Embedded Scripts
-****************
+************************************
+Embedded Scripts in technical addons
+************************************
+
+**nmon_helper:**
 
  * bin/nmon_helper.sh:
 
 This shell script is being used by the application to launch Nmon binaries whenever it is detected as required
+
+Since the release 1.3.0 of technical addons, it is as well responsible for the launch of the fifo readers and consumers processes.
+
+**fifo_reader:**
+
+* bin/fifo_reader.pl
+* bin/fifo_reader.py
+* bin/fifo_reader.sh
+
+These scripts are continuously running as back ground processes on server running the technical addons.
+Their purpose is to read the fifo files (named pipe) nmon processes are writing to, and extract the different typologies of data from them nmon data
+
+**fifo_consumer:**
+
+* bin/fifo_consumer.sh
+
+This script is scheduled by default to run every 60 seconds.
+Its purpose to recompose the nmon flaw of data to be parsed by the nmon parser scripts. (see bellow)
+
+**nmon_parser:**
 
  * bin/nmon2csv.sh | bin/nmon2csv.py | bin/nmon2csv.pl:
 
 Shell / Python / Perl scripts used to manage and process Nmon raw data into multiple csv files being indexed by Splunk
 
 The Shell script is a wrapper script to Python / Perl scripts. (decision is made on local interpreter avaibility with Python as the default choice)
+
+**nmon_cleaner:**
 
  * bin/nmon_cleaner.sh / bin/nmon_cleaner.py / nmon_cleaner.pl
 
@@ -32,7 +56,13 @@ Alternatively, it will also ensure that no outdated csv data is being left by Sp
 
 The Shell script is a wrapper script to Python / Perl scripts. (decision is made on local interpreter avaibility with Python as the default choice)
 
+**Additional resources:**
+
+*App customizer:*
+
  * resources/Nmon_SplunkApp_Customize.py.gz:
+
+*Agent builder:*
 
 Python script (provided compressed, must be uncompressed before use) that allows complex and automatic customization of the Application to fit your company standards, such as renaming the Application root directory, changing the data index name, changing PA-nmon and TA-nmon add-on root directories
 
@@ -40,9 +70,9 @@ Python script (provided compressed, must be uncompressed before use) that allows
 
 Python script (provided compressed, must be uncompressed before use) that allows creating supplementary TA-nmon add-on custom packages to manage deployment for different scenarios from the same root (allows for example having a specific TA-nmon package for AIX servers that custom modifications, and another for Linux servers)
 
-*****************
-Embedded Binaries
-*****************
+*************************************
+Embedded Binaries in technical addons
+*************************************
 
 *Since the major release V1.7.4, the core application does bring any data generation releated components*
 
@@ -80,13 +110,6 @@ Associated scripts resource (nmon_helper.sh) will try to use the better version 
 
 sarmon binaries comes from the official sarmon site project.
 
-**About AIX**:
+**For AIX**:
 
 Nmon is shipped within AIX by default with topas-nmon, such that there is no need for embedded binaries.
-
-
-
-
-
-
-
