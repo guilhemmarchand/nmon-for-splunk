@@ -47,13 +47,18 @@ define(function(require, exports, module) {
 			var cookie_name_suffix = this.settings.get('cookie_name_suffix') == "" ? "" : '_' + this.settings.get('cookie_name_suffix');
             var ck_name = 'scc_takethetour_' + SplunkUtils.getCurrentApp() + cookie_name_suffix;
 
+            // set expiration for 1 year
+            var d = new Date();
+            d.setTime(d.getTime() + (365*24*60*60*1000));
+            var ck_expires = "expires="+d.toUTCString();
+
             function getCookie(ck_name) {
 				var oRegex = new RegExp("(?:; )?" + ck_name + "=([^;]*);?");
 				return oRegex.test(document.cookie) ? decodeURIComponent(RegExp["$1"]) : null;
 			}
             
 			function setCookie(ck_name) {
-				document.cookie = ck_name + "= scc-takethetour";
+				document.cookie = ck_name + "= scc-takethetour" + ";" + ck_expires;
 			}
 				
 			// GENERATE BOOTSTRAP MODAL
