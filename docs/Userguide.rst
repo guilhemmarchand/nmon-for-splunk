@@ -1296,6 +1296,8 @@ For each accelerated Data model, please rebuild the acceleration to update the f
 
 **Manage Application Packaging**
 
+.. _create_agent_py:
+
 ++++++++++++++++++++++++++++++++++++++++++++
 create_agent.py: Create multiple TA packages
 ++++++++++++++++++++++++++++++++++++++++++++
@@ -1372,6 +1374,8 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
      - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
 
     Operation terminated.
+
+.. _Nmon_SplunkApp_Customize_py:
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Nmon_SplunkApp_Customize.py: Customize the Application
