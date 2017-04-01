@@ -7,7 +7,12 @@ Official Splunk certified release
 
 The official and Splunk certified release of the Nmon core application can be downloaded from Splunk Base: https://splunkbase.splunk.com/app/1753
 
+TA-nmon
+=======
+
 The official release of the TA-nmon can be downloaded from Splunk Base: https://splunkbase.splunk.com/app/3248
+
+Note: The TA-nmon is NOT Splunk certified for some reasons, specially because it contains various binaries, and this would restrict the TA-nmon functionaries.
 
 Github releases
 ===============
@@ -38,11 +43,19 @@ You can download and install Nmon Performance monitor App directly from git usin
     git clone https://github.com/guilhemmarchand/nmon-for-splunk.git
     mv nmon-for-splunk nmon
 
-And you can also download the project content as zip archives from the Github web page.
-
 **IMPORTANT**:
 
 When downloading from Github, you MUST rename the directory to "nmon" or the Application will be broken
+
+For the TA-nmon:
+
+::
+
+    git clone https://github.com/guilhemmarchand/TA-nmon.git
+
+
+And you can also download the project content as zip archives from the Github web page.
+
 
 Stopped releases for old Splunk versions
 ========================================
@@ -62,7 +75,3 @@ https://github.com/guilhemmarchand/nmon-for-splunk/releases
 * Last version compatible with Splunk 6.4.x and Splunk 6.3.x with release 1.7.9 (Splunk certified)
 
 https://github.com/guilhemmarchand/nmon-for-splunk/releases
-
-
-
-
