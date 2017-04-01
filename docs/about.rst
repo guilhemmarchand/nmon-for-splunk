@@ -52,8 +52,6 @@ Consult the TA-nmon documentation: http://ta-nmon.readthedocs.io
 
 The TA-nmon add-on available in the resources directory of the core application is designed to be installed on Universal Forwarders end clients or Heavy Forwarders, it is only compatible with Splunk 6.x (Splunk 5.x and prior will not be able to extract fields definition from generated data, leading to the application being unable to analyse performance data)
 
-The TA-nmon_selfmode is an alternative version of the TA-nmon that does not use the "unarchive_cmd" feature of Splunk, instead of this, the package implements a script input that will monitor nmon files and call required operation. Unless you have an unexpected issue with Splunk (and the unarchive_cmd feature), the TA-nmon should be used.
-
 The PA-nmon add-on available in the resources directory of the core application is designed to be installed on indexers (clusters or standalone), it is compatible with Splunk 6.x (Splunk 5.x shall not be used as the App intensively uses data model acceleration which is not available in Splunk 5.x and prior)
 
 The PA-nmon_light add-on is an alternative version of the PA-nmon that is designed to be installed on indexers (clusters or standalone) that **must not** monitor performances (such as Splunk cloud indexers), this package only contains parsing configuration. It excludes any kind of binaries, inputs or scripts.
@@ -72,7 +70,9 @@ Index creation
 
 Since the major release V1.7, the core application does not create anymore any index at installation time.
 
-An index called "nmon" must be created manually by Splunk administrators.
+An index called "nmon" must be created manually by Splunk administrators for the default indexing.
+
+Note: The application supports any index starting with the "nmon*" name, however the default index for the TA-nmon inputs is set to "nmon" index.
 
 In distributed deployments using clusters of indexers, the PA-nmon add-on will automatically creates the "nmon" replicated index.
 

@@ -44,29 +44,14 @@ How it works
 
 **In a few words, here is how the App works:**
 
-* After installation, the App is ready to be used, out of the Box
-
-* The Application will create a dedicated index called "nmon"
-
-Default installation has a file monitor that watches for any new nmon file located in $SPLUNK_HOME/var/nmon_repository (note: $SPLUNK_HOME refers to the Splunk root directory of your installation)
-
-When a new file is found by Splunk Archive Processor (such as any monitored file or directory), Splunk will call a third party Python or Perl script
-
-* Converter scripts "nmon2csv.py / nmon2csv.pl" will translate nmon performance data into multiple csv files in $SPLUNK_HOME/var/nmon/var/csv_repository
-
-* Converter scripts "nmon2csv.py / nmon2csv.pl" will translate nmon configuration data into a single csv file in $SPLUNK_HOME/var/nmon/var/config_repository
-
-These csv files are indexed by Splunk in "batch" mode, meaning index and delete (this is volatile data)
-
-Once indexed, NMON Data is immediately available in various provided views and dashboards
+* The Nmon core application contains all the views, data models, configurations and related objects
+* The TA-nmon which is the technical addon for the Nmon Performance application contains binaries and scripts to manage the nmon data
+* The TA-nmon once installed starts immediately to collect and transforms nmon performance and configuration data
+* The default configuration indexes data into the "nmon" index
 
 *********************
 Splunk Data structure
 *********************
-
-**Within the index nmon, the data is stored in several sourcetypes**
-
-**Since the version 1.6.14, the application uses eventtypes**
 
 ---------
 nmon_data
@@ -142,7 +127,9 @@ Available packages
 
 The PA-nmon and TA-nmon packages are available in the **resources** directory of the Nmon core application you download in Splunk Base.
 
+The TA-nmon is also available independently in Splunk base:
 
+* https://splunkbase.splunk.com/app/3248
 
 
 

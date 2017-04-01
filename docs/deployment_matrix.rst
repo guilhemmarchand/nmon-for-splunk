@@ -15,7 +15,7 @@ What goes where ?
 
 * **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
 
-**Since July 2016, the TA-nmon is also available for download as an independant application in Splunk base:** https://splunkbase.splunk.com/app/3248/
+**The TA-nmon is also available for download as an independant application in Splunk base:** https://splunkbase.splunk.com/app/3248/
 
 *NB: The TA-nmon_selfmode is deprecated since version 1.3.0 of the technical addons*
 
@@ -23,7 +23,7 @@ What goes where ?
 
 +------------------------+------------+---------------+---------------+
 | Splunk Instance        | Core App   | PA-nmon       | TA-nmon       |
-| (role)                 |            | (and derived) | (and derived) |
+| (role)                 |            | (and derived) |               |
 +========================+============+===============+===============+
 | Standalone             |     X      |               | X (optional)  |
 +------------------------+------------+---------------+---------------+

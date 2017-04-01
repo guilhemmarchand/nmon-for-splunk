@@ -35,9 +35,13 @@ Companies using this great piece are kindly invited to subscribe for a professio
 Github
 ++++++
 
-**The Nmon Performance application is hosted on Github at the following location:**
+**The Nmon Performance application is hosted on Github:**
 
-https://github.com/guilhemmarchand/nmon-for-splunk
+* https://github.com/guilhemmarchand/nmon-for-splunk
+
+**The TA-nmon, technical addon for Nmon Performance application, is hosted on Github:**
+
+* https://github.com/guilhemmarchand/TA-nmon
 
 Use Github to open an issue for errors and bugs to be reported, or to ask for enhancements requests.
 
@@ -49,9 +53,13 @@ Splunk Answers
 
 **Splunk has a strong community of active users and Splunk Answers is an important source of information.**
 
-Access previous messages of users or open your own discussion:
+Access previous messages of users or open your own discussion for the Nmon core application:
 
-http://answers.splunk.com/answers/app/1753
+* http://answers.splunk.com/answers/app/1753
+
+Access previous messages of users or open your own discussion for the TA-nmon technical addon:
+
+* https://splunkbase.splunk.com/app/3248
 
 ++++++++++++++++++++
 Google Group Support
@@ -59,6 +67,6 @@ Google Group Support
 
 **An App dedicated Google Group has been created:**
 
-https://groups.google.com/d/forum/nmon-splunk-app
+* https://groups.google.com/d/forum/nmon-splunk-app
 
 This is also a great source of support from people using the Application, and you can also (if you subscribe to mailing news) receive important notifications about the App evolution, such as main release announcements.

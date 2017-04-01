@@ -6,7 +6,9 @@ Scripts and Binaries
 
 *Since the major release V1.7.4, the core application does not bring any data generation related components*
 
-**Technical addon: please consult the TA-nmon dedicated documentation:** http://ta-nmon.readthedocs.io
+**Technical addon: please consult the TA-nmon dedicated documentation:**
+
+* http://ta-nmon.readthedocs.io
 
 The Nmon core application embeds a few scripted tools to be used for advanced customization purposes, as described above
 
