@@ -271,336 +271,9 @@ Interfaces using data models will as well immediately reflect changes, however y
 Main Configuration Files
 ************************
 
------------
-inputs.conf
------------
+The nmon core application does not collect performance and configuration data, for these items please refer to the TA-nmon documentation:
 
-Since the major release V1.7, all data generation pieces were migrated to the TA-nmon and PA-nmon add-on, these information are only valid for these add-on and the core application does not implement any input anymore
-
-Here is the default configuration for inputs.conf file provided by the TA-nmon and PA-nmon technical add-ons.
-
-Since the Application root directory will vary depending on the fact your running the Application on an indexer (PA-nmon) or Heavy / Universal Forwarder (TA-nmon), the normal root directory is being replace with the pattern "<root_directory>" in this configuration documentation.
-
-See the configuration file provided within the Application to see original configuration.
-
-Since the major release V1.7, and following Splunk requirements for certification criteria, the main working directory were migrated from $SPLUNK_HOME/var/run to $SPLUNK_HOME/var/log
-
-+++++++++++++++++++++++++++
-01 - Nmon raw data monitor:
-+++++++++++++++++++++++++++
-
-::
-
-    [monitor://$SPLUNK_HOME/var/log/nmon/var/nmon_repository/*.nmon]
-
-    disabled = false
-    followTail = 0
-    recursive = false
-    index = nmon
-    sourcetype = nmon_processing
-    crcSalt = <SOURCE>
-
-This input stanza configuration is responsible in managing nmon raw data files produced by nmon binaries, themselves launched by the nmon_helper.sh script.
-
-Because a large part of the nmon raw data file won't change until a new file is being generated, the "crcSalt" option is required.
-
-The input is associated with the "nmon_processing" configuration in props.conf.
-When a new nmon file, or a current nmon file is updated, Splunk will output the content of the file to the converter script defined in props.conf.
-
-++++++++++++++++++++++++++++++++++++++++
-02 - Nmon Performance csv data indexing:
-++++++++++++++++++++++++++++++++++++++++
-
-::
-
-    [batch://$SPLUNK_HOME/var/log/nmon/var/csv_repository/*nmon*.csv]
-
-    disabled = false
-    move_policy = sinkhole
-    recursive = false
-    crcSalt = <SOURCE>
-    index = nmon
-    sourcetype = nmon_data
-    # source override: to prevent Metadata from having millions of entry, the source is overriden by default
-    # You can disable this for trouble shooting purposes if required
-    source = perfdata
-
-This input monitor will index within Splunk csv data produced by nmon2csv Python or Perl converter.
-
-Note that csv files are being indexed in "batch" mode, which means indexing and deleting files.
-
-Under common circumstances (unless you are managing large number of nmon file for example with a NFS central nmon repositories), there shall never be any file here as they are indexed and deleted once generated.
-
-++++++++++++++++++++++++++++++++++++++++++
-03 - Nmon Configuration csv data indexing:
-++++++++++++++++++++++++++++++++++++++++++
-
-::
-
-    [batch://$SPLUNK_HOME/var/log/nmon/var/config_repository/*nmon*.csv]
-
-    disabled = false
-    move_policy = sinkhole
-    recursive = false
-    crcSalt = <SOURCE>
-    index = nmon
-    sourcetype = nmon_config
-    # source override: to prevent Metadata from having millions of entry, the source is overriden by default
-    # You can disable this for trouble shooting purposes if required
-    source = configdata
-
-This input monitor will index within Splunk csv configuration data produced by nmon2csv Python or Perl converter.
-
-This concerns the AAA and BBB* sections of nmon that contains configuration produced by the nmon binary.
-
-Note that csv files are being indexed in "batch" mode, which means indexing and deleting files.
-
-Nmon for Splunk will use these data to identify important information such as the type of Operating System (used to provide Operating System selector) and configuration data inventory. (see the lookup table nmon_inventory)
-
-+++++++++++++++++++++++++++++++++
-04 - nmon_helper.sh input script:
-+++++++++++++++++++++++++++++++++
-
-::
-
-    [script://./bin/nmon_cleaner.sh --cleancsv]
-    disabled = false
-    index = nmon
-    interval = 600
-    source = nmon_cleaner
-    sourcetype = nmon_clean
-
-This input is responsible for launching nmon instances when required, it is associated with the nmon_helper.sh input script.
-
-In default configuration, it is launched every minute, its activity is indexed within Splunk in the nmon_collect sourcetype.
-
----------
-nmon.conf
----------
-
-**Customizing Nmon related parameters**
-
-Technical add-ons will allow you to configure various settings of parameters used at the nmon binary startup by using a local definition of "nmon.conf" file.
-
-The "nmon.conf" file is located in the "default" directory of nmon / TA-nmon / PA-nmon Apps, it works in a "Splunk" fashion, to modify these settings, copy the default/non.conf to local/nmon.conf. (upgrade resilient)
-This configuration file is sourced at starting time by the "nmon_helper.sh" input script which apply these settings.
-
-**Since the version 1.2.51 of add-ons, you can configure on a per server basis using a /etc/nmon.conf, precedence:**
-
-- default/nmon.conf defines parameters on a default basis
-- local/nmon.conf can be embedded in your deployment for your own parameters that will be applied to all servers running the agent version
-- /etc/nmon.conf if exists on the server will be applied to define parammeters on a per server basis
-
-**To set custom properties, create a local/nmon.conf and/or /etc/nmon.conf file and set parameters:**
-
-+++++++++++++++++++
-INTERVAL & SNAPSHOT
-+++++++++++++++++++
-
-**A number of preset configurations are provided for proposal:**
-
-::
-
-   # The "longperiod_high" mode is a good compromise between accuracy, CPU / licensing cost and operational intelligence, and can be used in most case
-   # Reducing CPU foot print can be achieved using one of the following modes, increasing the interval value and limiting the snapshot value are the factors that will impact the TA footprint
-   # If you observe a too large CPU footprint on your servers, please choose a different mode, or a custom mode
-
-   # Available modes for proposal below:
-
-   #	shortperiod_low)
-   #			interval="60"
-   #			snapshot="10"
-
-   #	shortperiod_middle)
-   #			interval="30"
-   #			snapshot="20"
-
-   #	shortperiod_high)
-   #			interval="20"
-   #			snapshot="30"
-
-   #	longperiod_low)
-   #			interval="240"
-   #			snapshot="120"
-
-   #	longperiod_middle)
-   #			interval="120"
-   #			snapshot="120"
-
-   #	longperiod_high)
-   #			interval="60"
-   #			snapshot="120"
-
-   # custom --> Set a custom interval and snapshot value, if unset short default values will be used (see custom_interval and custom_snapshot)
-
-   # Default is longperiod_high
-   mode="longperiod_high"
-
-
-    Note that the CPU usage associated with Nmon and Splunk processing steps, the data volume to be generated and the licensing cost are a combination of these factors
-
-
-
-
-
-
-
-++++++++++++++
-NFS Statistics
-++++++++++++++
-
-**NFS options for AIX and Linux: Activate NFS statistics:**
-
-NFS statistics generation is deactivated by default for AIX and Linux (NFS statistics are not applicable for Solaris)
-
-To activate NFS statistics generation, you must activate this in a local/nmon.conf, as shown bellow:
-
-::
-
-    ### NFS OPTIONS ###
-
-    # Change to "1" to activate NFS V2 / V3 (option -N) for AIX hosts
-    AIX_NFS23="0"
-
-    # Change to "1" to activate NFS V4 (option -NN) for AIX hosts
-    AIX_NFS4="0"
-
-    # Change to "1" to activate NFS V2 / V3 / V4 (option -N) for Linux hosts
-    # Note: Some versions of Nmon introduced a bug that makes Nmon to core when activating NFS, ensure your version is not outdated
-    Linux_NFS="0"
-
-++++++++++++++++++++++++++++++++++++
-End time marging (Nmon parallel run)
-++++++++++++++++++++++++++++++++++++
-
-Nmon processes generated by technical add-ons have specific time of live which is the computation of INTERVAL * SNAPSHOT.
-
-Between two run of nmon collections, there can be several minutes required by nmon to collect configuration items before starting collecting performance metrics, moreover on very large systems.
-
-For this reason, a parallel run of two nmon concurrent processes will occur a few minutes before the current process ends, which prevents from having gaps in charts and data.
-
-This feature can be controlled by changing the value of the endtime_margin, and can also be totally deactivated if you like:
-
-::
-
-    ### VARIOUS COMMON OPTIONS ###
-
-    # Time in seconds of margin before running a new iteration of Nmon process to prevent data gaps between 2 iterations of Nmon
-    # the nmon_helper.sh script will spawn a new Nmon process when the age in seconds of the current process gets higher than this value
-
-    # The endtime is evaluated the following way:
-    # endtime=$(( ${interval} * ${snapshot} - ${endtime_margin} ))
-
-    # When the endtime gets higher than the endtime_margin, a new Nmon process will be spawned
-    # default value to 240 seconds which will start a new process 4 minutes before the current process ends
-
-    # Setting this value to "0" will totally disable this feature
-
-    endtime_margin="240"
-
-
-+++++++++++++++++++++++++
-Linux OS specific options
-+++++++++++++++++++++++++
-
-**Embedded nmon binaries versus locally available nmon binaries**
-
-In default configuration, the "nmon_helper.sh" script will always give the priority to embedded nmon binary.
-
-The Application has embedded binaries specifically compiled for almost every Linux OS and versions, such that you can manage from a center place nmon versions for all your Linux hosts!
-
-The nmon_helper.sh script will proceed as above:
-
-* Search for an embedded binary that suits processor architecture, Linux OS version (example: RHEL), that suite vendor version (example: RHEL 7) and vendor subversion (RHEL 7.1)
-  Best result will be achieved using /etc/os-release file, if not available specific information file will be searched (example: /etc/issue, /etc/redhat-release, etc…)
-* In the worst case (no binary found for vendor OS (example: Linux RHEL), the nmon_helper.sh search for generic binary that fits the local processor architecture
-* If none of these options are possible, the script will search for nmon binary in PATH
-* If this fails, the script exists in error, this information will stored in Splunk and shown in home page error counter
-
-::
-
-    ### LINUX OPTIONS ###
-
-    # Change the priority applied while looking at nmon binary
-    # by default, the nmon_helper.sh script will use any nmon binary found in PATH
-    # Set to "1" to give the priority to embedded nmon binaries
-    # Note: Since release 1.6.07, priority is given by default to embedded binaries
-    Linux_embedded_nmon_priority="1"
-
-**Unlimited capture**
-
-Recently introduced, you can set nmon linux to run its mode of capture in unlimited mode, specially for the TOP section (processes) and block devices.
-
-*CAUTION: This option is experimental and can cause increasing volume of data to be generated*
-
-::
-
-    # Change the limit for processes and disks capture of nmon for Linux
-    # In default configuration, nmon will capture most of the process table by capturing main consuming processes
-    # You can set nmon to an unlimited number of processes to be captured, and the entire process table will be captured.
-    # Note this will affect the number of disk devices captured by setting it to an unlimited number.
-    # This will also increase the volume of data to be generated and may require more cpu overhead to process nmon data
-    # The default configuration uses the default mode (limited capture), you can set bellow the limit number of capture to unlimited mode
-    # Change to "1" to set capture of processes and disks to no limit mode
-    Linux_unlimited_capture="0"
-
-**Maximum number of disk devices**
-
-The maximum number of disk devices to be taken in charge by nmon for Linux has to be set at starting time.
-
-*Note that currently, nmon2csv parsers have a hard limit at 3000 devices*
-
-::
-
-    # Set the maximum number of devices collected by Nmon, default is set to 1500 devices
-    # Increase this value if you have systems with more devices
-    # Up to 3000 devices will be taken in charge by the Application (hard limit in nmon2csv.py / nmon2csv.pl)
-    Linux_devices="1500"
-
-**disk extended statistics:**
-
-::
-
-    # Enable disks extended statistics (DG*)
-    # Default is true, which activates and generates DG statistics
-    Linux_disk_dg_enable="1"
-
-    # Name of the User Defined Disk Groups file, "auto" generates this for you
-    Linux_disk_dg_group="auto"
-
-+++++++++++++++++++++++++++
-Solaris OS specific options
-+++++++++++++++++++++++++++
-
-**Using a local/nmon.conf file, you can activate the generation of statistics for VxVM volumes:**
-
-
-::
-
-    ### SOLARIS OPTIONS ###
-
-    # CHange to "1" to activate VxVM volumes IO statistics
-    Solaris_VxVM="0"
-
-**You can manage the activation / deactivation of UARG generation: (full commands arguments)**
-
-::
-
-    # UARG collection (new in Version 1.11), Change to "0" to deactivate, "1" to activate (default is activate)
-    Solaris_UARG="1"
-
-+++++++++++++++++++++++
-AIX OS specific options
-+++++++++++++++++++++++
-
-**For AIX hosts, you can customize the full command line sent to nmon at launch time, at the exception of NFS options. (see previous section)**
-
-::
-
-    # Change this line if you add or remove common options for AIX, do not change NFS options here (see NFS options)
-    # the -p option is mandatory as it is used at launch time to save instance pid
-    AIX_options="-f -T -A -d -K -L -M -P -^ -p"
-
+http://ta-nmon.readthedocs.io
 
 ----------
 props.conf
@@ -608,47 +281,8 @@ props.conf
 
 **props.conf - nmon sourcetypes definition**
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-01 - Nmon raw data source stanza to nmon2csv converters
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-**These stanza are linked with the nmon_processing sourcetype wich contains the output of Nmon raw data conversion operated by nmon2csv converters.**
-
-*TA-nmon:*
-
-::
-
-    [source::.../*.nmon]
-    invalid_cause = archive
-    unarchive_cmd = $SPLUNK_HOME/etc/apps/TA-nmon/bin/nmon2csv.sh --mode realtime
-    sourcetype = nmon_processing
-    NO_BINARY_CHECK = true
-
-    [source::.../*.nmon.gz]
-    invalid_cause = archive
-    unarchive_cmd = gunzip | $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.sh
-    sourcetype = nmon_processing
-    NO_BINARY_CHECK = true
-
-
-*PA-nmon (clustered indexer):*
-
-::
-
-    [source::.../*.nmon]
-    invalid_cause = archive
-    unarchive_cmd = $SPLUNK_HOME/bin/splunk cmd $SPLUNK_HOME/etc/slave-apps/PA-nmon/bin/nmon2csv.sh --mode realtime
-    sourcetype = nmon_processing
-    NO_BINARY_CHECK = true
-
-    [source::.../*.nmon.gz]
-    invalid_cause = archive
-    unarchive_cmd = gunzip | $SPLUNK_HOME/bin/splunk cmd $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.sh
-    sourcetype = nmon_processing
-    NO_BINARY_CHECK = true
-
 +++++++++++++++++++++++++++++++++++++
-02 - Nmon Performance Data definition
+01 - Nmon Performance Data definition
 +++++++++++++++++++++++++++++++++++++
 
 **This stanza defines the nmon_data sourcetype wich contains Nmon Performance data.**
@@ -681,7 +315,7 @@ This uses csv format defined by csv header, and time stamp definition adapted fo
 It is being used by associated input monitor in props.conf that consumes csv data from csv_repository.
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
-03 - Nmon Processing definition (output of nmon2csv)
+02 - Nmon Processing definition (output of nmon2csv)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 **This stanza sets the appropriated time format for indexing of nmon2csv converters.**
@@ -694,7 +328,7 @@ It is being used by associated input monitor in props.conf that consumes csv dat
     This sourcetype contains useful information about processing steps operated by converters, such as the list of Nmon section proceeded, the number of events per section, processing various information and more.
 
 +++++++++++++++++++++++++++++++++++++++
-04 - Nmon Configuration Data definition
+03 - Nmon Configuration Data definition
 +++++++++++++++++++++++++++++++++++++++
 
 **This stanza defines the nmon_config sourcetype wich contains Nmon Configuration data.**
@@ -720,23 +354,52 @@ Events stored within this sourcetype are large multi line events containing item
 transforms.conf
 ---------------
 
-**Notable configuration used in default transforms.conf will concern the host default field override:**
+**Notable configuration used in default transforms.conf:**
 
 ::
 
     ###########################################
-    #            nmon data stanza                        #
+    #			nmon data stanza
     ###########################################
 
     # Host override based on event data form nmon_data sourcetype
 
     [nmon_data_hostoverride]
     DEST_KEY = MetaData:Host
-    REGEX = ^[a-zA-Z0-9\_]+\,[a-zA-Z0-9\-\_\.]+\,([a-zA-Z0-9\-\_\.]+)\,.+
+    REGEX = ^\"{0,1}[a-zA-Z0-9\_]+\"{0,1},\"{0,1}[a-zA-Z0-9\-\_\.]+\"{0,1},\"{0,1}([a-zA-Z0-9\-\_\.]+)\"{0,1},.+
     FORMAT = host::$1
 
+    # New with 1.2.55, allows the perf data generation in json mode
+    # rewrite the sourcetype to regular nmon_data
+
+    [nmon_data_json_hostoverride]
+    DEST_KEY = MetaData:Host
+    REGEX = \"hostname\":\s\"([a-zA-Z0-9\-\_\.]+)\"
+    FORMAT = host::$1
+
+    [nmon_data_json_sourcetypeoverride]
+    DEST_KEY = MetaData:Sourcetype
+    REGEX = .*
+    FORMAT = sourcetype::nmon_data
+
+    # the following stanza will create **indexed time** fields, to be used when choosing the json search time extraction only
+    # creating fields at indexing time is usually not recommended and not necessary
+    # however, we want to be able to use the tstats command over some basic fields including Splunk meta but as well the basic fields in Nmon context: OStype, type
+
+    [nmon_data_json_createindexed_OStype]
+    REGEX = \"OStype\":\s\"(?<OStype>[^\"]*)\"
+    WRITE_META = true
+    FORMAT = OStype::$1
+    DEFAULT_VALUE = NULL
+
+    [nmon_data_json_createindexed_type]
+    REGEX = \"type\":\s\"(?<type>[^\"]*)\"
+    WRITE_META = true
+    FORMAT = type::$1
+    DEFAULT_VALUE = NULL
+
     ###########################################
-    #            nmon config stanza                    #
+    #			nmon config stanza
     ###########################################
 
     # Host override based on event data form nmon_config sourcetype
