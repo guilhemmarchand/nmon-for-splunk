@@ -1260,115 +1260,160 @@ STEP 1: Checking Splunk internal events
 
 In such a case, connect directly to the host and verify messages in /opt/splunkforwarder/var/log/splunkd.log
 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-STEP 2: Verify Nmon Data Collect (Binary starting process)
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++
+STEP 2: Verify the TA-nmon behaviors
+++++++++++++++++++++++++++++++++++++
 
-**The first level directly related to Nmon Perf App starts with the "nmon_collect", this is process that will start Nmon binary on remote hosts.**
+This section refers to the TA-nmon trouble shooting guide: http://ta-nmon.readthedocs.io/en/latest/troubleshoot.html
 
-This relies on the "input" script "nmon_helper.sh" which is scheduled to run every minute by default.
+Expected running processes
+""""""""""""""""""""""""""
 
-**The output of nmon_helper.sh script is logged within the sourcetype=nmon_collect:**
+Since the 1.3.x branch, you should find various processes running:
+
+* 1 x nmon process (or 2 x nmon processes during the parallel interval)
+* 1 x main Perl or Python fifo_reader process (or 2 x processes during the parallel interval)
+* 1 x subshell fifo_reader process (or 2 x processes during the parallel interval)
+
+*On a Linux box:*
+
+.. image:: img/TA-nmon/troubleshoot1.png
+   :alt: troubleshoot1.png
+   :align: center
+
+*On AIX, the nmon process will be called "topas-nmon"*
+
+*On Solaris, the sarmon process will be called "sadc"*
+
+Starting processes
+""""""""""""""""""
+
+If you run in trouble and want to troubleshoot the situation, the easiest approach is stopping Splunk, kill existing nmon process and run the tasks manually:
+
+* Stop Splunk and kill the nmon process::
+
+    ./splunk stop
+
+.. image:: img/TA-nmon/troubleshoot2.png
+   :alt: troubleshoot2.png
+   :align: center
+
+You will observe that killing the nmon process will automatically terminate the fifo_reader.pl|.py and the subshell fifo_reader.sh.
+This the expected behavior, and mandatory.
+
+If the processes do not stop, then your problem became mine and please open an issue !
+
+* Now we can manually starting the processes, example::
+
+    /opt/splunkforwarder/bin/splunk cmd /opt/splunkforwarder/etc/apps/TA-nmon/bin/nmon_helper.sh
+
+*Please adapt the paths to your context*
+
+.. image:: img/TA-nmon/troubleshoot3.png
+   :alt: troubleshoot3.png
+   :align: center
+
+**Let's summarize what happened here:**
+
+* nmon_helper.sh starts the fifo reader, if there is no fifo_reader running, the "fifo1" process will be started
+* the fifo_reader.pl|.py starts a fifo_reader.sh process in the background
+* nmon_helper.sh starts the nmon process which will write its data to the relevant fifo file
+* the nmon process cannot start if the fifo_reader has not started
+
+If something unexpected happens and that the fifo_reader and nmon process do not start normally, you may want to trouble shoot the nmon_helper.sh script.
+
+You can do very easily by commenting out "# set -x", re-run the script and analyse the output. (you might need to add the set-x within the functions as well)
+
+Checking fifo_reader processes
+""""""""""""""""""""""""""""""
+
+The fifo_reader processes will continuously read the fifo file writen by the nmon process, and generate various dat files that represent the different typologies of nmon data:
+
+.. image:: img/TA-nmon/troubleshoot4.png
+   :alt: troubleshoot4.png
+   :align: center
+
+**How this it work?**
+
+* The fifo_reader.sh reads every new line of data writen to the fifo file (named pipe) and sends the data to the fifo_reader.pl|.py
+* The fifo_reader.pl|.py parses the lines and applies various regular expressions to decide where to write the data, depending on its content
+* If there were existing *.dat files at the startup of the fifo_reader processes, those dat files are rotated and renamed to "*.rotated"
+* The nmon.fifo is not regular file but a named pipe (observe the "prw-------"), its size will always be equal to 0
+
+Checking the data parsing
+"""""""""""""""""""""""""
+
+**The parsing of those dat files is being achieved in 2 main steps:**
+
+* The "bin/fifo_consumer.sh" script is started every 60 seconds by Splunk
+* This script will check if an nmon_data.dat file exists and that its size is greater than 0
+* If the size of the nmon_dat.data file equals to 0, then the fifo_consumer.sh has nothing to do and will exit this fifo file
+* If the size is greater than 0 but its modification time (mtime) is less than 5 seconds, the script will loop until the condition is true
+* The fifo_consumer.sh reads the dat file, recompose the nmon file and stream its content to the "bin/nmon2csh.sh" shell wrapper
+* After this operation, the nmon_data.dat file will be empty for the next cycle
+* The shell wrapper reads in stdin the data, and send it to the nmon2csv parser (bin/nmon2csv.pl|.py)
+* The parser reads the nmon data, parses it and produces the final files to be indexed by Splunk
+
+Easy no ;-)
+
+You can easily run the fifo_consumer.sh manually::
+
+    /opt/splunkforwarder/bin/splunk cmd /opt/splunkforwarder/etc/apps/TA-nmon/bin/fifo_consumer.sh
+
+.. image:: img/TA-nmon/troubleshoot5.png
+   :alt: troubleshoot5.png
+   :align: center
+
+The files to be indexed by Splunk can be found in::
+
+    $SPLUNK_HOME/var/log/nmon/var/csv_repository
+    $SPLUNK_HOME/var/log/nmon/var/config_repository
+    $SPLUNK_HOME/var/log/nmon/var/json_repository
+
+Example:
+
+.. image:: img/TA-nmon/troubleshoot6.png
+   :alt: troubleshoot6.png
+   :align: center
+
+Checking Splunk indexing
+""""""""""""""""""""""""
+
+Splunk monitors those directories in "batch" mode, which means index and delete.
+
+**Once you will have restarted Splunk, all the files will be consumed and disappear in a few seconds:**
+
+.. image:: img/TA-nmon/troubleshoot7.png
+   :alt: troubleshoot7.png
+   :align: center
+
+.. image:: img/TA-nmon/troubleshoot8.png
+   :alt: troubleshoot8.png
+   :align: center
+
+.. image:: img/TA-nmon/troubleshoot9.png
+   :alt: troubleshoot9.png
+   :align: center
+
+++++++++++++++++++++++++++++++++++++++++++
+STEP 3: Nmon processing indexing in Splunk
+++++++++++++++++++++++++++++++++++++++++++
+
+**The activity of the TA-nmon "bin/nmon_helper.sh" is logged in Splunk: (startup of fifo_reader and nmon processes)**
 
 ::
 
     eventtype=nmon:collect
 
-.. image:: img/trouble3.png
-   :alt: trouble3.png
-   :align: center
-
-Search for host(s) you are troubleshooting:
-
-.. image:: img/trouble4.png
-   :alt: trouble4.png
-   :align: center
-
-The nmon process must be visible on the remote host, example:
-
-.. image:: img/trouble5.png
-   :alt: trouble5.png
-   :align: center
-
-The nmon_helper.sh generates directory structure under $SPLUNK_HOME/var/run/nmon - The nmon raw data file is stored under nmon_repository - the nmon.pid file contains the PID number of the current running Nmon binary
-
-**For debugging purposes, the nmon_helper.sh can be run manually using the following command:**
+**The activity of the TA-nmon "bin/fifo_consumer.sh" and nmon2csv parsers is logged in Splunk:**
 
 ::
 
-    /opt/splunkforwarder/bin/splunk cmd /opt/splunkforwarder/etc/apps/TA-nmon/bin/nmon_helper.sh
+    eventtype=nmon:processing
 
-*Example:*
-
-.. image:: img/trouble6.png
-   :alt: trouble6.png
+.. image:: img/processing_collect_shortcut.png
+   :alt: processing_collect_shortcut.png
    :align: center
-
-If this step is Ok, this validates that the Nmon binary is able to start and generates Nmon raw data as expected and required
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-STEP 3: Verify Nmon Data Processing (conversion of Nmon raw data into csv flaw)
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-**Next step of verification relies on verifying the Nmon processing which converts Nmon raw data for Splunk:**
-
-* Every time the nmon raw data file is updated, Splunk automatically streams the content of the file to the "nmon2csv.sh" shell wrapper
-* The "nmon2csv.sh" shell wrapper will stream the data to the Python "nmon2csv.py" converter or the Perl "nmon2csv.pl" converter
-* This will generate required data into $SPLUNK_HOME/var/run/nmon/var
-
-**The output of nmon processing is logged within the sourcetype=nmon_processing:**
-
-::
-
-    index=nmon sourcetype=nmon_processing
-
-.. image:: img/trouble7.png
-   :alt: trouble7.png
-   :align: center
-
-**Search for host(s) you are troubleshooting:**
-
-.. image:: img/trouble8.png
-   :alt: trouble8.png
-   :align: center
-
-Many useful information are automatically logged to inform about the nmon processing step, such like sections processed and number of events generated per monitor
-
-**Related internal events can also be very useful for troubleshooting purposes, if the nmon processing steps fails for some reasons (such as unsatisfied Perl dependencies or interpreter incompatibility) these information will be automatically logged by splunkd in Splunk internal events:**
-
-.. image:: img/trouble9.png
-   :alt: trouble9.png
-   :align: center
-
-*Notice that every time the nmon raw file is read by Splunk, each step of data processing is logged*
-
-**Manual processing for debugging purposes:**
-
-You can easily manually debug the nmon processing step by running following commands:
-
-::
-
-    cat <raw data file> | /opt/splunkforwarder/bin/splunk cmd /opt/splunkforwarder/etc/apps/TA-nmon/bin/nmon2csv.sh
-
-Note that as csv files generated by the Nmon processing step are automatically consumed, the easiest way to troubleshoot is stopping Splunk and running the above command
-
-**Example of debug operation stopping Splunk:**
-
-.. image:: img/trouble10.png
-   :alt: trouble10.png
-   :align: center
-
-.. image:: img/trouble11.png
-   :alt: trouble11.png
-   :align: center
-
-**After this manual troubleshoot verification, start Splunk and notice that csv files generated are automatically deleted by Splunk (batch mode indexing):**
-
-.. image:: img/trouble12.png
-   :alt: trouble12.png
-   :align: center
-
-**If this step is Ok, then you have verified that Splunk is able to correctly call nmon2csv scripts, that the conversion script is working fine and generating data as expected and finally that Splunk automatically manages files and delete them upon indexing**
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 STEP 4: Verify Nmon Performance and Configuration data
@@ -1415,44 +1460,31 @@ The "host" default field is overridden during indexing time to match Nmon data, 
 
 **nmon2csv Python / Perl converters operations can be debugged by manually running the conversion process:**
 
-**This can easily be achieved, either on nmon / TA-nmon / PA-nmon Application:**
-
-Create a temporary location for csv files, such like the normal directory structure of the App, example:
+If Splunk is running, stop Splunk:
 
 ::
 
-    $ mkdir -p /tmp/nmon2csv_debug/etc/apps/nmon
-    $ mkdir -p /tmp/nmon2csv_debug/var/run/nmon
+    $ /opt/splunkforwarder/bin/splunk stop
 
 Have an nmon file ready to test, if you don't have some to get the current copy in $SPLUNK_HOME/etc/apps/nmon/var/nmon_resposity when the Application is running
-
-Initiate conversion steps:
-
-Adapt paths if you want to debug the nmon / TA-nmon / PA-nmon App and the type of Splunk instance (standard, light forwarder, heavy forwarder, peer node…), the following example will reproduce the conversion step for the standard Application:
-
-::
-
-    $ cd /tmp/nmon2csv_debug
-
-    $ export SPLUNK_HOME="/tmp/nmon2csv_debug"
 
 **Use the shell wrapper to let him decide which converter will be used:**
 
 ::
 
-    $ cat my_file.nmon | /opt/splunk/etc/apps/nmon/bin/nmon2csv.sh
+    $ cat my_file.nmon | /opt/splunkforwarder/etc/apps/TA-nmon/bin/nmon2csv.sh
 
 **For Python version:**
 
 ::
 
-    $ cat my_file.nmon | /opt/splunk/etc/apps/nmon/bin/nmon2csv.py
+    $ cat my_file.nmon | /opt/splunkforwarder/etc/apps/TA-nmon/bin/nmon2csv.py
 
 **For Perl version:**
 
 ::
 
-    $ cat my_file.nmon | /opt/splunk/etc/apps/nmon/bin/nmon2csv.pl
+    $ cat my_file.nmon | /opt/splunkforwarder/etc/apps/TA-nmon/bin/nmon2csv.pl
 
 The converter will output its processing steps and generate various csv files in csv_repository and config_repository
 
@@ -1647,43 +1679,6 @@ If you running the PA-nmon or an indexer cluster where you have already manually
 
 Clean the default/inputs.conf and local/inputs.conf on the search head
 If you were generating performance and configuration data at the search head level using the Nmon core application, you should delete these files as they are not useful anymore.
-
-**RUNNING SPLUNK 6.3 ?**
-
-This release has a specific compatibility with Splunk 6.3, a few actions are required:
-
-* Download and update the Nmon Performance application
-* If it does not exit, create a directory "local/ui/views" and copy compatibility mode versions of the following views from default to local, such that these views will overcharge defaults views:
-
-*Example:*
-
-::
-
-    cd /opt/splunk/etc/apps/nmon
-    mkdir -p local/data/ui/views
-
-    cp -p default/data/ui/views/Dashboard_bulletcharts_compat.xml local/data/ui/views/Dashboard_bulletcharts.xml
-    cp -p default/data/ui/views/Nmon_Summary_compat.xml local/data/ui/views/Nmon_Summary.xml
-    cp -p default/data/ui/views/UI_Nmon_CPU_ALL_compat.xml local/data/ui/views/UI_Nmon_CPU_ALL.xml
-    cp -p default/data/ui/views/UI_Nmon_CPUnn_compat.xml local/data/ui/views/UI_Nmon_CPUnn.xml
-    cp -p default/data/ui/views/UI_Nmon_MEM_LINUX_compat.xml local/data/ui/views/UI_Nmon_MEM_LINUX.xml
-    cp -p default/data/ui/views/UI_RT_Nmon_CPU_ALL_compat.xml local/data/ui/views/UI_RT_Nmon_CPU_ALL.xml
-
-**Provided starting version 1.7.6, you can also apply a Splunk 6.3 limited compatibility version of savedsearches.conf to prevent from having error messagees for invalid stanza at splunk startup:**
-
-*CAUTION: Overwriting the default/savedsearches.conf is not upgrade resilient, next update will overwrite the file*
-
-::
-
-    cp -p resources/various_customization/savedsearches.conf_forsplunk63.txt default/savedsearches.conf
-
-**If you are using a search head cluster, these modifications will take place in the SHC deployer:**
-
-::
-
-    cd /opt/splunk/etc/shcluster/apps/nmon
-
-*Restart Splunk or deploy the sh cluster bundle if running a search head cluster*
 
 **STEP 2. DEPLOY THE TA-NMON ON SEARCH HEADS IF RELEVANT**
 
