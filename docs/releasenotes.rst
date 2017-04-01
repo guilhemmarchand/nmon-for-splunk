@@ -23,14 +23,12 @@ V1.9.0:
 
 Please review update notes: http://nmon-for-splunk.readthedocs.io/en/latest/Userguide.html#additional-upgrade-notes-migrating-from-release-prior-to-version-1-7-x
 
-This is a major release of the Nmon application:
+This is a major release of the Nmon application and the TA-nmon:
 
-- Major release of technical add-ons v1.3.0: fifo implementation (for AIX and Linux) drastically reduce the CPU and other resources footprint on client servers
-- Extend Nmon data with the nmon_external scripts, just add you own monitor (Shell, Perl, Python, REST... whatever) and extend the content of nmon data to match your needs
-- Customize in a persistent fashion the list of performance monitors to be parsed (using the nmonparser_config.json)
-- Choose between legacy csv and json data generation: you can now choose to generate performance data in json format and prioritize storage over performance and licensing volume
+For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
+
+- TA-nmon new branch: fantastic foot print reduction with the fifo implementation, extend data with nmon external, various bug fixes (read TA-nmon release notes)
 - Optimization and rationalisation (globally use the host Splunk Metadata instead of historical hostname field)
-- TA-nmon issues (Removal of recursive stanza in inputs.conf #21, Increase the interval for nmon_cleaning #18, Correction of ID identification for PowerLinux)
 - Nmon cores issues (multisearch and tstats incompatible in distributed for the Disk KV generation)
 
 =======
