@@ -21,8 +21,6 @@ Installation for distributed deployments
 
 * **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
 
-* **TA-nmon_selfmode**: Available in the resources directory of the Core App (tgz archive)
-
 +-----------------------------------+------------+---------------+---------------------+
 | Splunk Instance                   | Core App   | PA-nmon       | TA-nmon             |
 | (role)                            |            | (and derived) | (and derived)       |

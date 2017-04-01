@@ -20,11 +20,9 @@ Installation for standalone instance
 
 * **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
 
-* **TA-nmon_selfmode**: Available in the resources directory of the Core App (tgz archive)
-
 +------------------------+------------+---------------+-------------------+
 | Splunk Instance        | Core App   | PA-nmon       | TA-nmon           |
-| (role description)     |            | (and derived) | (and derived)     |
+| (role description)     |            | (and derived) |                   |
 +========================+============+===============+===================+
 | Standalone             |     X      |               | X (optional)      |
 +------------------------+------------+---------------+-------------------+
@@ -97,14 +95,10 @@ Access the Application
    :alt: install_access2.png
    :align: center
 
-Activating performance and configuration collect
-================================================
+Generating performance and configuration data
+=============================================
 
 If you are running Splunk on **Linux, AIX or Solaris**, then you can generate Nmon performance data for the local machine running Splunk.
-
-*Since the major release V1.7.4, the data collection has been removed from the core application, you must deploy the TA-nmon add-on*
-
-**CAUTION:** You cannot install more than one TA-nmon in the same machine, for instance do not deploy the TA-nmon and the TA-nmon_selfmode in teh same time, this won't work.
 
 *Replace the TA-nmon_XXXX.tgz with current release of the TA-nmon:*
 
