@@ -46,6 +46,8 @@ The last release can be downloaded from Splunk base: https://splunkbase.splunk.c
 
 **Compatibility matrix for TA-nmon and PA-nmon technical add-ons:**
 
+Consult the TA-nmon documentation: http://ta-nmon.readthedocs.io
+
 * Both add-ons are compatible with any Splunk version 6.x (full instance of Universal Forwarder)
 
 The TA-nmon add-on available in the resources directory of the core application is designed to be installed on Universal Forwarders end clients or Heavy Forwarders, it is only compatible with Splunk 6.x (Splunk 5.x and prior will not be able to extract fields definition from generated data, leading to the application being unable to analyse performance data)
