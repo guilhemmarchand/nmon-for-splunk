@@ -14,15 +14,13 @@ Installation for standalone instance
 
 * **Core App**: This is the full package you download in Splunk Base (tgz archive)
 
-* **PA-nmon**: Available in the resources directory of the Core App (tgz archive)
-
 * **PA-nmon_light**: Available in the resources directory of the Core App (tgz archive)
 
 * **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
 
 +------------------------+------------+---------------+-------------------+
-| Splunk Instance        | Core App   | PA-nmon       | TA-nmon           |
-| (role description)     |            | (and derived) |                   |
+| Splunk Instance        | Core App   | PA-nmon_light | TA-nmon           |
+| (role description)     |            |               |                   |
 +========================+============+===============+===================+
 | Standalone             |     X      |               | X (optional)      |
 +------------------------+------------+---------------+-------------------+
@@ -100,6 +98,19 @@ Generating performance and configuration data
 
 If you are running Splunk on **Linux, AIX or Solaris**, then you can generate Nmon performance data for the local machine running Splunk.
 
+*Replace the PA-nmon_light_XXXX.tgz with current release of the PA-nmon_light:*
+
+::
+
+    cd /opt/splunk/etc/apps/
+    tar -xvf /opt/splunk/etc/apps/nmon/resources/PA-nmon_light_XXXX.tgz
+
+And restart Splunk:
+
+::
+
+    /opt/splunk/bin/splunk restart
+
 *Replace the TA-nmon_XXXX.tgz with current release of the TA-nmon:*
 
 ::
@@ -112,4 +123,3 @@ And restart Splunk:
 ::
 
     /opt/splunk/bin/splunk restart
-

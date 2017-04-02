@@ -9,15 +9,16 @@ What goes where ?
 
 * **Core App**: This is the full package you download in Splunk Base (tgz archive)
 
-* **PA-nmon**: Available in the resources directory of the Core App (tgz archive)
-
 * **PA-nmon_light**: Available in the resources directory of the Core App (tgz archive)
 
 * **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
 
-**The TA-nmon is also available for download as an independant application in Splunk base:** https://splunkbase.splunk.com/app/3248/
+**The TA-nmon is also available for download as an independent application in Splunk base:** https://splunkbase.splunk.com/app/3248/
 
-*NB: The TA-nmon_selfmode is deprecated since version 1.3.0 of the technical addons*
+*NB:**
+
+* The TA-nmon_selfmode is deprecated since the unarchive_cmd feature isn't used anymore
+* The PA-nmon is deprecated since the TA-nmon operates now in clustered indexers
 
 **Standalone deployment: A single Splunk instance does all**
 
@@ -33,7 +34,7 @@ What goes where ?
 **Distributed deployment:**
 
 +--------------------------------------------+------------+---------------------------+---------------------+
-| Splunk Instance                            | Core App   | PA-nmon (and derived)     | TA-nmon             |
+| Splunk Instance                            | Core App   | PA-nmon_light             | TA-nmon             |
 | (role)                                     |            |                           |                     |
 +============================================+============+===========================+=====================+
 | Search head (single instance or clustered) |     X      |                           |    X (optional)     |
@@ -53,13 +54,8 @@ What goes where ?
 
 **FAQ:**
 
-* What is the difference between the PA-nmon and the TA-nmon ?
+* What is the difference between the PA-nmon_light and the TA-nmon ?
 
-*The PA-nmon is the light add-on dedicated for indexers, it is very closed to the TA-nmon, but it is adapted to
-be able to automatically generate Nmon performance data for your distributed indexers.
-The PA-nmon add-on will be included in the bundle configuration published to indexers by the master node.*
+The PA-nmon_light does not contain any binaries, scripts or inputs. It is designed to be installed on indexers. (standalone or clustered)
 
-* What is the difference between the PA-nmon and the PA-nmon_light ?
-
-*The PA-nmon_light does not contain any binaries, scripts or inputs. It is designed to be installed on indexers (standalone or clustered) that must not monitor performance of indexers, such as Splunk Cloud indexer instances.
-As such, the PA-nmon_light can be used instead of the PA-nmon to ensure correct event indexing in your deployment.*
+This package will define the default "nmon" index and the relevant configuration for indexing time.

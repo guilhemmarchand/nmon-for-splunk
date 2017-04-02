@@ -15,15 +15,13 @@ Installation for distributed deployments
 
 * **Core App**: This is the full package you download in Splunk Base (tgz archive)
 
-* **PA-nmon**: Available in the resources directory of the Core App (tgz archive)
-
 * **PA-nmon_light**: Available in the resources directory of the Core App (tgz archive)
 
 * **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
 
 +-----------------------------------+------------+---------------+---------------------+
-| Splunk Instance                   | Core App   | PA-nmon       | TA-nmon             |
-| (role)                            |            | (and derived) |                     |
+| Splunk Instance                   | Core App   | PA-nmon_light | TA-nmon             |
+| (role)                            |            |               |                     |
 +===================================+============+===============+=====================+
 | Search head (single or clustered) |     X      |               |    X (optional)     |
 +-----------------------------------+------------+---------------+---------------------+
@@ -38,7 +36,7 @@ Installation for distributed deployments
 | Universal Forwarder               |            |               |    X                |
 +-----------------------------------+------------+---------------+---------------------+
 
-*The TA-nmon and PA-nmon provide nmon performance and configuration collection for the host than runs the add-on, which is optional.*
+*The TA-nmon provides nmon performance and configuration collection for the host than runs the add-on, which is optional.*
 
 *The PA-nmon_light does not generate any collection, but defines the replicated nmon index and contains index time configuration settings.*
 
@@ -50,17 +48,15 @@ Installation for distributed deployments
 * Standalone search heads
 * Search heads in a sh cluster
 
-*Note: Search heads in sh pooling deployment is a deprecated behavior, and has been replaced advantageously by sh clusters*
-
 .. image:: img/steps_summary_distributed.png
    :alt: steps_summary_distributed.png
    :align: center
 
-1. Deploying the PA-nmon or PA-nmon_light on indexers
------------------------------------------------------
+1. Deploying the PA-nmon_light and TA-nmon (optional) on indexers
+-----------------------------------------------------------------
 
-1.1. Deploying the PA-nmon or PA-nmon_light on clustered indexers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1.1. Deploying on clustered indexers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We will assume your indexers are already operational, in the case of a new installation, remember to activate port receiving to allow the indexer to retrieve data.
 
@@ -74,16 +70,16 @@ If required (eg. new installation), this can be easily achieved:
     Where 9997 (default) will be the receiving port for Splunk Forwarder connections
 
 
-Deploying the PA-nmon on clustered indexers
-"""""""""""""""""""""""""""""""""""""""""""
+Deploying the PA-nmon_light on clustered indexers
+"""""""""""""""""""""""""""""""""""""""""""""""""
 
 *ALL THESE ACTION MUST BE DONE ON THE MASTER NODE*
 
 **Remind:**
 
-* If you don't want to collect performance and configuration data from your indexers, deploy the PA-nmon_light
+* If you don't want to collect performance and configuration data from your indexers, deploy only the PA-nmon_light
 
-* If you want to collect performance and configuration data from your indexers, deploy the PA-nmon
+* If you want to collect performance and configuration data from your indexers, deploy both the PA-nmon_light and TA-nmon
 
 **Download the Application tar.gz archive from:**
 
@@ -98,9 +94,9 @@ https://splunkbase.splunk.com/app/1753/
 
     tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems*.tgz
 
-**PA-nmon:**
+**TA-nmon: (optional)**
 
-The PA-nmon is a tar.gz archive located in the "resources" of the core Application
+The TA-nmon is a tar.gz archive located in the "resources" of the core Application
 
 It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
@@ -108,7 +104,7 @@ It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/mas
 
     cd /opt/splunk/etc/master/apps
 
-    tar -xvzf /tmp/nmon/resources/PA-nmon_1*.tar.gz
+    tar -xvzf /tmp/nmon/resources/TA-nmon_*.tar.gz
 
 **PA-nmon_light:**
 
@@ -147,8 +143,8 @@ Settings --> Indexer Clustering
    :alt: cluster1.png
    :align: center
 
-1.2. Deploying the PA-nmon on standalone indexers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1.2. Deploying the PA-nmon_light and TA-nmon (optional) on standalone indexers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 *ALL THESE ACTION MUST BE DONE FOR EACH STANDALONE INDEXER*
 
@@ -166,65 +162,35 @@ Extract the content of the archive on your indexer in a temporary directory, exa
 
     tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems*.tgz
 
-The PA-nmon is a tar.gz archive located in the "resources" of the core Application
+**Remind:**
 
-It must be uncompressed and installed in the indexer in $SPLUNK_HOME/etc/apps/ (where $SPLUNK_HOME refers to the root directory of Splunk installation)
+* If you don't want to collect performance and configuration data from your indexers, deploy only the PA-nmon_light
+
+* If you want to collect performance and configuration data from your indexers, deploy both the PA-nmon_light and TA-nmon
+
+**TA-nmon: (optional)**
+
+The TA-nmon is a tar.gz archive located in the "resources" of the core Application
+
+It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
 ::
 
     cd /opt/splunk/etc/apps
 
-    tar -xvzf /tmp/nmon/resources/PA-nmon*.tar.gz
+    tar -xvzf /tmp/nmon/resources/TA-nmon_*.tar.gz
 
-In default configuration, the PA-nmon is able to generate Nmon Performance data. (which is why the PA-nmon contains file inputs and script inputs)
+**PA-nmon_light:**
 
-*if you don't want this, you can create a local/inputs.conf to deactivate these features:*
+The PA-nmon_light is a tar.gz archive located in the "resources" of the core Application
 
-::
-
-    cd /opt/splunk/etc/apps/PA-nmon
-
-    mkdir local
-
-    cp -p default/inputs.conf local/
-
-    <edit local/inputs.conf>
-
-    <replace:>
-
-    disabled = false
-
-    <by:>
-
-    disabled = true
-
-If you want to get Performance data to be generated automatically by the Application on your standalone indexers, you must set a custom configuration of props.conf (only applicable for standalone indexers):
+It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
 ::
 
-    cd /opt/splunk/etc/apps/PA-nmon
+    cd /opt/splunk/etc/apps
 
-    mkdir local
-
-    cp -p default/props.conf local/
-
-    <edit local/props.conf>
-
-    <replace:>
-
-    unarchive_cmd = $SPLUNK_HOME/bin/splunk cmd $SPLUNK_HOME/etc/slave-apps/PA-nmon/bin/nmon2csv.sh
-
-    <by:>
-
-    unarchive_cmd = $SPLUNK_HOME/bin/splunk cmd $SPLUNK_HOME/etc/apps/PA-nmon/bin/nmon2csv.sh
-
-    And:
-
-    unarchive_cmd = gunzip | $SPLUNK_HOME/bin/splunk cmd $SPLUNK_HOME/etc/slave-apps/PA-nmon/bin/nmon2csv.sh
-
-    By:
-
-    unarchive_cmd = gunzip | $SPLUNK_HOME/bin/splunk cmd $SPLUNK_HOME/etc/apps/nmon/bin/nmon2csv.sh
+    tar -xvzf /tmp/nmon/resources/PA-nmon_light_*.tar.gz
 
 **Restart the indexer:**
 
@@ -232,8 +198,8 @@ If you want to get Performance data to be generated automatically by the Applica
 
     splunk restart
 
-2. Deploying the Core App and TA-nmon to search heads
------------------------------------------------------
+2. Deploying the Core App and TA-nmon (optional) to search heads
+----------------------------------------------------------------
 
 
 2.1. Deploying the Nmon Core in a sh cluster
@@ -274,7 +240,7 @@ The directory has this structure:
 
 Extract the content of the core Application (the tar archive you downloaded from Splunk base) to the "apps" directory.
 
-**Since the release V1.7, the core application does not generate anymore nmon data, if you want to get performance and configuration data from your search heads, extract the content of the TA-nmon addon to the "apps" directory.**
+**The core application does not generate nmon data, if you want to get performance and configuration data from your search heads, extract the content of the TA-nmon addon to the "apps" directory.**
 
 ::
 
@@ -292,8 +258,8 @@ Finally push the configuration bundle to publish the Nmon core application to al
 
 
 
-2.2. Deploying the Nmon Core in independent search heads or search heads in sh pooling
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2.2. Deploying the Nmon Core in standalone search heads
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **For each search head:**
 
@@ -329,14 +295,14 @@ Uncompress the content of the tar.gz archive in $SPLUNK_HOME/etc/apps/ (where $S
     splunk restart
 
 
-3. Deploying the TA-nmon
-------------------------
-
+3. Deploying the TA-nmon to Heavy or Universal Forwarders
+---------------------------------------------------------
 
 The next step is to deploy the TA-nmon in every machine that must be monitored.
 
-The following tutorial asssumes you will be using the Splunk deployment server to publish the TA-nmon package to clients,
-but it also totally possible to deply the TA-nmon by any deployment tool of your choice like Pupet or Ansible.
+The following tutorial assumes that you will be using the Splunk deployment server to publish the TA-nmon package to clients.
+
+However, any other automation solution (Ansible, Chef, Puppet...) can be used with no issue.
 
 3.1 Preparing the TA-nmon on deployment servers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

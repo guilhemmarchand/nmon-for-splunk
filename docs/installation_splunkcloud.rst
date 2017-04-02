@@ -38,8 +38,8 @@ Step 2: Deploy the PA-nmon_light to indexers
 The PA-nmon_light has to be deployed on Splunk inndexers by Splunk Cloud staff.
 This package creates the nmon index and embeds all configuration required at indexing time.
 
-Step 3: Deploy the TA-nmon to your Universal Forwarders
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 3: Deploy the TA-nmon to Heavy or Universal Forwarders
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The last step is to deploy the TA-nmon (or derived) to your servers running a Splunk Universal forwarder.
 
