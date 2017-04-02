@@ -56,11 +56,11 @@ Installation for distributed deployments
    :alt: steps_summary_distributed.png
    :align: center
 
-1. Deploying the PA-nmon on indexers
-------------------------------------
+1. Deploying the PA-nmon or PA-nmon_light on indexers
+-----------------------------------------------------
 
-1.1. Deploying the PA-nmon on clustered indexers (single site or multi site)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1.1. Deploying the PA-nmon or PA-nmon_light on clustered indexers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We will assume your indexers are already operational, in the case of a new installation, remember to activate port receiving to allow the indexer to retrieve data.
 
@@ -79,6 +79,12 @@ Deploying the PA-nmon on clustered indexers
 
 *ALL THESE ACTION MUST BE DONE ON THE MASTER NODE*
 
+**Remind:**
+
+* If you don't want to collect performance and configuration data from your indexers, deploy the PA-nmon_light
+
+* If you want to collect performance and configuration data from your indexers, deploy the PA-nmon
+
 **Download the Application tar.gz archive from:**
 
 https://splunkbase.splunk.com/app/1753/
@@ -92,6 +98,8 @@ https://splunkbase.splunk.com/app/1753/
 
     tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems*.tgz
 
+**PA-nmon:**
+
 The PA-nmon is a tar.gz archive located in the "resources" of the core Application
 
 It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
@@ -100,35 +108,26 @@ It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/mas
 
     cd /opt/splunk/etc/master/apps
 
-    tar -xvzf /tmp/nmon/resources/PA-nmon*.tar.gz
+    tar -xvzf /tmp/nmon/resources/PA-nmon_1*.tar.gz
 
-In default configuration, the PA-nmon is able to generate Nmon Performance data. (which is why the PA-nmon contains file inputs and script inputs)
+**PA-nmon_light:**
 
-*if you don't want this, you can create a local/inputs.conf to deactivate these features:*
+The PA-nmon_light is a tar.gz archive located in the "resources" of the core Application
+
+It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
 ::
 
-    cd /opt/splunk/etc/master_apps/PA-nmon
+    cd /opt/splunk/etc/master/apps
 
-    mkdir local
+    tar -xvzf /tmp/nmon/resources/PA-nmon_light_*.tar.gz
 
-    cp -p default/inputs.conf local/
-
-    <edit local/inputs.conf>
-
-    <replace:>
-
-    disabled = false
-
-    <by:>
-
-    disabled = true
 
 **Publish the cluster bundle to indexers, this implies an automatic rolling restart of indexers:**
 
 ::
 
-    splunk apply cluster-bundle
+    /opt/splunk/bin/splunk apply cluster-bundle
 
 **To see the current status of the indexer cluster:**
 
@@ -136,7 +135,7 @@ In default configuration, the PA-nmon is able to generate Nmon Performance data.
 
 ::
 
-    splunk show cluster-bundle-status
+    /opt/splunk/bin/splunk show cluster-bundle-status
 
 *In Splunk Web, connected to the master node console:*
 
