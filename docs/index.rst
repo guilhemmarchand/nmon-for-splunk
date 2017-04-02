@@ -50,6 +50,7 @@ Documentation:
    installation_shcluster
    installation_splunkcloud
    installation_central_repositories
+   upgrade
    rsyslog_deployment
    syslogng_deployment
    Userguide
