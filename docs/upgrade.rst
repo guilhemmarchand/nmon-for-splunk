@@ -143,7 +143,7 @@ According to the summary of major changes, you may have to:
 Migrate from version 1.7.x to version 1.9.x
 """""""""""""""""""""""""""""""""""""""""""
 
-:ref:`update_from_version_prior_17`
+**Please refer to:** :ref:`update_from_version_prior_17`
 
 """""""""""""""""""""""""""""""""""""""""""
 Migrate from version 1.8.x to version 1.9.x
