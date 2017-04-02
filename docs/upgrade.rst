@@ -170,7 +170,7 @@ There are some changes in these releases than can require specific actions:
 
 **If you have customized the interval and/or snapshot values in "nmon.conf":**
 
-* the new TA-nmon does not use any move the same variables in nmon.conf (see http://ta-nmon.readthedocs.io/en/latest/nmon_config.html)
+* the new TA-nmon does not use any more the same variables in nmon.conf (see http://ta-nmon.readthedocs.io/en/latest/nmon_config.html)
 * the reason why is that with the fantastic gain in TA-nmon foot print, it is not required anymore to run short life nmon cycles to limit the CPU and other resources costs
 * the default and recommended life time for an nmon process is 24 hours
 * if you used to modify the "interval" value to reduce the volume of data (which is already very low!), back port this configuration in the new variables
