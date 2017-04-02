@@ -28,6 +28,7 @@ This is a major release of the Nmon application and the TA-nmon:
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
 - TA-nmon new branch: fantastic foot print reduction with the fifo implementation, extend data with nmon external, various bug fixes (read TA-nmon release notes)
+- PA-nmon and TA-nmon_selfmode are now deprecated (unified by the new TA-nmon features)
 - Optimization and rationalisation (globally use the host Splunk Metadata instead of historical hostname field)
 - Nmon cores issues (multisearch and tstats incompatible in distributed for the Disk KV generation)
 
