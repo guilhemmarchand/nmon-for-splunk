@@ -1,3 +1,6 @@
+
+.. _scripts_and_binaries:
+
 ====================
 Scripts and Binaries
 ====================
