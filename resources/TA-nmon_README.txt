@@ -4,14 +4,6 @@
 
 ### Technical add-on for Splunk Enterprise ###
 
-- TA-nmon : This is the standard Technical Add-on to be used for performance and configuration generation for the Nmon performance app
-- TA-nmon_selfmode : This an alternative version of the TA-nmon, this version will not use the unarchive_cmd Splunk feature but an input script that will monitor nmon files
-
-In most cases you will use the standard TA-nmon.
-The TA-nmon_seflmode has been created as a workaround for very rare (in my knowledge) cases where the Splunk Archive Processor does not get called by the TailReader processor after some times. (see https://answers.splunk.com/answers/436991/nmon-performance-monitor-for-unix-and-linux-system-8.html)
-
-The alternative TA-nmon_selfmode offers every feature than does the standard TA-nmon, at the exception of managing external nmon files repositories which will be possible only with the TA-nmon.
-
 ### create_agent.py : Create multiple copies of the TA-nmon with different configuration ###
 
 A Python script utility is provided to allow creating on demand custom TA-nmon packages ready to be deployed, the Python tool allows to:
@@ -59,21 +51,21 @@ optional arguments:
   
 
 
-Example of utilization: Create a custom TA package called "TA-nmon-perl" that will use "myindex" as the App index, and Perl as the Data processing language 
+Example of utilization: Create a custom TA package called "TA-nmon-qua" that will use "myindex" as the App index
 
-./create_agent.py -f nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz --agentname TA-nmon-perl --agentmode perl --indexname myindex
+./create_agent.py -f nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz --agentname TA-nmon-qua --indexname myindex
 
 Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz
 INFO: Extracting Agent tgz resources Archives
-INFO: Renaming TA-nmon default agent to TA-nmon-perl
+INFO: Renaming TA-nmon default agent to TA-nmon-qua
 Achieving files transformation...
 Done.
 INFO: Customizing any reference to index name in files
-INFO: ************* Tar creation done of: TA-nmon-perl.tar.gz *************
+INFO: ************* Tar creation done of: TA-nmon-qua.tar.gz *************
 
 *** Agent Creation terminated: To install the agent: ***
 
- - Upload the tgz Archive TA-nmon-perl.tar.gz to your Splunk deployment server
+ - Upload the tgz Archive TA-nmon-qua.tar.gz to your Splunk deployment server
  - Extract the content of the TA package in $SPLUNK_HOME/etc/deployment-apps/
  - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
 
