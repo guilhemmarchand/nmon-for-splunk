@@ -34,9 +34,9 @@ nmon is also very often used as a Capacity Planning and Performance tool by runn
 * http://nmon.sourceforge.net/pmwiki.php
 * http://www.geckotechnology.com/fr/sarmon
 
-Analysing NMON csv data is not easy because it has a very specific format Splunk cannot directly manage. (One big problem stands in the event time stamp identification which is very uncommon and defined by a non time stamp pattern)
+Analysing NMON csv data is not easy because it has a very specific format Splunk cannot directly manage. (one big problem stands in the event time stamp identification which is very uncommon and defined by a non time stamp pattern)
 
-This is why i decided to develop this App, based on my own professional experience in Unix systems Capacity Planning, to provide to anyone interested a powerful too to Analyse NMON data with an Enterprise Class Application.
+This is why I decided to develop this App, based on my own professional experience in Unix systems Capacity Planning, to provide to anyone interested a powerful too to Analyse NMON data with an Enterprise Class Application.
 
 ************
 How it works
@@ -47,7 +47,7 @@ How it works
 * The Nmon core application contains all the views, data models, configurations and related objects
 * The TA-nmon which is the technical addon for the Nmon Performance application contains binaries and scripts to manage the nmon data
 * The TA-nmon once installed starts immediately to collect and transforms nmon performance and configuration data
-* The default configuration indexes data into the "nmon" index
+* The default configuration indexes data into the "nmon" index (by default)
 
 *********************
 Splunk Data structure

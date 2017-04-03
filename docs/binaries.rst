@@ -5,7 +5,7 @@
 Scripts and Binaries
 ====================
 
-**Scripts and Binaries embedded in Nmon Performance Monitor**
+**Scripts and Binaries embedded in Nmon Performance Monitor:**
 
 *Since the major release V1.7.4, the core application does not bring any data generation related components*
 

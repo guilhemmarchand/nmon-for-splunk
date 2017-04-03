@@ -22,35 +22,35 @@ What goes where ?
 
 **Standalone deployment: A single Splunk instance does all**
 
-+------------------------+------------+---------------+---------------+
-| Splunk Instance        | Core App   | PA-nmon       | TA-nmon       |
-| (role)                 |            | (and derived) |               |
-+========================+============+===============+===============+
-| Standalone             |     X      |               | X (optional)  |
-+------------------------+------------+---------------+---------------+
++--------------------------------------------+---------------------+---------------------+---------------------+
+| Splunk Instance                            | Core App            | PA-nmon_light       | TA-nmon             |
+| (role)                                     |                     |                     |                     |
++============================================+=====================+=====================+=====================+
+| Standalone                                 |     X               |    X (optional)     |    X (optional)     |
++--------------------------------------------+---------------------+---------------------+---------------------+
 
-*The TA-nmon provides nmon performance and configuration collection for the host than runs the add-on, which is optional*
+*The TA-nmon provides performance and configuration collection for the host than runs the add-on, which is optional*
 
 **Distributed deployment:**
 
-+--------------------------------------------+------------+---------------------------+---------------------+
-| Splunk Instance                            | Core App   | PA-nmon_light             | TA-nmon             |
-| (role)                                     |            |                           |                     |
-+============================================+============+===========================+=====================+
-| Search head (single instance or clustered) |     X      |                           |    X (optional)     |
-+--------------------------------------------+------------+---------------------------+---------------------+
-| Indexer (single instance or clustered)     |            |    X                      |                     |
-+--------------------------------------------+------------+---------------------------+---------------------+
-| Master node                                |            |                           |    X (optional)     |
-+--------------------------------------------+------------+---------------------------+---------------------+
-| Deployment servers                         |            |                           |    X (optional)     |
-+--------------------------------------------+------------+---------------------------+---------------------+
-| Heavy Forwarder                            |            |                           |    X                |
-+--------------------------------------------+------------+---------------------------+---------------------+
-| Universal Forwarder                        |            |                           |    X                |
-+--------------------------------------------+------------+---------------------------+---------------------+
++--------------------------------------------+---------------------+---------------------+---------------------+
+| Splunk Instance                            | Core App            | PA-nmon_light       | TA-nmon             |
+| (role)                                     |                     |                     |                     |
++============================================+=====================+=====================+=====================+
+| Search head (single or clustered)          |     X               |                     |    X (optional)     |
++--------------------------------------------+---------------------+---------------------+---------------------+
+| Indexer (single or clustered)              |                     |    X                |                     |
++--------------------------------------------+---------------------+---------------------+---------------------+
+| Master node                                |                     |                     |    X (optional)     |
++--------------------------------------------+---------------------+---------------------+---------------------+
+| Deployment servers                         |                     |                     |    X (optional)     |
++--------------------------------------------+---------------------+---------------------+---------------------+
+| Heavy Forwarder                            |                     |                     |    X                |
++--------------------------------------------+---------------------+---------------------+---------------------+
+| Universal Forwarder                        |                     |                     |    X                |
++--------------------------------------------+---------------------+---------------------+---------------------+
 
-*The TA-nmon provides nmon performance and configuration collection for the host than runs the add-on, which is optional*
+*The TA-nmon provides performance and configuration collection for the host than runs the add-on, which is optional*
 
 **FAQ:**
 
@@ -58,4 +58,4 @@ What goes where ?
 
 The PA-nmon_light does not contain any binaries, scripts or inputs. It is designed to be installed on indexers. (standalone or clustered)
 
-This package will define the default "nmon" index and the relevant configuration for indexing time.
+This package will define the default "nmon" index and the relevant configuration items at indexing time.
