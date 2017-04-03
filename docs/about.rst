@@ -34,7 +34,7 @@ The last release can be downloaded from Splunk base: https://splunkbase.splunk.c
 
 **Compatibility matrix for core application:**
 
-* **Current major release Version 1.8.x:** Splunk 6.5.x or superior, see :any:`update_from_version_prior_17`
+* **Current major release Version 1.9.x:** Splunk 6.5.x or superior
 
 **Stopped versions for older Splunk releases:**
 
@@ -44,23 +44,23 @@ The last release can be downloaded from Splunk base: https://splunkbase.splunk.c
 
 * Last version compatible with Splunk 6.1.x, with release 1.4.902 (not Splunk certified): https://github.com/guilhemmarchand/nmon-for-splunk/blob/last_release_splunk_61x
 
-**Compatibility matrix for TA-nmon and PA-nmon technical add-ons:**
+**Compatibility matrix for TA-nmon addon:**
 
 Consult the TA-nmon documentation: http://ta-nmon.readthedocs.io
 
 * Both add-ons are compatible with any Splunk version 6.x (full instance of Universal Forwarder)
 
-The TA-nmon add-on available in the resources directory of the core application is designed to be installed on Universal Forwarders end clients or Heavy Forwarders, it is only compatible with Splunk 6.x (Splunk 5.x and prior will not be able to extract fields definition from generated data, leading to the application being unable to analyse performance data)
+The TA-nmon add-on is available in the resources directory of the core application.
 
-The PA-nmon add-on available in the resources directory of the core application is designed to be installed on indexers (clusters or standalone), it is compatible with Splunk 6.x (Splunk 5.x shall not be used as the App intensively uses data model acceleration which is not available in Splunk 5.x and prior)
+It is designed to be deployed on full Splunk instances or Universal Forwarders, **it is only compatible with Splunk 6.x.**
 
-The PA-nmon_light add-on is an alternative version of the PA-nmon that is designed to be installed on indexers (clusters or standalone) that **must not** monitor performances (such as Splunk cloud indexers), this package only contains parsing configuration. It excludes any kind of binaries, inputs or scripts.
+The PA-nmon_light add-on is a minimal addon designed to be installed on indexers (clusters or standalone), this package contains the default "nmon" index definition and parsing configuration. It excludes any kind of binaries, inputs or scripts, and does not collect nmon data.
 
 ---------------------
 Index time operations
 ---------------------
 
-The application operates index time operation, the PA-nmon add-on must be installed in indexers in order for the application to operate normally.
+The application operates index time operation, the PA-nmon_light add-on must be installed in indexers in order for the application to operate normally.
 
 If there are any Heavy forwarders acting as intermediate forwarders between indexers and Universal Forwarders, the TA-nmon add-on must deployed on the intermediate forwarders to achieve successfully index time extractions.
 
@@ -68,9 +68,11 @@ If there are any Heavy forwarders acting as intermediate forwarders between inde
 Index creation
 --------------
 
-Since the major release V1.7, the core application does not create anymore any index at installation time.
+**The Nmon core application does not create any index at installation time.**
 
-An index called "nmon" must be created manually by Splunk administrators for the default indexing.
+An index called "nmon" must be created manually by Splunk administrators to use the default TA-nmon indexing parameters. (this can be tuned)
+
+However, deploying the PA-nmon_light will automatically defines the default "nmon" index. (pre-configured for clusters replication)
 
 Note: The application supports any index starting with the "nmon*" name, however the default index for the TA-nmon inputs is set to "nmon" index.
 
@@ -83,8 +85,9 @@ Summarization implementation
 Nmon for Splunk App intensively uses data model acceleration in almost every user interfaces, reports and dashboards.
 The application provides multiple data models that have the acceleration activated by default using "All time" as the time range limit.
 
-Because of the richness of Nmon monitors, and with large deployments, accelerated data model offers an improved user experience.
-Note that some minor scheduled reports that keep users informed of the application activity in home page uses standard acceleration.
+Splunk Accelerated data models provide a great and performer user experience.
+
+The application does not use any accelerated reports.
 
 ------------------------------
 About Nmon Performance Monitor
