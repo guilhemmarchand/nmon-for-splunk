@@ -15,9 +15,9 @@ Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-========
-V1.9.01:
-========
+=======
+V1.9.1:
+=======
 
 **CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
 
