@@ -1130,7 +1130,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
             <chart>
                 <title>Avg % busy time - click on the chart to get by device view</title>
                 <search>
-                    <query>| tstats max(dg.disk_busy_time_pct) as disk_busy_time_pct from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
+                    <query>| tstats max(dg.disk_busy_time_pct) as disk_busy_time_pct from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.disk_busy_time_pct&gt;=0) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_busy_time_pct) as disk_busy_time_pct by _time, host, dg.device
 | rename "dg.device" AS device
