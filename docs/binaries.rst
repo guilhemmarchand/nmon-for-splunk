@@ -7,13 +7,13 @@ Scripts and Binaries
 
 **Scripts and Binaries embedded in Nmon Performance Monitor:**
 
-*Since the major release V1.7.4, the core application does not bring any data generation related components*
+*The Nmon core application does not collect or generate any performance and configuration data, and does not contain any related scripts or binaries*
 
 **Technical addon: please consult the TA-nmon dedicated documentation:**
 
 * http://ta-nmon.readthedocs.io
 
-The Nmon core application embeds a few scripted tools to be used for advanced customization purposes, as described above
+However, the Nmon core application contains scripted tools to be used for advanced customization purposes, as described above.
 
 ************************************
 Embedded Scripts in technical addons
@@ -27,7 +27,11 @@ Detailed documentation: :ref:`Nmon_SplunkApp_Customize_py`
 
 * resources/create_agent.py.gz:
 
-This Python script (must be uncompressed before execution) is a tool provided to create different version of the TA-nmon technical addon, such as for instance having one for your Production servers, one for non-production and sending data to different indexes.
+This Python script (must be uncompressed before execution) is a tool provided to create different version of the TA-nmon technical addon.
+
+For example, you can use it to create a specific TA-nmon version for your critical production servers, and another version for your non production servers.
+
+Each of the TA-nmon version would have its own parameters, such as the indexes, the data accuracy (interval between measures), etc.
 
 Detailed documentation: :ref:`create_agent_py`
 

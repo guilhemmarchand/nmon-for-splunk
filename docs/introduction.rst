@@ -118,14 +118,14 @@ Eventtype:::
 Available packages
 ******************
 
-**There are 3 main packages you need to consider:**
+**There are different packages:**
 
 * The ***Nmon core*** Application: this is the whole package you download in Splunk App (directory called "nmon")
 
-* The ***PA-nmon*** addon, available in the "resources" directory of the core App, this package is expected to be deployed in peer nodes of an indexer cluster
-* The ***TA-nmon*** addon, available in the "resources" directory of the core App, can be deployed to any AIX / Linux / Solaris UF client, Heavy Forwarder instances, master node of a cluster, deployment server or standalone instances
+* The ***PA-nmon_light*** addon, available in the "resources" directory of the core App, this package is expected to be deployed in indexers
+* The ***TA-nmon*** addon, available in the "resources" directory of the core App, can be deployed to any AIX / Linux / Solaris Full or Universal forwarder instance, master node of a cluster, deployment server, standalone instances, clustered indexers...
 
-The PA-nmon and TA-nmon packages are available in the **resources** directory of the Nmon core application you download in Splunk Base.
+The PA-nmon_light and TA-nmon packages are available in the **resources** directory of the Nmon core application you download in Splunk Base.
 
 The TA-nmon is also available independently in Splunk base:
 
