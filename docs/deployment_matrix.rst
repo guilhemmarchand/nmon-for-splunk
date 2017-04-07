@@ -15,7 +15,7 @@ What goes where ?
 
 **The TA-nmon is also available for download as an independent application in Splunk base:** https://splunkbase.splunk.com/app/3248/
 
-*NB:**
+*Notes:*
 
 * The TA-nmon_selfmode is deprecated since the unarchive_cmd feature isn't used anymore
 * The PA-nmon is deprecated since the TA-nmon operates now in clustered indexers
