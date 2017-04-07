@@ -4,7 +4,7 @@ Deploy to Splunk Cloud
 
 **Deploying Nmon Performance Monitor in Splunk Cloud**
 
-Nmon Performance Monitor is entirely compatible with a Splunk Cloud deployment, offering 100% of app functionality to monitor your own servers.
+Nmon Performance Monitor is entirely compatible with a Splunk Cloud deployment, offering 100% of application features to monitor your own servers.
 
 However, please note that Splunk does not allow any application to monitor Cloud instances performances, such as the deployment matrix differs from on premise installations.
 

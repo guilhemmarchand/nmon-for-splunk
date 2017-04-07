@@ -12,7 +12,7 @@ TA-nmon
 
 The official release of the TA-nmon can be downloaded from Splunk Base: https://splunkbase.splunk.com/app/3248
 
-Note: The TA-nmon is NOT Splunk certified for some reasons, specially because it contains various binaries, and this would restrict the TA-nmon functionaries.
+Note: The TA-nmon is NOT Splunk certified for some reasons, specially because it contains various binaries, and this would restrict the TA-nmon features.
 
 Github releases
 ===============

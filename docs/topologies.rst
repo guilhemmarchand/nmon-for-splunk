@@ -42,7 +42,7 @@ This is an example of deployment for standard scenario with a single Splunk forw
 
 **Additionally and since the version 1.6.14, it is possible to use Syslog as the transport layer associated with a third party package called "nmon-logger"**
 
-This deployment topology provides all of application functionality without any deployment of Universal Forwarders on end servers, using rsyslog or syslog-ng.
+This deployment topology provides all the application features without any deployment of Universal Forwarders on end servers, using rsyslog or syslog-ng.
 Such a deployment answers the need for people that cannot or do not want to install any third party agent.
 
 **The nmon-logger package is available for download in GitHub:** https://github.com/guilhemmarchand/nmon-logger

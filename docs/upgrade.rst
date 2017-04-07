@@ -149,7 +149,7 @@ Migrate from version 1.7.x to version 1.9.x
 Migrate from version 1.8.x to version 1.9.x
 """""""""""""""""""""""""""""""""""""""""""
 
-**The release 1.9.x is new main release for Nmon Core application as well for the TA-nmon technical addon**
+**The release 1.9.x is a new main release for the Nmon Core application, and as well for the TA-nmon technical addon**
 
 There are some changes in these releases than can require specific actions:
 
@@ -161,7 +161,7 @@ There are some changes in these releases than can require specific actions:
 
 **If you have previously deployed the PA-nmon in your clustered indexers, follow these simple steps:**
 
-* if you have defined any custom index in the PA-nmon, backup this configuration and backport it to the PA-nmon_light (see above)
+* if you have defined any custom index in the PA-nmon, backup this configuration and move it to the PA-nmon_light (see above)
 * remove the PA-nmon from the "master-apps" of the master node
 * extract the PA-nmon_light archive in the master node "master-apps" directory
 * extract the TA-nmon archive in the master node "master-apps" directory if you want to collect performance statistics from your indexers

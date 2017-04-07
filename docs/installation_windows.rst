@@ -16,7 +16,7 @@ Running on Windows
 
 * In distributed / standalone instance to manage cold nmon files generated out of Splunk
 
-100% of App's functionality are available on Windows hosts running Nmon Performance app.
+100% of application features are available on Windows hosts running Nmon Performance.
 
 **1. Install the Python interpreter for Windows (version 2.x)**
 
