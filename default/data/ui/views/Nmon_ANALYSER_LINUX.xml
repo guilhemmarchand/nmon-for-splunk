@@ -2146,7 +2146,7 @@ max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as 
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
-| stats avg(disk_*) as "disk_*" by _time,host
+| stats sum(disk_*_iops) as "disk_*_iops", avg(disk_*_ms) as "disk_*_ms", avg(disk_*_pct) as "disk_*_pct", avg(disk_*_sec) as "disk_*_sec", avg(disk_*_KB) as "disk_*_KB", avg(disk_*_io) as "disk_*_io" by _time,host
 | timechart `nmon_span` max(disk_backlog_time_ms) as disk_backlog_time_ms, max(disk_busy_time_pct) as disk_busy_time_pct, max(disk_in_flight_io) as disk_in_flight_io, max(disk_time_spent_for_io_ms) as disk_time_spent_for_io_ms,
 max(disk_read_KB_per_sec) as disk_read_KB_per_sec, max(disk_merge_read_sec) as disk_merge_read_sec, max(disk_read_sec) as disk_read_sec, max(disk_read_service_time_ms) as disk_read_service_time_ms,
 max(disk_block_size_KB) as disk_block_size_KB, max(disk_write_KB_per_sec) as disk_write_KB_per_sec, max(disk_merge_write_sec) as disk_merge_write_sec,
