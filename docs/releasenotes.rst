@@ -30,6 +30,9 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
+- Linux Nmon Analyser view issue in DG chart for IOPS
+- Nmon external load average extraction failure for some OS
+
 =======
 V1.9.1:
 =======
