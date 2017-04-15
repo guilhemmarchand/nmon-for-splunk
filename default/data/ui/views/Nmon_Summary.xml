@@ -63,6 +63,7 @@
          		<unset token="form.OStype_detection"></unset>
                 <unset token="form.CPU_datasource_detection"></unset>
                 <unset token="form.TOP_detection"></unset>
+                <unset token="form.UPTIME_detection"></unset>
                 <unset token="form.DG_detection"></unset>
                 <unset token="CPU_datasource"></unset>
                 <unset token="CPU_datasource_minilabel"></unset>
@@ -71,6 +72,7 @@
                 <unset token="is_AIX"></unset>
                 <unset token="is_Linux"></unset>
                 <unset token="is_Solaris"></unset>
+                <unset token="start_uptime_searches"></unset>
        		</change>
         </input>
 
@@ -194,6 +196,30 @@
                 <condition>
                     <set token="start_top_searches">_time,*</set>
                     <unset token="show_null_top"></unset>
+                </condition>
+            </change>
+        </input>
+
+        <!--
+        This input is an hidden input that will be used to detect if we have UPTIME events
+        -->
+
+        <input type="dropdown" token="UPTIME_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Detected UPTIME events:</label>
+            <search>
+                <query>eventtype=nmon:performance type=UPTIME host=$host$ load_average_1min="*"| head 60 | stats count</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>count</fieldForLabel>
+            <fieldForValue>count</fieldForValue>
+            <change>
+                <condition value="0">
+                    <unset token="start_uptime_searches"></unset>
+                </condition>
+                <condition value="60">
+                    <set token="start_uptime_searches">_time,*</set>
                 </condition>
             </change>
         </input>
@@ -404,6 +430,13 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 </div>
             </html>
         </panel>
+        <panel depends="$start_uptime_searches$">
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_uptime_load_average" data-alt-label="HIDE UPTIME LOAD AVERAGE" data-token-value="fields *">SHOW UPTIME LOAD AVERAGE</button>
+                </div>
+            </html>
+        </panel>
     </row>
 
     <row depends="$show_configuration$">
@@ -479,6 +512,126 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
             <html>
                 <div class="dashseparator">
                     <h1>End host configuration</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- nmon external UPTIME -->
+
+    <search id="baseSearch_loadaverage">
+        <query>eventtype=nmon:performance type=UPTIME host=$host$
+| fields $start_uptime_searches$
+| timechart $span$ avg(load_average_1min) as load_average_1min, avg(load_average_5min) as load_average_5min, avg(load_average_15min) as load_average_15min</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <sampleRatio>1</sampleRatio>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <row depends="$show_uptime_load_average$ $start_uptime_searches$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>Start uptime load average</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_uptime_load_average$ $start_uptime_searches$">
+        <panel>
+            <title>SYSTEM LOAD AVERAGE (nmon external: UPTIME)</title>
+            <single>
+                <search base="baseSearch_loadaverage">
+                    <query>fields _time, load_average_1min | where isnotnull(load_average_1min)</query>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="underLabel">load average 1min</option>
+                <option name="useColors">1</option>
+            </single>
+            <single>
+                <search base="baseSearch_loadaverage">
+                    <query>fields _time, load_average_5min | where isnotnull(load_average_5min)</query>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="underLabel">load average 5min</option>
+                <option name="useColors">1</option>
+            </single>
+            <single>
+                <search base="baseSearch_loadaverage">
+                    <query>fields _time, load_average_15min | where isnotnull(load_average_15min)</query>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="underLabel">load average 15min</option>
+                <option name="useColors">1</option>
+            </single>
+            <chart>
+                <search base="baseSearch_loadaverage">
+                    <query>fields _time,load_average_1min,load_average_5min,load_average_15min</query>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">right</option>
+                <option name="height">350</option>
+            </chart>
+            <table>
+                <search>
+                    <query>eventtype=nmon:performance type=UPTIME host=$host$
+| fields $start_uptime_searches$
+| stats latest(load_average_1min) as current_load_average_1min, avg(load_average_1min) as avg_load_average_1min, max(load_average_1min) as max_load_average_1min,
+latest(load_average_5min) as current_load_average_5min, avg(load_average_5min) as avg_load_average_5min, max(load_average_5min) as max_load_average_5min,
+latest(load_average_15min) as current_load_average_15min, avg(load_average_15min) as avg_load_average_15min, max(load_average_15min) as max_load_average_15min
+| foreach *avg* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| eval "load average 1 min" =  "Current: " . current_load_average_1min . " Average: " . avg_load_average_1min . " Max: " . max_load_average_1min
+| eval "load average 5 min" = "Current: " . current_load_average_5min . " Average: " . avg_load_average_5min . " Max: " . max_load_average_5min
+| eval "load average 15 min" = "Current: " . current_load_average_15min . " Average: " . avg_load_average_15min . " Max: " . max_load_average_15min
+| fields "load average *min" | transpose | eval order=case(column="load average 1 min", 1, column="load average 5 min", 2, column="load average 15 min", 3) | sort order | rename column as "By", "row 1" as "Load average" | fields By, "Load average"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+            </table>
+        </panel>
+
+    </row>
+
+    <row depends="$show_uptime_load_average$ $start_uptime_searches$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>End uptime load average</h1>
                 </div>
             </html>
         </panel>
@@ -2227,6 +2380,55 @@ groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Sol
                     <h1>End extended processes stats</h1>
                 </div>
             </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="network">
+            <title>Inbound/Outbound network traffic</title>
+            <chart>
+                <search>
+                    <query>| tstats max("NET_Data_types.value") AS NET_Data_types.value from datamodel=NMON_Data_NET
+where (nodename = NET_Data_types.NET) (host="$host$") (NET_Data_types.device!="*lo*")
+groupby _time, host, "NET_Data_types.device" prestats=true span=1m
+| stats dedup_splitvals=t max("NET_Data_types.value") AS NET_Data_types.value by _time, host, "NET_Data_types.device"
+| rename "NET_Data_types.*" AS *
+| eval value=round((value),2)
+| eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
+| eval value=case(traffic_type="Outbound", "-" . value, traffic_type="Inbound", value)
+| timechart $span$ avg(value) as value by traffic_type</query>
+                    <earliest>-24h</earliest>
+                    <latest>now</latest>
+                    <sampleRatio>1</sampleRatio>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.text">KBps</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">area</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">350</option>
+            </chart>
         </panel>
     </row>
 
