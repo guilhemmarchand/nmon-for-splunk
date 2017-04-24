@@ -2045,6 +2045,7 @@
                     <query>eventtype=nmon:performance type=NET $OStype$ $host$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | $show_net$
+| eval value=case(traffic_type="Outbound", "-" . value, traffic_type="Inbound", value)
 | timechart `nmon_span` avg(value) AS KBps by traffic_type</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -2058,11 +2059,10 @@
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.axisY2.enabled">0</option>
                 <option name="charting.axisY2.scale">inherit</option>
-                <option name="charting.chart">line</option>
+                <option name="charting.chart">area</option>
                 <option name="charting.chart.bubbleMaximumSize">50</option>
                 <option name="charting.chart.bubbleMinimumSize">10</option>
                 <option name="charting.chart.bubbleSizeBy">area</option>
@@ -2089,6 +2089,7 @@
                     <query>eventtype=nmon:performance type=NET $OStype$ $host$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | eval key=host+":"+traffic_type
+| eval value=case(traffic_type="Outbound", "-" . value, traffic_type="Inbound", value)
 | $show_net$
 | timechart `nmon_span` useother=f limit=0 avg(value) AS KBps by key</query>
                     <earliest>$time.earliest$</earliest>
@@ -2103,11 +2104,10 @@
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
-                <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.axisY2.enabled">0</option>
                 <option name="charting.axisY2.scale">inherit</option>
-                <option name="charting.chart">line</option>
+                <option name="charting.chart">area</option>
                 <option name="charting.chart.bubbleMaximumSize">50</option>
                 <option name="charting.chart.bubbleMinimumSize">10</option>
                 <option name="charting.chart.bubbleSizeBy">area</option>
