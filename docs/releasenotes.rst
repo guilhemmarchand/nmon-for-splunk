@@ -32,6 +32,7 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 
 - Linux Nmon Analyser view issue in DG chart for IOPS
 - Nmon external load average extraction failure for some OS
+- Be time relative to show indexing evolution in home page
 - TA-nmon: TA-nmon local/nmon.conf from the SHC deployer is not compatible #23
 
 =======
