@@ -217,9 +217,11 @@
             <change>
                 <condition value="0">
                     <unset token="start_uptime_searches"></unset>
+                    <set token="show_null_uptime">true</set>
                 </condition>
                 <condition>
                     <set token="start_uptime_searches">_time,*</set>
+                    <unset token="show_null_uptime"></unset>
                 </condition>
             </change>
         </input>
@@ -430,7 +432,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 </div>
             </html>
         </panel>
-        <panel depends="$start_uptime_searches$">
+        <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
                     <button class="button2_lowpadding glow" data-token-name="show_uptime_load_average" data-alt-label="HIDE UPTIME LOAD AVERAGE" data-token-value="fields *">SHOW UPTIME LOAD AVERAGE</button>
@@ -530,7 +532,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
         <refreshType>delay</refreshType>
     </search>
 
-    <row depends="$show_uptime_load_average$ $start_uptime_searches$">
+    <row depends="$show_uptime_load_average$">
         <panel>
             <html>
                 <div class="dashseparator">
@@ -540,7 +542,17 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
         </panel>
     </row>
 
-    <row depends="$show_uptime_load_average$ $start_uptime_searches$">
+    <row depends="$show_uptime_load_average$ $show_null_uptime$">
+        <panel>
+            <html>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - UPTIME DATA UNAVAILABLE: The uptime data (nmon external collection) is not available, collecting these data require the TA-nmon 1.3.x minimum - - - - - - - - - -</p>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$show_uptime_load_average$">
         <panel>
             <title>SYSTEM LOAD AVERAGE (nmon external: UPTIME)</title>
             <single>
@@ -575,6 +587,20 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="trendColorInterpretation">inverse</option>
                 <option name="underLabel">load average 15min</option>
                 <option name="useColors">1</option>
+            </single>
+            <single>
+                <search>
+                    <query>eventtype=nmon:performance type=UPTIME host="$host$"
+| fields $start_uptime_searches$ | stats latest(uptime) as uptime_sec
+| eval uptime=if(uptime_sec&lt;86400, round((uptime_sec/3600), 2) . " hours", round((uptime_sec/86400), 2) . " days" )
+| fields uptime</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="underLabel">current server uptime</option>
             </single>
             <chart>
                 <search base="baseSearch_loadaverage">
@@ -627,7 +653,7 @@ latest(load_average_15min) as current_load_average_15min, avg(load_average_15min
 
     </row>
 
-    <row depends="$show_uptime_load_average$ $start_uptime_searches$">
+    <row depends="$show_uptime_load_average$">
         <panel>
             <html>
                 <div class="dashseparator">
