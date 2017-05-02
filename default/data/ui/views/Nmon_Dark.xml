@@ -1,0 +1,378 @@
+<form stylesheet="nmon:dark.css" hideFooter="true" hideSplunkBar="true" hideAppBar="true" hideChrome="true" hideEdit="true" hideTitle="true">
+  <label>Dark MONITORING</label>
+  <fieldset submitButton="false">
+    <input type="time" token="time">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="refresh" searchWhenChanged="true">
+      <label></label>
+      <choice value="30s">30 sec</choice>
+      <choice value="60s">1 min</choice>
+      <choice value="300s">5 min</choice>
+      <default>30s</default>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label></label>
+      <search id="hostsSearch">
+          <query>| tstats count as count WHERE `nmon_index` sourcetype=nmon_data by host | sort 0 host </query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+      </search>
+      <prefix>host="</prefix>
+      <suffix>"</suffix>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <selectFirstChoice>true</selectFirstChoice>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <search>
+          <query>| tstats max("CPU.cpu_PCT") AS pct_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
+| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+| timechart avg(usage) AS avg_cpu | where isnotnull(avg_cpu)</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="colorBy">trend</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0.00</option>
+        <option name="refresh.display">none</option>
+        <option name="trendColorInterpretation">inverse</option>
+        <option name="trendDisplayMode">percent</option>
+        <option name="underLabel">CPU %</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search>
+          <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) ($host$)
+groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, host
+| timechart avg(mem_used_effective_PCT) AS avg_mem | where isnotnull(avg_mem)</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="colorBy">trend</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0.00</option>
+        <option name="refresh.display">none</option>
+        <option name="trendColorInterpretation">inverse</option>
+        <option name="trendDisplayMode">percent</option>
+        <option name="underLabel">MEMORY %</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search>
+          <query>eventtype=nmon:performance type=UPTIME ($host$)
+| timechart avg(load_average_5min) as load_average_5min | where isnotnull(load_average_5min)</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="colorBy">trend</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0.00</option>
+        <option name="refresh.display">none</option>
+        <option name="trendColorInterpretation">inverse</option>
+        <option name="underLabel">5 MIN LOAD AVG</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <search>
+          <query>| tstats max("CPU.Wait_PCT") AS Wait_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL") groupby _time, host prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t max("CPU.Wait_PCT") AS wait_pct by _time, host
+| timechart avg(wait_pct) AS wait_pct | where isnotnull(wait_pct)</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="colorBy">trend</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0.00</option>
+        <option name="refresh.display">none</option>
+        <option name="trendColorInterpretation">inverse</option>
+        <option name="trendDisplayMode">percent</option>
+        <option name="underLabel">WAIT/IO %</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>CPU usage</title>
+      <chart>
+        <search>
+          <query>| tstats
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
+from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
+| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+| timechart `nmon_span` avg(usage) AS avg_cpu_pct</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisLabelsY.majorUnit">25</option>
+        <option name="charting.axisY.maximumNumber">101</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Percent</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">none</option>
+        <option name="height">280</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Load average</title>
+      <chart>
+        <search>
+          <query>eventtype=nmon:performance type=UPTIME ($host$)
+| timechart `nmon_span` avg(load_average_1min) as load_average_1min, avg(load_average_5min) as load_average_5min, avg(load_average_15min) as load_average_15min | fields _time,load_average_1min,load_average_5min,load_average_15min</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Load average</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">none</option>
+        <option name="height">280</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Running processes</title>
+      <chart>
+        <search>
+          <query>eventtype="nmon:performance" type=PROCCOUNT ($host$)
+| timechart `nmon_span` avg(nb_running_processes) as running_processes</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleY.text">Nb running processes</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="refresh.display">none</option>
+        <option name="height">280</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Processes CPU usage</title>
+      <chart>
+        <search>
+          <query>| tstats
+max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) ($host$)
+groupby _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields host, logical_cpus, Command, PID, pct_CPU
+| eval limit=(logical_cpus*100)
+| where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus)
+| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval usage_per_core=(pct_CPU/100) | stats sum(usage_per_core) As usage_per_core by _time,Command
+| timechart `nmon_span` useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">core cpu</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">none</option>
+        <option name="height">280</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Memory usage</title>
+      <chart>
+        <search>
+          <query>| tstats max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT from datamodel=NMON_Data_MEM where (nodename = MEM) ($host$)
+groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, host
+| timechart `nmon_span` dedup_splitvals=t avg(mem_used_effective_PCT) AS mem_used, avg(swap_used_effective_PCT) AS swap_used</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisLabelsY.majorUnit">25</option>
+        <option name="charting.axisY.maximumNumber">101</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Percent</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">none</option>
+        <option name="height">280</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Network traffic</title>
+      <chart>
+        <search>
+          <query>| tstats max("NET_Data_types.value") AS NET_Data_types.value from datamodel=NMON_Data_NET
+where (nodename = NET_Data_types.NET) ($host$) (NET_Data_types.device!="*lo*")
+groupby _time, host, "NET_Data_types.device" prestats=true span=1m
+| stats dedup_splitvals=t max("NET_Data_types.value") AS NET_Data_types.value by _time, host, "NET_Data_types.device"
+| rename "NET_Data_types.*" AS *
+| eval value=round((value),2)
+| eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
+| eval value=case(traffic_type="Outbound", "-" . value, traffic_type="Inbound", value)
+| timechart `nmon_span` avg(value) as value by traffic_type</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">KBps</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">none</option>
+        <option name="height">280</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>File-system usage</title>
+      <chart>
+        <search>
+          <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;0) ($host$) (JFS.device="*") groupby _time, host, "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
+| rename "JFS.*" AS *
+| timechart `nmon_span` limit=0 useother=f latest(value) As value by device</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisLabelsY.majorUnit">25</option>
+        <option name="charting.axisY.maximumNumber">101</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Percent</option>
+        <option name="charting.axisY.maximumNumber">101</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">280</option>
+        <option name="refresh.display">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Disks IOPS</title>
+      <chart>
+        <search>
+          <query>| tstats sum("DISKXFER.value") AS DISKXFER_total_iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) ($host$) groupby _time, host prestats=true span=1s
+| tstats sum(dg.disk_total_iops) as DG_total_iops from datamodel=NMON_Data_disks_dg where (nodename = dg) ($host$) groupby _time, host append=true prestats=true span=1s
+| stats sum("DISKXFER.value") AS DISKXFER_total_iops, sum(dg.disk_total_iops) as DG_total_iops by _time, host
+| eval value=if(isnotnull('DG_total_iops'), 'DG_total_iops', 'DISKXFER_total_iops')
+| fields _time, hostname, value
+| timechart `nmon_span` avg(value) as avg_iops</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <refresh>$refresh$</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">I/O per second</option>
+        <!-- Set background color -->
+        <option name="charting.backgroundColor">#292C33</option>
+        <!-- Set foreground color -->
+        <option name="charting.foregroundColor">#EBF5FF</option>
+        <!-- Set font color (axis labels, legends) -->
+        <option name="charting.fontColor">#BFBFBF</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">none</option>
+        <option name="height">280</option>
+      </chart>
+    </panel>
+  </row>
+</form>
