@@ -238,7 +238,7 @@
                 <title>Average deployment CPU % usage</title>
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
-| eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart span=5m avg(cpu_load_percent) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
@@ -359,7 +359,7 @@
                 <title>Deployment global % CPU stats over time</title>
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
-| eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent
 | $show_cpu$
 | trendline sma5(cpu_load_percent) AS trend</query>
@@ -402,7 +402,7 @@
                 <title>Deployment per category % CPU stats over time</title>
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
-| eval Sys_PCT=if(isnotnull(VP_Sys_PCT), VP_Sys_PCT, Sys_PCT), User_PCT=if(isnotnull(VP_User_PCT), VP_User_PCT, User_PCT), Wait_PCT=if(isnotnull(VP_Wait_PCT), VP_Wait_PCT, Wait_PCT), Idle_PCT=if(isnotnull(VP_Idle_PCT), VP_Idle_PCT, Idle_PCT)
+| eval Sys_PCT=if(isnum(VP_Sys_PCT), VP_Sys_PCT, Sys_PCT), User_PCT=if(isnum(VP_User_PCT), VP_User_PCT, User_PCT), Wait_PCT=if(isnum(VP_Wait_PCT), VP_Wait_PCT, Wait_PCT), Idle_PCT=if(isnum(VP_Idle_PCT), VP_Idle_PCT, Idle_PCT)
 | timechart `nmon_span` avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT
 | $show_cpu$
 | fields _time,Idle_PCT,Wait_PCT,User_PCT,Sys_PCT</query>
@@ -447,7 +447,7 @@
                 <title>By host global % CPU stats over time</title>
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
-| eval cpu_load_percent=if(isnotnull(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent by host
 | $show_cpu$</query>
                     <earliest>$time.earliest$</earliest>
@@ -1656,9 +1656,10 @@
                 <search>
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
 | dedup _time,host,Command,PID
-| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,host,Command,PID
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus, max(virtual_cpus) AS virtual_cpus by _time,host,Command,PID
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,host,Command
 | fields $start_top_searches$
 | eval value=(pct_CPU/100)
@@ -1802,8 +1803,9 @@
                 <title>Deployment TOP 10 CPU processes usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
-| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,host,Command,PID
+| stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus, max(virtual_cpus) AS virtual_cpus by _time,host,Command,PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
+| eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,host,Command
 | eval value=(pct_CPU/100)
 | where value&gt;0.01

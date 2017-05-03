@@ -37,8 +37,8 @@
 from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+max("CPU.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
+| eval usage=if(isnum(lpar_vp_PCT_usage), vp_usage, pct_usage)
 | timechart avg(usage) AS avg_cpu | where isnotnull(avg_cpu)</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
@@ -126,12 +126,12 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL"
       <chart>
         <search>
           <query>| tstats
-max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
+max("CPU.lpar_vp_PCT_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
 from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+max("CPU.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
+| eval usage=if(isnum(lpar_vp_PCT_usage), lpar_vp_PCT_usage, pct_usage)
 | timechart `nmon_span` avg(usage) AS avg_cpu_pct</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
@@ -214,16 +214,16 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
         <search>
           <query>| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) ($host$)
-groupby _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
+groupby _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.virtual_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
-| rename "TOP_ALLOS.logical_cpus" AS logical_cpus "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
-| fields host, logical_cpus, Command, PID, pct_CPU
+max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "TOP_ALLOS.virtual_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID"
+| rename "TOP_ALLOS.logical_cpus" AS logical_cpus, "TOP_ALLOS.virtual_cpus" AS virtual_cpus, "TOP_ALLOS.Command" AS Command "TOP_ALLOS.PID" AS PID
+| fields host, logical_cpus, virtual_cpus, Command, PID, pct_CPU
 | eval limit=(logical_cpus*100)
 | where (pct_CPU&lt;=limit)
 | eval smt_threads=(logical_cpus/virtual_cpus)
-| eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100) | stats sum(usage_per_core) As usage_per_core by _time,Command
 | timechart `nmon_span` useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
@@ -352,7 +352,7 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;0) ($host$) (JFS.device="*") groupb
           <query>| tstats sum("DISKXFER.value") AS DISKXFER_total_iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) ($host$) groupby _time, host prestats=true span=1s
 | tstats sum(dg.disk_total_iops) as DG_total_iops from datamodel=NMON_Data_disks_dg where (nodename = dg) ($host$) groupby _time, host append=true prestats=true span=1s
 | stats sum("DISKXFER.value") AS DISKXFER_total_iops, sum(dg.disk_total_iops) as DG_total_iops by _time, host
-| eval value=if(isnotnull('DG_total_iops'), 'DG_total_iops', 'DISKXFER_total_iops')
+| eval value=if(isnum('DG_total_iops'), 'DG_total_iops', 'DISKXFER_total_iops')
 | fields _time, hostname, value
 | timechart `nmon_span` avg(value) as avg_iops</query>
           <earliest>$time.earliest$</earliest>

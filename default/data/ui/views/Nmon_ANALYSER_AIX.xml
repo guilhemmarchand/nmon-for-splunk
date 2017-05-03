@@ -186,7 +186,7 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.t
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+| eval usage=if(isnum(vp_usage), vp_usage, pct_usage)
 | timechart $span$ $statsmode$(usage) AS $statsmode$_cpu_usage</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -212,7 +212,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
                     <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.type="LPAR") ($host$) groupby _time, host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnotnull(vp_usage), vp_usage, pct_usage)
+| eval usage=if(isnum(vp_usage), vp_usage, pct_usage)
 | timechart span=1m $statsmode$(usage) AS $statsmode$_usage</link>
                 </drilldown>
             </chart>
@@ -627,12 +627,12 @@ by _time, "POOLS.frameID", host
                 <search>
                     <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP
 where (nodename = TOP_AIX) ($host$)
-groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.virtual_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.virtual_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus, "TOP_AIX.virtual_cpus" AS virtual_cpus, "TOP_AIX.Command" AS Command, "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
-| stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
+| eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
+| stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As usage_per_core by _time,Command
 | timechart $span$ useother=f limit=0
@@ -667,11 +667,11 @@ max(usage_per_core) as "CPU Usage per core" by Command</query>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Logical Core</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) ($host$) groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
-| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
-| rename "TOP_AIX.logical_cpus" AS logical_cpus "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) ($host$) groupby _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.virtual_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
+| stats dedup_splitvals=t max("TOP_AIX.pct_CPU") AS pct_CPU by _time, host, "TOP_AIX.logical_cpus", "TOP_AIX.virtual_cpus", "TOP_AIX.Command", "TOP_AIX.PID"
+| rename "TOP_AIX.logical_cpus" AS logical_cpus, "TOP_AIX.virtual_cpus" AS virtual_cpus, "TOP_AIX.Command" AS Command "TOP_AIX.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
-| eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnotnull(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnotnull(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnull(smt_threads), pct_CPU)
+| eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As usage_per_core by _time,Command
