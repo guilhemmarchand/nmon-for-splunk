@@ -31,6 +31,7 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
 - Splunk 6.6 tstats issue over non existing field generates nan value instead of null values #67
+- Introducing the Dark monitoring dashboard, interfaces review
 - Linux Nmon Analyser view issue in DG chart for IOPS
 - Nmon external load average extraction failure for some OS
 - Be time relative to show indexing evolution in home page
