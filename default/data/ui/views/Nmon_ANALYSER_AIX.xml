@@ -2029,9 +2029,9 @@ where (nodename = JFS.JFSINODE) ($host$) ($JFS_filter$) groupby _time, "JFS.devi
 
             <input type="link" token="net_linkinput">
                 <label></label>
-                <choice value="net_chart1">NET - Network Interfaces Activity by Host</choice>
-                <choice value="net_chart2">NETPACKET - Number of read/write packets</choice>
-                <choice value="net_chart3">NETERROR - Number of errors packets</choice>
+                <choice value="net_chart1">NET - Inbound/Outbound traffic</choice>
+                <choice value="net_chart2">NETPACKET - Inbound/Outbound packets</choice>
+                <choice value="net_chart3">NETERROR - Inbound/Outbound error packets</choice>
                 <default>net_chart1</default>
                 <change>
                     <condition value="net_chart1">
@@ -2058,7 +2058,8 @@ where (nodename = JFS.JFSINODE) ($host$) ($JFS_filter$) groupby _time, "JFS.devi
                     <query>| tstats max("NET_Data_types.value") AS KBps from datamodel=NMON_Data_NET
 where (nodename = NET_Data_types.NET) ($host$)
 groupby _time, "NET_Data_types.device" prestats=true $span$
-| timechart $span$ limit=0 useother=f max("NET_Data_types.value") AS KBps by "NET_Data_types.device"</query>
+| timechart $span$ limit=0 useother=f max("NET_Data_types.value") AS KBps by "NET_Data_types.device"
+| foreach *write* [ eval &lt;&lt;FIELD&gt;&gt; = "-" . '&lt;&lt;FIELD&gt;&gt;' ] | rename *read* as *inbound*, *write* as *outbound*</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -2077,11 +2078,10 @@ groupby _time, "NET_Data_types.device" prestats=true $span$
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisTitleY.text">KBps</option>
+                <option name="charting.axisTitleY.text">Outbound KBps / Inbound KBps</option>
                 <drilldown target="search">
                     <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("NET_Data_types.value") AS KBps from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NET) ($host$) groupby _time, "NET_Data_types.device" prestats=true span=1m
-| timechart span=1m limit=0 useother=f max("NET_Data_types.value") AS KBps by "NET_Data_types.device"</link>
+| timechart span=1m limit=0 useother=f max("NET_Data_types.value") AS KBps by "NET_Data_types.device" | foreach *write* [ eval &lt;&lt;FIELD&gt;&gt; = "-" . '&lt;&lt;FIELD&gt;&gt;' ] | rename *read* as *inbound*, *write* as *outbound*</link>
                 </drilldown>
             </chart>
 
@@ -2090,7 +2090,7 @@ groupby _time, "NET_Data_types.device" prestats=true $span$
                 <search>
                     <query>| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET
 where (nodename = NET_Data_types.NETPACKET) ($host$) groupby _time, "NET_Data_types.device" prestats=true $span$
-| timechart $span$ limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device"</query>
+| timechart $span$ limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device" | foreach *write* [ eval &lt;&lt;FIELD&gt;&gt; = "-" . '&lt;&lt;FIELD&gt;&gt;' ] | rename *read* as *inbound*, *write* as *outbound*</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -2109,11 +2109,10 @@ where (nodename = NET_Data_types.NETPACKET) ($host$) groupby _time, "NET_Data_ty
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisY.minimumNumber">0</option>
-                <option name="charting.axisTitleY.text">Number of Network Packets</option>
+                <option name="charting.axisTitleY.text">Outbound / Inbound packets</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NETPACKET) ($host$) groupby _time, "NET_Data_types.device" prestats=true span=1m
-| timechart span=1m limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device"</link>
+                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NETPACKET) ($host$) groupby _time, "NET_Data_types.device" prestats=true span=1m
+| timechart span=1m limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device" | foreach *write* [ eval &lt;&lt;FIELD&gt;&gt; = "-" . '&lt;&lt;FIELD&gt;&gt;' ] | rename *read* as *inbound*, *write* as *outbound*&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
 
@@ -2122,7 +2121,7 @@ where (nodename = NET_Data_types.NETPACKET) ($host$) groupby _time, "NET_Data_ty
                 <search>
                     <query>| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET
 where (nodename = NET_Data_types.NETERROR) ($host$) groupby _time, "NET_Data_types.device" prestats=true $span$
-| timechart $span$ limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device"</query>
+| timechart $span$ limit=0 useother=f max("NET_Data_types.value") AS value by "NET_Data_types.device" | foreach *write* [ eval &lt;&lt;FIELD&gt;&gt; = "-" . '&lt;&lt;FIELD&gt;&gt;' ] | rename *read* as *inbound*, *write* as *outbound*</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
@@ -2141,11 +2140,10 @@ where (nodename = NET_Data_types.NETERROR) ($host$) groupby _time, "NET_Data_typ
                 <option name="charting.legend.placement">bottom</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisTitleY.text">Number of Network Packets</option>
                 <drilldown target="search">
                     <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("NET_Data_types.value") AS value from datamodel=NMON_Data_NET where (nodename = NET_Data_types.NETERROR) ($host$) groupby _time, "NET_Data_types.device" prestats=true span=1m
-| timechart span=1m max("NET_Data_types.value") AS value limit=0 useother=f by "NET_Data_types.device"</link>
+| timechart span=1m max("NET_Data_types.value") AS value limit=0 useother=f by "NET_Data_types.device" | foreach *write* [ eval &lt;&lt;FIELD&gt;&gt; = "-" . '&lt;&lt;FIELD&gt;&gt;' ] | rename *read* as *inbound*, *write* as *outbound*</link>
                 </drilldown>
             </chart>
 
