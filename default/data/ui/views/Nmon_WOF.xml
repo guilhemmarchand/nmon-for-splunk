@@ -48,6 +48,13 @@
          		<unset token="form.OStype_detection"></unset>
                 <unset token="form.TOP_detection"></unset>
                 <unset token="form.DG_detection"></unset>
+                <unset token="is_AIX"></unset>
+                <unset token="is_Linux"></unset>
+                <unset token="is_Solaris"></unset>
+                <unset token="show_null_top"></unset>
+                <unset token="start_top_searches"></unset>
+                <unset token="start_disk_stats_search"></unset>
+                <unset token="start_dg_stats_search"></unset>
        		</change>
         </input>
 
@@ -60,7 +67,7 @@
         <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Detected OS:</label>
             <search>
-                <query>eventtype=nmon:performance $host$ | head 1 | stats count by OStype | fields OStype</query>
+                <query>eventtype=nmon:performance $OStype$ $host$ | head 1 | stats count by OStype | fields OStype</query>
                 <earliest>$time.earliest$</earliest>
                 <latest>$time.latest$</latest>
             </search>
@@ -93,7 +100,7 @@
         <input type="dropdown" token="TOP_detection" depends="$hidden_element$" searchWhenChanged="true">
             <label>Detected TOP events:</label>
             <search>
-                <query>eventtype=nmon:performance type=TOP $host$ | head 100 | stats count</query>
+                <query>eventtype=nmon:performance type=TOP $OStype$ $host$ | head 100 | stats count</query>
                 <earliest>$time.earliest$</earliest>
                 <latest>$time.latest$</latest>
             </search>
@@ -121,7 +128,7 @@
         <input type="dropdown" token="DG_detection"  depends="$hidden_element$" searchWhenChanged="true">
             <label>Detected DG events:</label>
             <search>
-                <query>eventtype=nmon:performance type=DGXFER $host$ value&gt;0 | head 100 | where isnum(value) | stats count</query>
+                <query>eventtype=nmon:performance type=DGXFER $OStype$ $host$ value&gt;0 | head 100 | where isnum(value) | stats count</query>
                 <earliest>$time.earliest$</earliest>
                 <latest>$time.latest$</latest>
             </search>
@@ -239,7 +246,7 @@
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
 | eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
-| timechart span=5m avg(cpu_load_percent) AS value | where isnotnull(value)</query>
+| timechart `nmon_span` avg(cpu_load_percent) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -266,7 +273,7 @@
             <single>
                 <title>Average deployment physical memory % usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart span=5m avg(mem_used_effective_PCT) AS value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart `nmon_span` avg(mem_used_effective_PCT) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -293,7 +300,7 @@
             <single>
                 <title>Average deployment swap memory % usage</title>
                 <search>
-                    <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart span=5m avg(swap_used_effective_PCT) AS value | where isnotnull(value)</query>
+                    <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart `nmon_span` avg(swap_used_effective_PCT) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -823,7 +830,7 @@
 | dedup _time,host,device,disk_total_iops
 | stats sum(disk_total_iops) AS disk_total_iops by _time
 | fields $start_dg_stats_search$
-| timechart span=5m avg(disk_total_iops) AS disk_total_iops | where isnotnull(disk_total_iops)</query>
+| timechart `nmon_span` avg(disk_total_iops) AS disk_total_iops | where isnotnull(disk_total_iops)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -852,7 +859,7 @@
 | dedup _time,host,value
 | stats sum(value) AS value by _time
 | fields $start_disk_stats_search$
-| timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+| timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -882,7 +889,7 @@
                     <query>eventtype=nmon:performance type=DGBUSY $OStype$ $host$
 | dedup _time,host,device,disk_busy_time_pct
 | fields $start_dg_stats_search$
-| timechart span=5m avg(disk_busy_time_pct) AS disk_busy_time_pct | where isnotnull(disk_busy_time_pct)</query>
+| timechart `nmon_span` avg(disk_busy_time_pct) AS disk_busy_time_pct | where isnotnull(disk_busy_time_pct)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -910,7 +917,7 @@
                     <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $host$
 | dedup _time,host,value
 | fields $start_disk_stats_search$
-| timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+| timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -939,7 +946,7 @@
                 <search>
                     <query>eventtype=nmon:performance type=DGSIZE $OStype$ $host$
 | fields $start_dg_stats_search$
-| timechart span=5m avg(disk_block_size_KB) AS disk_block_size_KB | where isnotnull(disk_block_size_KB)</query>
+| timechart `nmon_span` avg(disk_block_size_KB) AS disk_block_size_KB | where isnotnull(disk_block_size_KB)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -966,7 +973,7 @@
                 <search>
                     <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $host$
 | fields $start_disk_stats_search$
-| timechart span=5m avg(value) AS value | where isnotnull(value)</query>
+| timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1034,7 +1041,7 @@
                     <query>eventtype=nmon:performance type=DGXFER $OStype$ $host$
 | dedup _time,host,device,disk_total_iops
 | stats sum(disk_total_iops) AS disk_total_iops by _time
-| timechart span=5m avg(disk_total_iops) AS iops
+| timechart `nmon_span` avg(disk_total_iops) AS iops
 | $show_diskxfer$
 | $start_dg_stats_search$
 | trendline sma5(iops) AS trend</query>
@@ -1083,7 +1090,7 @@
 | stats sum(disk_total_iops) AS disk_total_iops by _time,host
 | $show_diskxfer$
 | $start_dg_stats_search$
-| timechart span=5m avg(disk_total_iops) AS iops by host</query>
+| timechart `nmon_span` avg(disk_total_iops) AS iops by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1128,7 +1135,7 @@
                     <query>eventtype=nmon:performance type=DISKXFER $OStype$ $host$
 | dedup _time,host,device,value
 | stats sum(value) AS value by _time
-| timechart span=5m avg(value) AS iops
+| timechart `nmon_span` avg(value) AS iops
 | $show_diskxfer$
 | $start_disk_stats_search$
 | trendline sma5(iops) AS trend</query>
@@ -1177,7 +1184,7 @@
 | stats sum(value) AS value by _time,host
 | $start_disk_stats_search$
 | $show_diskxfer$
-| timechart span=5m avg(value) AS iops by host</query>
+| timechart `nmon_span` avg(value) AS iops by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1243,7 +1250,7 @@
                 <search>
                     <query>eventtype=nmon:performance type=DGBUSY $OStype$ $host$
 | dedup _time,host,device,disk_busy_time_pct
-| timechart span=5m avg(disk_busy_time_pct) AS busy_disk
+| timechart `nmon_span` avg(disk_busy_time_pct) AS busy_disk
 | $show_diskbusy$
 | $start_dg_stats_search$
 | trendline sma5(busy_disk) AS trend</query>
@@ -1291,7 +1298,7 @@
 | dedup _time,host,device,disk_busy_time_pct
 | $start_dg_stats_search$
 | $show_diskbusy$
-| timechart span=5m avg(disk_busy_time_pct) AS busydisk by host</query>
+| timechart `nmon_span` avg(disk_busy_time_pct) AS busydisk by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1335,7 +1342,7 @@
                 <search>
                     <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $host$
 | dedup _time,host,value
-| timechart span=5m avg(value) AS busy_disk
+| timechart `nmon_span` avg(value) AS busy_disk
 | $show_diskbusy$
 | $start_disk_stats_search$
 | trendline sma5(busy_disk) AS trend</query>
@@ -1383,7 +1390,7 @@
 | dedup _time,host,value
 | $start_disk_stats_search$
 | $show_diskbusy$
-| timechart span=5m avg(value) AS busydisk by host</query>
+| timechart `nmon_span` avg(value) AS busydisk by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1445,11 +1452,11 @@
     <row depends="$show_diskbsize$ $start_dg_stats_search$">
         <panel>
             <chart>
-                <title>Deployment global % time busy disk over time</title>
+                <title>Deployment global disk data transfer (KBytes per transfer) over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=DGSIZE $OStype$ $host$
 | dedup _time,host,device,disk_block_size_KB
-| timechart span=5m avg(disk_block_size_KB) AS tranfer_rate
+| timechart `nmon_span` avg(disk_block_size_KB) AS tranfer_rate
 | $start_dg_stats_search$
 | $show_diskbsize$
 | trendline sma5(tranfer_rate) AS trend</query>
@@ -1491,13 +1498,13 @@
     <row depends="$show_diskbsize$ $start_dg_stats_search$">
         <panel>
             <chart>
-                <title>By host % time busy disk over time</title>
+                <title>By host disk data transfer (KBytes per transfer) over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=DGSIZE $OStype$ $host$
 | dedup _time,host,device,disk_block_size_KB
 | $start_dg_stats_search$
 | $show_diskbsize$
-| timechart span=5m avg(disk_block_size_KB) AS tranfer_rate by host</query>
+| timechart `nmon_span` avg(disk_block_size_KB) AS tranfer_rate by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
@@ -1537,11 +1544,11 @@
     <row depends="$show_diskbsize$ $start_disk_stats_search$">
         <panel>
             <chart>
-                <title>Deployment global % time busy disk over time</title>
+                <title>Deployment global disk data transfer (KBytes per transfer) over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $host$
 | dedup _time,host,value
-| timechart span=5m avg(value) AS tranfer_rate
+| timechart `nmon_span` avg(value) AS tranfer_rate
 | $start_disk_stats_search$
 | $show_diskbsize$
 | trendline sma5(tranfer_rate) AS trend</query>
@@ -1583,13 +1590,13 @@
     <row depends="$show_diskbsize$ $start_disk_stats_search$">
         <panel>
             <chart>
-                <title>By host % time busy disk over time</title>
+                <title>By host disk data transfer (KBytes per transfer) over time</title>
                 <search>
                     <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $host$
 | dedup _time,host,value
 | $start_disk_stats_search$
 | $show_diskbsize$
-| timechart span=5m avg(value) AS tranfer_rate by host</query>
+| timechart `nmon_span` avg(value) AS tranfer_rate by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>30s</refresh>
