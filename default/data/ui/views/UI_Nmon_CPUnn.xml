@@ -262,7 +262,7 @@
     <!-- Base Searches for PostProcessing -->
 
     <search id="tablestats">
-        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($logical_core$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
 | stats `CPU_ALL($statsmode$)`, sparkline($statsmode$(CPU.cpu_PCT)) As sparkline by host, "CPU.CPUnn.logical_core"
@@ -276,7 +276,7 @@
     </search>
 
     <search id="gaugestats">
-        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+        <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($logical_core$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.cpu_PCT") AS CPU.cpu_PCT by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
 | stats max("CPU.cpu_PCT") AS max, avg("CPU.cpu_PCT") AS avg, median("CPU.cpu_PCT") AS median by host</query>
@@ -411,6 +411,33 @@
                 <default>fields _time,host,CPU.CPUnn.logical_core,CPU.cpu_PCT</default>
                 <choice value="fields _time,host,CPU.CPUnn.logical_core,CPU.cpu_PCT">Global CPU Percent Utilization</choice>
                 <choice value="fields _time,host,CPU.CPUnn.logical_core,CPU.Idle_PCT,CPU.Sys_PCT,CPU.User_PCT,CPU.Wait_PCT">MultiSeries: Sys,User,Wait,Idle</choice>
+                <change>
+                    <condition value="fields _time,host,CPU.CPUnn.logical_core,CPU.Idle_PCT,CPU.Sys_PCT,CPU.User_PCT,CPU.Wait_PCT">
+                        <set token="form.chart">area</set>
+                        <set token="form.charting.chart.nullValueMode">connect</set>
+                        <set token="form.chart.stackingmode">stacked</set>
+                        <set token="cpu_by_category">_time, *</set>
+                        <unset token="cpu_global"></unset>
+                        <unset token="form.cpu_scaleend"></unset>
+                    </condition>
+                    <condition value="fields _time,host,CPU.CPUnn.logical_core,CPU.cpu_PCT">
+                        <set token="form.chart">line</set>
+                        <set token="form.charting.chart.nullValueMode">gaps</set>
+                        <set token="form.chart.stackingmode">default</set>
+                        <set token="cpu_global">_time, *</set>
+                        <unset token="cpu_by_category"></unset>
+                        <set token="form.cpu_scaleend">100</set>
+                    </condition>
+                </change>
+            </input>
+            <input type="checkbox" token="cpumode_cat" searchWhenChanged="true" depends="$cpu_by_category$">
+              <label>Categories:</label>
+              <choice value="Sys_PCT*">Sys_PCT</choice>
+              <choice value="User_PCT*">User_PCT</choice>
+              <choice value="Wait_PCT*">Wait_PCT</choice>
+              <choice value="Idle_PCT*">Idle_PCT</choice>
+              <default>Idle_PCT*,Wait_PCT*,User_PCT*,Sys_PCT*</default>
+              <delimiter>,</delimiter>
             </input>
             <input type="dropdown" token="chart" searchWhenChanged="true">
                 <label>Select a type of chart:</label>
@@ -481,21 +508,15 @@
                 <default>100</default>
                 <choice value="100">Ends scale at 100 %</choice>
             </input>
-            <chart>
-                <search id="timechart">
-                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)`
+            <chart rejects="$cpu_by_category$">
+                <search>
+                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($logical_core$) `$timefilter$(CPU)`
 groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
 | $charting$
-| $cpumode$
 | timechart $span$ useother=f limit=0
-$statsmode$("CPU.cpu_PCT") AS cpu_PCT,
-$statsmode$("CPU.Idle_PCT") AS Idle_PCT,
-$statsmode$("CPU.Sys_PCT") AS Sys_PCT,
-$statsmode$("CPU.User_PCT") AS User_PCT,
-$statsmode$("CPU.Wait_PCT") AS Wait_PCT
-by "CPU.CPUnn.logical_core"</query>
+$statsmode$("CPU.cpu_PCT") AS cpu_PCT by "CPU.CPUnn.logical_core" | fields _time,$cpu_global$</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>30s</refresh>
@@ -526,7 +547,59 @@ by "CPU.CPUnn.logical_core"</query>
                 <option name="charting.axisY2.scale">inherit</option>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($logical_core$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
+| $aggregate$
+| stats `CPU_ALL($statsmode$)` by _time,host, "CPU.CPUnn.logical_core"
+| sort limit=0 host | rename "CPU.*" AS * | `CPU_ALL_rename` | rename CPUnn.* AS *
+| fields _time,host,*</link>
+                </drilldown>
+            </chart>
+            <chart depends="$cpu_by_category$">
+                <search>
+                    <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($logical_core$) `$timefilter$(CPU)`
+groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
+| stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
+| $aggregate$
+| $charting$
+| timechart $span$ useother=f limit=0
+$statsmode$("CPU.Idle_PCT") AS Idle_PCT,
+$statsmode$("CPU.Sys_PCT") AS Sys_PCT,
+$statsmode$("CPU.User_PCT") AS User_PCT,
+$statsmode$("CPU.Wait_PCT") AS Wait_PCT
+by "CPU.CPUnn.logical_core" | fields _time,$cpumode_cat$</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">% CPUs</option>
+                <option name="charting.axisY.minimumNumber">$cpu_scale$</option>
+                <option name="charting.axisY.maximumNumber">$cpu_scaleend$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
+                <drilldown target="search">
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPUnn) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($logical_core$) `$timefilter$(CPU)` groupby _time, host, "CPU.CPUnn.logical_core" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, host, "CPU.CPUnn.logical_core"
 | $aggregate$
