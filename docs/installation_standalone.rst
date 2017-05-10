@@ -103,7 +103,7 @@ If you are running Splunk on **Linux, AIX or Solaris**, then you can generate Nm
 ::
 
     cd /opt/splunk/etc/apps/
-    tar -xvf /opt/splunk/etc/apps/nmon/resources/PA-nmon_light_XXXX.tgz
+    tar -xvf <YOUR PATH>/PA-nmon_light_XXXX.tgz
 
 And restart Splunk:
 
@@ -116,7 +116,7 @@ And restart Splunk:
 ::
 
     cd /opt/splunk/etc/apps/
-    tar -xvf /opt/splunk/etc/apps/nmon/resources/TA-nmon_XXXX.tgz
+    tar -xvf <YOUR PATH>/TA-nmon_XXXX.tgz
 
 And restart Splunk:
 
