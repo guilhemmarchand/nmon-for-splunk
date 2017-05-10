@@ -96,27 +96,23 @@ https://splunkbase.splunk.com/app/1753/
 
 **TA-nmon: (optional)**
 
-The TA-nmon is a tar.gz archive located in the "resources" of the core Application
-
-It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
+The TA-nmon tgz archive must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
 ::
 
     cd /opt/splunk/etc/master/apps
 
-    tar -xvzf /tmp/nmon/resources/TA-nmon_*.tar.gz
+    tar -xvzf <YOUR PATH>/TA-nmon_*.tar.gz
 
 **PA-nmon_light:**
 
-The PA-nmon_light is a tar.gz archive located in the "resources" of the core Application
-
-It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
+The PA-nmon_light must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
 ::
 
     cd /opt/splunk/etc/master/apps
 
-    tar -xvzf /tmp/nmon/resources/PA-nmon_light_*.tar.gz
+    tar -xvzf >YOUR PATH>/PA-nmon_light_*.tar.gz
 
 
 **Publish the cluster bundle to indexers, this implies an automatic rolling restart of indexers:**
@@ -170,27 +166,23 @@ Extract the content of the archive on your indexer in a temporary directory, exa
 
 **TA-nmon: (optional)**
 
-The TA-nmon is a tar.gz archive located in the "resources" of the core Application
-
-It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
+The TA-nmon tgz archive must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
 ::
 
     cd /opt/splunk/etc/apps
 
-    tar -xvzf /tmp/nmon/resources/TA-nmon_*.tar.gz
+    tar -xvzf <YOUR PATH>/TA-nmon_*.tar.gz
 
 **PA-nmon_light:**
 
-The PA-nmon_light is a tar.gz archive located in the "resources" of the core Application
-
-It must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
+The PA-nmon_light tgz archive must be uncompressed and installed in the Master Node in $SPLUNK_HOME/etc/master_apps/ (where $SPLUNK_HOME refers to the root directory of your Splunk installation)
 
 ::
 
     cd /opt/splunk/etc/apps
 
-    tar -xvzf /tmp/nmon/resources/PA-nmon_light_*.tar.gz
+    tar -xvzf <YOUR PATH>/PA-nmon_light_*.tar.gz
 
 **Restart the indexer:**
 
@@ -245,8 +237,8 @@ Extract the content of the core Application (the tar archive you downloaded from
 ::
 
     cd /opt/splunk/etc/shcluster/apps/
-    tar -xvf /tmp/nmon-performance-monitor-for-unix-and-linux-systems_*.tgz
-    tar -xvf /opt/splunk/etc/shcluster/apps/nmon/resources/TA-nmon*.tgz
+    tar -xvf <YOUR PATH>/nmon-performance-monitor-for-unix-and-linux-systems_*.tgz
+    tar -xvf <YOUR PATH>/TA-nmon*.tgz
 
 
 Finally push the configuration bundle to publish the Nmon core application to all search heads:
@@ -286,7 +278,7 @@ Uncompress the content of the tar.gz archive in $SPLUNK_HOME/etc/apps/ (where $S
 ::
 
     cd /opt/splunk/etc/apps/
-    tar -xvf /opt/splunk/etc/shcluster/apps/nmon/resources/TA-nmon*.tgz
+    tar -xvf <YOUR PATH>/TA-nmon*.tgz
 
 **Restart each search head manually:**
 
@@ -323,15 +315,13 @@ Extract the content of the archive on your indexer in a temporary directory, exa
 
     tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems*.tgz
 
-The TA-nmon is a tar.gz archive located in the "resources" of the core Application
-
-It must be uncompressed and installed in $SPLUNK_HOME/etc/deployment-apps/ (where $SPLUNK_HOME refers to the root directory of Splunk installation)
+The TA-nmon tgz archive must be uncompressed and installed in $SPLUNK_HOME/etc/deployment-apps/ (where $SPLUNK_HOME refers to the root directory of Splunk installation)
 
 ::
 
     cd /opt/splunk/etc/deployment-apps
 
-    tar -xvzf /tmp/nmon/resources/TA-nmon_*.tar.gz
+    tar -xvzf <YOUR PATH>/TA-nmon_*.tar.gz
 
 Then , ask the deployment server to update its configuration:
 
@@ -454,11 +444,10 @@ It must be uncompressed and installed in $SPLUNK_HOME/etc/apps/ (where $SPLUNK_H
 
     cd /opt/splunk/etc/apps
 
-    tar -xvzf /tmp/nmon/resources/TA-nmon_*.tar.gz
+    tar -xvzf <YOUR PATH>/TA-nmon_*.tar.gz
 
 **And restart:**
 
 ::
 
     splunk restart
-
