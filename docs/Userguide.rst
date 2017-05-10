@@ -11,7 +11,7 @@ The Nmon Performance application implements the nmon/sarmon binaries to generate
 **Keys concepts of the app can be summarize as the following:**
 
 * The nmon core application is deployed to the Splunk search head level
-* The TA-nmon package available in the resources directory of the core app is deployed to *nix clients running the Splunk Universal Forwarder or full Splunk instance
+* The TA-nmon package is to be deployed to *nix clients running the Splunk Universal Forwarder or full Splunk instance
 * On search head / standalone instances, the core app can generate the nmon data without having to deploy the TA-nmon
 * When the nmon_helper input script starts, it attempts find the best suitable binary for your system or can fallback to locally nmon binary available
 * Once the nmon binary process has been started, the data collection begins until the current process ends. (each nmon process has a time to live)
@@ -846,7 +846,7 @@ A Python script utility is provided to allow creating on demand custom TA-nmon p
 * Customize the target index name if required (eg. for example if you use the customization tool to change the default index name
 * Choose between Python Data Processing, or Perl Data Processing
 
-This Python tool is available in the "resources" directory of the Nmon Core Application (as gzip file, uncompress the script before launching)
+The "create_agent.py" Python tool is available in Git: https://github.com/guilhemmarchand/TA-nmon
 
 **Notice for updating the application: using this tool is upgrade resilient, you can create your package and repeat this operation for future release update**
 
@@ -866,11 +866,10 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
 
     This utility had been designed to allow creating customized agents for the Nmon Splunk Application, please follow these instructions:
 
-    - Download the current release of Nmon App in Splunk Base: https://apps.splunk.com/app/1753
-    - Uncompress the create_agent.py.gz script available in resources directory of the Application
-    - Place the downloaded tgz Archive and this Python tool a temporary directory of your choice
+    - Download the TA-nmon tgz archive (from Splunk base or from Git) and the create_agent.py script (from Git)
+    - Ensure to store both files in the same directory
     - Run the tool: ./create_agent.py and check for available options
-    - After the execution, a new agent package will have been created in the resources directory
+    - After the execution, a new agent package will have been created in the directory
     - Extract its content to your Splunk deployment server, configure the server class, associated clients and deploy the agent
     - Don't forget to set the application to restart splunkd after deployment
     ./create_agent.py -h
@@ -893,23 +892,22 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
 
 ::
 
-    python create_agent.py -f nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz --agentname TA-nmon-perl --agentmode perl --indexname myindex
+   ./create_agent.py -f TA-nmon_1316.tgz --agentname TA-nmon-perl --agentmode perl --indexname myindex
+   Extracting tgz Archive: TA-nmon_1316.tgz
+   INFO: Extracting Agent tgz resources Archives
+   INFO: Renaming TA-nmon default agent to TA-nmon-perl
+   Achieving files transformation...
+   Done.
+   INFO: Customizing any reference to index name in files
+   INFO: ************* Tar creation done of: TA-nmon-perl.tgz *************
 
-    Extracting tgz Archive: nmon-performance-monitor-for-unix-and-linux-systems_1514.tgz
-    INFO: Extracting Agent tgz resources Archives
-    INFO: Renaming TA-nmon default agent to TA-nmon-perl
-    Achieving files transformation...
-    Done.
-    INFO: Customizing any reference to index name in files
-    INFO: ************* Tar creation done of: TA-nmon-perl.tar.gz *************
+   *** Agent Creation terminated: To install the agent: ***
 
-    *** Agent Creation terminated: To install the agent: ***
+    - Upload the tgz Archive TA-nmon-perl.tgz to your Splunk deployment server
+    - Extract the content of the TA package in $SPLUNK_HOME/etc/deployment-apps/
+    - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
 
-     - Upload the tgz Archive TA-nmon-perl.tar.gz to your Splunk deployment server
-     - Extract the content of the TA package in $SPLUNK_HOME/etc/deployment-apps/
-     - Configure the Application (set splunkd to restart), server class and associated clients to push the new package to your clients
-
-    Operation terminated.
+   Operation terminated.
 
 .. _Nmon_SplunkApp_Customize_py:
 
@@ -959,7 +957,7 @@ This Python tool is available in the "resources" directory of the Nmon Core Appl
     - Place the downloaded tgz Archive and this Python tool in the directory of your choice
     - Run the tool: ./customize_indexname.py and check for available options
 
-    After the execution, the Application (including TA-nmon and PA-nmon in resources) will have been customized and are ready to be used
+    After the execution, the application will have been customized and is ready to be used
 
 **Getting help with available options:**
 
@@ -1127,20 +1125,12 @@ We will want to have 2 different versions of the TA-nmon, one for each data cent
 
 For the example purpose, I will assume you upload the tgz archive to /tmp
 
-::
-
-    mkdir $HOME/nmon_workingdir
-    cd $HOME/nmon_workingdir
-    tar -xvzf nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz -C $HOME/nmon_workingdir
-    cp nmon/resources/create_agent.py.gz .
-    gunzip -v create_agent.py.gz
-
 *Create the packages:*
 
 ::
 
-    python create_agent.py --indexname nmon_perf_unix_datacenter_US --agentname TA-nmon-datacenter-US -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
-    python create_agent.py --indexname nmon_perf_unix_datacenter_UK --agentname TA-nmon-datacenter-UK -f /tmp/nmon-performance-monitor-for-unix-and-linux-systems_<VERSION>.tgz
+    python create_agent.py --indexname nmon_perf_unix_datacenter_US --agentname TA-nmon-datacenter-US -f /tmp/TA-nmon_<VERSION>.tgz
+    python create_agent.py --indexname nmon_perf_unix_datacenter_UK --agentname TA-nmon-datacenter-UK -f /tmp/TA-nmon_<VERSION>.tgz
 
 *This will generate 2 TA-nmon packages to be deployed to each group of data center servers:*
 
