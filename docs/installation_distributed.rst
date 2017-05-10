@@ -15,9 +15,9 @@ Installation for distributed deployments
 
 * **Core App**: This is the full package you download in Splunk Base (tgz archive)
 
-* **PA-nmon_light**: Available in the resources directory of the Core App (tgz archive)
+* **PA-nmon_light**: Available in the Git repository https://github.com/guilhemmarchand/PA-nmon_light (tgz archive)
 
-* **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
+* **TA-nmon**: Available in Splunk base https://splunkbase.splunk.com/app/3248 and https://github.com/guilhemmarchand/TA-nmon (tgz archive)
 
 +-----------------------------------+------------+---------------+---------------------+
 | Splunk Instance                   | Core App   | PA-nmon_light | TA-nmon             |

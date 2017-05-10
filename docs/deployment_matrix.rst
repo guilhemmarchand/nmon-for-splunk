@@ -9,11 +9,9 @@ What goes where ?
 
 * **Core App**: This is the full package you download in Splunk Base (tgz archive)
 
-* **PA-nmon_light**: Available in the resources directory of the Core App (tgz archive)
+* **PA-nmon_light**: Available in the Git repository https://github.com/guilhemmarchand/PA-nmon_light (tgz archive)
 
-* **TA-nmon**: Available in the resources directory of the Core App (tgz archive)
-
-**The TA-nmon is also available for download as an independent application in Splunk base:** https://splunkbase.splunk.com/app/3248/
+* **TA-nmon**: Available in Splunk base https://splunkbase.splunk.com/app/3248 and https://github.com/guilhemmarchand/TA-nmon (tgz archive)
 
 *Notes:*
 

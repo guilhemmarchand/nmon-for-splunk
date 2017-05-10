@@ -121,24 +121,5 @@ Available packages
 **There are different packages:**
 
 * The ***Nmon core*** Application: this is the whole package you download in Splunk App (directory called "nmon")
-
-* The ***PA-nmon_light*** addon, available in the "resources" directory of the core App, this package is expected to be deployed in indexers
-* The ***TA-nmon*** addon, available in the "resources" directory of the core App, can be deployed to any AIX / Linux / Solaris Full or Universal forwarder instance, master node of a cluster, deployment server, standalone instances, clustered indexers...
-
-The PA-nmon_light and TA-nmon packages are available in the **resources** directory of the Nmon core application you download in Splunk Base.
-
-The TA-nmon is also available independently in Splunk base:
-
-* https://splunkbase.splunk.com/app/3248
-
-
-
-
-
-
-
-
-
-
-
-
+* The **PA-nmon_light** addon, available in the Git repository https://github.com/guilhemmarchand/PA-nmon_light (tgz archive), this package is expected to be deployed in indexers
+* The **TA-nmon** addon, available in Splunk base https://splunkbase.splunk.com/app/3248 and https://github.com/guilhemmarchand/TA-nmon (tgz archive), can be deployed to any AIX / Linux / Solaris Full or Universal forwarder instance, master node of a cluster, deployment server, standalone instances, clustered indexers...

@@ -25,9 +25,13 @@ This Python script (must be uncompressed before execution) is a tool provided to
 
 Detailed documentation: :ref:`Nmon_SplunkApp_Customize_py`
 
-* resources/create_agent.py.gz:
+****************
+Additional tools
+****************
 
-This Python script (must be uncompressed before execution) is a tool provided to create different version of the TA-nmon technical addon.
+* create_agent.py available in the Git repository https://github.com/guilhemmarchand/TA-nmon:
+
+This Python script is a tool provided to create different version of the TA-nmon technical addon.
 
 For example, you can use it to create a specific TA-nmon version for your critical production servers, and another version for your non production servers.
 
