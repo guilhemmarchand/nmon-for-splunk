@@ -59,9 +59,7 @@ Deploying the TA-nmon
 
 **Manually:**
 
-The TA-nmon is a tar.gz archive located in the "resources" of the core Application.
-
-It must be uncompressed and installed in the indexer in $SPLUNK_HOME/etc/deployment-apps/ (where $SPLUNK_HOME refers to the root directory of Splunk installation)
+The TA-nmon tgz archive must be uncompressed and installed in the indexer in $SPLUNK_HOME/etc/deployment-apps/ (where $SPLUNK_HOME refers to the root directory of Splunk installation)
 
 ::
 
