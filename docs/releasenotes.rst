@@ -30,6 +30,7 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
+- fix certification issues: TA-nmon and PA-nmon_light are not anymore embedded in the core application and must be downloaded externally
 - Lower data model acceleration load with per data model schedule configuration #68
 - Net stats not associated with time range selector in Nmon Summary
 - IOPS and NET stats rendering improvements in Analyser views
