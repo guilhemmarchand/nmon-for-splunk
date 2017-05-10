@@ -50,11 +50,9 @@ Consult the TA-nmon documentation: http://ta-nmon.readthedocs.io
 
 * Both add-ons are compatible with any Splunk version 6.x (full instance of Universal Forwarder)
 
-The TA-nmon add-on is available in the resources directory of the core application.
+The TA-nmon add-on is designed to be deployed on full Splunk instances or Universal Forwarders, **it is only compatible with Splunk 6.x.**
 
-It is designed to be deployed on full Splunk instances or Universal Forwarders, **it is only compatible with Splunk 6.x.**
-
-The PA-nmon_light add-on is a minimal addon designed to be installed on indexers (clusters or standalone), this package contains the default "nmon" index definition and parsing configuration. It excludes any kind of binaries, inputs or scripts, and does not collect nmon data.
+The PA-nmon_light add-on is a minimal add-on designed to be installed on indexers (clusters or standalone), this package contains the default "nmon" index definition and parsing configuration. It excludes any kind of binaries, inputs or scripts, and does not collect nmon data.
 
 ---------------------
 Index time operations
