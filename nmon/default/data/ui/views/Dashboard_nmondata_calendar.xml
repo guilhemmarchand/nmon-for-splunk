@@ -1,0 +1,133 @@
+<form script="autodiscover.js,viz_calendarheatmap.js,custom_layout.js" stylesheet="ui_simple.css" isVisible="true">
+    <label>Dashboard Nmon Data Avaibility, Number of hosts per day and per Monitor</label>
+    <description>This dashboard provides an heatmap calendar view of Nmon Performance Data Avaibility per Monitor</description>
+
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-30d@d</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+
+        <input type="dropdown" token="monitor" searchWhenChanged="true">
+            <label>Performance Monitor:</label>
+            <choice value="NMON_Data_CPU,CPU_ALL">CPU_ALL</choice>
+            <choice value="NMON_Data_DISKBSIZE,DISKBSIZE">DISKBSIZE</choice>
+            <choice value="NMON_Data_DISKBUSY,DISKBUSY">DISKBUSY</choice>
+            <choice value="NMON_Data_DISKREADWRITE,DISKREADWRITE">DISKREAD/WRITE</choice>
+            <choice value="NMON_Data_DISKXFER,DISKXFER">DISKXFER</choice>
+            <choice value="NMON_Data_DISKRIOWRIO,DISKRIOWRIO">DISKRIO/WRIO</choice>
+            <choice value="NMON_Data_DISKSVCTM,DISKSVCTM">DISKSVCTM</choice>
+            <choice value="NMON_Data_DISKWAITTM,DISKWAITTM">DISKWAITTM</choice>
+            <choice value="NMON_Data_FC,READWRITE">FCREAD/FCWRITE</choice>
+            <choice value="NMON_Data_FC,XFERINOUT">FCXFERIN/FCXFEROUT</choice>
+            <choice value="NMON_Data_FILE,FILE">FILE</choice>
+            <choice value="NMON_Data_IOADAPT,IOADAPT">IOADAPT</choice>
+            <choice value="NMON_Data_CPU,LPAR">LPAR</choice>
+            <choice value="NMON_Data_MEM,MEM">MEM</choice>
+            <choice value="NMON_Data_MEMNEW,MEMNEW">MEMNEW</choice>
+            <choice value="NMON_Data_MEMUSE,AIX">MEMUSE (AIX)</choice>
+            <choice value="NMON_Data_MEMUSE,Solaris">MEMUSE (Solaris)</choice>
+            <choice value="NMON_Data_NET,NET">NET</choice>
+            <choice value="NMON_Data_NET,NETERROR">NETERROR</choice>
+            <choice value="NMON_Data_NET,NETPACKET">NETPACKET</choice>
+            <choice value="NMON_Data_NFS,NFS_V2">NFSSVRV2</choice>
+            <choice value="NMON_Data_NFS,NFS_V3">NFSSVRV3</choice>
+            <choice value="NMON_Data_NFS,NFS_V4">NFSSVRV4</choice>
+            <choice value="NMON_Data_NFS,NFSCLIV2">NFSCLIV2</choice>
+            <choice value="NMON_Data_NFS,NFSCLIV3">NFSCLIV3</choice>
+            <choice value="NMON_Data_NFS,NFSCLIV4">NFSCLIV4</choice>
+            <choice value="NMON_Data_PAGE,PAGE_AIX">PAGE</choice>
+            <choice value="NMON_Data_PROC,PROC">PROC</choice>
+            <choice value="NMON_Data_PROCSOL,PROCSOL">PROCSOL</choice>
+            <choice value="NMON_Data_SEA,SEA">SEA</choice>
+            <choice value="NMON_Data_SEA,SEAPACKET">SEAPACKET</choice>
+            <choice value="NMON_Data_SEA,SEACHPHY">SEACHPHY</choice>
+            <choice value="NMON_Data_TOP,TOP_ALLOS">TOP</choice>
+            <choice value="NMON_Data_UARG,UARG">UARG</choice>
+            <choice value="NMON_Data_VM,Linux">VM (Linux)</choice>
+            <choice value="NMON_Data_VM,Solaris">VM (Solaris)</choice>
+            <choice value="NMON_Data_WLM,WLMPROJECTCPU">WLMPROJECTCPU</choice>
+            <choice value="NMON_Data_WLM,WLMZONECPU">WLMZONECPU</choice>
+            <choice value="NMON_Data_WLM,WLMTASKCPU">WLMTASKCPU</choice>
+            <choice value="NMON_Data_WLM,WLMPROJECTMEM">WLMUSERCPU</choice>
+            <choice value="NMON_Data_WLM,WLMUSERCPU">WLMPROJECTMEM</choice>
+            <choice value="NMON_Data_WLM,WLMZONEMEM">WLMZONEMEM</choice>
+            <choice value="NMON_Data_WLM,WLMTASKMEM">WLMTASKMEM</choice>
+            <choice value="NMON_Data_WLM,WLMUSERMEM">WLMUSERMEM</choice>
+            <default>NMON_Data_CPU,CPU_ALL</default>
+        </input>
+
+        <input type="dropdown" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameid_populate">
+                <query>| pivot `frameID_populate($monitor$)`</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>frameID</fieldForLabel>
+            <fieldForValue>frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="host" searchWhenChanged="true">
+            <label>Filter host</label>
+            <default>*</default>
+        </input>
+
+    </fieldset>
+
+    <!-- BaseSearch for post processing -->
+
+    <search id="volume_perday">
+        <query>| pivot `heatmap_calendar_dcount($monitor$,$frameID$,$host$)`</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+        <panel>
+            <title>Distinct count of hosts per day</title>
+
+            <single>
+                <search base="volume_perday">
+                    <query>stats max("Distinct count of hosts per day") AS count</query>
+                </search>
+                <option name="underLabel">MAX HOSTS PER DAY</option>
+                <option name="drilldown">all</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot `heatmap_calendar_dcount($monitor$,$frameID$,$host$)` | stats max("Distinct count of hosts per day") AS max_dcount, avg("Distinct count of hosts per day") AS avg_dcount | eval avg_dcount=round(avg_dcount,0)&amp;earliest=$timerange.earliest$&amp;latest=$timerange.latest$</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="volume_perday">
+                    <query>stats avg("Distinct count of hosts per day") AS count | eval count=round(count,0)</query>
+                </search>
+                <option name="underLabel">AVG HOSTS PER DAY</option>
+                <option name="drilldown">all</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot `heatmap_calendar_dcount($monitor$,$frameID$,$host$)` | stats max("Distinct count of hosts per day") AS max_dcount, avg("Distinct count of hosts per day") AS avg_dcount | eval avg_dcount=round(avg_dcount,0)&amp;earliest=$timerange.earliest$&amp;latest=$timerange.latest$</link>
+                </drilldown>
+            </single>
+
+            <html>
+                <div id="calendarheatmap" class="splunk-view" data-require="app/nmon/components/calendarheatmap/calendarheatmap" data-options='{
+          "managerid": "volume_perday",
+          "domain": "month",
+          "subDomain": "x_day",
+          "subDomainTextFormat": "%d",
+          "cellRadius": "5"
+        }'>
+                </div>
+            </html>
+        </panel>
+
+    </row>
+
+</form>

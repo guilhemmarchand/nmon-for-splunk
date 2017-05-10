@@ -1,0 +1,42 @@
+<panel>
+  <title>LPAR: Table stats Partitions CPU Usage by frameID,hostname</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
+  <input type="text" token="frameID" searchWhenChanged="true">
+    <label>frameID:</label>
+    <default>*</default>
+    <prefix>frameID="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="hostname" searchWhenChanged="true">
+    <label>hostname:</label>
+    <default>*</default>
+    <prefix>hostname="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <table>
+    <search>
+      <query>eventtype=nmon:performance type=LPAR $frameID$ $hostname$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| stats min(vp_usage) AS "Min VP CPU usage", avg(vp_usage) AS "Avg VP CPU usage", max(vp_usage) AS "Max VP CPU usage", max(entitled) AS entitled, max(virtualCPUs) AS virtualCPUs, sparkline(avg(vp_usage)) As sparkline by frameID,hostname | eval "Avg VP CPU usage"=round('Avg VP CPU usage', 2) | sort frameID,hostname</query>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
+    </search>
+    <option name="wrap">true</option>
+    <option name="rowNumbers">false</option>
+    <option name="dataOverlayMode">none</option>
+    <option name="drilldown">cell</option>
+    <option name="count">20</option>
+    <format type="sparkline" field="sparkline">
+      <option name="lineColor">#5379af</option>
+      <option name="fillColor">#CCDDFF</option>
+      <option name="lineWidth">1</option>
+      <option name="height">25</option>
+    </format>
+  </table>
+</panel>

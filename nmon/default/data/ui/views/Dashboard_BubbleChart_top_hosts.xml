@@ -1,0 +1,202 @@
+<form script="autodiscover.js" stylesheet="ui_simple.css" isVisible="true">
+    <label>Dashboard TOP Hosts, Higher CPU Load Hosts for All OS</label>
+    <description>Easily visualize hosts with high level of resources utilization using Bubble charts</description>
+
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>*</default>
+            <prefix>CPU.OStype=</prefix>
+            <choice value="*">Any OS</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) ($osfilter$) groupby "CPU.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "CPU.frameID"
+| sort limit=0 "CPU.frameID"
+| fields - _span | fillnull Count | fields "CPU.frameID"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>CPU.frameID=</valuePrefix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>CPU.frameID</fieldForLabel>
+            <fieldForValue>CPU.frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+
+        <input type="multiselect" token="host" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="hostsSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (host=$host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>host=</valuePrefix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
+            <default>*</default>
+        </input>
+
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Stats mode:</label>
+            <default>avg</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+
+    </fieldset>
+
+    <!-- Search based for post processing -->
+
+    <search id="baseSearch">
+        <query>| tstats max(CPU.cpu_PCT) AS cpu_PCT from datamodel=NMON_Data_CPU
+where (nodename = CPU.CPU_ALL) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(CPU)` groupby _time, CPU.frameID, host prestats=true span=1m
+| stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, host
+| stats $statsmode$(cpu_PCT) AS usage by CPU.frameID, host | rename CPU.frameID AS frameID
+| fields frameID,host,usage,*</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+        <panel>
+            <title>TOP 100: Graphical Representation of Hosts (ordered by CPU Usage)</title>
+            <html>
+                <div id="bubbleSearch"
+                     class="splunk-manager"
+                     data-require="splunkjs/mvc/searchmanager"
+                     data-options='{
+                    "search": {
+								"type": "token_safe",
+                    		"value": "| tstats max(CPU.cpu_PCT) AS cpu_PCT from datamodel=NMON_Data_CPU
+where (nodename = CPU.CPU_ALL) (host=$$host-prefilter$$) ($$frameID$$) ($$osfilter$$) ($$host$$) `$$timefilter$$(CPU)` groupby _time, CPU.frameID, host prestats=true span=1m
+| stats dedup_splitvals=t max(CPU.cpu_PCT) AS cpu_PCT by _time, CPU.frameID, host
+| stats $$statsmode$$(cpu_PCT) AS usage by CPU.frameID, host | rename CPU.frameID AS frameID | sort - usage | head 100"
+						  },
+          			  "earliest_time": {
+            				"type": "token_safe",
+            				"value": "$$timerange.earliest$$"
+          				},
+          				"latest_time": {
+            				"type": "token_safe",
+            				"value": "$$timerange.latest$$"
+          				},
+                    "auto_cancel": 90,
+                    "preview": true
+                 }'>
+                </div>
+                <div id="bubbleChart"
+                     class="splunk-view"
+                     data-require="app/nmon/components/bubblechart/bubblechart"
+                     data-options='{
+                    "managerid": "bubbleSearch",
+                    "nameField": "host",
+                    "categoryField": "host",
+                    "valueField": "usage",
+                    "height": 600
+                 }'>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <title>TOP 50 CPU Usage Hosts (ordered by CPU Usage percentage of capacity)</title>
+            <chart>
+                <search base="baseSearch">
+                    <query>| eval usage_PCT=if(isnum(usage_PCT), usage, usage_PCT) | sort - usage_PCT | fields host,usage | head 50
+| eval xlabel=""| chart max(usage) AS usage useother=f limit=0 by xlabel,host
+| rename xlabel AS "CPU % usage"</query>
+                </search>
+                <option name="charting.chart.columnSpacing">5</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">column</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleY.text">% CPU usage</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <title>Hosts CPU Usage Table Stats (ordered by host)</title>
+
+            <table>
+                <search base="baseSearch">
+                    <query>| eval usage=round(usage, 3) | eval usage_PCT=round(usage_PCT, 3) | sort frameID,host</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">50</option>
+            </table>
+
+        </panel>
+    </row>
+
+
+</form>

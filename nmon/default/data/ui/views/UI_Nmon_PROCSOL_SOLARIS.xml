@@ -1,0 +1,424 @@
+<form stylesheet="ui_simple.css,panel_decoration.css" script="link_switcher.js, autodiscover.js" isVisible="true">
+    <label>UI PROCSOL, Percentage of Time Processes have spent in (Solaris)</label>
+    <description>User Interface for the Solaris PROCSOL monitor</description>
+
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>TimeRange:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) groupby "PROCSOL.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "PROCSOL.frameID"
+| sort limit=0 "PROCSOL.frameID"
+| fields - _span | fillnull Count | fields "PROCSOL.frameID"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>PROCSOL.frameID="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>PROCSOL.frameID</fieldForLabel>
+            <fieldForValue>PROCSOL.frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+
+        <input type="multiselect" token="host" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="hostsSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (host=$host-prefilter$) ($frameID$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>host="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
+        </input>
+
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Select a stats mode:</label>
+            <default>max</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+
+        <input type="checkbox" token="charting" searchWhenChanged="true">
+            <label>Charting:</label>
+            <default>fields *</default>
+            <choice value="fields *">On</choice>
+        </input>
+
+    </fieldset>
+
+    <search id="BaseSearch">
+        <query>| tstats
+max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT
+from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (host=$host-prefilter$) ($frameID$) ($host$) `$timefilter$(PROCSOL)`
+groupby _time, "PROCSOL.frameID", host prestats=true
+| stats dedup_splitvals=t max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, host
+| stats
+$statsmode$(USR) As "USR (%time in User Mode)", sparkline($statsmode$(USR)) As "spk_USR",
+$statsmode$(SYS) As "SYS (%time in System Mode)", sparkline($statsmode$(SYS)) As "spk_SYS",
+$statsmode$(TRP) As "TRP (%time Processing system traps)", sparkline($statsmode$(TRP)) As "spk_TRP",
+$statsmode$(TFL) As "TFL (%time Processing text page faults)", sparkline($statsmode$(TFL)) As "spk_TFL",
+$statsmode$(DFL) As "DFL (%time Processing data page faults)", sparkline($statsmode$(DFL)) As "spk_DFL",
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)", sparkline($statsmode$(LAT)) As "spk_LAT" by host</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- Help the user -->
+
+    <row rejects="$host$">
+        <panel>
+            <html>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- Information panel -->
+
+    <row>
+        <panel>
+            <html>
+
+                <div class="imgheader">
+                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+                    <h4><a data-toggle="modal" data-target="#Help_modal">Help, information and related links for PROCSOL statistics</a></h4>
+                </div>
+
+                <!-- Modal -->
+                <div class="modal custom-modal-60 fade" id="Help_modal" tabindex="-1" role="dialog" aria-labelledby="Help_modal_Label">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"></span></button>
+                                <div style="text-align: left;">
+                                    <h4 class="modal-title" id="Help_modal_Label">Integrated Navigation:</h4>
+                                </div>
+                            </div>
+                            <div class="modal-body">
+
+                                <div style="text-align: center;">
+                                    <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="CPU"/>
+                                    <h1>Percentage of Time Processes have spent in (PROCSOL)</h1>
+                                </div>
+
+                                <div style="text-align: left;">
+
+                                    <h1>Main fields:</h1>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>USR (%):</b> The percentage of time all processes have spent in user mode (estimation since terminated processes are not accounted)</li>
+                                            <li><b>SYS (%):</b> The percentage of time all processes have spent in system mode (estimation since terminated processes are not accounted)</li>
+                                            <li><b>TRP (%):</b> The percentage of time all processes have spent in processing system traps (estimation since terminated processes are not accounted)</li>
+                                        </lu>
+                                    </div>
+
+                                    <div class="list">
+                                        <lu>
+                                            <li><b>TFL (%):</b> The percentage of time all processes have spent processing text page faults (estimation since terminated processes are not accounted)</li>
+                                            <li><b>DFL (%):</b> The percentage of time all processes have spent processing data page faults (estimation since terminated processes are not accounted)</li>
+                                            <li><b>LAT (%):</b> The percentage of time all processes have spent waiting for CPU (estimation since terminated processes are not accounted)</li>
+                                        </lu>
+                                    </div>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related links:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon:performance:kernel%20type%3DPROCSOL" class="tryitbtnxl">Explore RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="pivot?model=%2FservicesNS%2Fnobody%2Fnmon%2Fdatamodel%2Fmodel%2FNMON_Data_PROCSOL" class="tryitbtnxl">PIVOT Data model »
+                                    </a>
+
+                                    <a target="_blank" href="UI_data_dictionary?&amp;form.itemfilter=PROCESSES%20STATISTICS" class="tryitbtnxl">Processes Data Dictionary »
+                                    </a>
+
+                                </div>
+
+                                <div style="text-align:left;">
+                                    <h1>Related metrics:</h1>
+                                </div>
+
+                                <div style="text-align: center;" class="cat_title">
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Aprocess%20type%3DTOP" class="tryitbtnxl">TOP RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Aprocess%20type%3DUARG" class="tryitbtnxl">UARG RAW DATA »
+                                    </a>
+
+                                    <a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%3Acpu%20type%3DCPU_ALL" class="tryitbtnxl">CPU_ALL RAW DATA »
+                                    </a>
+
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <table>
+                <title>Table Stats</title>
+                <search base="BaseSearch">
+                    <query>fields host, "USR (%time in User Mode)", "spk_USR","SYS (%time in System Mode)", "spk_SYS","TRP (%time Processing system traps)","spk_TRP"</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <format type="sparkline" field="spk_USR">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="sparkline" field="spk_SYS">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="sparkline" field="spk_TRP">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="color" field="USR (%time in User Mode)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="SYS (%time in System Mode)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="TRP (%time Processing system traps)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <table>
+                <title/>
+                <search base="BaseSearch">
+                    <query>fields, host, "TFL (%time Processing text page faults)", "spk_TFL", "DFL (%time Processing data page faults)", "spk_DFL", "LAT (%time Waiting for CPU)", "spk_LAT"</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="spk_TFL">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="sparkline" field="spk_DFL">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="sparkline" field="spk_LAT">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="color" field="TFL (%time Processing text page faults)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="DFL (%time Processing data page faults)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="LAT (%time Waiting for CPU)">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$charting$">
+        <panel id="settings">
+            <title>Charting parameters</title>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$charting$">
+        <panel id="process">
+            <title>Processes statistics</title>
+            <chart>
+                <title>Chart - Percentage of Time All processes have spent in: (estimation since terminated processes are not accounted)</title>
+                <search>
+                    <query>| tstats
+max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT
+from datamodel=NMON_Data_PROCSOL where (nodename = PROCSOL) (host=$host-prefilter$) ($frameID$) ($host$) `$timefilter$(PROCSOL)`
+groupby _time, "PROCSOL.frameID", host prestats=true
+| stats dedup_splitvals=t max("PROCSOL.USR") AS USR max("PROCSOL.SYS") AS SYS max("PROCSOL.TRP") AS TRP max("PROCSOL.TFL") AS TFL
+max("PROCSOL.DFL") AS DFL max("PROCSOL.LAT") AS LAT by _time, host
+| timechart $span$ limit=0 useother=f
+$statsmode$(USR) As "USR (%time in User Mode)", $statsmode$(SYS) As "SYS (%time in System Mode)", $statsmode$(TRP) As "TRP (%time Processing system traps)",
+$statsmode$(TFL) As "TFL (%time Processing text page faults)", $statsmode$(DFL) As "DFL (%time Processing data page faults)",
+$statsmode$(LAT) As "LAT (%time Waiting for CPU)" by host</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisTitleY.text">% Of Time</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+</form>

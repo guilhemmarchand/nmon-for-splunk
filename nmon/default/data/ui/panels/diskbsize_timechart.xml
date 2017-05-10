@@ -1,0 +1,63 @@
+<panel>
+  <title>DISKBSIZE: timechart Disk Avg Data Transfer (Kbytes per transfer)</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
+  <input type="text" token="frameID" searchWhenChanged="true">
+    <label>frameID:</label>
+    <default>*</default>
+    <prefix>frameID="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="hostname" searchWhenChanged="true">
+    <label>hostname:</label>
+    <default>*</default>
+    <prefix>hostname="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="device" searchWhenChanged="true">
+    <label>device:</label>
+    <default>*</default>
+    <prefix>device="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <chart>
+    <search>
+      <query>eventtype=nmon:performance type=DISKBSIZE OR type=DISKWRITE $frameID$ $hostname$ $device$
+| dedup _time,frameID,hostname,device,value
+| bucket _time span=1m
+| stats avg(value) AS value by _time,frameID,hostname
+| timechart `nmon_span` avg(value) AS "data_transfer" by hostname</query>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
+    </search>
+    <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+    <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+    <option name="charting.axisTitleX.visibility">visible</option>
+    <option name="charting.axisTitleY.visibility">visible</option>
+    <option name="charting.axisTitleY2.visibility">visible</option>
+    <option name="charting.axisX.scale">linear</option>
+    <option name="charting.axisY.minimumNumber">0</option>
+    <option name="charting.axisY.scale">linear</option>
+    <option name="charting.axisY2.enabled">0</option>
+    <option name="charting.axisY2.scale">inherit</option>
+    <option name="charting.chart">line</option>
+    <option name="charting.chart.bubbleMaximumSize">50</option>
+    <option name="charting.chart.bubbleMinimumSize">10</option>
+    <option name="charting.chart.bubbleSizeBy">area</option>
+    <option name="charting.chart.nullValueMode">gaps</option>
+    <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+    <option name="charting.chart.stackMode">stacked100</option>
+    <option name="charting.chart.style">shiny</option>
+    <option name="charting.drilldown">all</option>
+    <option name="charting.layout.splitSeries">0</option>
+    <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+    <option name="charting.legend.placement">top</option>
+    <option name="charting.axisTitleY.text">KBytes per transfer</option>
+    <option name="height">450</option>
+  </chart>
+</panel>

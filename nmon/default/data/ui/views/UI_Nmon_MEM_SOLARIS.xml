@@ -1,0 +1,385 @@
+<form stylesheet="ui_simple.css,panel_decoration.css" script="link_switcher.js, autodiscover.js" isVisible="true">
+    <label>UI MEM, Solaris Memory and Swap Usage</label>
+    <description>User Interface the MEM monitor</description>
+
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-24h</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>Solaris</default>
+            <prefix>MEM.OStype="</prefix>
+            <suffix>"</suffix>
+            <choice value="*">Any OS</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+
+        <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search id="frameIDSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($osfilter$) groupby "MEM.frameID" prestats=true
+| stats dedup_splitvals=t count AS Count by "MEM.frameID"
+| sort limit=0 "MEM.frameID"
+| fields - _span | fillnull Count | fields "MEM.frameID"</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>MEM.frameID="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>MEM.frameID</fieldForLabel>
+            <fieldForValue>MEM.frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <prefix>host="</prefix>
+            <suffix>"</suffix>
+            <default>*</default>
+        </input>
+
+        <input type="multiselect" token="host" searchWhenChanged="true">
+            <label>Hosts Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="hostsSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) groupby host prestats=true
+| stats dedup_splitvals=t count AS Count by host
+| sort limit=0 host
+| fields - _span | fillnull Count | fields host</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>host="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL Hosts</choice>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
+        </input>
+
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Select a stats mode:</label>
+            <default>max</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+
+        <input type="dropdown" token="memmode" searchWhenChanged="true">
+            <label>Show Mem load by:</label>
+            <default>fields - *_PCT*</default>
+            <choice value="fields - *_PCT*">Activity in Data Volume (MB)</choice>
+            <choice value="fields _time,frameID,host,memused_PCT*,swapused_PCT*">Usage in percentage (%)</choice>
+            <choice value="fields _time,frameID,host,memfree_PCT*,swapfree_PCT*">Free in percentage (%)</choice>
+        </input>
+
+        <input type="checkbox" token="charting" searchWhenChanged="true">
+            <label>Charting:</label>
+            <default>fields *</default>
+            <choice value="fields *">On</choice>
+        </input>
+
+    </fieldset>
+
+    <search id="Global">
+        <query>| tstats
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
+max("MEM.memtotal") AS memtotal_MB max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", host prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
+max("MEM.memtotal") AS memtotal_MB max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
+by _time, "MEM.frameID", host | sort limit=0 host
+| fields - _span
+| rename "MEM.frameID" AS "frameID"
+| stats dedup_splitvals=t
+$statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT
+$statsmode$("memtotal_MB") AS memtotal_MB $statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB
+$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB
+by frameID, host | sort limit=0 frameID,host
+| fields frameID, host, memused_MB, memused_PCT, memfree_MB, memfree_PCT, memtotal_MB, swapused_MB, swapused_PCT, swapfree_MB, swapfree_PCT, swaptotal_MB
+| foreach *_MB [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 0)]
+| foreach *_PCT [eval &lt;&lt;FIELD&gt;&gt;=round(&lt;&lt;FIELD&gt;&gt;, 2)]</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- Help the user -->
+
+    <row rejects="$host$">
+        <panel>
+            <html>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- Information panel -->
+
+    <row>
+        <panel>
+            <html>
+
+                <div class="imgheader">
+                    <img src="../../static/app/nmon/icons/grey_theme/info.png" alt="Info"/>
+                    <h4>Metrics information:  <a href="/app/nmon/Howto_MEM_spl" target="_blank">(Open the Howto build Nmon statistics for MEM)</a></h4>
+                </div>
+
+                <div class="list">
+                    <lu>
+                        <li><b>memtotal:</b> (MB) total usable physical memory</li>
+                        <li><b>swaptotal:</b> (MB) swapfree + swapused</li>
+                        <li><b>memfree:</b> (MB) free physical memory</li>
+                        <li><b>swapfree:</b> (MB) Free swap space</li>
+                        <li><b>swapused:</b> (MB) used swap (reserved + allocated)</li>
+                    </lu>
+                </div>
+
+                <div class="list">
+                    <lu>
+                        <li><b>memused:</b> (%) Percentage of memory used</li>
+                        <li><b>swapused:</b> (%) Percentage of swap used</li>
+                        <li><b>memfree:</b> (%) Percentage of memory free</li>
+                        <li><b>swapfree:</b> (%) Percentage of swap free</li>
+                    </lu>
+                    <br />
+                </div>
+
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <table>
+                <title>MEM - Memory Table Stats</title>
+                <search base="Global">
+                    <query>fields frameID, host, mem* | $memmode$ | fields - _time</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <format type="color" field="memused_MB">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="memused_PCT">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+            </table>
+        </panel>
+        <panel>
+            <table>
+                <title>MEM - Swap Table Stats</title>
+                <search base="Global">
+                    <query>fields frameID, host, swap* | $memmode$ | fields - _time</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <format type="color" field="swapused_MB">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="swapused_PCT">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$charting$">
+        <panel id="settings">
+            <title>Charting parameters</title>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$charting$">
+        <panel id="memory">
+            <title>Memory statistics</title>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link10,link11">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link10">
+                <title>Memory Usage</title>
+                <search>
+                    <query>| tstats
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
+max("MEM.memtotal") AS memtotal_MB
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", host prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("MEM.memused") AS memused_MB max("MEM.memused_PCT") AS memused_PCT max("MEM.memfree") AS memfree_MB max("MEM.memfree_PCT") AS memfree_PCT
+max("MEM.memtotal") AS memtotal_MB
+by _time, "MEM.frameID", host
+| $charting$
+| timechart $span$ useother=f limit=0 dedup_splitvals=t
+$statsmode$("memused_MB") AS memused_MB $statsmode$("memused_PCT") AS memused_PCT $statsmode$("memfree_MB") AS memfree_MB $statsmode$("memfree_PCT") AS memfree_PCT
+$statsmode$("memtotal_MB") AS memtotal_MB by host | $memmode$</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Memory Usage</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
+            </chart>
+            <chart id="link11">
+                <title>Swap Usage</title>
+                <search>
+                    <query>| tstats
+max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
+from datamodel=NMON_Data_MEM where (nodename = MEM) ($host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(MEM)`
+groupby _time, "MEM.frameID", host prestats=true span=1m
+| bucket _time span=1m
+| stats dedup_splitvals=t
+max("MEM.swapused") AS swapused_MB max("MEM.swapused_PCT") AS swapused_PCT max("MEM.swapfree") AS swapfree_MB
+max("MEM.swapfree_PCT") AS swapfree_PCT max("MEM.swaptotal") AS swaptotal_MB
+by _time, "MEM.frameID", host
+| $charting$
+| timechart $span$ useother=f limit=0 dedup_splitvals=t
+$statsmode$("swapused_MB") AS swapused_MB $statsmode$("swapused_PCT") AS swapused_PCT $statsmode$("swapfree_MB") AS swapfree_MB
+$statsmode$("swapfree_PCT") AS swapfree_PCT $statsmode$("swaptotal_MB") AS swaptotal_MB by host | $memmode$</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Swap Usage</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+</form>

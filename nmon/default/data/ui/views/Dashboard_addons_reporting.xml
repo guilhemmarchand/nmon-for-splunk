@@ -1,0 +1,409 @@
+<form stylesheet="ui_simple.css" script="link_switcher.js, autodiscover.js" isVisible="true">
+    <label>Add-ons reporting dashboard</label>
+    <description>Deployment Reporting of add-ons within last 30 days</description>
+
+    <search id="addon_report" ref="Add-on version per host">
+    </search>
+
+    <search id="Global_deploy" ref="TA-nmon package deployment reporting (requires _internal access)">
+    </search>
+
+    <search id="Global_clients" ref="Universal Forwarders Configuration Report">
+    </search>
+
+    <search id="Global_interpreter">
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing last(converter_inuse) AS converter_inuse last(interpreter_version) AS interpreter_version SPLITROW _time AS _time PERIOD minute SPLITROW hostname AS hostname SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| dedup hostname converter_inuse interpreter_version | fields - _time</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+    </search>
+
+    <search id="Python_interpreter">
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing last(converter_inuse) AS converter_inuse last(interpreter_version) AS interpreter_version SPLITROW hostname AS hostname FILTER converter_inuse is Python
+SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+    </search>
+
+    <search id="Perl_interpreter">
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing last(converter_inuse) AS converter_inuse last(interpreter_version) AS interpreter_version SPLITROW hostname AS hostname FILTER converter_inuse is Perl
+SORT 0 hostname ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+    </search>
+
+    <row>
+
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Add-ons deployment reporting:</h1>
+                    <h4>Report of add-ons version currently deployed, this includes TA-nmon, PA-nmon and other variants</h4>
+                </div>
+            </html>
+        </panel>
+
+    </row>
+
+    <row>
+        <panel>
+            <title>Add-on reporting:</title>
+
+            <single>
+                <search base="addon_report">
+                    <query>stats dc(host) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">HOSTS REPORTED</option>
+            </single>
+
+            <single>
+                <search base="addon_report">
+                    <query>stats dc(addon_type) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">DISTINCT ADD-ON TYPES REPORTED</option>
+            </single>
+
+            <single>
+                <search base="addon_report">
+                    <query>stats dc(addon_version) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">DISTINCT VERSIONS REPORTED</option>
+            </single>
+
+            <chart>
+                <search base="addon_report">
+                    <query>top addon_version</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">400</option>
+            </chart>
+
+            <table>
+                <search base="addon_report">
+                    <query>fields host,addon_type,addon_version,latest_time</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>TA-nmon Deployment Activity:</h1>
+                    <h4>Deployment Server(s) events in relation with the publishing action of the TA-nmon package to clients (initial deployment or update)</h4>
+                </div>
+            </html>
+        </panel>
+
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Deployment Server Clients configuration:</h1>
+                    <h4>Configuration of Splunk Clients instances (not necessary running the TA-nmon), either Universal Forwarders (uf) or Heavy Forwarders (full)</h4>
+                </div>
+            </html>
+        </panel>
+
+    </row>
+
+    <row>
+
+        <!-- TA-nmon deployment statistics -->
+
+        <panel>
+            <single>
+                <search base="Global_deploy">
+                    <query>stats dc(host) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">HOSTS HAVE BEEN DEPLOYED</option>
+            </single>
+            <single>
+                <search base="Global_deploy">
+                    <query>stats count AS count</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">NUMBER OF DEPLOYMENTS ACTIONS (initial deploy or upgrade)</option>
+            </single>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link1,link2">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link1">
+                <title>Chart</title>
+                <search ref="TA-nmon package deployment reporting over time (requires _internal access)"></search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">true</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">column</option>
+                <option name="charting.chart.bubbleMaximumSize">50</option>
+                <option name="charting.chart.bubbleMinimumSize">10</option>
+                <option name="charting.chart.bubbleSizeBy">area</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.overlayFields">Nbr_of_deployment_actions</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.axisTitleY.text">Nbr Hosts</option>
+                <option name="charting.axisTitleY2.text">Nbr Actions</option>
+                <option name="height">400</option>
+            </chart>
+            <table id="link2">
+                <title>Events</title>
+                <search base="Global_deploy">
+                    <query>| table _time, host, _raw</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">10</option>
+                <option name="drilldown">cell</option>
+            </table>
+        </panel>
+
+        <!-- Deployment Server Configuration -->
+
+        <panel>
+            <single>
+                <search base="Global_clients">
+                    <query>stats dc(hostname) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">NUMBER OF DEPLOYMENT SERVER CLIENTS</option>
+            </single>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link3,link4,link5,link6">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link3">
+                <title>Chart by version</title>
+                <search base="Global_clients">
+                    <query>stats count by version</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">400</option>
+            </chart>
+            <chart id="link4">
+                <title>Chart by os</title>
+                <search base="Global_clients">
+                    <query>stats count by os</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">400</option>
+            </chart>
+            <chart id="link5">
+                <title>Chart by arch</title>
+                <search base="Global_clients">
+                    <query>stats count by arch</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">400</option>
+            </chart>
+            <chart id="link6">
+                <title>Chart by type</title>
+                <search base="Global_clients">
+                    <query>stats count by fwdType</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">400</option>
+            </chart>
+
+
+        </panel>
+
+    </row>
+
+    <row>
+
+        <panel>
+            <title>Details of Nmon hosts:</title>
+            <table>
+                <search base="Global_interpreter">
+                    <query>| lookup nmon_inventory hostname OUTPUT OStype, nmon_version | sort hostname</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+
+        <panel>
+            <title>Details of Clients hosts:</title>
+            <table>
+                <search base="Global_clients">
+                    <query></query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+
+    </row>
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Python / Perl Interpreter Distribution:</h1>
+                    <h4>Repartition of hosts using the Python/Perl version of the nmon2csv converter</h4>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Python Versions Distribution:</h1>
+                    <h4>Python versions of hosts using the nmon2csv.py converter</h4>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Perl Versions Distribution:</h1>
+                    <h4>Perl versions of hosts using the nmon2csv.pl converter</h4>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+
+        <panel>
+            <single>
+                <search base="Global_interpreter">
+                    <query>search converter_inuse="Python" | stats dc(hostname) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">HOSTS HAVE USED PYTHON</option>
+            </single>
+            <single>
+                <search base="Global_interpreter">
+                    <query>search converter_inuse="Perl" | stats dc(hostname) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">HOSTS HAVE USED PERL</option>
+            </single>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link7,link8">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link7">
+                <title>Pie chart</title>
+                <search base="Global_interpreter">
+                    <query>top converter_inuse</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">300</option>
+            </chart>
+            <table id="link8">
+                <title>Table</title>
+                <search base="Global_interpreter">
+                    <query>top converter_inuse | eval percent=round(percent,2)</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="drilldown">row</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+
+        <panel>
+            <single>
+                <search base="Python_interpreter">
+                    <query>search converter_inuse="Python" | stats dc(interpreter_version) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">DIFFERENT PYTHON VERSIONS</option>
+            </single>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link9,link10">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link9">
+                <title>Pie chart</title>
+                <search base="Python_interpreter">
+                    <query>top interpreter_version</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">300</option>
+            </chart>
+            <table id="link10">
+                <title>Table</title>
+                <search base="Python_interpreter">
+                    <query>top interpreter_version | eval percent=round(percent,2)</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="drilldown">row</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+
+        <panel>
+            <single>
+                <search base="Perl_interpreter">
+                    <query>stats dc(interpreter_version) AS dcount</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="underLabel">DIFFERENT PERL VERSIONS</option>
+            </single>
+            <html>
+                <!-- Placeholder/container for the link switcher to appear -->
+                <div class="link-switcher" data-items="link11,link12">Select a view:<!--Links go here-->
+                </div>
+            </html>
+            <chart id="link11">
+                <title>Pie chart</title>
+                <search base="Perl_interpreter">
+                    <query>top interpreter_version</query>
+                </search>
+                <option name="charting.chart">pie</option>
+                <option name="height">300</option>
+            </chart>
+            <table id="link12">
+                <title>Table</title>
+                <search base="Perl_interpreter">
+                    <query>top interpreter_version | eval percent=round(percent,2)</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="drilldown">row</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">10</option>
+            </table>
+        </panel>
+    </row>
+
+</form>

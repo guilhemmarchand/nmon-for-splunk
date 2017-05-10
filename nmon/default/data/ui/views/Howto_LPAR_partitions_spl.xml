@@ -1,0 +1,435 @@
+<form stylesheet="howto.css,ui_simple.css" hideEdit="True" isVisible="true">
+	<label>HOWTO LPAR: Generate stats and charts with Splunk Search Processing Language (SPL) for IBM Pseries micro-partitions</label>
+	<description>This collection of request samples will help you generating your own reports, dashboards and alerts for Nmon Performance data using the native Search Processing Language</description>
+
+	<row>
+		<panel>
+
+			<html>
+
+				<div class="imgheader">
+					<img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
+					<h2><a href="UI_data_dictionary?form.osfilter=AIX%3Dtrue&amp;form.itemfilter=CPU%20USAGE%20STATISTICS" target="_blank">CPU Usage Statistics for IBM PSeries Micro-Partitions</a></h2>
+				</div>
+
+			</html>
+
+		</panel>
+
+		<panel>
+			<title>Optionally preset frameID and/or host and press Enter:</title>
+
+			<input type="text" token="frameID" searchWhenChanged="true">
+				<label>frameID:</label>
+				<default>*</default>
+			</input>
+
+			<input type="text" token="host" searchWhenChanged="true">
+				<label>Host:</label>
+				<default>*</default>
+			</input>
+
+		</panel>
+
+	</row>
+
+
+	<row>
+		<panel>
+			<title>Time oriented and statistics oriented charts:</title>
+
+			<html>
+
+				<div>
+					<i><h2>Time Oriented Charts:</h2></i>
+				</div>
+
+				<div style="text-align: left;">
+					<br />
+					<img src="../../static/app/nmon/various/mini/minichart.png" alt="minichart"/>
+					<br />
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<i><h2>Evaluating Micro Partitions CPU Usage:</h2></i>
+					<br />
+				</div>
+
+				<div>
+					<h2>Micro-Partitions Max CPU Usage in VP Usage calculated over VP for last 24 hours with auto span custom definition: (no limits in number of series, don't generate OTHER field)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| timechart useother=f limit=0 `nmon_span` max(vp_usage) AS vp_usage by host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20timechart%20useother%3Df%20limit%3D0%20span%3D5m%20max(vp_usage)%20AS%20vp_usage%20by%20host&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Micro-Partitions Max CPU Usage in VP Usage calculated over VP with Entitlement and Virtual CPUs series for last 24 hours with auto span custom definition: (no limits in number of series, don't generate OTHER field)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| timechart useother=f limit=0 `nmon_span` max(vp_usage) AS vp_usage, max(entitled) AS entitled, max(virtualCPUs) AS virtualCPUs by host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20timechart%20useother%3Df%20limit%3D0%20%60nmon_span%60%20max(vp_usage)%20AS%20vp_usage%2C%20max(entitled)%20AS%20entitled%2C%20max(virtualCPUs)%20AS%20virtualCPUs%20by%20host&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Micro-Partitions Max CPU Usage in Percentage overs its VP capacity (calculated over VP, virtual CPUs numbers as its capacity limit) for last 24 hours with auto span custom definition: (no limits in number of series, don't generate OTHER field)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
+| timechart useother=f limit=0 `nmon_span` max(vp_Pct_usage) AS vp_Pct_usage by host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20timechart%20useother%3Df%20limit%3D0%20%60nmon_span%60%20max(vp_Pct_usage)%20AS%20vp_Pct_usage%20by%20host&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Micro-Partitions Max CPU Usage in VP Usage calculated over EC (shared partitions only) for last 24 hours with auto span custom definition: (no limits in number of series, don't generate OTHER field)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval ec_usage=round(((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled/100),2)
+| timechart useother=f limit=0 `nmon_span` max(ec_usage) AS vp_usage by host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20ec_usage%3Dround(((EC_User_PCT%2BEC_Sys_PCT%2BEC_Wait_PCT%2BEC_Idle_PCT)*entitled%2F100)%2C2)%0A%7C%20timechart%20useother%3Df%20limit%3D0%20%60nmon_span%60%20max(ec_usage)%20AS%20vp_usage%20by%20host&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Micro-Partitions Max CPU Usage in VP Usage calculated over EC (shared partitions only) with Entitlement and Virtual CPUs series for last 24 hours with auto span custom definition: (no limits in number of series, don't generate OTHER field)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval ec_usage=round(((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled/100),2)
+| timechart useother=f limit=0 `nmon_span` max(ec_usage) AS ec_usage, max(entitled) AS entitled, max(virtualCPUs) AS virtualCPUs by host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20ec_usage%3Dround(((EC_User_PCT%2BEC_Sys_PCT%2BEC_Wait_PCT%2BEC_Idle_PCT)*entitled%2F100)%2C2)%0A%7C%20timechart%20useother%3Df%20limit%3D0%20%60nmon_span%60%20max(ec_usage)%20AS%20ec_usage%2C%20max(entitled)%20AS%20entitled%2C%20max(virtualCPUs)%20AS%20virtualCPUs%20by%20host&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Micro-Partitions Max CPU Usage in Percentage overs its VP capacity (calculated over EC, virtual CPUs numbers as its capacity limit, shared partitions only) for last 24 hours with auto span custom definition: (no limits in number of series, don't generate OTHER field)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval ec_Pct_usage=round((((EC_User_PCT+EC_Sys_PCT+EC_Wait_PCT+EC_Idle_PCT)*entitled)/virtualCPUs),2)
+| timechart useother=f limit=0 `nmon_span` max(ec_Pct_usage) AS ec_Pct_usage by host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20ec_Pct_usage%3Dround((((EC_User_PCT%2BEC_Sys_PCT%2BEC_Wait_PCT%2BEC_Idle_PCT)*entitled)%2FvirtualCPUs)%2C2)%0A%7C%20timechart%20useother%3Df%20limit%3D0%20%60nmon_span%60%20max(ec_Pct_usage)%20AS%20ec_Pct_usage%20by%20host&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=100&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Compare yesterday CPU Usage (evaluated over VP) versus today usage: (auto span definition)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| timechart `nmon_span` max(vp_usage) AS vp_usage_yesterday
+| appendcols [ search eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$ earliest="@d" latest="now"
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| timechart `nmon_span` max(vp_usage) AS vp_usage_today | fields - _time ]</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20timechart%20%60nmon_span%60%20max(vp_usage)%20AS%20vp_usage_yesterday%0A%7C%20appendcols%20%5B%20search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%20earliest%3D&quot;%40d&quot;%20latest%3D&quot;now&quot;%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20timechart%20%60nmon_span%60%20max(vp_usage)%20AS%20vp_usage_today%20%7C%20fields%20-%20_time%20%5D&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-1d%40d&amp;latest=%40d" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Aggregation of CPU Usage (evaluated over VP) by frameID: (auto span definition)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| bucket _time span=1m
+| stats sum(vp_usage) AS vp_usage by _time,frameID
+| timechart `nmon_span` max(vp_usage) AS vp_usage by frameID</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20bucket%20_time%20span%3D1m%0A%7C%20stats%20sum(vp_usage)%20AS%20vp_usage%20by%20_time%2CframeID%0A%7C%20timechart%20%60nmon_span%60%20max(vp_usage)%20AS%20vp_usage%20by%20frameID&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.axisY.minimumNumber=&amp;display.visualizations.charting.chart=line&amp;display.visualizations.charting.axisY.maximumNumber=&amp;display.visualizations.charting.legend.placement=top&amp;earliest=-24h%40h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<i><h2>Stats oriented Charts:</h2></i>
+				</div>
+
+				<div style="text-align: left;">
+					<img src="../../static/app/nmon/various/mini/minigauge.png" alt="minichart"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Gauge chart of average CPU Percentage Usage (Percentage evaluated over VP usage and capacity) over last 24 hours</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
+| stats avg(vp_Pct_usage) AS vp_Pct_usage | eval vp_Pct_usage=round(vp_Pct_usage,2)</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20stats%20avg(vp_Pct_usage)%20AS%20vp_Pct_usage%20%7C%20eval%20vp_Pct_usage%3Dround(vp_Pct_usage%2C2)&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Gauge chart of average CPU Usage in VP (evaluated over VP) over last 24 hours with dynamic gauge values evaluated over virtual CPUs</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| gauge avg(vp_usage) AS vp_usage [ search eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| stats max(virtualCPUs) AS max
+| eval first=0 | eval second=(max*0.50) | eval third=(max*0.75) | eval fourth=max
+| eval second=round(second,0) | eval third=round(third,0) | eval fourth=round(fourth,0) | eval range=first+" "+second+" "+third+" "+fourth | return $$range ]</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20gauge%20avg(vp_usage)%20AS%20vp_usage%20%5B%20search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20stats%20max(virtualCPUs)%20AS%20max%0A%7C%20eval%20first%3D0%20%7C%20eval%20second%3D(max*0.50)%20%7C%20eval%20third%3D(max*0.75)%20%7C%20eval%20fourth%3Dmax%0A%7C%20eval%20second%3Dround(second%2C0)%20%7C%20eval%20third%3Dround(third%2C0)%20%7C%20eval%20fourth%3Dround(fourth%2C0)%20%7C%20eval%20range%3Dfirst%2B&quot;%20&quot;%2Bsecond%2B&quot;%20&quot;%2Bthird%2B&quot;%20&quot;%2Bfourth%20%7C%20return%20%24range%20%5D&amp;earliest=-24h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div style="text-align: left;">
+					<img src="../../static/app/nmon/various/mini/minicolumn.png" alt="minicolumn"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Column chart of TOP 10 average CPU Percentage Usage (Percentage evaluated over VP usage and capacity) over last 24 hours</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
+| stats avg(vp_Pct_usage) AS vp_Pct_usage by host | sort - vp_Pct_usage | head 10
+| eval xlabel=""
+| chart useother=f limit=0 values(vp_Pct_usage) AS "Avg CPU %" by xlabel,host | rename xlabel AS "TOP 10 CPU % usage"</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20stats%20avg(vp_Pct_usage)%20AS%20vp_Pct_usage%20by%20host%20%7C%20sort%20-%20vp_Pct_usage%20%7C%20head%2010%0A%7C%20eval%20xlabel%3D&quot;&quot;%0A%7C%20chart%20useother%3Df%20limit%3D0%20values(vp_Pct_usage)%20AS%20&quot;Avg%20CPU%20%25&quot;%20by%20xlabel%2Chost%20%7C%20rename%20xlabel%20AS%20&quot;TOP%2010%20CPU%20%25%20usage&quot;&amp;earliest=-24h%40h&amp;latest=now&amp;display.page.search.tab=visualizations&amp;display.general.type=visualizations&amp;display.visualizations.charting.chart=column&amp;display.visualizations.charting.legend.placement=top&amp;display.visualizations.charting.axisY.minimumNumber=0&amp;display.visualizations.charting.axisY.maximumNumber=" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+			</html>
+
+		</panel>
+	</row>
+
+	<row>
+		<panel>
+			<title>Table Statistics:</title>
+
+			<html>
+
+				<div style="text-align: left;">
+					<br />
+					<img src="../../static/app/nmon/various/mini/minitable.png" alt="minitable"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max CPU Usage in VP (evaluated over VP) over last 24 hours ordered and sorted by frame ID, host</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| stats min(vp_usage) AS "Min VP CPU usage", avg(vp_usage) AS "Avg VP CPU usage", max(vp_usage) AS "Max VP CPU usage" by frameID,host | eval "Avg VP CPU usage"=round('Avg VP CPU usage', 2) | sort frameID,host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20stats%20min(vp_usage)%20AS%20&quot;Min%20VP%20CPU%20usage&quot;%2C%20avg(vp_usage)%20AS%20&quot;Avg%20VP%20CPU%20usage&quot;%2C%20max(vp_usage)%20AS%20&quot;Max%20VP%20CPU%20usage&quot;%20by%20frameID%2Chost%20%7C%20eval%20&quot;Avg%20VP%20CPU%20usage&quot;%3Dround(%27Avg%20VP%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chost&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max and Average sparkline of CPU Usage in VP (evaluated over VP) over last 24 hours ordered and sorted by frame ID, host</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| stats min(vp_usage) AS "Min VP CPU usage", avg(vp_usage) AS "Avg VP CPU usage", max(vp_usage) AS "Max VP CPU usage", sparkline(avg(vp_usage)) As sparkline by frameID,host | eval "Avg VP CPU usage"=round('Avg VP CPU usage', 2) | sort frameID,host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DCPU_ALL%20frameID%3D$frameID$%20host%3D$host$%20%7C%20eval%20cpu_PCT%3Dround((Sys_PCT%2BUser_PCT%2BWait_PCT)%2C2)%20%0A%7C%20stats%20min(cpu_PCT)%20AS%20&quot;Min%20%25%20CPU%20usage&quot;%2C%20avg(cpu_PCT)%20AS%20&quot;Avg%20%25%20CPU%20usage&quot;%2C%20max(cpu_PCT)%20AS%20&quot;Max%20%25%20CPU%20usage&quot;%2C%20sparkline(avg(cpu_PCT))%20As%20sparkline%20by%20frameID%2Chost%20%7C%20eval%20&quot;Avg%20%25%20CPU%20usage&quot;%3Dround(%27Avg%20%25%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chost&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Business days only (monday to friday, 24hrs / 24hrs) ordered and sorted by frame ID, host</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| eval date_wday=lower(strftime('_time', "%A")) | search (date_wday!="sunday" date_wday!="saturday")
+| stats min(vp_usage) AS "Min VP CPU usage", avg(vp_usage) AS "Avg VP CPU usage", max(vp_usage) AS "Max VP CPU usage" by frameID,host | eval "Avg VP CPU usage"=round('Avg VP CPU usage', 2) | sort frameID,host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20%0A%7C%20stats%20min(vp_usage)%20AS%20&quot;Min%20VP%20CPU%20usage&quot;%2C%20avg(vp_usage)%20AS%20&quot;Avg%20VP%20CPU%20usage&quot;%2C%20max(vp_usage)%20AS%20&quot;Max%20VP%20CPU%20usage&quot;%20by%20frameID%2Chost%20%7C%20eval%20&quot;Avg%20VP%20CPU%20usage&quot;%3Dround(%27Avg%20VP%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chost&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for Working hours Business days only (monday to friday, 08h to 19h) ordered and sorted by frame ID, host</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
+| search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
+| stats min(vp_usage) AS "Min VP CPU usage", avg(vp_usage) AS "Avg VP CPU usage", max(vp_usage) AS "Max VP CPU usage" by frameID,host | eval "Avg VP CPU usage"=round('Avg VP CPU usage', 2) | sort frameID,host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20stats%20min(vp_usage)%20AS%20&quot;Min%20VP%20CPU%20usage&quot;%2C%20avg(vp_usage)%20AS%20&quot;Avg%20VP%20CPU%20usage&quot;%2C%20max(vp_usage)%20AS%20&quot;Max%20VP%20CPU%20usage&quot;%20by%20frameID%2Chost%20%7C%20eval%20&quot;Avg%20VP%20CPU%20usage&quot;%3Dround(%27Avg%20VP%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chost&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Min / Average / Max of CPU Usage in Percentage over last 30 days for non Working hours Business days only (monday to friday, 19h to 08h) ordered and sorted by frame ID, host</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
+| search (local_time&gt;="1900" AND local_time&lt;="2359") OR (local_time&gt;="0000" AND local_time&lt;="0800") AND (date_wday!="sunday" date_wday!="saturday")
+| stats min(vp_usage) AS "Min VP CPU usage", avg(vp_usage) AS "Avg VP CPU usage", max(vp_usage) AS "Max VP CPU usage" by frameID,host | eval "Avg VP CPU usage"=round('Avg VP CPU usage', 2) | sort frameID,host</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(local_time&gt;%3D&quot;1900&quot;%20AND%20local_time&lt;%3D&quot;2359&quot;)%20OR%20(local_time&gt;%3D&quot;0000&quot;%20AND%20local_time&lt;%3D&quot;0800&quot;)%20AND%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%0A%7C%20stats%20min(vp_usage)%20AS%20&quot;Min%20VP%20CPU%20usage&quot;%2C%20avg(vp_usage)%20AS%20&quot;Avg%20VP%20CPU%20usage&quot;%2C%20max(vp_usage)%20AS%20&quot;Max%20VP%20CPU%20usage&quot;%20by%20frameID%2Chost%20%7C%20eval%20&quot;Avg%20VP%20CPU%20usage&quot;%3Dround(%27Avg%20VP%20CPU%20usage%27%2C%202)%20%7C%20sort%20frameID%2Chost&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-30d%40d&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Compare Average CPU Usage in Percentage of previous month versus current month ordered and sorted by host</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$ earliest="-1mon@mon" latest="@mon"
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| stats avg(vp_usage) As usage_period1 by host
+| append [ search eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$ earliest="@mon" latest="now"
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| stats avg(vp_usage) As usage_period2 by host ] | stats values(*) AS * by host
+| `eval_compare`</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%20earliest%3D&quot;-1mon%40mon&quot;%20latest%3D&quot;%40mon&quot;%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20stats%20avg(vp_usage)%20As%20usage_period1%20by%20host%0A%7C%20append%20%5B%20search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%20earliest%3D&quot;%40mon&quot;%20latest%3D&quot;now&quot;%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20stats%20avg(vp_usage)%20As%20usage_period2%20by%20host%20%5D%20%7C%20stats%20values(*)%20AS%20*%20by%20host%0A%7C%20%60eval_compare%60&amp;display.page.search.tab=statistics&amp;display.general.type=statistics" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+			</html>
+
+		</panel>
+	</row>
+
+	<row>
+		<panel>
+			<title>Alerting:</title>
+
+			<html>
+
+				<div style="text-align: left;">
+					<br />
+					<img src="../../static/app/nmon/various/mini/minisingle.png" alt="minisingle"/>
+					<br />
+					<br />
+				</div>
+
+				<div>
+					<h2>Use transaction to find servers having an average CPU usage higher than 90% for a minimal contiguous period of 5 minutes</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| where vp_Pct_usage>90
+| transaction host vp_Pct_usage maxpause=5m | where duration&gt;300
+| fields _time,frameID,host,duration,vp_Pct_usage,vp_usage,entitled,virtualCPUs | stats values(*) AS * by _time,host
+| eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
+| fields _time,frameID,host,duration*,vp_Pct_usage,vp_usage,entitled,virtualCPUs</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20where%20vp_Pct_usage&gt;90%0A%7C%20transaction%20host%20vp_Pct_usage%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chost%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration*%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<h2>Use transaction to find servers having an average CPU usage higher than 90% for a minimal contiguous period of 5 minutes, restricted to Open hours and Business days (monday to friday, 08h to 19h)</h2>
+					<pre>eventtype=nmon:performance type=LPAR frameID=$frameID$ host=$host$
+| eval vp_Pct_usage=round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2)
+| eval vp_usage=round(((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT)*virtualCPUs/100),2)
+| eval date_wday=lower(strftime('_time', "%A")) | eval local_time=strftime('_time', "%H%M")
+| search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
+| where vp_Pct_usage>90
+| transaction host vp_Pct_usage maxpause=5m | where duration&gt;300
+| fields _time,frameID,host,duration,vp_Pct_usage,vp_usage,entitled,virtualCPUs | stats values(*) AS * by _time,host
+| eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
+| fields _time,frameID,host,duration*,vp_Pct_usage,vp_usage,entitled,virtualCPUs</pre>
+				</div>
+
+				<div>
+					<div class="cat_title">
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DLPAR%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20vp_Pct_usage%3Dround((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)%2C2)%0A%7C%20eval%20vp_usage%3Dround(((VP_User_PCT%2BVP_Sys_PCT%2BVP_Wait_PCT%2BVP_Idle_PCT)*virtualCPUs%2F100)%2C2)%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20vp_Pct_usage&gt;90%0A%7C%20transaction%20host%20vp_Pct_usage%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chost%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration*%2Cvp_Pct_usage%2Cvp_usage%2Centitled%2CvirtualCPUs&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h%40h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						</a>
+					</div>
+					<br />
+				</div>
+
+			</html>
+
+		</panel>
+
+	</row>
+
+</form>

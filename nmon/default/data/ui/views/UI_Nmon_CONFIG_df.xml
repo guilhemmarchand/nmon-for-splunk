@@ -1,0 +1,152 @@
+<form isVisible="true">
+    <label>DF - filesystems reporting based on nmon configuration data</label>
+    <description>This dashboard analyses the output of filesystems utilization statistics from the df command generated within the nmon_config data</description>
+    <row>
+        <panel>
+            <input type="time" token="timerange" searchWhenChanged="true">
+                <label>Time Range:</label>
+                <default>
+                    <earliest>-7d@h</earliest>
+                    <latest>now</latest>
+                </default>
+            </input>
+            <input type="dropdown" token="OStype" searchWhenChanged="true" depends="$hidden_element$">
+                <label>OS template:</label>
+                <default>Linux</default>
+                <choice value="AIX">AIX</choice>
+                <choice value="Linux">Linux</choice>
+                <choice value="Solaris">Solaris</choice>
+                <change>
+                    <condition value="Linux">
+                        <set token="Linux_OStype">Linux</set>
+                        <unset token="AIX_OStype"></unset>
+                        <unset token="Solaris_OStype"></unset>
+                    </condition>
+                    <condition value="AIX">
+                        <set token="AIX_OStype">AIX</set>
+                        <unset token="Linux_OStype"></unset>
+                        <unset token="Solaris_OStype"></unset>
+                    </condition>
+                    <condition value="Solaris">
+                        <set token="Solaris_OStype">Solaris</set>
+                        <unset token="Linux_OStype"></unset>
+                        <unset token="AIX_OStype"></unset>
+                    </condition>
+                </change>
+            </input>
+            <input type="text" token="host-prefilter" searchWhenChanged="true">
+                <label>Optional: Filter hosts populating</label>
+                <default>*</default>
+            </input>
+            <input type="multiselect" token="host" searchWhenChanged="true">
+                <label>Host:</label>
+                <!-- Populating Data Model Search -->
+                <search>
+                    <query>| pivot NMON_Config Nmon_Config count(Nmon_Config) AS "count" SPLITROW host AS host FILTER OStype is "$OStype$" FILTER host is "$host-prefilter$" SORT 0 host ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <choice value="*">ALL Hosts</choice>
+                <fieldForLabel>host</fieldForLabel>
+                <fieldForValue>host</fieldForValue>
+                <valuePrefix>host="</valuePrefix>
+                <valueSuffix>"</valueSuffix>
+                <delimiter> OR </delimiter>
+            </input>
+            <input type="text" token="fs-prefilter" searchWhenChanged="true">
+                <label>Optional: Filter filesystems</label>
+                <default>*</default>
+            </input>
+        </panel>
+    </row>
+    <row depends="$Linux_OStype$">
+        <panel>
+            <table>
+                <title>DF - filesystems statistics for Linux OS</title>
+                <search>
+                    <query>eventtype=nmon:config OStype=$Linux_OStype$ $host$
+| rex field=_raw max_match=0 "BBB\w*,.*,\"(?&lt;fs_df&gt;[\w\/\-\_]*\s*\d*\s*\d*\s*\d*\s*\d*%\s*.*)\""
+| table _time,host,fs_df | mvexpand fs_df
+| rex field=fs_df "(?&lt;fs_dev&gt;[\w\/\-\_]*)\s*(?&lt;fs_1Mblocks&gt;\d*)\s*(?&lt;fs_used&gt;\d*)\s*(?&lt;fs_available&gt;\d*)\s*(?&lt;fs_usedpct&gt;[\d|\.]*)%\s*(?&lt;fs_mount&gt;.*)"
+| stats latest(fs_dev) AS fs_dev, latest(fs_1Mblocks) AS fs_1Mblocks, latest(fs_used) AS fs_used, latest(fs_available) AS fs_available, latest(fs_usedpct) AS fs_usedpct, latest(_time) AS reporting_date by host,fs_mount
+| where fs_1Mblocks&gt;0
+| search NOT (fs_mount="/run" OR fs_mount="/run/*" OR fs_mount="/dev" OR fs_mount="/dev/*" OR fs_mount="/proc" OR fs_mount="/proc/*" OR fs_mount="/sys" OR fs_mount="/sys/*")
+| search fs_mount="$fs-prefilter$"
+| eval reporting_date=strftime(reporting_date, "%d/%m/%Y %H:%M") | sort limit=0 host,fs_mount
+| addcoltotals fs_1Mblocks,fs_used,fs_available labelfield=host
+| eval fs_usedpct=if(isnull(fs_usedpct), round(fs_used/fs_1Mblocks*100,2), fs_usedpct) | rename reporting_date AS "Last reporting date (mm/dd/Y HH:MM)"</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">undefined</option>
+                <option name="rowNumbers">undefined</option>
+                <option name="drilldown">row</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+    </row>
+    <row depends="$AIX_OStype$">
+        <panel>
+            <table>
+                <title>DF - filesystems statistics for AIX OS</title>
+                <search>
+                    <query>eventtype=nmon:config OStype=$AIX_OStype$ $host$
+| rex field=_raw max_match=0 "BBB\w*,.*df.*,\"(?&lt;fs_df&gt;[\w\/\-\_]*\s*[\d|\.]*\s*[\d|\.]*\s*[\d|\.]*%\s*[\d|\.]*\s*[\d|\.]*%\s*[\w\/\-\_]*)\""
+| table _time,host,fs_df
+| mvexpand fs_df
+| rex field=fs_df "(?&lt;fs_dev&gt;[\w\/\-\_]*)\s*(?&lt;fs_MBblocks&gt;[\d|\.]*)\s*(?&lt;fs_free&gt;[\d|\.]*)\s*(?&lt;fs_usedpct&gt;[\d|\.]*)%\s*(?&lt;fs_inode_used&gt;[\d|\.]*)\s*(?&lt;fs_inode_usedpct&gt;[\d|\.]*)%\s*(?&lt;fs_mount&gt;[\w\/\-\_]*)"
+| fields - fs_df
+| stats latest(fs_*) AS "fs_*", latest(_time) AS reporting_date by host,fs_mount
+| where fs_MBblocks&gt;0
+| search fs_mount="$fs-prefilter$"
+| eval reporting_date=strftime(reporting_date, "%d/%m/%Y %H:%M")
+| sort limit=0 host,fs_mount
+| addcoltotals fs_MBblocks,fs_free,fs_inode_used labelfield=host
+| eval fs_used=(fs_MBblocks-fs_free)
+| eval fs_usedpct=if(isnull(fs_usedpct), round(fs_used/fs_MBblocks*100,2), fs_usedpct)</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">undefined</option>
+                <option name="rowNumbers">undefined</option>
+                <option name="drilldown">row</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+    </row>
+    <row depends="$Solaris_OStype$">
+        <panel>
+            <table>
+                <title>DF - filesystems statistics for Solaris OS</title>
+                <search>
+                    <query>eventtype=nmon:config OStype=$Solaris_OStype$ $host$
+| rex field=_raw max_match=0 "BBB\w*,.*df.*,\"(?&lt;fs_df&gt;[\w\/\-\_]*\s*[\d|\.]*\w\s*[\d|\.]*\w\s*[\d|\.]*\w\s*[\d|\.]*%\s*[\w\/\-\_]*)"
+| table _time,host,fs_df
+| mvexpand fs_df
+| rex field=fs_df "(?&lt;fs_dev&gt;[\w\/\-\_]*)\s*(?&lt;fs_size&gt;[\d|.]*)(?&lt;fs_size_unity&gt;\w)\s*(?&lt;fs_used&gt;[\d|.]*)(?&lt;fs_used_unity&gt;\w)\s*(?&lt;fs_available&gt;[\d|.]*)(?&lt;fs_available_unity&gt;\w)\s*(?&lt;fs_capacity_usedpct&gt;[\d|\.]*)%\s*(?&lt;fs_mount&gt;[\w\/\-\_]*)"
+| eval fs_size=if(fs_size_unity="G", fs_size*1024, fs_size), fs_used=if(fs_used_unity="G", fs_used*1024, fs_used), fs_available=if(fs_available_unity="G", fs_available*1024, fs_available)
+| fields _time,host,fs_mount,fs_dev,* | fields - fs_df
+| stats latest(fs_*) AS "fs_*", latest(_time) AS reporting_date by host,fs_mount
+| where fs_available&gt;0
+| search NOT (fs_dev="swap")
+| search fs_mount="$fs-prefilter$"
+| eval reporting_date=strftime(reporting_date, "%d/%m/%Y %H:%M")
+| sort limit=0 host,fs_mount
+| addcoltotals fs_size,fs_used,fs_available labelfield=host
+| eval fs_capacity_usedpct=if(isnull(fs_capacity_usedpct), round(fs_used/fs_available*100,2), fs_capacity_usedpct)
+| fields host,fs_dev,fs_mount,fs_available,fs_capacity_usedpct,fs_size,fs_used,reporting_date
+| rename reporting_date AS "Last reporting date (mm/dd/Y HH:MM)", fs_available AS fs_available_MB, fs_capacity_usedpct AS fs_capacity_used_PCT, fs_size AS fs_size_MB, fs_used AS fs_used_MB</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="wrap">undefined</option>
+                <option name="rowNumbers">undefined</option>
+                <option name="drilldown">row</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="count">20</option>
+            </table>
+        </panel>
+    </row>
+</form>

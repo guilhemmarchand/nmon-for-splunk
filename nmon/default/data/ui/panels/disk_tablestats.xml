@@ -1,0 +1,64 @@
+<panel>
+  <title>DISK: Main Disks monitors Table by frameID,hostname</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>  
+  <input type="text" token="frameID" searchWhenChanged="true">
+    <label>frameID:</label>
+    <default>*</default>
+    <prefix>frameID="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="hostname" searchWhenChanged="true">
+    <label>hostname:</label>
+    <default>*</default>
+    <prefix>hostname="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="device" searchWhenChanged="true">
+    <label>device:</label>
+    <default>*</default>
+    <prefix>device="</prefix>
+    <suffix>"</suffix>
+  </input>  
+  <table>
+    <search>
+      <query>eventtype=nmon:performance type=DISKXFER OR type=DISKBUSY OR type=DISKREAD OR type=DISKWRITE OR type=DISKBSIZE $frameID$ $hostname$ $device$
+| dedup _time,type,frameID,hostname,device,value
+| eval sum_disk_total_IOPS=case(type == "DISKXFER", value)
+| eval avg_disk_busy_PCT=case(type == "DISKBUSY", value)
+| eval avg_disk_read_rate_KBps=case(type == "DISKREAD", value)
+| eval avg_disk_write_rate_KBps=case(type == "DISKWRITE", value)
+| eval avg_disk_data_transfer_KB=case(type == "DISKBSIZE", value)
+| fields _time,frameID,hostname,device,*disk*
+| stats sum(sum_*) AS *, avg(avg_*) AS * by _time,frameID,hostname
+| stats avg(*) AS "Avg *" by frameID,hostname | foreach Avg* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| foreach Avg* [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| sort frameID,hostname
+| rename *_PCT AS "* (%)", *_KB AS "* (KB)", *_KBps AS "* (KBps)", *_IOPS AS "* (I/O per sec)"
+| fieldformat "Avg disk_busy (%)"='Avg disk_busy (%)'." %" 
+| fieldformat "Avg disk_data_transfer (KB)"='Avg disk_data_transfer (KB)'." KB"
+| fieldformat "Avg disk_read_rate (KBps)"='Avg disk_read_rate (KBps)'." KBps"
+| fieldformat "Avg disk_write_rate (KBps)"='Avg disk_write_rate (KBps)'." KBps"
+| fieldformat "Avg disk_total (I/O per sec)"=round('Avg disk_total (I/O per sec)', 0)." IO/sec"
+| fields frameID,hostname,*busy*,*transfer*,"*I/O*",*read*,*write*</query>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
+    </search>
+    <option name="wrap">true</option>
+    <option name="rowNumbers">false</option>
+    <option name="dataOverlayMode">none</option>
+    <option name="drilldown">cell</option>
+    <option name="count">20</option>
+    <format type="sparkline" field="sparkline">
+      <option name="lineColor">#5379af</option>
+      <option name="fillColor">#CCDDFF</option>
+      <option name="lineWidth">1</option>
+      <option name="height">25</option>
+    </format>    
+  </table>
+</panel>

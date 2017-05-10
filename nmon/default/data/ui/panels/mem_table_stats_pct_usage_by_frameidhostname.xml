@@ -1,0 +1,49 @@
+<panel>
+  <title>MEM: Table stats pct Usage by frameID,hostname</title>
+  <input type="time" token="timerange" searchWhenChanged="true">
+    <label>Time Range:</label>
+    <default>
+      <earliestTime>-24h</earliestTime>
+      <latestTime>now</latestTime>
+    </default>
+  </input>
+  <input type="text" token="frameID" searchWhenChanged="true">
+    <label>frameID:</label>
+    <default>*</default>
+    <prefix>frameID="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <input type="text" token="hostname" searchWhenChanged="true">
+    <label>hostname:</label>
+    <default>*</default>
+    <prefix>hostname="</prefix>
+    <suffix>"</suffix>
+  </input>
+  <table>
+    <search>
+      <query>eventtype=nmon:performance type=MEM $frameID$ $hostname$
+| `MEM_allOS`
+| stats avg(mem_used_effective_PCT) AS mem_used_effective_PCT, avg(swap_used_effective_PCT) AS swap_used_effective_PCT, sparkline(avg(mem_used_effective_PCT)) As spk_mem_used_effective_PCT, sparkline(avg(Virtual_used_PCT)) As spk_Virtual_used_PCT by frameID,hostname
+| eval mem_used_effective_PCT=round(mem_used_effective_PCT,2) | eval swap_used_effective_PCT=round(swap_used_effective_PCT,2)</query>
+      <earliest>$timerange.earliest$</earliest>
+      <latest>$timerange.latest$</latest>  
+    </search>
+    <option name="wrap">true</option>
+    <option name="rowNumbers">false</option>
+    <option name="dataOverlayMode">none</option>
+    <option name="drilldown">cell</option>
+    <option name="count">20</option>
+    <format type="sparkline" field="spk_mem_used_effective_PCT">
+      <option name="lineColor">#5379af</option>
+      <option name="fillColor">#CCDDFF</option>
+      <option name="lineWidth">1</option>
+      <option name="height">25</option>
+    </format>
+    <format type="sparkline" field="spk_Virtual_used_PCT">
+      <option name="lineColor">#5379af</option>
+      <option name="fillColor">#CCDDFF</option>
+      <option name="lineWidth">1</option>
+      <option name="height">25</option>
+    </format>    
+  </table>
+</panel>

@@ -1,0 +1,904 @@
+<dashboard stylesheet="ui_simple.css,hover.css,panel_decoration.css" script="active_button.js" isVisible="true">
+    <label>Nmon Performance Monitor application - Total Cost of Ownership dashboard</label>
+
+    <row depends="$hidden_element$">
+        <panel>
+            <title>Hidden form</title>
+            <single>
+                <!-- This search will be used to verify if the user that run the dashboard has enough privilege to do so -->
+                <search>
+                    <query>index=_internal | head 100 | stats count | where count>0</query>
+                    <earliest>-60m</earliest>
+                    <latest>now</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_admin_required">True</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_admin_required"/>
+                            <set token="start_admin_searches">True</set>
+                        </condition>
+                    </progress>
+                </search>
+            </single>
+            <single>
+                <!-- This search will be used to verify if we must show the null global indexing message, this performs best than integrating the progress condition with the search -->
+                <search>
+                    <query>eventtype=nmon:performance type=CPU_ALL | stats count | where count>0</query>
+                    <earliest>@d</earliest>
+                    <latest>@h</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_per_server_indexing">True</set>
+                        </condition>
+                        <condition>
+                            <set token="start_indexing_per_server_search">True</set>
+                            <unset token="show_null_per_server_indexing"></unset>
+                        </condition>
+                    </progress>
+                </search>
+            </single>
+            <single>
+                <!-- This search will be used to verify if we must show the null global indexing message, this performs best than integrating the progress condition with the search -->
+                <search>
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx` | stats count | where count>0</query>
+                    <earliest>-1d@d</earliest>
+                    <latest>@d</latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_global_indexing">True</set>
+                        </condition>
+                        <condition>
+                            <set token="start_global_indexing_search">True</set>
+                            <unset token="show_null_global_indexing"></unset>
+                        </condition>
+                    </progress>
+                </search>
+            </single>
+        </panel>
+    </row>
+
+    <row>
+        <panel id="cost1">
+            <title>LICENCING: Total Cost of Ownership per server</title>
+            <single rejects="$show_admin_required$ $show_null_per_server_indexing$">
+                <search>
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx` | where b>0 | timechart span=1h sum(b) AS b  | eval volume_MB = round(b/1024/1024,2)
+| fillnull value=0
+| appendcols [ | pivot NMON_Data_CPU CPU_ALL dc(hostname) AS "dcount" SPLITROW _time AS _time PERIOD hour SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 ]
+| eval cost_per_server_MB=(volume_MB/dcount) | stats avg(cost_per_server_MB) AS cost_per_server_MB
+| eval estimated_cost_per_server_MB=round(cost_per_server_MB*24, 2)
+| eval user_is_admin=$start_admin_searches$
+| eval start_indexing_per_server_search=$start_indexing_per_server_search$
+| fields estimated_cost_per_server_MB</query>
+                    <earliest>-7d@d</earliest>
+                    <latest>@h</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="underLabel">ESTIMATED PER DAY/SERVER COST</option>
+                <option name="unit">MB</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+            </single>
+            <html depends="$show_null_per_server_indexing$" rejects="$show_admin_required$">
+                <div style="color:blue;margin-left:30px;font-size:14px;text-align:left;font-style:italic">
+                    <br /><br/><br />
+                    <p>Data not yet available, calculation is performed on a full per hour basis and will start being available 1 hour after application deployment and indexing activity.</p>
+                </div>
+            </html>
+            <html depends="$show_admin_required$">
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
+                </div>
+            </html>
+            <html>
+                <div style="color:grey;margin-left:30px;font-size:12px;font-style:italic">
+                    <p>* AVERAGE LICENCING COST PER SERVER: Calculation over last 7 days of the per hour volume of data generated per server multiplied per 24 hours</p>
+                </div>
+            </html>
+        </panel>
+        <panel id="cost2">
+            <title>LICENCING: Total Cost of Ownership of global indexing</title>
+            <single rejects="$show_admin_required$ $show_null_global_indexing$">
+                <search>
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx` | where b>0 | timechart span=1d sum(b) AS b
+| fillnull value=0
+| stats avg(b) AS avg_volume_per_day
+| eval avg_volume_per_day_GB=round((avg_volume_per_day/1024/1024/1024),2)
+| eval user_is_admin=$start_admin_searches$
+| eval start_global_indexing_search=$start_global_indexing_search$
+| fields avg_volume_per_day_GB</query>
+                    <earliest>-7d@d</earliest>
+                    <latest>@d</latest>
+                </search>
+                <option name="colorBy">trend</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">inverse</option>
+                <option name="trendDisplayMode">percent</option>
+                <option name="underLabel">TOTAL LICENCING COST PER DAY</option>
+                <option name="unit">GB</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+            </single>
+            <html depends="$show_null_global_indexing$" rejects="$show_admin_required$">
+                <div style="color:blue;margin-left:30px;font-size:14px;text-align:left;font-style:italic">
+                    <br /><br/><br />
+                    <p>Data not yet available, calculation is performed on a full per day basis and will start being available 1 day after application deployment.</p>
+                </div>
+            </html>
+            <html depends="$show_admin_required$">
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
+                </div>
+            </html>
+            <html>
+                <div style="color:grey;margin-left:30px;font-size:12px;font-style:italic">
+                    <p>* TOTAL LICENCING COST PER DAY: Calculation over last 7 full full days of the per day total volume indexed for the nmon index</p>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- main search for scheduling cost -->
+    <search id="scheduling_mainsearch">
+        <query>index=_internal host="*" source=*scheduler.log status="*" NOT (status="continued" OR status=delegated*) savedsearch_name!="*_ACCELERATE_*" app="nmon"
+| timechart span=1d avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, sum(run_time) AS sum_run_time
+| eval user_is_admin=$start_admin_searches$
+| stats avg(avg_run_time) AS avg_run_time, avg(max_run_time) AS max_run_time, avg(sum_run_time) AS sum_run_time</query>
+        <earliest>-24h</earliest>
+        <latest>now</latest>
+        <sampleRatio>1</sampleRatio>
+    </search>
+
+    <row>
+        <panel>
+            <title>SCHEDULING COST</title>
+            <single rejects="$show_admin_required$">
+                <search>
+                    <query>index=_internal host="*" source=*scheduler.log status="*" NOT (status="continued" OR status=delegated*) savedsearch_name!="*_ACCELERATE_*" app="nmon"
+| bucket _time span=5m
+| stats count AS count by _time
+| eval user_is_admin=$start_admin_searches$
+| stats avg(count) AS avg_scheduled_per_5min</query>
+                    <earliest>-24h</earliest>
+                    <latest>now</latest>
+                    <sampleRatio>1</sampleRatio>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">standard</option>
+                <option name="trendDisplayMode">absolute</option>
+                <option name="underLabel">AVERAGE NUMBER OF SCHEDULED SEARCHED PER 5 MIN</option>
+                <option name="unit">Scheduled searches / 5 min</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+            </single>
+            <single rejects="$show_admin_required$">
+                <search base="scheduling_mainsearch">
+                    <query>fields avg_run_time</query>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">standard</option>
+                <option name="trendDisplayMode">absolute</option>
+                <option name="underLabel">AVERAGE RUN TIME PER DAY</option>
+                <option name="unit">seconds</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+            </single>
+            <single rejects="$show_admin_required$">
+                <search base="scheduling_mainsearch">
+                    <query>fields max_run_time</query>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">standard</option>
+                <option name="trendDisplayMode">absolute</option>
+                <option name="underLabel">MAX RUN TIME PER DAY</option>
+                <option name="unit">seconds</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+            </single>
+            <single rejects="$show_admin_required$">
+                <search base="scheduling_mainsearch">
+                    <query>fields sum_run_time</query>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">none</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x65a637","0x6db7c6","0xf7bc38","0xf58f39","0xd93f3c"]</option>
+                <option name="rangeValues">[0,30,70,100]</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trendColorInterpretation">standard</option>
+                <option name="trendDisplayMode">absolute</option>
+                <option name="underLabel">AVERAGE SUM RUN TIME PER DAY</option>
+                <option name="unit">seconds</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">0</option>
+                <option name="useThousandSeparators">1</option>
+            </single>
+        </panel>
+    </row>
+
+    <search id="dbinspect">
+        <query>| dbinspect `nmon_index`
+| eval rawSize_MB=(rawSize/1024/1024)
+| stats sum(rawSize_MB) AS rawSize_MB, sum(sizeOnDiskMB) AS sizeOnDiskMB, dc(bucketId) AS dcount_bucket
+| eval compress_ratio = round(rawSize_MB / sizeOnDiskMB, 2)." : 1"
+| eval rawSize_GB=round(rawSize_MB/1024, 2), sizeOnDiskGB=round(sizeOnDiskMB/1024, 2)
+| eval avg_size_perbucket_GB=round(((sizeOnDiskMB/dcount_bucket)/1024), 2)</query>
+        <earliest>0</earliest>
+        <latest></latest>
+    </search>
+
+    <row>
+        <panel>
+            <title>INDEX STORAGE DETAILS</title>
+            <single>
+                <search base="dbinspect">
+                    <query>fields sizeOnDiskGB</query>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">SIZE OF INDEX</option>
+                <option name="unit">GB</option>
+            </single>
+            <single>
+                <search base="dbinspect">
+                    <query>fields rawSize_GB</query>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">TOTAL SIZE OF UNCOMPRESSED DATA</option>
+                <option name="unit">GB</option>
+            </single>
+            <single>
+                <search base="dbinspect">
+                    <query>fields compress_ratio</query>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">Raw to Index Size Ratio</option>
+            </single>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>INDEX BUCKETS DETAILS</title>
+            <single>
+                <search base="dbinspect">
+                    <query>fields avg_size_perbucket_GB</query>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">AVERAGE BUCKET SIZE</option>
+                <option name="unit">GB</option>
+            </single>
+            <single>
+                <search base="dbinspect">
+                    <query>fields dcount_bucket</query>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="underLabel">TOTAL BUCKETS</option>
+            </single>
+            <single>
+                <search>
+                    <query>| dbinspect `nmon_index`
+| stats dc(bucketId) AS dcount by state
+| search state=hot | fields dcount</query>
+                    <earliest>0</earliest>
+                    <latest></latest>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="underLabel">HOT BUCKETS</option>
+            </single>
+            <single rejects="$show_null_warm$">
+                <search>
+                    <query>| dbinspect `nmon_index`
+| stats dc(bucketId) AS dcount by state
+| search state=warm | fields dcount</query>
+                    <earliest>0</earliest>
+                    <latest></latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_warm">True</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_null_warm"></unset>
+                        </condition>
+                    </progress>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="underLabel">WARM BUCKETS</option>
+            </single>
+            <html depends="$show_null_warm$">
+                <p style="color:blue;margin-left:30px;font-size:14px;font-style:italic">Currently no warm buckets.</p>
+            </html>
+            <single rejects="$show_null_cold$">
+                <search>
+                    <query>| dbinspect `nmon_index`
+| stats dc(bucketId) AS dcount by state
+| search state=cold | fields dcount</query>
+                    <earliest>0</earliest>
+                    <latest></latest>
+                    <!-- Progress event has access to job properties only -->
+                    <progress>
+                        <condition match="'job.resultCount' == 0">
+                            <set token="show_null_cold">True</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_null_cold"></unset>
+                        </condition>
+                    </progress>
+                </search>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="underLabel">COLD BUCKETS</option>
+            </single>
+            <html depends="$show_null_cold$">
+                <p style="color:blue;margin-left:30px;font-size:14px;font-style:italic">Currently no cold buckets.</p>
+            </html>
+        </panel>
+    </row>
+
+    <!-- Search based for post processing -->
+
+    <!-- Nmon Processing statistics -->
+
+    <search id="nmon_processing">
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size"
+avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed"
+ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)
+| eval show_processing=$show_processing$ | fields - show_processing</query>
+        <earliest>$timerange_processing.earliest$</earliest>
+        <latest>$timerange_processing.latest$</latest>
+    </search>
+
+    <search id="nmon_processing_countnmon">
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval show_processing=$show_processing$ | fields - show_processing</query>
+        <earliest>$timerange_processing.earliest$</earliest>
+        <latest>$timerange_processing.latest$</latest>
+    </search>
+
+    <search id="nmon_processing_elapsed_bytime">
+        <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2)
+| eval show_processing=$show_processing$ | fields - show_processing</query>
+        <earliest>$timerange_processing.earliest$</earliest>
+        <latest>$timerange_processing.latest$</latest>
+    </search>
+
+    <search id="nmon_processing_errors">
+        <query>| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</query>
+        <earliest>$timerange_processing.earliest$</earliest>
+        <latest>$timerange_processing.latest$</latest>
+    </search>
+
+    <search id="nmon_collect_errors">
+        <query>eventtype=nmon:collect error | stats count As nbr_errors</query>
+        <earliest>$timerange_processing.earliest$</earliest>
+        <latest>$timerange_processing.latest$</latest>
+    </search>
+
+    <!-- Event Count -->
+
+    <search id="eventcount_search">
+        <query>| eventcount summarize=false report_size=true `nmon_index`
+| stats sum(count) as count, sum(size_bytes) as size_bytes
+| eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2)
+| eval show_eventcount=$show_eventcount$ | fields index, server, "Size (MB)", "Millions of Events"</query>
+        <earliest>0</earliest>
+        <latest>now</latest>
+    </search>
+
+    <!-- Metadata -->
+
+    <search id="metadata_search">
+        <query>| `indexes_datestats` | eval show_eventcount=$show_eventcount$</query>
+        <earliest>0</earliest>
+        <latest>now</latest>
+    </search>
+
+    <!-- Application Activity -->
+
+    <!-- Hits per page -->
+
+    <search id="hitsperpage_search">
+        <query>index=_internal sourcetype=*web_access* OR sourcetype=*django_access* uri=*/app/nmon/* OR uri=*/dj/*/nmon/* method=GET file!=*.png AND file!=*.css AND file!=*.js AND file!=*.svg AND file!=Home* AND file!=report</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <!-- Scheduler Activity for the Application -->
+
+    <search id="scheduler_chart_search">
+        <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" app="nmon" | timechart limit=0 count by app</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <!-- ######################################### Active Buttons #########################################  -->
+
+    <row>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_indexing_overtime" data-alt-label="HIDE INDEXING VOLUME OVER TIME" data-token-value="true">SHOW INDEXING VOLUME OVER TIME</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_eventcount" data-alt-label="HIDE INDEX EVENTCOUNT STATS" data-token-value="true">SHOW INDEX EVENTCOUNT STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_scheduled_stats" data-alt-label="HIDE PER REPORT SCHEDULED STATS" data-token-value="true">SHOW PER REPORT SCHEDULED STATS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_processing" data-alt-label="HIDE NMON PROCESSING STATS" data-token-value="true">SHOW NMON PROCESSING STATS</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### Indexing volume over time #########################################  -->
+
+    <row depends="$show_indexing_overtime$">
+        <panel>
+            <title>Indexing volume over time (GB)</title>
+            <input type="time" token="timerange_volume" searchWhenChanged="true">
+                <label>Time Range:</label>
+                <default>
+                    <earliestTime>-30d</earliestTime>
+                    <latestTime>now</latestTime>
+                </default>
+            </input>
+            <chart rejects="$show_admin_required$">
+                <search id="metric_timechartsearch">
+                    <query>index=_internal source=*license_usage.log* type=Usage `nmon_idx`
+| where b>0 | bucket _time span=1m
+| stats sum(b) AS b by _time,idx
+| timechart span=1d sum(b) AS b
+| eval volume_per_day_GB=round((b/1024/1024/1024),2)
+| eval user_is_admin=$start_admin_searches$
+| fields _time,volume_per_day_GB</query>
+                    <earliest>$timerange_volume.earliest$</earliest>
+                    <latest>$timerange_volume.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">column</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">400</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Gigabytes</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+            <html depends="$show_admin_required$">
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!-- ######################################### Processing statistics #########################################  -->
+
+    <row depends="$show_processing$">
+
+        <panel>
+            <html>
+                <div class="custom">
+                    <h1>Nmon Processing statistics</h1>
+                </div>
+            </html>
+            <input type="time" token="timerange_processing" searchWhenChanged="true">
+                <label>Time Range:</label>
+                <default>
+                    <earliestTime>-24h</earliestTime>
+                    <latestTime>now</latestTime>
+                </default>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$show_processing$">
+        <panel>
+
+            <single>
+                <search base="nmon_processing">
+                    <query>fields avg_nbr_lines</query>
+                </search>
+                <option name="underLabel">Avg nbr of lines per nmon file</option>
+                <option name="unit">lines</option>
+                <option name="drilldown">all</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1 | eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="nmon_processing">
+                    <query>fields sum_nbr_lines_in_millions</query>
+                </search>
+                <option name="underLabel">Number of lines proceeded</option>
+                <option name="unit">Millions</option>
+                <option name="drilldown">all</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</link>
+                </drilldown>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single>
+                <search base="nmon_processing">
+                    <query>fields sum_size_GB</query>
+                </search>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">Total nmon raw data converted</option>
+                <option name="unit">GB</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_size_MB=round((avg_size/1000/1000),2)| eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="nmon_processing_countnmon">
+                    <query>fields count</query>
+                </search>
+                <option name="underLabel">Number of nmon files proceeded</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing count(NMON_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="nmon_processing_errors">
+                    <query></query>
+                </search>
+                <option name="underLabel">Errors found in Data Processing</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect Errors_in_Processing count(Errors_in_Processing) AS "count" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="nmon_collect_errors">
+                    <query></query>
+                </search>
+                <option name="underLabel">Errors found in Data Collect</option>
+                <drilldown target="search">
+                    <link>search?q=eventtype=nmon:collect error | stats count As nbr_errors</link>
+                </drilldown>
+            </single>
+
+        </panel>
+    </row>
+
+    <row depends="$show_processing$">
+        <panel>
+            <title>Nmon Raw Data conversion: Volumes proceeded over time (MB)</title>
+
+            <single>
+                <search base="nmon_processing">
+                    <query>fields avg_size_MB</query>
+                </search>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">Avg size of Nmon files</option>
+                <option name="unit">MB</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="nmon_processing">
+                    <query>fields max_size_MB</query>
+                </search>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">Max size of Nmon files</option>
+                <option name="unit">MB</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</link>
+                </drilldown>
+            </single>
+
+            <chart>
+                <search>
+                    <query>| pivot NMON_Processing_Data_Collect NMON_Processing sum(size_in_bytes) AS "sum_size_MB" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval sum_size_MB=round((sum_size_MB/1000/1000),2)
+| eval show_processing=$show_processing$ | fields - show_processing</query>
+                    <earliest>$timerange_processing.earliest$</earliest>
+                    <latest>$timerange_processing.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">column</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">400</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Volume (MB)</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+
+        </panel>
+
+        <panel>
+            <title>Nmon Raw Data conversion: Average elapsed time per Nmon file (seconds)</title>
+
+            <single>
+                <search base="nmon_processing">
+                    <query>fields avg_elapsed_in_seconds</query>
+                </search>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">Avg Time required to convert an Nmon File</option>
+                <option name="unit">seconds</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="nmon_processing">
+                    <query>fields sum_elapsed</query>
+                </search>
+                <option name="underLabel">Total Time Spent in converting Nmon Data</option>
+                <option name="unit">Time (HH:MM:SS...)</option>
+                <drilldown target="search">
+                    <link>search?q=| pivot NMON_Processing_Data_Collect NMON_Processing sum(nbr_lines) AS "sum_nbr_lines" avg(nbr_lines) AS "avg_nbr_lines" max(size_in_bytes) AS "max_size" avg(size_in_bytes) AS "avg_size" sum(size_in_bytes) AS "sum_size" avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" sum(elapsed_in_seconds) AS "sum_elapsed" ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_size_MB=round((avg_size/1000/1000),2) | eval max_size_MB=round((max_size/1000/1000),2)
+| eval sum_size_GB=round((sum_size/1000/1000/1000),2) | eval elapsed_in_seconds=round(elapsed_in_seconds,2) | eval sum_elapsed=tostring(sum_elapsed,"duration")
+| eval avg_nbr_lines=round(avg_nbr_lines,0) | eval sum_nbr_lines_in_millions=round((sum_nbr_lines/1000/1000),2)</link>
+                </drilldown>
+            </single>
+
+
+            <chart>
+                <search>
+                    <query>| pivot NMON_Processing_Data_Collect NMON_Processing avg(elapsed_in_seconds) AS "avg_elapsed_in_seconds" SPLITROW _time AS _time PERIOD auto SORT 0 _time ROWSUMMARY 0 COLSUMMARY 0 NUMCOLS 0 SHOWOTHER 1
+| eval avg_elapsed_in_seconds=round(avg_elapsed_in_seconds,2) | eval show_processing=$show_processing$ | fields - show_processing</query>
+                    <earliest>$timerange_processing.earliest$</earliest>
+                    <latest>$timerange_processing.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">column</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">stacked</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">400</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">Seconds</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+
+        </panel>
+
+    </row>
+
+    <!-- ######################################### Eventcount statistics #########################################  -->
+
+    <row depends="$show_eventcount$">
+
+        <panel>
+            <title>Eventcount / Metadata Statistics: Indexes first and last event dates</title>
+
+            <single>
+                <search base="eventcount_search">
+                    <query>sort - "Size (MB)" | head 1 | fields "Millions of Events"</query>
+                </search>
+                <option name="numberPrecision">0.00</option>
+                <option name="underLabel">NMON EVENTS COUNT</option>
+                <option name="unit">Millions</option>
+                <drilldown target="search">
+                    <link>search?q=| eventcount summarize=false report_size=true `nmon_index` | eval "Size (MB)" = round(size_bytes/1024/1024,2) | eval "Millions of Events" = round(count/1000000,2) | fields index, server, "Size (MB)", "Millions of Events"</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="metadata_search">
+                    <query>sort - recentTime | fields "First Event"</query>
+                </search>
+                <option name="underLabel">DATA FIRST EVENT</option>
+                <drilldown target="search">
+                    <link>search?q=| `indexes_datestats`</link>
+                </drilldown>
+            </single>
+
+            <single>
+                <search base="metadata_search">
+                    <query>sort - lastTime | fields "Last Event"</query>
+                </search>
+                <option name="underLabel">DATA LAST EVENT</option>
+                <drilldown target="search">
+                    <link>search?q=| `indexes_datestats`</link>
+                </drilldown>
+            </single>
+
+            <table>
+                <search base="metadata_search">
+                    <query>fields index,sourcetype,*Event</query>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+                <!-- Set sparkline options here; make sure that field matches field name of the search results -->
+                <format type="sparkline" field="spk_readch">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="sparkline" field="spk_writech">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+            </table>
+
+        </panel>
+    </row>
+
+    <!-- ######################################### Scheduled searches #########################################  -->
+
+    <row depends="$show_scheduled_stats$">
+
+        <panel>
+            <title>SCHEDULING - Statistics per report</title>
+            <input type="time" token="timerange_scheduled" searchWhenChanged="true">
+                <label>Time Range:</label>
+                <default>
+                    <earliestTime>-30d</earliestTime>
+                    <latestTime>now</latestTime>
+                </default>
+            </input>
+            <table rejects="$show_admin_required$">
+                <search>
+                    <query>index=_internal host="*" source=*scheduler.log status="*" AND status!="continued" savedsearch_name!="*_ACCELERATE_*" app="nmon"
+| stats avg(run_time) AS avg_run_time, max(run_time) AS max_run_time, latest(run_time) AS latest_run_time, max(_time) AS "last_run (dd/mm/YYYY H:M:S)" by app,savedsearch_name
+| eval "last_run (dd/mm/YYYY H:M:S)"=strftime('last_run (dd/mm/YYYY H:M:S)', "%d/%m/%Y %H:%M:%S")
+| foreach *_run_time [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| sort savedsearch_name | rename savedsearch_name AS "report (savedsearch_name)"
+| eval user_is_admin=$start_admin_searches$
+| eval show_scheduled_stats=$show_scheduled_stats$
+| eval duration_avg=tostring(avg_run_time, "duration"), duration_max=tostring(max_run_time, "duration"), duration_latest=tostring(latest_run_time, "duration")
+| eval "Avg run time (seconds / duration)" = avg_run_time + " sec / " + duration_avg + " (HH:MM:SSS)"
+| eval "Max run time (seconds / duration)" = max_run_time + " sec / " + duration_avg + " (HH:MM:SSS)"
+| eval "Latest run time (seconds / duration)" = latest_run_time + " sec / " + duration_avg + " (HH:MM:SSS)"
+| fields app,report*,Avg*,Max*,Latest*,"last_run (dd/mm/YYYY H:M:S)"</query>
+                    <earliest>$timerange_scheduled.earliest$</earliest>
+                    <latest>$timerange_scheduled.latest$</latest>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">10</option>
+            </table>
+            <html depends="$show_admin_required$">
+                <div style="color:red;margin-left:30px;font-size:18px;text-align:center;">
+                    <p>Oops ! Admin privileges required to access these statistics !</p>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+</dashboard>
