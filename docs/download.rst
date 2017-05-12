@@ -36,26 +36,23 @@ The TA-nmon has also its own Github project: https://github.com/guilhemmarchand/
 
 **Downloading and installing from Github:**
 
-You can download and install Nmon Performance monitor App directly from git using the git command:
+For the Nmon core application:
 
-::
+- Visit the Git repository: https://github.com/guilhemmarchand/nmon-for-splunk
+- Download the latest tgz archive available at the root of the project page
+- Install the application as usual
 
-    git clone https://github.com/guilhemmarchand/nmon-for-splunk.git
-    mv nmon-for-splunk nmon
+For the TA-nmon add-on:
 
-**IMPORTANT**:
+- Visit the Git repository: https://github.com/guilhemmarchand/TA-nmon
+- Download the latest tgz archive available at the root of the project page
+- Install the application as usual
 
-When downloading from Github, you MUST rename the directory to "nmon" or the Application will be broken
+For the PA-nmon_light add-on:
 
-For the TA-nmon:
-
-::
-
-    git clone https://github.com/guilhemmarchand/TA-nmon.git
-
-
-And you can also download the project content as zip archives from the Github web page.
-
+- Visit the Git repository: https://github.com/guilhemmarchand/PA-nmon_light
+- Download the latest tgz archive available at the root of the project page
+- Install the application as usual
 
 Stopped releases for old Splunk versions
 ========================================
