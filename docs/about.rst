@@ -104,9 +104,9 @@ and you are free to modify sources or participate in the development if you wish
 
 * Gallery: https://flic.kr/s/aHskFZcQBn
 
--------------------------------
-Open source materials reference
--------------------------------
+--------------------------------------------
+Open source and licensed materials reference
+--------------------------------------------
 
 - css materials from http://www.w3schools.com
 - d3 from Michael Bostock: https://bl.ocks.org
