@@ -103,3 +103,15 @@ and you are free to modify sources or participate in the development if you wish
 * Videos: https://www.youtube.com/channel/UCGWHd40x0A7wjk8qskyHQcQ
 
 * Gallery: https://flic.kr/s/aHskFZcQBn
+
+-------------------------------
+Open source materials reference
+-------------------------------
+
+- css materials from http://www.w3schools.com
+- d3 from Michael Bostock: https://bl.ocks.org
+- various extensions and components from the Splunk 6.x Dashboard Examples application: https://splunkbase.splunk.com/app/1603
+- dark.css from: http://www.brainfold.net/2016/04/splunk-dashboards-looks-more-beautiful.html
+- Take the tour component from https://github.com/ftoulouse/splunk-components-collection
+- hover.css from http://ianlunn.github.io/Hover
+- free of use icons from /www.iconfinder.com
