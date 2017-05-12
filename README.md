@@ -42,12 +42,12 @@ http://nmon-for-splunk.readthedocs.io/en/latest/support.html
 
 **Link to the last main release youtube video presentation:** https://www.youtube.com/watch?v=yHlo0idH3is
 
-![screen1](.././docs/img/screen001.png)
+![screen1](./docs/img/screen001.png)
 
-![screen2](.././docs/img/screen002.png)
+![screen2](./docs/img/screen002.png)
 
-![screen3](.././docs/img/screen003.png)
+![screen3](./docs/img/screen003.png)
 
-![screen4](.././docs/img/screen004.png)
+![screen4](./docs/img/screen004.png)
 
-![screen5](.././docs/img/screen005.png)
+![screen5](./docs/img/screen005.png)
