@@ -366,14 +366,14 @@ search eventtype=nmon:performance host="*" type=CPU_ALL earliest="@mon" latest="
 					<pre>eventtype=nmon:performance type=CPU_ALL frameID=$frameID$ host=$host$
 | where cpu_load_percent>90
 | transaction host cpu_load_percent>90 maxpause=5m | where duration&gt;300
-| fields _time,frameID,host,duration,cpu_load_percent,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT | stats values(*) AS * by _time,host
+| fields _time,frameID,host,duration,cpu_load_percent,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT | stats latest(*) AS * by _time,host
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
 | fields _time,frameID,host,duration*,cpu_load_percent,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DCPU_ALL%20frameID%3D$frameID$%20host%3D$host$%0A%0A%7C%20where%20cpu_load_percent&gt;90%0A%7C%20transaction%20host%20cpu_load_percent&gt;90%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chost%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration*%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DCPU_ALL%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20where%20cpu_load_percent&gt;90%0A%7C%20transaction%20host%20cpu_load_percent&gt;90%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT%20%7C%20stats%20latest(*)%20AS%20*%20by%20_time%2Chost%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration*%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
@@ -386,14 +386,14 @@ search eventtype=nmon:performance host="*" type=CPU_ALL earliest="@mon" latest="
 | search (date_wday!="sunday" date_wday!="saturday") AND (local_time&gt;="0800" AND local_time&lt;="1900")
 | where cpu_load_percent>90
 | transaction host cpu_load_percent>90 maxpause=5m | where duration&gt;300
-| fields _time,frameID,host,duration,cpu_load_percent,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT | stats values(*) AS * by _time,host
+| fields _time,frameID,host,duration,cpu_load_percent,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT | stats latest(*) AS * by _time,host
 | eval "duration (hh:mm:ss)"=tostring(duration,"duration") | rename duration AS "duration (seconds)"
 | fields _time,frameID,host,duration*,cpu_load_percent,Sys_PCT,User_PCT,Wait_PCT,Idle_PCT</pre>
 				</div>
 
 				<div>
 					<div class="cat_title">
-						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DCPU_ALL%20frameID%3D$frameID$%20host%3D$host$%0A%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20cpu_load_percent&gt;90%0A%7C%20transaction%20host%20cpu_load_percent&gt;90%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT%20%7C%20stats%20values(*)%20AS%20*%20by%20_time%2Chost%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration*%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
+						<a target="_blank" href="search?q=search%20eventtype%3Dnmon%3Aperformance%20type%3DCPU_ALL%20frameID%3D$frameID$%20host%3D$host$%0A%7C%20eval%20date_wday%3Dlower(strftime(%27_time%27%2C%20&quot;%25A&quot;))%20%7C%20eval%20local_time%3Dstrftime(%27_time%27%2C%20&quot;%25H%25M&quot;)%0A%7C%20search%20(date_wday!%3D&quot;sunday&quot;%20date_wday!%3D&quot;saturday&quot;)%20AND%20(local_time&gt;%3D&quot;0800&quot;%20AND%20local_time&lt;%3D&quot;1900&quot;)%0A%7C%20where%20cpu_load_percent&gt;90%0A%7C%20transaction%20host%20cpu_load_percent&gt;90%20maxpause%3D5m%20%7C%20where%20duration&gt;300%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT%20%7C%20stats%20latest(*)%20AS%20*%20by%20_time%2Chost%0A%7C%20eval%20&quot;duration%20(hh%3Amm%3Ass)&quot;%3Dtostring(duration%2C&quot;duration&quot;)%20%7C%20rename%20duration%20AS%20&quot;duration%20(seconds)&quot;%0A%7C%20fields%20_time%2CframeID%2Chost%2Cduration*%2Ccpu_load_percent%2CSys_PCT%2CUser_PCT%2CWait_PCT%2CIdle_PCT&amp;display.page.search.tab=statistics&amp;display.general.type=statistics&amp;earliest=-24h&amp;latest=now" class="tryitbtn-blue">Open in search »
 						</a>
 					</div>
 					<br />
