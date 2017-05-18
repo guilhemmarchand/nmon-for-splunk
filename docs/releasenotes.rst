@@ -32,6 +32,7 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 
 - fix alerting macros issues: transaction incorrect usage filter out events in excess of allowed limits #70
 - fix eventtype related messages for nmon:performance:cpu/mem due to WLM stats #71
+- fix Safe Center: reduce the number of searches and add refresh selector dropdown
 
 =======
 V1.9.3:
