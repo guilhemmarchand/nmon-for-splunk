@@ -10,6 +10,12 @@
                 <earliestTime>-24h</earliestTime>
                 <latestTime>now</latestTime>
             </default>
+            <!--
+            Reset the form token changed
+            -->
+       		<change>
+         		<unset token="form.refresh"></unset>
+       		</change>
         </input>
 
         <input type="dropdown" token="timefilter" searchWhenChanged="true">
@@ -108,6 +114,38 @@
             <default>*</default>
             <prefix>TOP_Solaris.PID="</prefix>
             <suffix>"</suffix>
+        </input>
+
+        <!--
+        This input is an hidden input that intents to smartly configure the auto refresh feature
+        Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
+        As well, this form will be reset whenever the time range period is modified
+        -->
+
+        <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Is past data search ?:</label>
+            <search>
+                <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>is_past_search</fieldForLabel>
+            <fieldForValue>is_past_search</fieldForValue>
+            <change>
+                <condition value="true">
+                    <set token="form.refresh">0</set>
+                </condition>
+            </change>
+        </input>
+
+        <input type="dropdown" token="refresh" searchWhenChanged="true">
+            <label>Auto-refresh:</label>
+            <choice value="30s">30 sec</choice>
+            <choice value="60s">1 min</choice>
+            <choice value="300s">5 min</choice>
+            <choice value="0">none</choice>
+            <default>30s</default>
         </input>
 
     </fieldset>
@@ -397,7 +435,7 @@
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -447,7 +485,7 @@
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -496,7 +534,7 @@
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -543,7 +581,7 @@
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -589,7 +627,7 @@
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -636,7 +674,7 @@
 | timechart $span$ $limit$ useother=f $statsmode$(value) As value by key | rename "aggreg:*" AS "*"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -692,7 +730,7 @@ groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Sol
 | sort - "CPU Usage per Logical Cores"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -732,7 +770,7 @@ groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Sol
 | sort - Phys_Mem_MB, host | rename Phys_Mem_MB As "Physical Memory (MB)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>

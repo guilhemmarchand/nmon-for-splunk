@@ -7,6 +7,12 @@
                 <earliest>-24h</earliest>
                 <latest>now</latest>
             </default>
+            <!--
+            Reset the form token changed
+            -->
+       		<change>
+         		<unset token="form.refresh"></unset>
+       		</change>
         </input>
         <input type="dropdown" token="OStype" searchWhenChanged="true">
             <label>OStype:</label>
@@ -58,6 +64,38 @@
        		</change>
         </input>
 
+        <!--
+        This input is an hidden input that intents to smartly configure the auto refresh feature
+        Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
+        As well, this form will be reset whenever the time range period is modified
+        -->
+
+        <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Is past data search ?:</label>
+            <search>
+                <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+                <earliest>$time.earliest$</earliest>
+                <latest>$time.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>is_past_search</fieldForLabel>
+            <fieldForValue>is_past_search</fieldForValue>
+            <change>
+                <condition value="true">
+                    <set token="form.refresh">0</set>
+                </condition>
+            </change>
+        </input>
+
+        <input type="dropdown" token="refresh" searchWhenChanged="true">
+            <label>Auto-refresh:</label>
+            <choice value="30s">30 sec</choice>
+            <choice value="60s">1 min</choice>
+            <choice value="300s">5 min</choice>
+            <choice value="0">none</choice>
+            <default>30s</default>
+        </input>
+        
         <!--
         This input is an hidden input that will be used to detect th type of operating system depending on the user
         selection.
@@ -249,7 +287,7 @@
 | timechart `nmon_span` avg(cpu_load_percent) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -276,7 +314,7 @@
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart `nmon_span` avg(mem_used_effective_PCT) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -303,7 +341,7 @@
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart `nmon_span` avg(swap_used_effective_PCT) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -372,7 +410,7 @@
 | trendline sma5(cpu_load_percent) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -415,7 +453,7 @@
 | fields _time,Idle_PCT,Wait_PCT,User_PCT,Sys_PCT</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -459,7 +497,7 @@
 | $show_cpu$</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -527,7 +565,7 @@
 | timechart `nmon_span` avg(*) AS * | fields _time,mem_free,cached,buffers,mem_used_effective,memtotal</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -572,7 +610,7 @@
 | trendline sma5(mem_used_effective_PCT) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -615,7 +653,7 @@
 | $show_phymem$</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -683,7 +721,7 @@
 | timechart `nmon_span` avg(*) AS *</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -728,7 +766,7 @@
 | trendline sma5(swap_used_effective_PCT) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -771,7 +809,7 @@
 | $show_virtualmem$</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -833,7 +871,7 @@
 | timechart `nmon_span` avg(disk_total_iops) AS disk_total_iops | where isnotnull(disk_total_iops)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -862,7 +900,7 @@
 | timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -892,7 +930,7 @@
 | timechart `nmon_span` avg(disk_busy_time_pct) AS disk_busy_time_pct | where isnotnull(disk_busy_time_pct)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -920,7 +958,7 @@
 | timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -949,7 +987,7 @@
 | timechart `nmon_span` avg(disk_block_size_KB) AS disk_block_size_KB | where isnotnull(disk_block_size_KB)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -976,7 +1014,7 @@
 | timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -1047,7 +1085,7 @@
 | trendline sma5(iops) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1093,7 +1131,7 @@
 | timechart `nmon_span` avg(disk_total_iops) AS iops by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1141,7 +1179,7 @@
 | trendline sma5(iops) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1187,7 +1225,7 @@
 | timechart `nmon_span` avg(value) AS iops by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1256,7 +1294,7 @@
 | trendline sma5(busy_disk) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1301,7 +1339,7 @@
 | timechart `nmon_span` avg(disk_busy_time_pct) AS busydisk by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1348,7 +1386,7 @@
 | trendline sma5(busy_disk) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1393,7 +1431,7 @@
 | timechart `nmon_span` avg(value) AS busydisk by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1462,7 +1500,7 @@
 | trendline sma5(tranfer_rate) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1507,7 +1545,7 @@
 | timechart `nmon_span` avg(disk_block_size_KB) AS tranfer_rate by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1554,7 +1592,7 @@
 | trendline sma5(tranfer_rate) AS trend</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1599,7 +1637,7 @@
 | timechart `nmon_span` avg(value) AS tranfer_rate by host</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1677,7 +1715,7 @@
 | sort - value</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -1712,7 +1750,7 @@
 | stats avg(mem_usage_mb) AS mem_usage_mb by Command | sort - mem_usage_mb</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="colorBy">trend</option>
@@ -1746,7 +1784,7 @@
 | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="underLabel">IN / OUT  NETWORK TRAFFIC</option>
@@ -1823,7 +1861,7 @@
 | timechart `nmon_span` limit=10 useother=f max(value) AS value by Command</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1872,7 +1910,7 @@
 | timechart `nmon_span` limit=10 useother=f max(value) As value by key</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1942,7 +1980,7 @@
 | timechart `nmon_span` limit=10 useother=f max(mem_usage_mb) AS mem_usage_mb by Command</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -1990,7 +2028,7 @@
 | timechart `nmon_span` limit=10 useother=f max(mem_usage_mb) As mem_usage_mb by key</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -2058,7 +2096,7 @@
 | timechart `nmon_span` avg(value) AS KBps by traffic_type</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
@@ -2103,7 +2141,7 @@
 | timechart `nmon_span` useother=f limit=0 avg(value) AS KBps by key</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>

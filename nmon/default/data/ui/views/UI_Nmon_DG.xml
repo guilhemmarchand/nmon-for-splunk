@@ -1,10 +1,7 @@
 <form stylesheet="ui_simple.css,panel_decoration.css" isVisible="true">
     <label>UI DG, Disks extended statistics</label>
     <description>User Interface for the disks extended performance monitors</description>
-    <!-- Help the user -->
-    <!-- Help the user -->
-    <!-- ################################ -->
-    <!-- Information panel -->
+
     <fieldset autoRun="false" submitButton="false">
         <input type="time" token="timerange" searchWhenChanged="true">
             <label>Time Range:</label>
@@ -12,6 +9,12 @@
                 <earliestTime>-24h</earliestTime>
                 <latestTime>now</latestTime>
             </default>
+            <!--
+            Reset the form token changed
+            -->
+       		<change>
+         		<unset token="form.refresh"></unset>
+       		</change>
         </input>
         <input type="dropdown" token="timefilter" searchWhenChanged="true">
             <label>Time Filtering:</label>
@@ -120,6 +123,35 @@
             <label>Charting:</label>
             <default>fields *</default>
             <choice value="fields *">On</choice>
+        </input>
+        <!--
+        This input is an hidden input that intents to smartly configure the auto refresh feature
+        Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
+        As well, this form will be reset whenever the time range period is modified
+        -->
+        <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Is past data search ?:</label>
+            <search>
+                <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>is_past_search</fieldForLabel>
+            <fieldForValue>is_past_search</fieldForValue>
+            <change>
+                <condition value="true">
+                    <set token="form.refresh">0</set>
+                </condition>
+            </change>
+        </input>
+        <input type="dropdown" token="refresh" searchWhenChanged="true">
+            <label>Auto-refresh:</label>
+            <choice value="30s">30 sec</choice>
+            <choice value="60s">1 min</choice>
+            <choice value="300s">5 min</choice>
+            <choice value="0">none</choice>
+            <default>30s</default>
         </input>
     </fieldset>
 
@@ -293,7 +325,7 @@ max(dg.disk_write_sec) as disk_write_sec, max(dg.disk_write_service_time_ms) as 
 | stats $statsmode$(disk_*) as "disk_*" by host, device</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -464,7 +496,7 @@ $statsmode$(disk_block_size_KB) as disk_block_size_KB, $statsmode$(disk_write_KB
 $statsmode$(disk_write_sec) as disk_write_sec, $statsmode$(disk_write_service_time_ms) as disk_write_service_time_ms, $statsmode$(disk_total_iops) as disk_total_iops, $statsmode$(disk_read_iops) as disk_read_iops, $statsmode$(disk_write_iops) as disk_write_iops by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>

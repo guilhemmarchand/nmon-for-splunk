@@ -15,6 +15,7 @@
          		<unset token="drilldown_cpuhost"></unset>
                 <unset token="drilldown_memhost"></unset>
                 <unset token="drilldown_swaphost"></unset>
+                <unset token="form.refresh"></unset>
        		</change>
         </input>
 
@@ -116,6 +117,39 @@
                 <unset token="drilldown_memhost"></unset>
                 <unset token="drilldown_swaphost"></unset>
        		</change>
+
+        </input>
+
+        <!--
+        This input is an hidden input that intents to smartly configure the auto refresh feature
+        Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
+        As well, this form will be reset whenever the time range period is modified
+        -->
+
+        <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Is past data search ?:</label>
+            <search>
+                <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>is_past_search</fieldForLabel>
+            <fieldForValue>is_past_search</fieldForValue>
+            <change>
+                <condition value="true">
+                    <set token="form.refresh">0</set>
+                </condition>
+            </change>
+        </input>
+
+        <input type="dropdown" token="refresh" searchWhenChanged="true">
+            <label>Auto-refresh:</label>
+            <choice value="30s">30 sec</choice>
+            <choice value="60s">1 min</choice>
+            <choice value="300s">5 min</choice>
+            <choice value="0">none</choice>
+            <default>30s</default>
         </input>
 
     </fieldset>
@@ -141,7 +175,7 @@
 | foreach *_usage [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
-        <refresh>30s</refresh>
+        <refresh>$refresh$</refresh>
         <refreshType>delay</refreshType>
     </search>
 
@@ -152,7 +186,7 @@
 | foreach *_usage_pct [ eval &lt;&lt;FIELD&gt;&gt;=round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
-        <refresh>30s</refresh>
+        <refresh>$refresh$</refresh>
         <refreshType>delay</refreshType>
     </search>
 
@@ -281,7 +315,7 @@
 | timechart $span$ avg(usage) AS avg_pct_cpu | trendline sma5(avg_pct_cpu) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -378,7 +412,7 @@
 | timechart $span$ avg(mem_used_effective_PCT) AS avg_mem_used_pct | trendline sma5(avg_mem_used_pct) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -475,7 +509,7 @@
 | timechart $span$ avg(swap_used_effective_PCT) AS avg_swap_used_pct | trendline sma5(avg_swap_used_pct) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -524,7 +558,7 @@
 | sort - avg_usage_pct</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
-        <refresh>30s</refresh>
+        <refresh>$refresh$</refresh>
         <refreshType>delay</refreshType>
     </search>
 
@@ -657,7 +691,7 @@
 | timechart $span$ $top_statsmode$(usage_pct) AS max_usage_pct by Command</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -765,7 +799,7 @@
 | timechart $span$ $top_statsmode$(usage_pct) AS max_usage_pct by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>

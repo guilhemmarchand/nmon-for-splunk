@@ -11,6 +11,12 @@
                 <earliestTime>-24h</earliestTime>
                 <latestTime>now</latestTime>
             </default>
+            <!--
+            Reset the form token changed
+            -->
+       		<change>
+         		<unset token="form.refresh"></unset>
+       		</change>
         </input>
 
         <input type="dropdown" token="timefilter" searchWhenChanged="true">
@@ -89,6 +95,38 @@ groupby "NFS.frameID" prestats=true
             <choice value="median">Median</choice>
             <choice value="mode">Mode</choice>
             <choice value="range">Range</choice>
+        </input>
+
+        <!--
+        This input is an hidden input that intents to smartly configure the auto refresh feature
+        Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
+        As well, this form will be reset whenever the time range period is modified
+        -->
+
+        <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
+            <label>Is past data search ?:</label>
+            <search>
+                <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <selectFirstChoice>true</selectFirstChoice>
+            <fieldForLabel>is_past_search</fieldForLabel>
+            <fieldForValue>is_past_search</fieldForValue>
+            <change>
+                <condition value="true">
+                    <set token="form.refresh">0</set>
+                </condition>
+            </change>
+        </input>
+
+        <input type="dropdown" token="refresh" searchWhenChanged="true">
+            <label>Auto-refresh:</label>
+            <choice value="30s">30 sec</choice>
+            <choice value="60s">1 min</choice>
+            <choice value="300s">5 min</choice>
+            <choice value="0">none</choice>
+            <default>30s</default>
         </input>
 
     </fieldset>
@@ -230,7 +268,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (host=$host-prefilter$) ($frameID$) ($o
 | stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -260,7 +298,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (host=$host-prefilter$) ($frameID$) ($o
 | stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -290,7 +328,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (host=$host-prefilter$) ($frameID$) ($o
 | stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -321,7 +359,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (host=$host-prefilter$) ($frameID$) (
 | stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -351,7 +389,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (host=$host-prefilter$) ($frameID$) (
 | stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -381,7 +419,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (host=$host-prefilter$) ($frameID$) (
 | stats $statsmode$(value) As value, sparkline(max(value)) As spk by monitor | sort - value | where value>0</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
@@ -478,7 +516,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V4) (host=$host-prefilter$) ($frameID$) ($o
 | timechart useother=f limit=0 $span$ $statsmode$(value) AS value by monitor</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -511,7 +549,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V3) (host=$host-prefilter$) ($frameID$) ($o
 | timechart useother=f limit=0 $span$ $statsmode$(value) AS value by monitor</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -544,7 +582,7 @@ where (nodename = NFS.NFS_SERVER.NFS_V2) (host=$host-prefilter$) ($frameID$) ($o
 | timechart useother=f limit=0 $span$ $statsmode$(value) AS value by monitor</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -577,7 +615,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV4) (host=$host-prefilter$) ($frameID$) (
 | timechart useother=f limit=0 $span$ $statsmode$(value) AS value by monitor</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -610,7 +648,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV3) (host=$host-prefilter$) ($frameID$) (
 | timechart useother=f limit=0 $span$ $statsmode$(value) AS value by monitor</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
@@ -643,7 +681,7 @@ where (nodename = NFS.NFS_CLIENT.NFSCLIV2) (host=$host-prefilter$) ($frameID$) (
 | timechart useother=f limit=0 $span$ $statsmode$(value) AS value by monitor</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
