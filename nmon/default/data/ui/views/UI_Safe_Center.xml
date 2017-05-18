@@ -20,28 +20,28 @@
 
             <single>
                 <search ref="SAFE CENTER - Number of active CPU alerts">
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="refresh.display">none</option>
             </single>
             <single>
                 <search ref="SAFE CENTER - Number of active Real Memory alerts">
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="refresh.display">none</option>
             </single>
             <single>
                 <search ref="SAFE CENTER - Number of active Virtual Memory alerts">
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="refresh.display">none</option>
             </single>
             <single>
                 <search ref="SAFE CENTER - Number of active FS alerts">
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="refresh.display">none</option>
@@ -67,6 +67,14 @@
                 <suffix>"</suffix>
             </input>
 
+            <input type="dropdown" token="refresh" searchWhenChanged="true">
+              <label></label>
+              <choice value="30s">30 sec</choice>
+              <choice value="60s">1 min</choice>
+              <choice value="300s">5 min</choice>
+              <default>300s</default>
+            </input>
+
         </panel>
     </row>
 
@@ -74,31 +82,29 @@
     <!-- Search Base for post processing -->
 
     <search id="CPU_Global" ref="SAFE CENTER - CPU issues">
-      <refresh>30s</refresh>
+      <refresh>$refresh$</refresh>
       <refreshType>delay</refreshType>
     </search>
 
     <search id="RealMem_Global" ref="SAFE CENTER - Real Memory issues">
-      <refresh>30s</refresh>
+      <refresh>$refresh$</refresh>
       <refreshType>delay</refreshType>
     </search>
 
     <search id="VirtualMem_Global" ref="SAFE CENTER - Virtual Memory issues">
-      <refresh>30s</refresh>
+      <refresh>$refresh$</refresh>
       <refreshType>delay</refreshType>
     </search>
 
     <search id="FileSystem_Global" ref="SAFE CENTER - FS issues">
-      <refresh>30s</refresh>
+      <refresh>$refresh$</refresh>
       <refreshType>delay</refreshType>
     </search>
 
     <!-- -->
 
-    <search id="tagcloud_cpu">
-        <query>`alerting_cpu_usage(*,*,90,300,5m)` | top limit=10 host</query>
-        <earliest>-24h@h</earliest>
-        <latest>now</latest>
+    <search id="tagcloud_cpu" base="CPU_Global">
+        <query>top limit=10 host</query>
     </search>
     <row>
         <panel>
@@ -372,10 +378,8 @@
         </panel>
     </row>
 
-    <search id="tagcloud_realmem">
-        <query>`alerting_realmemory_usage(*,*,90,300,5m)` | top limit=10 host</query>
-        <earliest>-24h@h</earliest>
-        <latest>now</latest>
+    <search id="tagcloud_realmem" base="RealMem_Global">
+        <query>top limit=10 host</query>
     </search>
     <row>
         <panel>
@@ -651,10 +655,8 @@
         </panel>
     </row>
 
-    <search id="tagcloud_virtualmem">
-        <query>`alerting_virtualmemory_usage(*,*,40,300,5m)` | top limit=10 host</query>
-        <earliest>-24h@h</earliest>
-        <latest>now</latest>
+    <search id="tagcloud_virtualmem" base="VirtualMem_Global">
+        <query>top limit=10 host</query>
     </search>
     <row>
         <panel>
@@ -928,10 +930,8 @@
         </panel>
     </row>
 
-    <search id="tagcloud_filesystem">
-        <query>`alerting_filesystem_usage(*,*,90,300,5m)` | top limit=10 host</query>
-        <earliest>-24h@h</earliest>
-        <latest>now</latest>
+    <search id="tagcloud_filesystem" base="FileSystem_Global">
+        <query>top limit=10 host</query>
     </search>
     <row>
         <panel>
@@ -1158,7 +1158,7 @@
                 <option name="drilldown">cell</option>
                 <option name="refresh.display">none</option>
             </table>
-            <chart depends="$fs_chart15" rejects="$show_null_alert_fs$">
+            <chart depends="$fs_chart5$" rejects="$show_null_alert_fs$">
                 <title></title>
                 <search base="FileSystem_Global">
                     <query>search $frameID$ $host$ | stats max("% usage") AS "% usage" by host | sort - "% usage"</query>
