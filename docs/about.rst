@@ -115,3 +115,4 @@ Open source and licensed materials reference
 - Take the tour component from https://github.com/ftoulouse/splunk-components-collection
 - hover.css from http://ianlunn.github.io/Hover
 - free of use icons from /www.iconfinder.com
+- Javascript tips (inputs highlighting) from https://splunkbase.splunk.com/app/3171 - https://blog.octoinsight.com/splunk-dashboards-highlighting-required-inputs

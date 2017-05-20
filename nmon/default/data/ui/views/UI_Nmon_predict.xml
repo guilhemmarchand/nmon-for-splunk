@@ -1,4 +1,4 @@
-<form stylesheet="ui_simple.css,panel_decoration.css" isVisible="true">
+<form script="UI_Nmon_predict.js" stylesheet="ui_simple.css,panel_decoration.css" isVisible="true">
     <label>NMON Predictive interface, Predictive analysis using the forecasting predict command</label>
     <description></description>
 
@@ -113,7 +113,7 @@
                 </change>
             </input>
 
-            <input type="dropdown" token="frameID" searchWhenChanged="true">
+            <input id="frameID" type="dropdown" token="frameID" searchWhenChanged="true">
                 <label>Frame IDs:</label>
                 <!-- Populating Data Model Search -->
                 <search>
@@ -150,7 +150,7 @@
                 <default>*</default>
             </input>
 
-            <input type="dropdown" token="host" searchWhenChanged="true">
+            <input id="host" type="dropdown" token="host" searchWhenChanged="true">
                 <label>Hosts Selection:</label>
                 <!-- Populating Data Model Search -->
                 <search>
@@ -211,16 +211,15 @@
                 </change>
             </input>
 
-            <input type="dropdown" token="AIX_metric_choice" searchWhenChanged="true" depends="$is_AIX$">
+            <input id="AIX_metric_choice" type="dropdown" token="AIX_metric_choice" searchWhenChanged="true" depends="$is_AIX$">
                 <label>PERFORMANCE METRIC:</label>
-                <choice value="CPU_ALL">CPU_ALL (% cpu usage)</choice>
-                <choice value="LPAR_partition">LPAR (partition vCPUs usage)</choice>
-                <choice value="LPAR_pool">LPAR (pool vCPUs usage)</choice>
-                <choice value="POOLS">POOLS (pool vCPUs usage)</choice>
-                <choice value="MEM">MEM (% physical memory usage)</choice>
-                <choice value="MEM_SWAP">MEM swap (% virtual memory usage)</choice>
-                <choice value="JFSFILE">JFSFILE (% usage per filesystem)</choice>
-                <choice value="JFSFILE_ALL">JFSFILE (% global usage filesystem)</choice>
+                <search>
+                    <query>| inputlookup ui_predict_monitors | where is_AIX="true" | table label,value</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>value</fieldForValue>
                 <change>
                     <condition value="CPU_ALL">
                         <set token="metric">CPU_ALL</set>
@@ -313,13 +312,15 @@
                 </change>
             </input>
 
-            <input type="dropdown" token="Linux_metric_choice" searchWhenChanged="true" depends="$is_Linux$">
+            <input id="Linux_metric_choice" type="dropdown" token="Linux_metric_choice" searchWhenChanged="true" depends="$is_Linux$">
                 <label>PERFORMANCE METRIC:</label>
-                <choice value="CPU_ALL">CPU_ALL (% cpu usage)</choice>
-                <choice value="MEM">MEM (% physical memory usage)</choice>
-                <choice value="MEM_SWAP">MEM swap (% virtual memory usage)</choice>
-                <choice value="JFSFILE">JFSFILE (% usage per filesystem)</choice>
-                <choice value="JFSFILE_ALL">JFSFILE (% global usage filesystem)</choice>
+                <search>
+                    <query>| inputlookup ui_predict_monitors | where is_Linux="true" | table label,value</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>value</fieldForValue>
                 <change>
                     <condition value="CPU_ALL">
                         <set token="metric">CPU_ALL</set>
@@ -379,13 +380,15 @@
                 </change>
             </input>
 
-            <input type="dropdown" token="Solaris_metric_choice" searchWhenChanged="true" depends="$is_Solaris$">
+            <input id="Solaris_metric_choice" type="dropdown" token="Solaris_metric_choice" searchWhenChanged="true" depends="$is_Solaris$">
                 <label>PERFORMANCE METRIC:</label>
-                <choice value="CPU_ALL">CPU_ALL (% cpu usage)</choice>
-                <choice value="MEM">MEM (% physical memory usage)</choice>
-                <choice value="MEM_SWAP">MEM swap (% virtual memory usage)</choice>
-                <choice value="JFSFILE">JFSFILE (% usage per filesystem)</choice>
-                <choice value="JFSFILE_ALL">JFSFILE (% global usage filesystem)</choice>
+                <search>
+                    <query>| inputlookup ui_predict_monitors | where is_Solaris="true" | table label,value</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>value</fieldForValue>
                 <change>
                     <condition value="CPU_ALL">
                         <set token="metric">CPU_ALL</set>
@@ -445,11 +448,11 @@
                 </change>
             </input>
 
-            <input type="dropdown" token="device" searchWhenChanged="true" depends="$show_device$">
+            <input id="device" type="dropdown" token="device" searchWhenChanged="true" depends="$show_device$">
                 <label>Device Selection:</label>
                 <!-- Populating Data Model Search -->
                 <search>
-                    <query>| tstats count AS Count from datamodel=$datamodel$ where (nodename = $datamodel_nodename$) ($datamodel_prefix$.host=$host-prefilter$) ($datamodel_prefix$.$frameID$) ($datamodel_prefix$.$osfilter$) ($datamodel_prefix$.$host$) groupby "$datamodel_prefix$.device" prestats=true
+                    <query>| tstats count AS Count from datamodel=$datamodel$ where (nodename = $datamodel_nodename$) (host=$host-prefilter$) ($datamodel_prefix$.$frameID$) ($datamodel_prefix$.$osfilter$) ($host$) groupby "$datamodel_prefix$.device" prestats=true
 | stats dedup_splitvals=t count AS Count by "$datamodel_prefix$.device"
 | sort limit=0 "$datamodel_prefix$.device"
 | fields - _span | fillnull Count | fields "$datamodel_prefix$.device"

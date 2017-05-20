@@ -1,4 +1,4 @@
-<form script="single_trend.js,table_icons_rangemap.js" stylesheet="ui_simple.css,single_trend_transposed.css,table_decorations.css" isVisible="true">
+<form script="ui_simple.js,single_trend.js,table_icons_rangemap.js" stylesheet="ui_simple.css,single_trend_transposed.css,table_decorations.css" isVisible="true">
     <label>UI Comparison - Comparing various usage statistics between two different periods</label>
     <description>User Comparison Interface to determine the evolution of different monitors</description>
 
@@ -82,7 +82,8 @@
                 <choice value="eval usage=lpar_pool_vp_usage, pct_usage=lpar_pool_vp_usage_PCT | where usage&gt;0 AND usage&lt;poolCPUs">LPAR - Pools CPU Usage</choice>
                 <choice value="search device!=&quot;lo*&quot; | eval rate=round((value/1000),2) | bucket _time span=1m | stats sum(rate) As usage by _time,host | setfields device=Network_All">NET - Global Network Activity</choice>
                 <choice value="search device!=&quot;lo*&quot; | bucket _time span=1m | stats sum(value) As usage by _time,host | setfields device=Network_All">NETPACKET - Global Network Packets</choice>
-                <choice value="search device=* | bucket _time span=1m | stats sum(value) As usage by _time,host | setfields device=IOPS">DISKXFER - Global I/Os per sec</choice>
+                <choice value="eval usage=disk_total_iops">DGXFER - Global I/Os per sec</choice>
+                <choice value="search device=* | bucket _time span=1m | stats sum(value) As usage by _time,host | setfields device=IOPS">DISKXFER - Aggregated I/Os per sec</choice>
                 <choice value="eval usage=mem_used_effective_PCT">MEM - Real Mem Pct usage</choice>
                 <choice value="eval usage=swap_used_effective_PCT">MEM - Paging Mem Pct usage</choice>
                 <default>eval usage=cpu_load_percent</default>
@@ -107,9 +108,13 @@
                         <set token="monitor_filter">NETPACKET</set>
                         <set token="unity_minilabel">number of packets</set>
                     </condition>
+                    <condition value="eval usage=disk_total_iops">
+                        <set token="monitor_filter">DGXFER</set>
+                        <set token="unity_minilabel">I/O per sec (disk extended)</set>
+                    </condition>
                     <condition value="search device=* | bucket _time span=1m | stats sum(value) As usage by _time,host | setfields device=IOPS">
                         <set token="monitor_filter">DISKXFER</set>
-                        <set token="unity_minilabel">I/O per sec</set>
+                        <set token="unity_minilabel">I/O per sec (aggregated)</set>
                     </condition>
                     <condition value="eval usage=mem_used_effective_PCT">
                         <set token="monitor_filter">MEM</set>
@@ -122,7 +127,7 @@
                 </change>
             </input>
 
-            <input type="multiselect" token="frameID" searchWhenChanged="true">
+            <input id="frameID" type="multiselect" token="frameID" searchWhenChanged="true">
                 <label>frameID Selection:</label>
                 <search>
                     <query>| tstats count where $host-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host, serialnum
@@ -150,7 +155,7 @@
                 <default>*</default>
             </input>
 
-            <input type="multiselect" token="host" searchWhenChanged="true">
+            <input id="host" type="multiselect" token="host" searchWhenChanged="true">
                 <label>hosts Selection:</label>
                 <search>
                     <query>| tstats count where $host-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host, serialnum

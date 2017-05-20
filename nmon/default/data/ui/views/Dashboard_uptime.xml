@@ -1,4 +1,4 @@
-<form isVisible="true">
+<form script="ui_simple.js" stylesheet="ui_simple.css,panel_decoration.css" isVisible="true">
     <label>UPTIME evolution over time</label>
     <description>Uptime evolution over time, evaluated in days</description>
     <row>
@@ -20,7 +20,7 @@
                 <choice value="Linux">Linux</choice>
                 <choice value="Solaris">Solaris</choice>
             </input>
-            <input type="dropdown" token="frameID" searchWhenChanged="true">
+            <input id="frameID" type="dropdown" token="frameID" searchWhenChanged="true">
                 <label>Frame IDs:</label>
                 <!-- Populating Data Model Search -->
                 <search id="frameIDSearch">
@@ -40,7 +40,7 @@ groupby "CPU.frameID", host prestats=true
                 <label>Optional: Filter hosts populating</label>
                 <default>*</default>
             </input>
-            <input type="dropdown" token="host" searchWhenChanged="true">
+            <input id="host" type="dropdown" token="host" searchWhenChanged="true">
                 <label>Host:</label>
                 <!-- Populating Data Model Search -->
                 <search id="baseSearch">
@@ -58,6 +58,19 @@ groupby host prestats=true
             </input>
         </panel>
     </row>
+
+    <!-- Help the user -->
+
+    <row rejects="$host$">
+        <panel>
+            <html>
+                <div class="red_help_user">
+                    <p>- - - - - - - - - - ACTION REQUIRED: please select your server name(s) in the host selector above - - - - - - - - - -</p>
+                </div>
+            </html>
+        </panel>
+    </row>
+
     <search id="GlobalSearch">
         <query>| tstats latest("Nmon_Config.uptime") AS uptime_seconds, latest("Nmon_Config.event_epoch") AS last_report from datamodel=NMON_Config where (nodename = Nmon_Config) (sourcetype=nmon_config) (Nmon_Config.OStype = "Linux") ($host$) groupby host prestats=true
 | tstats latest("Uptime.uptime") AS external_uptime latest(Uptime.event_epoch) as external_last_report from datamodel=NMON_Config.Uptime where (nodename = Uptime) (Uptime.OStype = "Linux") (Uptime.uptime = "*") ($host$) groupby host append=true prestats=true

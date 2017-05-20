@@ -35,6 +35,7 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 - fix Safe Center: reduce the number of searches and add refresh selector dropdown
 - fix: CIM compliance improvements and corrections
 - feature: introduce a smart auto refresh feature to prevent from having auto refresh enabled when out of current time range
+- feature: red highlighting of forms waiting for inputs in views
 
 =======
 V1.9.3:
