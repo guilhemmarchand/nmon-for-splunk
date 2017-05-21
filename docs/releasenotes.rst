@@ -36,6 +36,7 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 - fix: CIM compliance improvements and corrections
 - feature: introduce a smart auto refresh feature to prevent from having auto refresh enabled when out of current time range
 - feature: red highlighting of forms waiting for inputs in views
+- feature: Take the tour update
 
 =======
 V1.9.3:
