@@ -17,6 +17,12 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.9.6:
+=======
+
+- fix: Alerting for CPU is broken since 1.9.5 due to unexpected missing sort _time #73
+
+=======
 V1.9.5:
 =======
 
