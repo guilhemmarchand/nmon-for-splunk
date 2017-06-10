@@ -31,8 +31,8 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
 - fix: Alerting for CPU is broken since 1.9.5 due to unexpected missing sort _time #73
-- fix: data data from syslog, missing indexed time creation and OStype and type fields #74
-- fix: nmon from syslog - uptime extraction failure #75
+- fix: nmon data from syslog, missing indexed time creation and OStype and type fields #74
+- fix: nmon data from syslog - uptime extraction failure #75
 
 =======
 V1.9.5:
