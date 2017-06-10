@@ -21,6 +21,7 @@ V1.9.6:
 =======
 
 - fix: Alerting for CPU is broken since 1.9.5 due to unexpected missing sort _time #73
+- fix: data data from syslog, missing indexed time creation and OStype and type fields #74
 
 =======
 V1.9.5:
