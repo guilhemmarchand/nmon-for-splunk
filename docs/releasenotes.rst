@@ -33,6 +33,7 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 - fix: Alerting for CPU is broken since 1.9.5 due to unexpected missing sort _time #73
 - fix: nmon data from syslog, missing indexed time creation and OStype and type fields #74
 - fix: nmon data from syslog - uptime extraction failure #75
+- fix: Alerting - Show the real number of alerts instead of triggered alerts #76
 
 =======
 V1.9.5:
