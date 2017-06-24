@@ -95,6 +95,7 @@ Splunk Accelerated data models provide a great and efficient user experience.
 The following report(s) use report acceleration feature:
 
 - Volume of Data indexed Today, accelerated for last 7 days
+- Number of notable events in Data Processing or Data Collect since last 24 Hours, accelerated for last 24 hours
 
 ------------------------------
 About Nmon Performance Monitor
