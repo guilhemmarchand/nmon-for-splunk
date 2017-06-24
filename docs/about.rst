@@ -80,12 +80,21 @@ In distributed deployments using clusters of indexers, the PA-nmon add-on will a
 Summarization implementation
 ----------------------------
 
+**Accelerated data models:**
+
 Nmon for Splunk App intensively uses data model acceleration in almost every user interfaces, reports and dashboards.
-The application provides multiple data models that have the acceleration activated by default using "All time" as the time range limit.
 
-Splunk Accelerated data models provide a great and performer user experience.
+The application provides multiple data models that have the acceleration activated by default using "All time" as the time range limit for all data models managing performance and configuration data.
 
-The application does not use any accelerated reports.
+The Nmon Processing data model is by default accelerated over last 3 months of data.
+
+Splunk Accelerated data models provide a great and efficient user experience.
+
+**Accelerated reports:**
+
+The following report(s) use report acceleration feature:
+
+- Volume of Data indexed Today, accelerated for last 7 days
 
 ------------------------------
 About Nmon Performance Monitor
