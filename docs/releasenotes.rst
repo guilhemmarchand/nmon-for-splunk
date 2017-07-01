@@ -17,6 +17,26 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.9.7:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+This is a major release of the Nmon application and the TA-nmon:
+
+Migration from 1.7.x and prior: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-7-x
+
+Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-9-x
+
+For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
+
+- fix: Large scale issue - Optimize the run time of the Hosts with data within last 7 days #81
+- fix: Large scale issue - restrict the nmon_processing data model to the last 30 days by default #80
+- fix: report issue - TA-nmon package deployment reporting can includes non deployment events #79
+- fix: Large scale issue - Optimize run time of the Volume of Data indexed today report #78
+- fix: Large scale issue - Nmon inventory generation report may fail due to report lengh #77
+
+=======
 V1.9.6:
 =======
 
