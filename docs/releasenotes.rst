@@ -30,6 +30,8 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
+- fix: Nmon Config data model issues in some clustered environments #83
+- fix: baseline future charting not working due to mismatch between host and hostname #82
 - fix: Large scale issue - Optimize the run time of the Hosts with data within last 7 days #81
 - fix: Large scale issue - restrict the nmon_processing data model to the last 30 days by default #80
 - fix: report issue - TA-nmon package deployment reporting can includes non deployment events #79
