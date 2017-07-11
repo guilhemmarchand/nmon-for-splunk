@@ -17,6 +17,22 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
+V1.9.8:
+=======
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+This is a major release of the Nmon application and the TA-nmon:
+
+Migration from 1.7.x and prior: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-7-x
+
+Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-9-x
+
+For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
+
+- fix: Large scale issue - Optimize Nmon inventory generation runtime
+
+=======
 V1.9.7:
 =======
 
