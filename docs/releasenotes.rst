@@ -31,6 +31,7 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
 - fix: Large scale issue - Optimize Nmon inventory generation runtime #85
+- fix: Nmon inventory - Uptime data analysis issue #86
 
 =======
 V1.9.7:
