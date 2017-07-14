@@ -32,6 +32,7 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 
 - fix: Large scale issue - Optimize Nmon inventory generation runtime #85
 - fix: Nmon inventory - Uptime data analysis issue #86
+- fix: Nmon Dark dashboard - missing reset auto-refresh #87
 
 =======
 V1.9.7:
