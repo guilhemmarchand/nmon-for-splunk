@@ -34,6 +34,8 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 - fix: Nmon inventory - Uptime data analysis issue #86
 - fix: Nmon Dark dashboard - missing reset auto-refresh #87
 - fix: TOP datamodel issue - error in distributed search for ALL_OS node (nmon summary...) #88
+- fix: Drilldown correction for the number of last 7 days hosts in home pages #89
+- evolution: Large scale consideration - restricted default limits for datamodel acceleration (1y for metrics) #90
 
 =======
 V1.9.7:
