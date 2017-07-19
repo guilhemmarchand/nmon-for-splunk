@@ -58,7 +58,7 @@ The PA-nmon_light add-on is a minimal add-on designed to be installed on indexer
 Index time operations
 ---------------------
 
-The application operates index time operation, the PA-nmon_light add-on must be installed in indexers in order for the application to operate normally.
+The application operates index time operations, the PA-nmon_light add-on must be installed in indexers in order for the application to operate normally.
 
 If there are any Heavy forwarders acting as intermediate forwarders between indexers and Universal Forwarders, the TA-nmon add-on must deployed on the intermediate forwarders to achieve successfully index time extractions.
 
@@ -84,9 +84,10 @@ Summarization implementation
 
 Nmon for Splunk App intensively uses data model acceleration in almost every user interfaces, reports and dashboards.
 
-The application provides multiple data models that have the acceleration activated by default using "All time" as the time range limit for all data models managing performance and configuration data.
+**By default, data models are accelerated with the following settings:**
 
-The Nmon Processing data model is by default accelerated over last 3 months of data.
+- metrics related data models are accelerated over a period of 1 year
+- others data models are accelerated over the last 30 days
 
 Splunk Accelerated data models provide a great and efficient user experience.
 

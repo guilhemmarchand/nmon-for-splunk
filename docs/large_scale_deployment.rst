@@ -17,13 +17,16 @@ Data model acceleration
 Accelerated data models are massively used in the application, this implementation provides exceptional performances of searches, and a great user experience.
 However, data models have a cost in term of storage and system resources utilization for acceleration build and maintenance.
 
-By default, all data models are accelerated over the "All time" period, these settings are managed in the following configuration file:
+**By default, data models are accelerated with the following settings:**
+
+- metrics related data models are accelerated over a period of 1 year
+- others data models are accelerated over the last 30 days
 
 *nmon/default/datamodels.conf*
 
 ::
 
-    acceleration.earliest_time = 0
+    acceleration.earliest_time = -1y
 
 Restricting the acceleration period will helping reducing:
 
@@ -44,11 +47,11 @@ Finally, take care not to reduce too much the acceleration period, searches out 
 
 You can easily customize the acceleration period by creating a local copy of the datamodels.conf under the "local" directory.
 
-Then, for each data model, ensure to set the required period, example with a 1 year period:
+Then, for each data model, ensure to set the required period, example with a 3 months period:
 
 ::
 
-    acceleration.earliest_time = 1y
+    acceleration.earliest_time = -3mon
 
 Acceleration setting of data models can also be managed directly in Splunk Web:
 
@@ -171,15 +174,3 @@ See: :ref:`manage_volume_per_server`
 The Nmon Performance technical add-ons generates csv flows of data, as such the volume of data to be generated is already really optimised and reduced to the maximum.
 
 However, you can choose to limit licence usage and storing costs by increasing the time between 2 performance collections, a common choice might be to increase this time to 2 or 3 minutes.
-
-
-
-
-
-
-
-
-
-
-
-
