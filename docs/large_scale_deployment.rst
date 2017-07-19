@@ -55,9 +55,7 @@ Then, for each data model, ensure to set the required period, example with a 3 m
 
 Acceleration setting of data models can also be managed directly in Splunk Web:
 
-*Pivot / Manage data models:*
-
-*Note: Since Splunk 6.5.x it might be a little bit more tricky to access to the data model manager, direct URL:* http://mysplunk.mydomain.com/en-US/app/nmon/data_model_manager
+*Settings / Data models:*
 
 .. image:: img/manage_datamodels1.png
    :alt: manage_datamodels1.png
@@ -66,8 +64,6 @@ Acceleration setting of data models can also be managed directly in Splunk Web:
 .. image:: img/manage_datamodels2.png
    :alt: manage_datamodels2.png
    :align: center
-
-
 
 Indexes settings, retention and rolling buckets
 """""""""""""""""""""""""""""""""""""""""""""""
