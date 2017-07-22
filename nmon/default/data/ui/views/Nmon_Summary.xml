@@ -296,21 +296,25 @@
 
     </fieldset>
 
-    <!-- Configuration Search will run over earliest Alltime using the accelerated Data Model -->
+    <!-- Configuration Search uses nmon_inventory -->
 
     <search id="configSearch">
-        <query>| tstats last("Nmon_Config.OStype") AS OStype
-last("Nmon_Config.OS_Level") AS OS_Level
-last("Nmon_Config.cpu_cores") AS cpu_cores
-last("Nmon_Config.Processor") AS Processor from datamodel=NMON_Config where (nodename = Nmon_Config) (host=$host$) groupby host prestats=true
-| stats dedup_splitvals=t last("Nmon_Config.OStype") AS OStype
-last("Nmon_Config.OS_Level") AS OS_Level
-last("Nmon_Config.cpu_cores") AS cpu_cores last("Nmon_Config.Processor") AS Processor by host
-| sort limit=0 host | eval OS_summary=upper(OStype)+" / "+OS_Level
+        <query>| inputlookup nmon_inventory
+| rename hostname as host
+| search host=$host$
+| sort limit=0 host | eval OS_summary=upper(OStype)+" / "+OSversion
 | $show_configuration$
-| fields host, OStype, OS_Level, OS_summary, cpu_cores, Processor</query>
+| fields host, OS_summary, cpu_cores, Processor</query>
         <earliest>0</earliest>
-        <latest>$timerange.latest$</latest>
+        <!-- Progress event has access to job properties only -->
+        <progress>
+            <condition match="'job.resultCount' == 0">
+                <set token="show_null_config">True</set>
+            </condition>
+            <condition>
+                <unset token="show_null_config"/>
+            </condition>
+        </progress>
     </search>
 
     <search id="MEMSearch">
@@ -492,9 +496,9 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
     </row>
 
     <row depends="$show_configuration$">
-        <panel>
-            <title>Operating System</title>
 
+        <panel rejects="$show_null_config$">
+            <title>Operating System</title>
             <single>
                 <search base="configSearch">
                     <query>fields OS_summary</query>
@@ -502,11 +506,10 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="drilldown">none</option>
                 <option name="underLabel">Operating System Level</option>
             </single>
-
         </panel>
-        <panel>
-            <title>Processor Configuration</title>
 
+        <panel rejects="$show_null_config$">
+            <title>Processor Configuration</title>
             <single>
                 <search base="configSearch">
                     <query>fields cpu_cores</query>
@@ -514,7 +517,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="drilldown">none</option>
                 <option name="underLabel">Virtual Proc / Logical Cores</option>
             </single>
-
             <single>
                 <search base="configSearch">
                     <query>fields Processor</query>
@@ -522,7 +524,12 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="drilldown">none</option>
                 <option name="underLabel">Processor Type</option>
             </single>
+        </panel>
 
+        <panel depends="$show_null_config$">
+            <html>
+                <p style="color:blue;margin-left:30px;font-size:14px;margin-top:50px">SYSTEM SUMMARY OVERVIEW Search returned no results, The nmon inventory data may not be available yet for this host, manually run the Nmon Inventory Generation report or wait for the auto update. (occurs every hour by default)</p>
+            </html>
         </panel>
 
         <panel>

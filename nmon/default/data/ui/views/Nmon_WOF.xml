@@ -206,13 +206,6 @@
             </html>
         </panel>
     </row>
-    <row depends="$show_null_config$">
-        <panel>
-            <html>
-                <p style="color:blue;margin-left:30px;font-size:14px">SYSTEM SUMMARY OVERVIEW Search returned no results, The nmon inventory data may not be available yet or not available for this host only, manually run the Nmon Inventory Generation report or wait for the auto update. (occurs every hour by default)</p>
-            </html>
-        </panel>
-    </row>
     <row>
         <panel>
             <html>
@@ -235,17 +228,27 @@
 
     <row depends="$show_config$">
         <panel>
-            <table>
+            <table rejects="$show_null_config$">
                 <title>NMON Inventory data:</title>
                 <search>
-                    <query>| tstats count where `nmon_index` by host | fields host
-| lookup nmon_inventory hostname as host | search $OStype$ $host$
+                    <query>| inputlookup nmon_inventory
+| rename hostname as host
+| search $OStype$ $host$
 | eval "Operating System"=case(OStype=="AIX", ("IBM AIX " + AIX_LEVEL), OStype=="Linux", Linux_distribution, OStype=="Solaris", if(isnotnull(Solaris_version), Solaris_version, Solaris_sunOS_version))
 | fields host,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,"Operating System",nmon_version
 | fillnull value="N/A"
 | rename Physical_mem_MB AS "Physical memory (MB)", Virtual_mem_MB AS "Virtual memory (MB)"
 | $show_config$</query>
                     <earliest>0</earliest>
+                <!-- Progress event has access to job properties only -->
+                <progress>
+                    <condition match="'job.resultCount' == 0">
+                        <set token="show_null_config">True</set>
+                    </condition>
+                    <condition>
+                        <unset token="show_null_config"/>
+                    </condition>
+                </progress>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
@@ -253,6 +256,9 @@
                 <option name="dataOverlayMode">none</option>
                 <option name="count">10</option>
             </table>
+            <html depends="$show_null_config$">
+                <p style="color:blue;margin-left:30px;font-size:14px">SYSTEM SUMMARY OVERVIEW Search returned no results, The nmon inventory data may not be available yet, manually run the Nmon Inventory Generation report or wait for the auto update. (occurs every hour by default)</p>
+            </html>
         </panel>
     </row>
 
