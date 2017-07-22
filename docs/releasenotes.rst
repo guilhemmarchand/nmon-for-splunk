@@ -17,7 +17,7 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =======
-V1.9.8:
+V1.9.9:
 =======
 
 **CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
@@ -36,6 +36,13 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 - fix: TOP datamodel issue - error in distributed search for ALL_OS node (nmon summary...) #88
 - fix: Drilldown correction for the number of last 7 days hosts in home pages #89
 - evolution: Large scale consideration - restricted default limits for datamodel acceleration (1y for metrics) #90
+- fix: Use nmon_inventory to retrieve configuration data instead of using datamodel #91
+
+=======
+V1.9.8:
+=======
+
+- intermediate unpublished release
 
 =======
 V1.9.7:
