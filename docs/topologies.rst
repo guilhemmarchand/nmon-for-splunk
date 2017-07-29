@@ -36,8 +36,28 @@ This is an example of deployment for standard scenario with a single Splunk forw
    :alt: topology3_colddata_example.png
    :align: center
 
+-------------------------------------------------------
+2. Agentless deployment with Splunk HEC and nmon-logger
+-------------------------------------------------------
+
+**Since the version 1.9.10, the nmon-logger for Splunk HEC provides a 100% agent less configuration using the Splunk http input:**
+
+.. image:: img/splunk_hec_deployment.png
+   :alt: splunk_hec_deployment.png
+   :align: center
+
+**This deployment provides the following features:**
+
+* **clients easy set up:** the nmon-logger is provided as deb/rpm package, easy and fast deployment
+* **server easy set up:** Splunk http input is easy to configure and implement
+* **100% agent less:** the nmon-logger uses only native system features (cron, logrotate...)
+* **secure:** Splunk http traffic can easily be encrypted via SSL and integrated into any DMZ or similar restricted networking layer
+* **resilient and scalable:** using load balancers and multiple nodes provides resiliency and horizontal scalability
+* **network friendly:** as Web service, it can be easily used across wide networks and over the Internet
+* **easy management:** since the http input is managed on a token basis, you can easily configure different token to ingest the data into different indexes without any package modification or complexity
+
 --------------------
-2. Syslog deployment
+3. Syslog deployment
 --------------------
 
 **Additionally and since the version 1.6.14, it is possible to use Syslog as the transport layer associated with a third party package called "nmon-logger"**
@@ -71,24 +91,3 @@ Although all pieces of software should work fine too on AIX and Solaris, this re
 .. image:: img/syslog_topology2.png
    :alt: syslog_topology2.png
    :align: center
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

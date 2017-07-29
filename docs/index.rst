@@ -51,6 +51,7 @@ Documentation:
    installation_splunkcloud
    installation_central_repositories
    upgrade
+   hec_deployment
    rsyslog_deployment
    syslogng_deployment
    Userguide
