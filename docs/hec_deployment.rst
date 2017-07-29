@@ -163,6 +163,12 @@ This is package (no arch) to be deployed, which is obviously straight forward:
 
     sudo setenforce 0
 
+- Some systems (likely on RHEL), the perl-Time-HiRes may not be installed by default:
+
+::
+
+    yum install -y perl-Time-HiRes
+
 ***************************
 Configuring the nmon-logger
 ***************************
