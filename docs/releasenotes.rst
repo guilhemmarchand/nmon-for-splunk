@@ -31,6 +31,7 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
 - feature: index and search time configuration for the nmon-logger-splunk-hec package (agent less package using the Splunk http input)
+- fix: UI Compare - fix frameID mapping for non CSV source data (nmon-logger) #92
 
 =======
 V1.9.9:
