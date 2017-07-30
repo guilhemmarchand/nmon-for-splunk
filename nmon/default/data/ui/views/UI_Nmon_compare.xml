@@ -130,16 +130,14 @@
             <input id="frameID" type="multiselect" token="frameID" searchWhenChanged="true">
                 <label>frameID Selection:</label>
                 <search>
-                    <query>| tstats count where $host-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host, serialnum
-| rename host as host
-| lookup nmon_frameID_mapping serialnum AS serialnum, host as host OUTPUT frameID
-| eval frameID=if(isnull(frameID), serialnum, frameID)
+                    <query>| tstats count where $host-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host
+| lookup nmon_frameID_mapping host as host OUTPUT frameID
+| eval frameID=if(isnull(frameID), host, frameID)
 | stats count by frameID | fields frameID | dedup frameID | sort frameID</query>
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange2.latest$</latest>
                 </search>
                 <default>*</default>
-                <prefix>lookup nmon_frameID_mapping serialnum AS serialnum, host as host OUTPUT frameID | eval frameID=if(isnull(frameID), serialnum, frameID) | search </prefix>
                 <valuePrefix>frameID="</valuePrefix>
                 <valueSuffix>"</valueSuffix>
                 <delimiter> OR </delimiter>
@@ -158,11 +156,10 @@
             <input id="host" type="multiselect" token="host" searchWhenChanged="true">
                 <label>hosts Selection:</label>
                 <search>
-                    <query>| tstats count where $host-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host, serialnum
-| rename host as host
-| lookup nmon_frameID_mapping serialnum AS serialnum, host as host OUTPUT frameID
-| eval frameID=if(isnull(frameID), serialnum, frameID)
-| $frameID$
+                    <query>| tstats count where $host-prefilter$ $osfilter$ type=$monitor_filter$ `nmon_index` by host
+| lookup nmon_frameID_mapping host as host OUTPUT frameID
+| eval frameID=if(isnull(frameID), host, frameID)
+| search $frameID$
 | stats count by host | fields host | dedup host | sort host</query>
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange2.latest$</latest>
@@ -207,13 +204,13 @@
 
             <single>
                 <search>
-                    <query>eventtype=nmon:performance $host-prefilter$ $osfilter$ $host$ type=$monitor_filter$ | $frameID$
+                    <query>eventtype=nmon:performance $host-prefilter$ $osfilter$ $host$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by host
 | fields host,usage_period1*
 | append
-[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | $frameID$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by host
@@ -234,13 +231,13 @@
             <table id="table1">
                 <title>Table Stats</title>
                 <search>
-                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | $frameID$
+                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by host
 | fields host,usage_period1*
 | append
-[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | $frameID$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | `$TimeFilter$`
 | stats $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by host
@@ -323,14 +320,14 @@
             <title>Combined Chart (Time line period 1)</title>
             <chart>
                 <search>
-                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | $frameID$
+                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | $chartactivate$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period1, $statsmode$(fake) As fake by host
 | fields _time,usage_period1*
 | appendcols
-[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | $frameID$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | `$TimeFilter$`
 | timechart $span$ limit=0 useother=f $statsmode$(usage) As usage_period2, $statsmode$(fake) As fake by host
@@ -367,7 +364,7 @@
             <title>Chart Period 1</title>
             <chart>
                 <search>
-                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | $frameID$
+                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | $chartactivate$
 | `$TimeFilter$`
@@ -402,7 +399,7 @@
             <title>Chart Period 2</title>
             <chart>
                 <search>
-                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | $frameID$
+                    <query>eventtype=nmon:performance $host-prefilter$ $host$ $osfilter$ type=$monitor_filter$ | search $frameID$
 | $monitor_definition$
 | $chartactivate$
 | `$TimeFilter$`
