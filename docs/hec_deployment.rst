@@ -46,6 +46,7 @@ Deployment matrix
 **Notes:**
 
 * there are indexing time parsing configurations, the PA-nmon_light or the TA-nmon (or both) must be deployed on the host running the http input
+* The Nmon core app **version 1.9.10** minimal and TA-nmon **version 1.3.27** minimal are required on the Splunk infrastructure
 
 **Fast testing using Vagrant and Ansible:**
 
