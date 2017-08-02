@@ -76,7 +76,7 @@ Download the nmon-logger-splunk-hec package
 
 * https://github.com/guilhemmarchand/nmon-logger
 
-The nmon-logger is provided as a deb and rpm package for Linux OS, it has been tested against:
+The nmon-logger is provided as a deb and rpm package for Linux OS and AIX, it has been tested against:
 
 * Ubuntu (x86 and Powerpc)
 * Debian (x86)
@@ -84,6 +84,8 @@ The nmon-logger is provided as a deb and rpm package for Linux OS, it has been t
 * RHEL (x86 and Powerpc)
 * Suse (x86 and Powerpc)
 * OpenSuse (x86)
+* AIX 7.1
+* AIX 7.2
 
 *************************************************
 Activate the Splunk http input and create a token
@@ -190,36 +192,19 @@ This is package (no arch) to be deployed, which is obviously straight forward:
 AIX OS
 ------
 
-The nmon-logger is totally compatible with AIX, however it is not yet ready as a package, and must be deployed manually:
+Download the rpm package according to your version, and install as usual:
 
-* create a group called "nmon"
-* create a user called "nmon" with its primary group as above
-* untar the content of the tgz archive available in the src_tgz directory to "/etc/":
+**rpm based OS:**
 
 ::
 
-    /etc/nmon-logger/bin
-    /etc/nmon-logger/default
+    rpm -i nmon-logger-splunk-hec-*.rpm
 
-* create the "/var/log/nmon-logger":
+*Notes about AIX 6.1: the nmon-logger has not been tested against out of support AIX version but is expected to operate normally*
 
-::
+**Installing rpm package manager:**
 
-    mkdir /var/log/nmon-logger
-
-* make these directory owned by the nmon user:
-
-::
-
-    chown -R /etc/nmon-logger
-    chown -R /var/log/nmon-logger
-
-* copy the crontab content from the "AIX_support/crontab.conf" template to the root crontab, all tasks will run as the nmon user
-
-And off course configure your URL and token within the "/etc/nmon-logger/local/nmon.conf".
-
-Et voila!
-
+See: https://ftp.software.ibm.com/aix/freeSoftware/aixtoolbox/ezinstall/ppc/README-yum
 
 ***************************
 Configuring the nmon-logger
