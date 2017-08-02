@@ -4,11 +4,13 @@
 Splunk HEC / nmon-logger deployment
 ===================================
 
-**Since the version 1.9.10, the nmon-logger for Splunk HEC provides a 100% agent less configuration using the Splunk http input:**
+**The "nmon-logger" package for Splunk HEC provides a 100% agent less configuration using the Splunk http input:**
 
 .. image:: img/splunk_hec_deployment.png
    :alt: splunk_hec_deployment.png
    :align: center
+
+The nmon-logger is **not** a Splunk application, this is an independent package to be deployed to your Operating System.
 
 **This deployment provides the following features:**
 
@@ -45,12 +47,13 @@ Deployment matrix
 
 **Notes:**
 
-* there are indexing time parsing configurations, the PA-nmon_light or the TA-nmon (or both) must be deployed on the host running the http input
-* The Nmon core app **version 1.9.10** minimal and TA-nmon **version 1.3.27** minimal are required on the Splunk infrastructure
+* Indexing time parsing operations require the PA-nmon_light or the TA-nmon (or both) to be deployed on the host running the http input
+* The Nmon core app **version 1.9.10** minimal, TA-nmon **version 1.3.27** minimal and PA-nmon_light **version 1.3.19** are required on the Splunk infrastructure
+* The http input can run either on indexers, or one or more heavy forwarders
 
 **Fast testing using Vagrant and Ansible:**
 
-If you are interested in a very fast and automated way to test the Nmon Performance Application with an rsyslog deployment, checkout the provided configuration using the excellent Vagrant (https://www.vagrantup.com/) and Ansible configuration management (http://docs.ansible.com/ansible/index.html)
+If you are interested in a very fast and automated way to test the Nmon Performance Application with an HEC nmon-logger deployment, checkout the provided configuration using the excellent Vagrant (https://www.vagrantup.com/) and Ansible configuration management (http://docs.ansible.com/ansible/index.html)
 
 * Checkout: https://github.com/guilhemmarchand/nmon-logger/tree/master/vagrant-ansible-demo-splunk-hec
 
@@ -210,7 +213,7 @@ See: https://ftp.software.ibm.com/aix/freeSoftware/aixtoolbox/ezinstall/ppc/READ
 Configuring the nmon-logger
 ***************************
 
-The data collection starts 1 minute maximum after the package deployment, as long as you don't have configured the URL and token, the data is only generated locally on the file system.
+The data collection starts 1 minute maximum after the package deployment, as long as you don't have configured the URL and token, **the data is only generated locally on the file system**.
 
 **Create a local directory:**
 
@@ -231,3 +234,48 @@ The data collection starts 1 minute maximum after the package deployment, as lon
 **Et voila!**
 
 Once the nmon-logger package is configured and if the networking configuration is properly configured, Splunk will start receiving data through the http input !
+
+***************************
+Foot-print and benchmarking
+***************************
+
+The **nmon-logger** globally shares the same components than the **TA-nmon**, as the difference that the CSV data is being transformed into key value data and streamed to the Splunk http input. (nmon2csv parsers are nmon2kv!)
+
+**See:**
+
+* http://ta-nmon.readthedocs.io/en/latest/processing_overview.html
+* http://ta-nmon.readthedocs.io/en/latest/data_processing.html
+* http://ta-nmon.readthedocs.io/en/latest/footprint.html
+
+The foot-print related to the generation, processing and streaming of the performance and configuration data is very low, it is actually even lower than the TA-nmon since there are no overhead due to the Splunk instance.
+
+**Bellow are benchmarking generated via the IBM Power Development Platform (PDP), against various Linux and AIX flavour:**
+
+LINUX BENCHMARKS:
+-----------------
+
+**SUSE Linux 12.2 LE (IBM POWER 8):**
+
+*date 02/08/2017, nmon-logger release 2.0.05*
+
+**Ubuntu Linux 14.04 LTS (IBM POWER 8):**
+
+*date 02/08/2017, nmon-logger release 2.0.05*
+
+**Redhat Linux 7.3 LE (IBM POWER 8):**
+
+*date 02/08/2017, nmon-logger release 2.0.05*
+
+**Redhat Linux 6.9 BE (IBM POWER 8):**
+
+*date 02/08/2017, nmon-logger release 2.0.05*
+
+
+IBM AIX BENCHMARKS:
+-------------------
+
+**IBM AIX 7.1 ON POWER8 / Entitled 0.2 / VirtualCPUs 1:**
+
+*date 27/03/2013, nmon-logger release 2.0.05*
+
+
