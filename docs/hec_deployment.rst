@@ -19,7 +19,7 @@ The nmon-logger is **not** a Splunk application, this is an independent package 
 * **100% agent less:** the nmon-logger uses only native system features (cron, logrotate...)
 * **secure:** Splunk http traffic can easily be encrypted via SSL and integrated into any DMZ or similar restricted networking layer
 * **resilient and scalable:** using load balancers and multiple nodes provides resiliency and horizontal scalability
-* **network friendly:** as Web service, it can be easily used across wide networks and over the Internet
+* **network friendly:** as a Web service, it can be easily used across wide networks and over the Internet
 * **easy management:** since the http input is managed on a token basis, you can easily configure different tokens to ingest the data into different indexes without any package modification or complexity
 
 *****************
