@@ -56,6 +56,8 @@ This is an example of deployment for standard scenario with a single Splunk forw
 * **network friendly:** as Web service, it can be easily used across wide networks and over the Internet
 * **easy management:** since the http input is managed on a token basis, you can easily configure different token to ingest the data into different indexes without any package modification or complexity
 
+**See the detailed section:** :ref:`hec_deployment`
+
 --------------------
 3. Syslog deployment
 --------------------
@@ -91,3 +93,7 @@ Although all pieces of software should work fine too on AIX and Solaris, this re
 .. image:: img/syslog_topology2.png
    :alt: syslog_topology2.png
    :align: center
+
+**For rsyslog, see:** :ref:`rsyslog_deployment`
+
+**For syslog-ng, see:** :ref:`syslogng_deployment`

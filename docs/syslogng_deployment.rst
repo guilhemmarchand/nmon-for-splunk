@@ -1,9 +1,9 @@
 
+.. _syslogng_deployment:
+
 ==================================
 syslog-ng / nmon-logger deployment
 ==================================
-
-.. _syslogng_deployment:
 
 .. image:: img/splunk_nmon_syslogng.png
    :alt: splunk_nmon_syslogng.png

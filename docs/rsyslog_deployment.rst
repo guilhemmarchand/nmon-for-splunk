@@ -1,8 +1,8 @@
+.. _rsyslog_deployment:
+
 ================================
 rsyslog / nmon-logger deployment
 ================================
-
-.. _rsyslog_deployment:
 
 .. image:: img/splunk_nmon_rsyslog.png
    :alt: splunk_nmon_rsyslog.png
@@ -22,7 +22,7 @@ Introduced with the Nmon Performance Monitor 1.6.14, you can now get real time N
 
 * Deploying the nmon-logger package to your end-servers, the package is now provided in **rpm** and **deb** packages
 
-*Please review requirements in the above section.
+Please review requirements in the above section.
 
 **Fast testing using Vagrant and Ansible:**
 
@@ -91,7 +91,7 @@ First of all, have a Splunk working installation, and the Nmon Performance up an
 
 Some specific requirements must be respected to achieve a deployment that uses rsyslog as the transport layer:
 
-* RSYSLOG V8.x::
+* RSYSLOG V8.x:
 
 RSYSLOG V8.x is required to forward Nmon Performance data to centralized rsyslog servers, see:
 

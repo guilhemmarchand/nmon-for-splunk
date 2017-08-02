@@ -1,10 +1,10 @@
+.. _hec_deployment:
+
 ===================================
 Splunk HEC / nmon-logger deployment
 ===================================
 
 **Since the version 1.9.10, the nmon-logger for Splunk HEC provides a 100% agent less configuration using the Splunk http input:**
-
-.. _hec_deployment:
 
 .. image:: img/splunk_hec_deployment.png
    :alt: splunk_hec_deployment.png
