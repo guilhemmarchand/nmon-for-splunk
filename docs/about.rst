@@ -34,7 +34,9 @@ The last release can be downloaded from Splunk base: https://splunkbase.splunk.c
 
 **Compatibility matrix for core application:**
 
-* **Current major release Version 1.9.x:** Splunk 6.5.x or superior
+* **Current major release Version 1.9.x:** Splunk 6.5.x or superior are officially supported
+
+Splunk 6.4 will globally perform as expected, but there might be some unwanted behaviors such as css issues as this Splunk version is not supported anymore by the core application.
 
 **Stopped versions for older Splunk releases:**
 
