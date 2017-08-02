@@ -20,7 +20,7 @@ The nmon-logger is **not** a Splunk application, this is an independent package 
 * **secure:** Splunk http traffic can easily be encrypted via SSL and integrated into any DMZ or similar restricted networking layer
 * **resilient and scalable:** using load balancers and multiple nodes provides resiliency and horizontal scalability
 * **network friendly:** as Web service, it can be easily used across wide networks and over the Internet
-* **easy management:** since the http input is managed on a token basis, you can easily configure different token to ingest the data into different indexes without any package modification or complexity
+* **easy management:** since the http input is managed on a token basis, you can easily configure different tokens to ingest the data into different indexes without any package modification or complexity
 
 *****************
 Deployment matrix
@@ -251,8 +251,7 @@ The foot-print related to the generation, processing and streaming of the perfor
 
 **Bellow are benchmarking generated via the IBM Power Development Platform (PDP), against various Linux and AIX flavour:**
 
-LINUX BENCHMARKS:
------------------
+**LINUX BENCHMARKS:**
 
 **SUSE Linux 12.2 LE (IBM POWER 8):**
 
@@ -270,9 +269,12 @@ LINUX BENCHMARKS:
 
 *date 02/08/2017, nmon-logger release 2.0.05*
 
+**IBM AIX BENCHMARKS:**
 
-IBM AIX BENCHMARKS:
--------------------
+**IBM AIX 7.2 ON POWER8 / Entitled 0.2 / VirtualCPUs 1:**
+
+*date 27/03/2013, nmon-logger release 2.0.05*
+
 
 **IBM AIX 7.1 ON POWER8 / Entitled 0.2 / VirtualCPUs 1:**
 
