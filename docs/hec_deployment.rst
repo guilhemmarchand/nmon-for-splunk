@@ -249,37 +249,4 @@ The **nmon-logger** globally shares the same components than the **TA-nmon**, as
 
 The foot-print related to the generation, processing and streaming of the performance and configuration data is very low, it is actually even lower than the TA-nmon since there are no overhead due to the Splunk instance.
 
-**Bellow are benchmarking generated via the IBM Power Development Platform (PDP), against various Linux and AIX flavour:**
-
-**SECTION UNDER PROGRESS!**
-
-**LINUX BENCHMARKS:**
-
-**SUSE Linux 12.2 LE (IBM POWER 8):**
-
-*date 02/08/2017, nmon-logger release 2.0.05*
-
-**Ubuntu Linux 14.04 LTS (IBM POWER 8):**
-
-*date 02/08/2017, nmon-logger release 2.0.05*
-
-**Redhat Linux 7.3 LE (IBM POWER 8):**
-
-*date 02/08/2017, nmon-logger release 2.0.05*
-
-**Redhat Linux 6.9 BE (IBM POWER 8):**
-
-*date 02/08/2017, nmon-logger release 2.0.05*
-
-**IBM AIX BENCHMARKS:**
-
-**IBM AIX 7.2 ON POWER8 / Entitled 0.2 / VirtualCPUs 1:**
-
-*date 27/03/2013, nmon-logger release 2.0.05*
-
-
-**IBM AIX 7.1 ON POWER8 / Entitled 0.2 / VirtualCPUs 1:**
-
-*date 27/03/2013, nmon-logger release 2.0.05*
-
-
+**benchmarking reports will be added shortly!**
