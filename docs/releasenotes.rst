@@ -32,6 +32,8 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 
 - feature: index and search time configuration for the nmon-logger-splunk-hec package (agent less package using the Splunk http input)
 - fix: UI Compare - fix frameID mapping for non CSV source data (nmon-logger) #92
+- fix: UI Predictive - issue when time range is changed, bad MEM metric label #93
+- fix: UI Summary / WOF - token auto-selection issue when time range is changed #94
 
 =======
 V1.9.9:
