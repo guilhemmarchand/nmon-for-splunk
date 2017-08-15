@@ -5,14 +5,14 @@ Eventgen testing
 Testing Nmon performance with evengen
 =====================================
 
-**Splunk Evengen is a pretty good and straightforward way to test the application**
+**Splunk Evengen is a pretty good and straightforward way to test the application.**
 
 Starting the TA-nmon version 1.3.28 and TA-nmon-hec version 1.3.32, we provide sample data for 2 AIX and 2 Linux servers.
 The data has been generated on IBM Power Development Cloud servers.
 
 Finally, we use to run a system stress tool on 1 server of each category, such that you will have quickly active alerts and system statistic anomalies.
 
-**Evengen will generate data for:**
+**Eventgen will generate data for:**
 
 * performance metrics (sourcetype=nmon_data / eventtype=nmon:performance)
 * configuration data (sourcetype=nmon_config / eventtype-nmon:config)
