@@ -50,6 +50,7 @@ Documentation:
    installation_shcluster
    installation_splunkcloud
    installation_central_repositories
+   eventgen_testing
    upgrade
    hec_deployment
    rsyslog_deployment
