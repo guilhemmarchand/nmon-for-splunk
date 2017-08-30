@@ -8,27 +8,6 @@
                 <earliestTime>-24h</earliestTime>
                 <latestTime>now</latestTime>
             </default>
-            <!--
-            Reset the form token changed
-            -->
-       		<change>
-         		<unset token="form.refresh"></unset>
-         		<unset token="form.OStype_detection"></unset>
-                <unset token="form.CPU_datasource_detection"></unset>
-                <unset token="form.TOP_detection"></unset>
-                <unset token="form.UPTIME_detection"></unset>
-                <unset token="form.DG_detection"></unset>
-                <unset token="CPU_datasource"></unset>
-                <unset token="CPU_datasource_minilabel"></unset>
-                <unset token="is_LPAR"></unset>
-                <unset token="is_not_LPAR"></unset>
-                <unset token="is_AIX"></unset>
-                <unset token="is_Linux"></unset>
-                <unset token="is_Solaris"></unset>
-                <unset token="start_uptime_searches"></unset>
-                <unset token="start_disk_stats_search"></unset>
-                <unset token="start_dg_stats_search"></unset>
-       		</change>
         </input>
 
         <input type="dropdown" token="osfilter" searchWhenChanged="true">
@@ -81,21 +60,14 @@
             Reset the form token changed
             -->
        		<change>
-         		<unset token="form.OStype_detection"></unset>
-                <unset token="form.CPU_datasource_detection"></unset>
-                <unset token="form.TOP_detection"></unset>
-                <unset token="form.UPTIME_detection"></unset>
-                <unset token="form.DG_detection"></unset>
                 <unset token="CPU_datasource"></unset>
                 <unset token="CPU_datasource_minilabel"></unset>
                 <unset token="is_LPAR"></unset>
                 <unset token="is_not_LPAR"></unset>
-                <unset token="is_AIX"></unset>
-                <unset token="is_Linux"></unset>
-                <unset token="is_Solaris"></unset>
                 <unset token="start_uptime_searches"></unset>
                 <unset token="start_disk_stats_search"></unset>
                 <unset token="start_dg_stats_search"></unset>
+                <unset token="start_df_storage_stats_search"></unset>
        		</change>
         </input>
 
@@ -121,29 +93,6 @@
             <choice value="span=1mon">1 month</choice>
         </input>
 
-        <!--
-        This input is an hidden input that intents to smartly configure the auto refresh feature
-        Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
-        As well, this form will be reset whenever the time range period is modified
-        -->
-
-        <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Is past data search ?:</label>
-            <search>
-                <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>is_past_search</fieldForLabel>
-            <fieldForValue>is_past_search</fieldForValue>
-            <change>
-                <condition value="true">
-                    <set token="form.refresh">0</set>
-                </condition>
-            </change>
-        </input>
-
         <input type="dropdown" token="refresh" searchWhenChanged="true">
             <label>Auto-refresh:</label>
             <choice value="30s">30 sec</choice>
@@ -153,53 +102,55 @@
             <default>30s</default>
         </input>
 
-        <!--
-        This input is an hidden input that will be used to detect the type of operating system depending on the user
-        selection.
-        This requires the associated form.host to be reset when changed
-        -->
+    </fieldset>
 
-        <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Detected OS:</label>
-            <search>
-                <query>eventtype=nmon:performance $host$ | head 1 | stats count by OStype | fields OStype</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>OStype</fieldForLabel>
-            <fieldForValue>OStype</fieldForValue>
-            <change>
-                <condition value="AIX">
-                    <set token="is_AIX">_time,*</set>
-                    <unset token="is_Linux"></unset>
-                    <unset token="is_Solaris"></unset>
-                </condition>
-                <condition value="Linux">
-                    <set token="is_Linux">_time,*</set>
-                    <unset token="is_AIX"></unset>
-                    <unset token="is_Solaris"></unset>
-                </condition>
-                <condition value="Solaris">
-                    <set token="is_Solaris">_time,*</set>
-                    <unset token="is_Linux"></unset>
-                    <unset token="is_AIX"></unset>
-                </condition>
-            </change>
-        </input>
+    <!--
+    Dynamic configuration
+    The following searches are being used to define various tokens using event handlers
+    -->
 
-        <!--
-        This input is an hidden input with the goal to determine and store the source of CPU stats
-        If we are dealing with an IBM Partition with LPAR stats (AIX or PowerLinux), we will want to use LPAR stats
-        In other cases, we will want to use CPU_ALL.
+    <!-- autorefresh_detection -->
 
-        This input result will be used to inform the user of the CPU data source origin.
-        -->
+    <search id="autorefresh_detection">
+        <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="'result.is_past_search'==&quot;true&quot;">
+                <set token="form.refresh">0</set>
+            </condition>
+        </progress>
+    </search>
 
-        <input type="dropdown" token="CPU_datasource_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Datasource detected:</label>
-            <search id="datasource">
-                <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host$) groupby host, "CPU.type" prestats=true
+    <!-- OStype -->
+
+    <search id="OSType_detection">
+        <query>eventtype=nmon:performance $host$ | head 1 | stats count by OStype | fields OStype</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="'result.OStype'==&quot;Linux&quot;">
+                <set token="is_Linux">true</set>
+                <unset token="is_AIX"></unset>
+                <unset token="is_Solaris"></unset>
+            </condition>
+            <condition match="'result.OStype'==&quot;AIX&quot;">
+                <set token="is_AIX">true</set>
+                <unset token="is_Linux"></unset>
+                <unset token="is_Solaris"></unset>
+            </condition>
+            <condition match="'result.OStype'==&quot;Solaris&quot;">
+                <set token="is_Solaris">true</set>
+                <unset token="is_AIX"></unset>
+                <unset token="is_Linux"></unset>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- CPU data source (CPU_ALL versus LPAR) -->
+
+    <search>
+        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host$) groupby host, "CPU.type" prestats=true
 | stats dedup_splitvals=t count AS Count by host, "CPU.type"
 | sort limit=0 host
 | fields - _span
@@ -208,117 +159,107 @@
 | fields host, type, Count
 | sort - type
 | head 1
-| eval datasource=case(match(type, "LPAR"), "LPAR", match(type, "CPU_ALL"), "CPU_ALL")</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>datasource</fieldForLabel>
-            <fieldForValue>datasource</fieldForValue>
-            <change>
-                <condition value="CPU_ALL">
-                    <set token="CPU_datasource">CPU_ALL usage</set>
-                    <set token="CPU_datasource_minilabel">CPU % usage</set>
-                    <set token="is_not_LPAR"> _time,*</set>
-                </condition>
-                <condition value="LPAR">
-                    <set token="CPU_datasource">LPAR usage</set>
-                    <set token="CPU_datasource_minilabel">partition vCPUs usage</set>
-                    <set token="is_LPAR">_time,*</set>
-                </condition>
-            </change>
-        </input>
+| eval datasource=case(match(type, "LPAR"), "LPAR", match(type, "CPU_ALL"), "CPU_ALL")
+| eval CPU_datasource=case(datasource="CPU_ALL", "CPU_ALL usage", datasource="LPAR", "LPAR usage"), CPU_datasource_minilabel=case(datasource="CPU_ALL", "CPU % usage", datasource="LPAR", "partition vCPUs usage"), is_not_LPAR=case(datasource="CPU_ALL", "true"), is_LPAR=case(datasource="LPAR", "true")</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <preview>
+            <condition>
+                <set token="CPU_datasource">$result.CPU_datasource$</set>
+                <set token="CPU_datasource_minilabel">$result.CPU_datasource_minilabel$</set>
+            </condition>
+        </preview>
+        <progress>
+            <condition match="'result.is_LPAR'==&quot;true&quot;">
+                <set token="is_LPAR">true</set>
+                <unset token="is_not_LPAR"></unset>
+            </condition>
+            <condition match="'result.is_not_LPAR'==&quot;true&quot;">
+                <set token="is_not_LPAR">true</set>
+                <unset token="is_LPAR"></unset>
+            </condition>
+        </progress>
+    </search>
 
-        <!--
-        This input is an hidden input that will be used to detect if we have TOP events
-        -->
+    <!-- TOP data availability -->
 
-        <input type="dropdown" token="TOP_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Detected TOP events:</label>
-            <search>
-                <query>eventtype=nmon:performance type=TOP host=$host$ | head 100 | stats count</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>count</fieldForLabel>
-            <fieldForValue>count</fieldForValue>
-            <change>
-                <condition value="0">
-                    <set token="show_null_top">true</set>
-                    <unset token="start_top_searches"></unset>
-                </condition>
-                <condition>
-                    <set token="start_top_searches">_time,*</set>
-                    <unset token="show_null_top"></unset>
-                </condition>
-            </change>
-        </input>
+    <search>
+        <query>eventtype=nmon:performance type=TOP host=$host$ | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <set token="show_null_top">true</set>
+            </condition>
+            <condition>
+                <unset token="show_null_top"/>
+                <set token="start_top_searches">true</set>
+            </condition>
+        </progress>
+    </search>
 
-        <!--
-        This input is an hidden input that will be used to detect if we have UPTIME events
-        -->
+    <!-- UPTIME data availability -->
 
-        <input type="dropdown" token="UPTIME_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Detected UPTIME events:</label>
-            <search>
-                <query>eventtype=nmon:performance type=UPTIME host=$host$ load_average_1min="*"| head 100 | stats count</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>count</fieldForLabel>
-            <fieldForValue>count</fieldForValue>
-            <change>
-                <condition value="0">
+    <search>
+        <query>eventtype=nmon:performance type=UPTIME host=$host$ load_average_1min="*" | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
                     <unset token="start_uptime_searches"></unset>
                     <set token="show_null_uptime">true</set>
-                </condition>
-                <condition>
-                    <set token="start_uptime_searches">_time,*</set>
+            </condition>
+            <condition>
+                    <set token="start_uptime_searches">true</set>
                     <unset token="show_null_uptime"></unset>
-                </condition>
-            </change>
-        </input>
+            </condition>
+        </progress>
+    </search>
 
-        <!--
-        This input is an hidden input that will be used to detect if we have disks extended stats available (DG*)
-        Because DG stats will manage the Linux partitioning duplication, measures are more accurate and should
-        preferred rather than using standard DISK*
-        -->
+    <!-- DG data availability -->
 
-        <input type="dropdown" token="DG_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Detected DG events:</label>
-            <search>
-                <query>eventtype=nmon:performance type=DGXFER host=$host$ value&gt;0 | head 100 | where isnum(value) | stats count</query>
-                <earliest>$timerange.earliest$</earliest>
-                <latest>$timerange.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>count</fieldForLabel>
-            <fieldForValue>count</fieldForValue>
-            <change>
-                <condition value="0">
+    <search>
+        <query>eventtype=nmon:performance type=DGXFER host=$host$ value&gt;0 | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
                     <set token="start_disk_stats_search">_time,*</set>
                     <unset token="start_dg_stats_search"></unset>
-                </condition>
-                <condition>
+            </condition>
+            <condition>
                     <set token="start_dg_stats_search">_time,*</set>
                     <unset token="start_disk_stats_search"></unset>
-                </condition>
-            </change>
-        </input>
+            </condition>
+        </progress>
+    </search>
 
-    </fieldset>
+    <!-- DF_STORAGE data availability -->
+
+    <search>
+        <query>eventtype=nmon:performance type=DF_STORAGE host=$host$ | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                    <set token="start_jfs_storage_search">true</set>
+                    <unset token="start_df_storage_search"></unset>
+            </condition>
+            <condition>
+                    <set token="start_df_storage_search">true</set>
+                    <unset token="start_jfs_storage_search"></unset>
+            </condition>
+        </progress>
+    </search>
+
 
     <!-- Configuration Search uses nmon_inventory -->
 
-    <search id="configSearch">
+    <search id="configSearch" depends="$show_configuration$">
         <query>| inputlookup nmon_inventory
 | rename hostname as host
 | search host=$host$
 | sort limit=0 host | eval OS_summary=upper(OStype)+" / "+OSversion
-| $show_configuration$
 | fields host, OS_summary, cpu_cores, Processor</query>
         <earliest>0</earliest>
         <!-- Progress event has access to job properties only -->
@@ -332,11 +273,10 @@
         </progress>
     </search>
 
-    <search id="MEMSearch">
+    <search id="MEMSearch" depends="$show_configuration$">
         <query>| tstats latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$)
 groupby host prestats=true
 | stats dedup_splitvals=t latest("MEM.allOS_Real_total_MB") AS mem_total_MB latest("MEM.allOS_Virtual_total_MB") AS swap_total_MB by host
-| $show_configuration$
 | foreach *total* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 0) ]</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -583,9 +523,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
 
     <!-- nmon external UPTIME -->
 
-    <search id="baseSearch_loadaverage">
+    <search id="baseSearch_loadaverage" depends="$start_uptime_searches$">
         <query>eventtype=nmon:performance type=UPTIME host=$host$
-| fields $start_uptime_searches$
 | timechart $span$ avg(load_average_1min) as load_average_1min, avg(load_average_5min) as load_average_5min, avg(load_average_15min) as load_average_15min</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -651,9 +590,9 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="useColors">1</option>
             </single>
             <single>
-                <search>
+                <search depends="$start_uptime_searches$">
                     <query>eventtype=nmon:performance type=UPTIME host="$host$"
-| fields $start_uptime_searches$ | stats latest(uptime) as uptime_sec
+| stats latest(uptime) as uptime_sec
 | eval uptime=if(uptime_sec&lt;86400, round((uptime_sec/3600), 2) . " hours", round((uptime_sec/86400), 2) . " days" )
 | fields uptime</query>
                     <earliest>-15m</earliest>
@@ -694,9 +633,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="height">350</option>
             </chart>
             <table>
-                <search>
+                <search depends="$start_uptime_searches$">
                     <query>eventtype=nmon:performance type=UPTIME host=$host$
-| fields $start_uptime_searches$
 | stats latest(load_average_1min) as current_load_average_1min, avg(load_average_1min) as avg_load_average_1min, max(load_average_1min) as max_load_average_1min,
 latest(load_average_5min) as current_load_average_5min, avg(load_average_5min) as avg_load_average_5min, max(load_average_5min) as max_load_average_5min,
 latest(load_average_15min) as current_load_average_15min, avg(load_average_15min) as avg_load_average_15min, max(load_average_15min) as max_load_average_15min
@@ -727,7 +665,7 @@ latest(load_average_15min) as current_load_average_15min, avg(load_average_15min
 
     <!-- Help the user -->
 
-    <row depends="$CPU_datasource$">
+    <row depends="$CPU_datasource$ $CPU_datasource_minilabel$">
         <panel id="info">
             <title>Datasource information: $CPU_datasource$ ($CPU_datasource_minilabel$)</title>
             <html>
@@ -783,7 +721,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
             <title>I/O Operations per second</title>
 
             <chart depends="$start_dg_stats_search$">
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
@@ -791,7 +729,6 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | stats sum(disk_*) as "disk_*" by _time,host
-| fields $start_dg_stats_search$
 | timechart `nmon_span` max(disk_total_iops) As "max Total I/O", avg(disk_total_iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -819,14 +756,13 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
             </chart>
 
             <chart depends="$start_disk_stats_search$">
-                <search id="IOPStimechart">
+                <search id="IOPStimechart" depends="$start_disk_stats_search$">
                     <query>| tstats max("DISKXFER.value") AS iops from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (host=$host$)
 groupby _time, host, "DISKXFER.device" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS iops by _time, host, "DISKXFER.device"
 | dedup _time, host, "DISKXFER.device", iops
 | stats sum(iops) AS iops by _time, host
-| fields $start_disk_stats_search$
 | timechart $span$ max(iops) As "max Total I/O", avg(iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -861,14 +797,14 @@ groupby _time, host, "DISKXFER.device" prestats=true span=1m
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-alt-label="HIDE EXTENDED CPU STATS" data-token-value="fields _time,*">SHOW EXTENDED CPU STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-alt-label="HIDE EXTENDED CPU STATS" data-token-value="true">SHOW EXTENDED CPU STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_disks" data-alt-label="HIDE EXTENDED DISKS STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKS STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_disks" data-alt-label="HIDE EXTENDED DISKS STATS" data-token-value="true">SHOW EXTENDED DISKS STATS</button>
                 </div>
             </html>
         </panel>
@@ -890,11 +826,10 @@ groupby _time, host, "DISKXFER.device" prestats=true span=1m
         <panel>
             <chart>
                 <title>% CPU stats over time per category</title>
-                <search>
+                <search depends="$show_cpu$">
                     <query>| tstats `CPU_ALL(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.CPU_ALL) (host=$host$)
 groupby _time, host prestats=true span=1m
 | stats dedup_splitvals=t `CPU_ALL(max)` by _time, host
-| fields $show_cpu$
 | timechart $span$
 avg("CPU.Idle_PCT") AS "Idle %",
 avg("CPU.Sys_PCT") AS "Sys %",
@@ -944,13 +879,10 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>AIX LPAR statistics</title>
-                <search>
+                <search depends="$show_cpu$ $is_LPAR$ $is_AIX$">
                     <query>| tstats `LPAR(max)` from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (host=$host$) groupby _time,"CPU.frameID",host prestats=true span=1m
 | stats dedup_splitvals=t `LPAR(max)` by _time,"CPU.frameID",host
 | rename CPU.lpar_vp_usage AS usage
-| fields $show_cpu$
-| fields $is_LPAR$
-| fields $is_AIX$
 | timechart $span$ max(usage) As usage max(CPU.entitled) As entitled, max(CPU.virtualCPUs) As virtualCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -993,13 +925,10 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>AIX LPAR statistics per category</title>
-                <search>
+                <search depends="$show_cpu$ $is_LPAR$ $is_AIX$">
                     <query>| tstats max(CPU.VP_Idle_PCT) AS VP_Idle_PCT, max(CPU.VP_Sys_PCT) AS VP_Sys_PCT, max(CPU.VP_User_PCT) AS VP_User_PCT, max(CPU.VP_Wait_PCT) AS VP_Wait_PCT from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (host=$host$) groupby _time,"CPU.frameID",host prestats=true span=1m
 | stats dedup_splitvals=t max(CPU.VP_Idle_PCT) AS VP_Idle_PCT, max(CPU.VP_Sys_PCT) AS VP_Sys_PCT, max(CPU.VP_User_PCT) AS VP_User_PCT, max(CPU.VP_Wait_PCT) AS VP_Wait_PCT by _time,"CPU.frameID",host
 | rename CPU.lpar_vp_usage AS usage
-| fields $show_cpu$
-| fields $is_LPAR$
-| fields $is_AIX$
 | timechart $span$ avg(VP_Idle_PCT) AS VP_Idle_PCT, avg(VP_Sys_PCT) AS VP_Sys_PCT, avg(VP_User_PCT) AS VP_User_PCT, avg(VP_Wait_PCT) AS VP_Wait_PCT</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1039,13 +968,10 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>AIX LPAR Pools statistics</title>
-                <search>
+                <search depends="$show_cpu$ $is_LPAR$ $is_AIX$">
                     <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (host=$host$) (CPU.PoolIdle!=0) groupby _time, "CPU.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" by _time, "CPU.frameID", host
 | rename CPU.LPAR.Pool_usage AS usage
-| fields $show_cpu$
-| fields $is_LPAR$
-| fields $is_AIX$
 | timechart $span$ max(usage) As usage max(CPU.poolCPUs) AS poolCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1090,13 +1016,10 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>PowerLinux LPAR statistics</title>
-                <search>
+                <search depends="$show_cpu$ $is_LPAR$ $is_Linux$">
                     <query>| tstats max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (host=$host$) groupby _time, host, "CPU.frameID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, host, "CPU.frameID"
-| fields $show_cpu$
-| fields $is_LPAR$
-| fields $is_Linux$
 | timechart `nmon_span` max(usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1139,13 +1062,10 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>PowerLinux LPAR Pools statistics</title>
-                <search>
+                <search depends="$show_cpu$ $is_LPAR$ $is_Linux$">
                     <query>| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (host=$host$) groupby _time, "CPU.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage by _time, "CPU.frameID", host
 | rename CPU.lpar_pool_vp_usage AS usage
-| fields $show_cpu$
-| fields $is_LPAR$
-| fields $is_Linux$
 | timechart `nmon_span` max(usage) As usage max(CPU.lpar_pool_capacity) AS poolCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1190,11 +1110,9 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Solaris WML statistics per zone</title>
-                <search>
+                <search depends="$show_cpu$ $is_Solaris$">
                     <query>| tstats max("WLM.value") AS value from datamodel=NMON_Data_WLM where (nodename = WLM.WLMZONECPU) (host=$host$) groupby _time, host, "WLM.device" prestats=true span=1m
 | stats dedup_splitvals=t max("WLM.value") AS value by _time, host, "WLM.device"
-| fields $show_cpu$
-| fields $is_Solaris$
 | rename "WLM.*" AS * | eval key=host+":"+device | timechart $span$ limit=0 useother=f max(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1261,7 +1179,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg I/O per sec over time - click on the chart to get by device view</title>
-                <search>
+                <search depends="$show_disks$ $start_dg_stats_search$">
                     <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
@@ -1269,7 +1187,6 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | stats sum(disk_*) as "disk_*" by _time,host
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_total_iops) as disk_total_iops | trendline sma5(disk_total_iops) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1313,7 +1230,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg read/write I/O per sec over time - click on the chart to get by device view</title>
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
@@ -1321,7 +1238,6 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | stats sum(disk_*) as "disk_*" by _time,host
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_read_iops) as disk_read_iops avg(disk_write_iops) as disk_write_iops</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1370,14 +1286,13 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg % busy time - click on the chart to get by device view</title>
-                <search>
+                <search depends="$show_disks$ $start_dg_stats_search$">
                     <query>| tstats max(dg.disk_busy_time_pct) as disk_busy_time_pct from datamodel=NMON_Data_disks_dg where (nodename = dg) (dg.disk_busy_time_pct&gt;=0) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_busy_time_pct) as disk_busy_time_pct by _time, host, dg.device
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_busy_time_pct) as disk_busy_time_pct | trendline sma5(disk_busy_time_pct) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1421,14 +1336,13 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg data transfer size over time - click on the chart to get by device view</title>
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>| tstats max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_block_size_KB) as disk_block_size_KB | trendline sma5(disk_block_size_KB) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1475,14 +1389,13 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg read/write data rate (KBytes/sec) - click on the chart to get by device view</title>
-                <search>
+                <search depends="$show_disks$ $start_dg_stats_search$">
                     <query>| tstats max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec by _time, host, dg.device
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_read_KB_per_sec) as disk_read_KB_per_sec avg(disk_write_KB_per_sec) as disk_write_KB_per_sec</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1526,14 +1439,13 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg read/write service time (ms) - click on the chart to get by device view</title>
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>| tstats max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms from datamodel=NMON_Data_disks_dg where (nodename = dg) (host=$host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_read_service_time_ms) as disk_read_service_time_ms max(dg.disk_write_service_time_ms) as disk_write_service_time_ms by _time, host, dg.device
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_read_service_time_ms) as disk_read_service_time_ms avg(disk_write_service_time_ms) as disk_write_service_time_ms</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1582,14 +1494,12 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg I/O per sec over time</title>
-                <search>
+                <search depends="$show_disks$ $start_disk_stats_search$">
                     <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER where (nodename = DISKXFER) (host="$host$") groupby _time, host, "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, host, "DISKXFER.device"
 | rename "DISKXFER.*" AS *
 | dedup _time, host, device, value
 | stats dedup_splitvals=t sum(value) AS value by _time, host
-| fields $show_disks$
-| fields $start_disk_stats_search$
 | timechart $span$ avg(value) As iops | trendline sma5(iops) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1629,13 +1539,11 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg % time busy disk over time</title>
-                <search>
+                <search depends="$show_disks$ $start_disk_stats_search$">
                     <query>| tstats max("DISKBUSY.value") AS DISKBUSY.value from datamodel=NMON_Data_DISKBUSY where (nodename = DISKBUSY) (host="$host$") groupby _time, "host", "DISKBUSY.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKBUSY.value") AS DISKBUSY.value by _time, "host", "DISKBUSY.device"
 | rename "DISKBUSY.*" AS *
 | dedup _time, host, device, value
-| fields $show_disks$
-| fields $start_disk_stats_search$
 | stats dedup_splitvals=t avg(value) AS value by _time, host
 | timechart $span$ avg(value) As busy_time | trendline sma5(busy_time) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -1679,14 +1587,12 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg data transfer size over time</title>
-                <search>
+                <search depends="$show_disks$ $start_disk_stats_search$">
                     <query>| tstats max("DISKBSIZE.value") AS DISKBSIZE.value from datamodel=NMON_Data_DISKBSIZE where (nodename = DISKBSIZE) (host="$host$") groupby _time, "host", "DISKBSIZE.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKBSIZE.value") AS DISKBSIZE.value by _time, "host", "DISKBSIZE.device"
 | rename "DISKBSIZE.*" AS *
 | dedup _time, host, device, value
 | stats dedup_splitvals=t sum(value) AS value by _time, host
-| fields $show_disks$
-| fields $start_disk_stats_search$
 | timechart $span$ avg(value) As avg_transfer_size | trendline sma5(avg_transfer_size) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1726,13 +1632,11 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
         <panel>
             <chart>
                 <title>Avg read/write data rate (KBytes/sec) over time</title>
-                <search>
+                <search depends="$show_disks$ $start_disk_stats_search$">
                     <query>| tstats max("DISKREADWRITE.value") AS value from datamodel=NMON_Data_DISKREADWRITE where (nodename = DISKREADWRITE) (host="$host$") groupby _time, "DISKREADWRITE.type", "host", "DISKREADWRITE.device" prestats=true span=1m | stats dedup_splitvals=t max("DISKREADWRITE.value") AS value by _time, "DISKREADWRITE.type", "host", "DISKREADWRITE.device" | sort limit=0 _time | rename "DISKREADWRITE.type" AS type "host" AS host "DISKREADWRITE.device" AS device | fields _time, type, host, device, value
 | eval key=case(type=="DISKREAD", "read", type=="DISKWRITE", "write")
 | dedup _time, key, value
 | stats sum(value) AS value by _time, key
-| fields $show_disks$
-| fields $start_disk_stats_search$
 | timechart $span$ avg(value) As avg_data_rate by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1822,7 +1726,7 @@ groupby _time host prestats=true span=1m
             <title>Top 20 processes CPU Statistics</title>
 
             <chart rejects="$show_null_top$">
-                <search id="TOPtimechart">
+                <search id="TOPtimechart" depends="$start_top_searches$">
                     <query>| tstats
 max("TOP_ALLOS.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_ALLOS where (nodename = TOP_ALLOS) (host=$host$)
 groupby _time, host, "TOP_ALLOS.logical_cpus","TOP_ALLOS.virtual_cpus", "TOP_ALLOS.Command", "TOP_ALLOS.PID" prestats=true span=1m
@@ -1837,7 +1741,6 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
 | eval pct_CPU=case(isnum(smt_threads) AND smt_threads>="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads>="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100) | stats sum(usage_per_core) As usage_per_core by _time,Command
-| fields $start_top_searches$
 | timechart $span$ useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -1865,7 +1768,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
             </chart>
 
             <html depends="$show_null_top$">
-                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) has not been activated at nmon binary startup. (use the -t or -T option to activate the TOP collection)</p>
+                <p style="color:blue;margin-left:30px;font-size:14px">Search returned no results, TOP collection (processes activity) has not been activated or no processes were captured due to lack of activity</p>
             </html>
 
         </panel>
@@ -1877,14 +1780,14 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_memory" data-alt-label="HIDE EXTENDED MEMORY STATS" data-token-value="fields _time,*">SHOW EXTENDED MEMORY STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_memory" data-alt-label="HIDE EXTENDED MEMORY STATS" data-token-value="true">SHOW EXTENDED MEMORY STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_processes" data-alt-label="HIDE EXTENDED PROCESSES STATS" data-token-value="fields _time,*">SHOW EXTENDED PROCESSES STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_processes" data-alt-label="HIDE EXTENDED PROCESSES STATS" data-token-value="true">SHOW EXTENDED PROCESSES STATS</button>
                 </div>
             </html>
         </panel>
@@ -1902,12 +1805,10 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
         </panel>
     </row>
 
-    <search id="linux_memory_stats">
+    <search id="linux_memory_stats" depends="$show_memory$ $is_Linux$">
         <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (host=$host$)
 groupby _time host prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, host
-| fields $show_memory$
-| fields $is_Linux$
 | timechart `nmon_span` dedup_splitvals=t avg(*) AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -1915,14 +1816,12 @@ groupby _time host prestats=true span=1m
         <refreshType>delay</refreshType>
     </search>
 
-    <search id="AIX_mem_memory_stats">
+    <search id="AIX_mem_memory_stats" depends="$show_memory$ $is_AIX$">
         <query>| tstats max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Real_used_MB") AS Real_used_MB
 max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_used_MB") AS Virtual_used_MB
 from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$) groupby _time, "MEM.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t max("MEM.allOS_Real_total_MB") AS Real_total_MB max("MEM.allOS_Real_used_MB") AS Real_used_MB
 max("MEM.allOS_Virtual_total_MB") AS Virtual_total_MB max("MEM.allOS_Virtual_used_MB") AS Virtual_used_MB by _time,host
-| fields $show_memory$
-| fields $is_AIX$
 | timechart $span$ avg(Real_total_MB) AS Real_total_MB avg(Real_used_MB) AS Real_used_MB
 avg(Virtual_total_MB) AS Virtual_total_MB avg(Virtual_used_MB) AS Virtual_used_MB</query>
         <earliest>$timerange.earliest$</earliest>
@@ -1931,15 +1830,13 @@ avg(Virtual_total_MB) AS Virtual_total_MB avg(Virtual_used_MB) AS Virtual_used_M
         <refreshType>delay</refreshType>
     </search>
 
-    <search id="AIX_memnew_memory_stats">
+    <search id="AIX_memnew_memory_stats" depends="$show_memory$ $is_AIX$">
         <query>| tstats
 max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT from datamodel=NMON_Data_MEMNEW
 where (nodename = MEMNEW) (host=$host$) groupby _time, host prestats=true span=1m
 | stats max("MEMNEW.Free_PCT") AS Free_PCT max("MEMNEW.FScache_PCT") AS FScache_PCT max("MEMNEW.memused_PCT") AS memused_PCT
 max("MEMNEW.Process_PCT") AS Process_PCT max("MEMNEW.System_PCT") AS System_PCT by _time,host
-| fields $show_memory$
-| fields $is_AIX$
 | timechart $span$
 avg(Free_PCT) AS Free_PCT avg(FScache_PCT) AS FScache_PCT avg(memused_PCT) AS memused_PCT
 avg(Process_PCT) AS Process_PCT avg(System_PCT) AS System_PCT</query>
@@ -1949,14 +1846,12 @@ avg(Process_PCT) AS Process_PCT avg(System_PCT) AS System_PCT</query>
         <refreshType>delay</refreshType>
     </search>
 
-    <search id="Solaris_MEM_real">
+    <search id="Solaris_MEM_real" depends="$show_memory$ $is_Solaris$">
         <query>| tstats
 max("MEM.memused") AS memused_MB max("MEM.memfree") AS memfree_MB max("MEM.memtotal") AS memtotal_MB
 from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$)
 groupby _time, host prestats=true span=1m
 | stats max("MEM.memused") AS memused_MB max("MEM.memfree") AS memfree_MB max("MEM.memtotal") AS memtotal_MB by _time, host
-| fields $show_memory$
-| fields $is_Solaris$
 | timechart $span$
 avg(memused_MB) AS memused_MB avg(memfree_MB) AS memfree_MB avg(memtotal_MB) AS memtotal_MB</query>
         <earliest>$timerange.earliest$</earliest>
@@ -1965,14 +1860,12 @@ avg(memused_MB) AS memused_MB avg(memfree_MB) AS memfree_MB avg(memtotal_MB) AS 
         <refreshType>delay</refreshType>
     </search>
 
-    <search id="Solaris_MEM_swap">
+    <search id="Solaris_MEM_swap" depends="$show_memory$ $is_Solaris$">
         <query>| tstats
 max("MEM.swapused") AS swapused_MB max("MEM.swapfree") AS swapfree_MB max("MEM.swaptotal") AS swaptotal_MB
 from datamodel=NMON_Data_MEM where (nodename = MEM) (host=$host$)
 groupby _time, "MEM.frameID", host prestats=true span=1m
 | stats max("MEM.swapused") AS swapused_MB max("MEM.swapfree") AS swapfree_MB max("MEM.swaptotal") AS swaptotal_MB by _time, host
-| fields $show_memory$
-| fields $is_Solaris$
 | timechart $span$
 avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB) AS swaptotal_MB</query>
         <earliest>$timerange.earliest$</earliest>
@@ -2237,7 +2130,7 @@ avg(swapused_MB) AS swapused_MB avg(swapfree_MB) AS swapfree_MB avg(swaptotal_MB
         <panel>
             <table depends="$is_Linux$">
                 <title>Table stats: CPU Usage in logical core per Command invocation</title>
-                <search>
+                <search depends="$is_Linux$ $show_processes$ $start_top_searches$">
                     <query>| tstats max("TOP_Linux.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Linux
 where (nodename = TOP_Linux) (host=$host$)
 groupby _time, "TOP_Linux.frameID", host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
@@ -2245,9 +2138,6 @@ groupby _time, "TOP_Linux.frameID", host, "TOP_Linux.logical_cpus", "TOP_Linux.C
 | rename "TOP_Linux.frameID" AS frameID, "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
-| fields $is_Linux$
-| fields $show_processes$
-| fields $start_top_searches$
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As value by _time,frameID,host,Command
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
@@ -2275,7 +2165,7 @@ groupby _time, "TOP_Linux.frameID", host, "TOP_Linux.logical_cpus", "TOP_Linux.C
             </table>
             <table depends="$is_AIX$">
                 <title>Table stats: CPU Usage in logical core per Command invocation</title>
-                <search>
+                <search depends="$is_AIX$ $show_processes$ $start_top_searches$">
                     <query>| tstats max("TOP_AIX.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP
 where (nodename = TOP_AIX) (host=$host$)
 groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.virtual_cpus", "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
@@ -2284,9 +2174,6 @@ groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.virtual
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
-| fields $is_AIX$
-| fields $show_processes$
-| fields $start_top_searches$
 | eval usage_per_core=(pct_CPU/100)
 | stats sum(usage_per_core) As value by _time,frameID,host,Command
 | eval frameID=if(isnull(frameID), "aggreg", frameID)
@@ -2314,14 +2201,11 @@ groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.logical_cpus", "TOP_AIX.virtual
             </table>
             <table depends="$is_Solaris$">
                 <title>Table stats: CPU Usage in logical core per Command invocation</title>
-                <search>
+                <search depends="$is_Solaris$ $show_processes$ $start_top_searches$">
                     <query>| tstats max("TOP_Solaris.pct_CPU") AS pct_CPU from datamodel=NMON_Data_TOP.TOP_Solaris
 where (nodename = TOP_Solaris) (host=$host$)
 groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Solaris.pct_CPU") AS pct_CPU by _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| fields $is_Solaris$
-| fields $show_processes$
-| fields $start_top_searches$
 | rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,frameID,host,Command
@@ -2357,14 +2241,11 @@ groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Sol
         <panel>
             <table depends="$is_Linux$">
                 <title>Table stats: Memory Usage per command invocation</title>
-                <search>
+                <search depends="$is_Linux$ $show_processes$ $start_top_searches$">
                     <query>| tstats max("TOP_Linux.ResSet") AS ResSet from datamodel=NMON_Data_TOP.TOP_Linux
 where (nodename = TOP_Linux) (host=$host$)
 groupby _time, host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Linux.ResSet") AS ResSet by _time, host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.PID"
-| fields $is_Linux$
-| fields $show_processes$
-| fields $start_top_searches$
 | rename "TOP_Linux.logical_cpus" AS logical_cpus "TOP_Linux.Command" AS Command "TOP_Linux.PID" AS PID
 | eval Used_Mem_MB=((ResSet)/1024)
 | stats sum(Used_Mem_MB) As value by _time,Command
@@ -2392,12 +2273,9 @@ groupby _time, host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.P
             </table>
             <table depends="$is_AIX$">
                 <title>Table stats: Memory Usage per command invocation</title>
-                <search>
+                <search depends="$is_AIX$ $show_processes$ $start_top_searches$">
                     <query>| tstats max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData from datamodel=NMON_Data_TOP where (nodename = TOP_AIX) (host=$host$) groupby _time, "TOP_AIX.frameID", host, "TOP_AIX.Command", "TOP_AIX.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_AIX.ResText") AS ResText max("TOP_AIX.ResData") AS ResData by _time, "TOP_AIX.frameID", host, "TOP_AIX.Command", "TOP_AIX.PID"
-| fields $is_AIX$
-| fields $show_processes$
-| fields $start_top_searches$
 | rename "TOP_AIX.*" AS *
 | eval Used_Mem_MB=((ResData+ResText)/1024)
 | stats sum(Used_Mem_MB) As value by _time,frameID,host,Command
@@ -2425,14 +2303,11 @@ groupby _time, host, "TOP_Linux.logical_cpus", "TOP_Linux.Command", "TOP_Linux.P
             </table>
             <table depends="$is_Solaris$">
                 <title>Table stats: Physical Memory Usage per command invocation</title>
-                <search>
+                <search depends="$is_Solaris$ $show_processes$ $start_top_searches$">
                     <query>| tstats max("TOP_Solaris.ResSize") AS ResSize from datamodel=NMON_Data_TOP.TOP_Solaris
 where (nodename = TOP_Solaris) (host=$host$)
 groupby _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID" prestats=true span=1m
 | stats dedup_splitvals=t max("TOP_Solaris.ResSize") AS ResSize by _time, "TOP_Solaris.frameID", host, "TOP_Solaris.logical_cpus", "TOP_Solaris.Command", "TOP_Solaris.PID"
-| fields $is_Solaris$
-| fields $show_processes$
-| fields $start_top_searches$
 | rename "TOP_Solaris.frameID" AS frameID "TOP_Solaris.logical_cpus" AS logical_cpus "TOP_Solaris.Command" AS Command "TOP_Solaris.PID" AS PID
 | eval Phys_Mem_MB=round(((ResSize)/1024),2)
 | stats sum(Phys_Mem_MB) As value by _time,frameID,host,Command
@@ -2522,10 +2397,37 @@ groupby _time, host, "NET_Data_types.device" prestats=true span=1m
     </row>
 
     <row>
-        <panel id="fs">
-            <title>File System Percent utilization</title>
+        <panel id="fs_df_storage" depends="$start_df_storage_search$">
+            <title>File System usage statistics (external DF_STORAGE collection)</title>
             <table id="tablebar">
-                <search>
+                <search depends="$start_df_storage_search$">
+                    <query>| tstats latest(JFS.storage) AS storage, latest(JFS.storage_free) AS storage_free, latest(JFS.storage_used) AS storage_used, latest(JFS.storage_free_percent) AS storage_free_percent, latest(JFS.storage_used_percent) AS storage_used_percent from datamodel=NMON_Data_JFS where (nodename = JFS.DF_STORAGE) (host=$host$) groupby JFS.mount prestats=true
+| stats dedup_splitvals=t latest(JFS.storage) AS storage, latest(JFS.storage_free) AS storage_free, latest(JFS.storage_used) AS storage_used, latest(JFS.storage_free_percent) AS storage_free_percent, latest(JFS.storage_used_percent) AS storage_used_percent by JFS.mount
+| sort limit=0 mount
+| rename "JFS.mount" AS "mount"
+| fields mount, storage, storage_free,storage_used,storage_free_percent,storage_used_percent
+| foreach storage storage_free storage_used [ eval &lt;&lt;FIELD>> = round(('&lt;&lt;FIELD&gt;&gt;'/1024), 2) ]
+| foreach storage*percent [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| rename storage as "storage (GB)", storage_free as "storage free (GB)", storage_used as "storage used (GB)", storage_free_percent as "storage free (%)", storage_used_percent as "storage used (%)"
+| eval UsedPct=if(isnum('storage used (%)'), 'storage used (%)', 0 )
+| fields mount, "storage (GB)", "storage free (GB)", "storage used (GB)", "storage free (%)", "storage used (%)", UsedPct</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
+            </table>
+        </panel>
+        <panel id="fs_jfs" depends="$start_jfs_storage_search$">
+            <title>File System Percent utilization (internal JFSFILE collection)</title>
+            <table id="tablebar2">
+                <search depends="$start_jfs_storage_search$">
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
 where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) groupby _time, host, "JFS.device" prestats=true
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.device"
@@ -2553,10 +2455,17 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) groupby _time, ho
     <!-- ######################################### Active Buttons #########################################  -->
 
     <row>
-        <panel>
+        <panel depends="$start_df_storage_search$">
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_filesystem" data-alt-label="HIDE FILE-SYSTEMS OVER TIME" data-token-value="fields _time,*">SHOW FILE-SYSTEMS EVOLUTION OVER TIME</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_df_storage_overtime" data-alt-label="HIDE FILE-SYSTEMS OVER TIME" data-token-value="true">SHOW FILE-SYSTEMS EVOLUTION OVER TIME</button>
+                </div>
+            </html>
+        </panel>
+        <panel depends="$start_jfs_storage_search$">
+            <html>
+                <div class="custom-sub-nav" style="text-align: center;">
+                    <button class="button2_lowpadding glow" data-token-name="show_jfs_storage_overtime" data-alt-label="HIDE FILE-SYSTEMS OVER TIME" data-token-value="true">SHOW FILE-SYSTEMS EVOLUTION OVER TIME</button>
                 </div>
             </html>
         </panel>
@@ -2564,7 +2473,120 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) groupby _time, ho
 
     <!-- ######################################### filesystem over time #########################################  -->
 
-    <row depends="$show_filesystem$">
+    <row depends="$start_df_storage_search$ $show_df_storage_overtime$">
+        <panel>
+            <title>File systems utilization evolution over time</title>
+
+            <input type="text" token="df_storage_mount">
+              <label>mount</label>
+              <default>*</default>
+            </input>
+
+            <input type="dropdown" token="df_storage_monitor">
+                <label>Monitor:</label>
+                <choice value="storage">storage (volume size)</choice>
+                <choice value="storage_free">storage_free (volume free)</choice>
+                <choice value="storage_used">storage_used (volume used)</choice>
+                <choice value="storage_free_percent">storage_free_percent (%)</choice>
+                <choice value="storage_used_percent">storage_used_percent (%)</choice>
+                <default>storage_used_percent</default>
+                <change>
+                    <condition value="storage">
+                        <unset token="form.df_storage_monitor_unit"></unset>
+                        <set token="df_storage_show_unit">true</set>
+                        <unset token="df_storage_monitor_max_chart"></unset>
+                    </condition>
+                    <condition value="storage_free">
+                        <unset token="form.df_storage_monitor_unit"></unset>
+                        <set token="df_storage_show_unit">true</set>
+                        <unset token="df_storage_monitor_max_chart"></unset>
+                    </condition>
+                    <condition value="storage_used">
+                        <unset token="form.df_storage_monitor_unit"></unset>
+                        <set token="df_storage_show_unit">true</set>
+                        <unset token="df_storage_monitor_max_chart"></unset>
+                    </condition>
+                    <condition value="storage_free_percent">
+                        <set token="df_storage_unit">%</set>
+                        <unset token="df_storage_show_unit"></unset>
+                        <set token="df_storage_monitor_max_chart">101</set>
+                    </condition>
+                    <condition value="storage_used_percent">
+                        <set token="form.df_storage_monitor_unit">pct</set>
+                        <set token="df_storage_monitor_max_chart">101</set>
+                        <unset token="df_storage_show_unit"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <input type="dropdown" token="df_storage_monitor_unit" depends="$df_storage_show_unit$">
+                <label>Unit:</label>
+                <choice value="MB">MB</choice>
+                <choice value="GB">GB</choice>
+                <choice value="TB">TB</choice>
+                <default>GB</default>
+                <change>
+                    <condition value="MB">
+                        <set token="df_storage_unit_math">value</set>
+                        <set token="df_storage_unit_legend">MB</set>
+                    </condition>
+                    <condition value="GB">
+                        <set token="df_storage_unit_math">value/1024</set>
+                        <set token="df_storage_unit_legend">GB</set>
+                    </condition>
+                    <condition value="TB">
+                        <set token="df_storage_unit_math">value/1024/1204</set>
+                        <set token="df_storage_unit_legend">TB</set>
+                    </condition>
+                    <condition value="pct">
+                        <set token="df_storage_unit_math">value</set>
+                        <set token="df_storage_unit_legend">pct</set>
+                    </condition>
+                </change>
+            </input>
+
+            <chart>
+                <search depends="$show_df_storage_overtime$">
+                    <query>| tstats latest(JFS.$df_storage_monitor$) AS value from datamodel=NMON_Data_JFS where (nodename = JFS.DF_STORAGE) (host=$host$) (JFS.mount="$df_storage_mount$") groupby _time, JFS.mount prestats=true $span$
+| stats dedup_splitvals=t latest(JFS.$df_storage_monitor$) AS value by _time, JFS.mount
+| sort limit=0 _time
+| rename "JFS.mount" AS "mount" | eval value=$df_storage_unit_math$
+| timechart $span$ latest(value) as $df_storage_monitor$ by mount</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.text">$df_storage_unit_legend$</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">none</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">$df_storage_monitor_max_chart$</option>
+            </chart>
+        </panel>
+
+    </row>
+
+    <row depends="$show_jfs_storage_overtime$ $show_jfs_storage_overtime$">
         <panel>
             <title>File systems utilization evolution over time</title>
 
@@ -2576,11 +2598,10 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) groupby _time, ho
             </input>
 
             <chart>
-                <search>
+                <search depends="$show_jfs_storage_overtime$">
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
 where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) ($fsfilter$) groupby _time, host, "JFS.device" prestats=true span=1m
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
-| $show_filesystem$
 | rename "JFS.*" AS *
 | timechart $span$ limit=0 useother=f max(value) As value by device</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -2610,6 +2631,5 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host$) ($fsfilter$) grou
             </chart>
         </panel>
     </row>
-
-
+    
 </form>
