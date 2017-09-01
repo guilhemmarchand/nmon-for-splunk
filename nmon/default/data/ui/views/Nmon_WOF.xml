@@ -1,31 +1,12 @@
 <form script="nmon:ui_simple.js,nmon:active_button.js" stylesheet="nmon:ui_simple.css,nmon:panel_decoration.css,nmon:hover.css" isVisible="true">
     <label>NMON Performance - Wall Of Performance</label>
     <fieldset submitButton="false">
-        <input type="time" searchWhenChanged="true" token="time">
+        <input type="time" searchWhenChanged="true" token="timerange">
             <label>Time range:</label>
             <default>
                 <earliest>-24h</earliest>
                 <latest>now</latest>
             </default>
-            <!--
-            Reset the form token changed
-            -->
-       		<change>
-         		<unset token="form.refresh"></unset>
-         		<unset token="form.OStype_detection"></unset>
-                <unset token="form.TOP_detection"></unset>
-                <unset token="form.DG_detection"></unset>
-         		<unset token="OStype_detection"></unset>
-                <unset token="TOP_detection"></unset>
-                <unset token="DG_detection"></unset>
-                <unset token="is_AIX"></unset>
-                <unset token="is_Linux"></unset>
-                <unset token="is_Solaris"></unset>
-                <unset token="show_null_top"></unset>
-                <unset token="start_top_searches"></unset>
-                <unset token="start_disk_stats_search"></unset>
-                <unset token="start_dg_stats_search"></unset>
-       		</change>
         </input>
         <input type="dropdown" token="OStype" searchWhenChanged="true">
             <label>OStype:</label>
@@ -43,8 +24,8 @@
             <search>
                 <!-- Use tstats for performance purposes -->
                 <query>| tstats count where `nmon_index` type=CPU_ALL $OStype$ by host | sort host</query>
-                <earliest>$time.earliest$</earliest>
-                <latest>$time.latest$</latest>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
                 <!-- Progress event has access to job properties only -->
                 <progress>
                     <condition match="'job.resultCount' == 0">
@@ -60,47 +41,6 @@
             <valuePrefix>host="</valuePrefix>
             <valueSuffix>"</valueSuffix>
             <delimiter> OR </delimiter>
-            <!--
-            Reset the form token once changed
-            -->
-       		<change>
-         		<unset token="form.OStype_detection"></unset>
-                <unset token="form.TOP_detection"></unset>
-                <unset token="form.DG_detection"></unset>
-         		<unset token="OStype_detection"></unset>
-                <unset token="TOP_detection"></unset>
-                <unset token="DG_detection"></unset>
-                <unset token="is_AIX"></unset>
-                <unset token="is_Linux"></unset>
-                <unset token="is_Solaris"></unset>
-                <unset token="show_null_top"></unset>
-                <unset token="start_top_searches"></unset>
-                <unset token="start_disk_stats_search"></unset>
-                <unset token="start_dg_stats_search"></unset>
-       		</change>
-        </input>
-
-        <!--
-        This input is an hidden input that intents to smartly configure the auto refresh feature
-        Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
-        As well, this form will be reset whenever the time range period is modified
-        -->
-
-        <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Is past data search ?:</label>
-            <search>
-                <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
-                <earliest>$time.earliest$</earliest>
-                <latest>$time.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>is_past_search</fieldForLabel>
-            <fieldForValue>is_past_search</fieldForValue>
-            <change>
-                <condition value="true">
-                    <set token="form.refresh">0</set>
-                </condition>
-            </change>
         </input>
 
         <input type="dropdown" token="refresh" searchWhenChanged="true">
@@ -111,97 +51,89 @@
             <choice value="0">none</choice>
             <default>30s</default>
         </input>
-        
-        <!--
-        This input is an hidden input that will be used to detect th type of operating system depending on the user
-        selection.
-        This requires the associated form.host to be reset when changed
-        -->
-
-        <input type="dropdown" token="OStype_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Detected OS:</label>
-            <search>
-                <query>eventtype=nmon:performance $OStype$ $host$ | head 1 | stats count by OStype | fields OStype</query>
-                <earliest>$time.earliest$</earliest>
-                <latest>$time.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>OStype</fieldForLabel>
-            <fieldForValue>OStype</fieldForValue>
-            <change>
-                <condition value="AIX">
-                    <set token="is_AIX">_time,*</set>
-                    <unset token="is_Linux"></unset>
-                    <unset token="is_Solaris"></unset>
-                </condition>
-                <condition value="Linux">
-                    <set token="is_Linux">_time,*</set>
-                    <unset token="is_AIX"></unset>
-                    <unset token="is_Solaris"></unset>
-                </condition>
-                <condition value="Solaris">
-                    <set token="is_Solaris">_time,*</set>
-                    <unset token="is_Linux"></unset>
-                    <unset token="is_AIX"></unset>
-                </condition>
-            </change>
-        </input>
-
-        <!--
-        This input is an hidden input that will be used to detect if we have TOP events
-        -->
-
-        <input type="dropdown" token="TOP_detection" depends="$hidden_element$" searchWhenChanged="true">
-            <label>Detected TOP events:</label>
-            <search>
-                <query>eventtype=nmon:performance type=TOP $OStype$ $host$ | head 100 | stats count</query>
-                <earliest>$time.earliest$</earliest>
-                <latest>$time.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>count</fieldForLabel>
-            <fieldForValue>count</fieldForValue>
-            <change>
-                <condition value="0">
-                    <set token="show_null_top">true</set>
-                    <unset token="start_top_searches"></unset>
-                </condition>
-                <condition>
-                    <set token="start_top_searches">_time,*</set>
-                    <unset token="show_null_top"></unset>
-                </condition>
-            </change>
-        </input>
-
-        <!--
-        This input is an hidden input that will be used to detect if we have disks extended stats available (DG*)
-        Because DG stats will manage the Linux partitioning duplication, measures are more accurate and should
-        preferred rather than using standard DISK*
-        -->
-
-        <input type="dropdown" token="DG_detection"  depends="$hidden_element$" searchWhenChanged="true">
-            <label>Detected DG events:</label>
-            <search>
-                <query>eventtype=nmon:performance type=DGXFER $OStype$ $host$ value&gt;0 | head 100 | where isnum(value) | stats count</query>
-                <earliest>$time.earliest$</earliest>
-                <latest>$time.latest$</latest>
-            </search>
-            <selectFirstChoice>true</selectFirstChoice>
-            <fieldForLabel>count</fieldForLabel>
-            <fieldForValue>count</fieldForValue>
-            <change>
-                <condition value="0">
-                    <set token="start_disk_stats_search">fields _time,*</set>
-                    <unset token="start_dg_stats_search"></unset>
-                </condition>
-                <condition>
-                    <set token="start_dg_stats_search">fields _time,*</set>
-                    <unset token="start_disk_stats_search"></unset>
-                </condition>
-            </change>
-        </input>
 
     </fieldset>
+
+    <!--
+    Dynamic configuration
+    The following searches are being used to define various tokens using event handlers
+    -->
+
+    <!-- autorefresh_detection -->
+
+    <search id="autorefresh_detection">
+        <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="'result.is_past_search'==&quot;true&quot;">
+                <set token="form.refresh">0</set>
+            </condition>
+            <condition match="'result.is_past_search'==&quot;false&quot;">
+                <unset token="form.refresh"></unset>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- OStype -->
+
+    <search id="OSType_detection">
+        <query>eventtype=nmon:performance $host$ | head 1 | stats count by OStype | fields OStype</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="'result.OStype'==&quot;Linux&quot;">
+                <set token="is_Linux">true</set>
+                <unset token="is_AIX"></unset>
+                <unset token="is_Solaris"></unset>
+            </condition>
+            <condition match="'result.OStype'==&quot;AIX&quot;">
+                <set token="is_AIX">true</set>
+                <unset token="is_Linux"></unset>
+                <unset token="is_Solaris"></unset>
+            </condition>
+            <condition match="'result.OStype'==&quot;Solaris&quot;">
+                <set token="is_Solaris">true</set>
+                <unset token="is_AIX"></unset>
+                <unset token="is_Linux"></unset>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- TOP data availability -->
+
+    <search>
+        <query>eventtype=nmon:performance type=TOP $host$ | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <set token="show_null_top">true</set>
+            </condition>
+            <condition>
+                <unset token="show_null_top"/>
+                <set token="start_top_searches">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- DG data availability -->
+
+    <search>
+        <query>eventtype=nmon:performance type=DGXFER $host$ value&gt;0 | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                    <set token="start_disk_stats_search">_time,*</set>
+                    <unset token="start_dg_stats_search"></unset>
+            </condition>
+            <condition>
+                    <set token="start_dg_stats_search">_time,*</set>
+                    <unset token="start_disk_stats_search"></unset>
+            </condition>
+        </progress>
+    </search>
 
     <!-- Help the user -->
 
@@ -246,15 +178,14 @@
         <panel>
             <table rejects="$show_null_config$">
                 <title>NMON Inventory data:</title>
-                <search>
+                <search depends="$show_config$">
                     <query>| inputlookup nmon_inventory
 | rename hostname as host
 | search $OStype$ $host$
 | eval "Operating System"=case(OStype=="AIX", ("IBM AIX " + AIX_LEVEL), OStype=="Linux", Linux_distribution, OStype=="Solaris", if(isnotnull(Solaris_version), Solaris_version, Solaris_sunOS_version))
 | fields host,OStype,cpu_cores,Processor,Physical_mem_MB,Virtual_mem_MB,"Operating System",nmon_version
 | fillnull value="N/A"
-| rename Physical_mem_MB AS "Physical memory (MB)", Virtual_mem_MB AS "Virtual memory (MB)"
-| $show_config$</query>
+| rename Physical_mem_MB AS "Physical memory (MB)", Virtual_mem_MB AS "Virtual memory (MB)"</query>
                     <earliest>0</earliest>
                 <!-- Progress event has access to job properties only -->
                 <progress>
@@ -307,8 +238,8 @@
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
 | eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `nmon_span` avg(cpu_load_percent) AS value | where isnotnull(value)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -334,8 +265,8 @@
                 <title>Average deployment physical memory % usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart `nmon_span` avg(mem_used_effective_PCT) AS value | where isnotnull(value)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -361,8 +292,8 @@
                 <title>Average deployment swap memory % usage</title>
                 <search>
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$ | timechart `nmon_span` avg(swap_used_effective_PCT) AS value | where isnotnull(value)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -388,21 +319,21 @@
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-alt-label="HIDE EXTENDED CPU STATS" data-token-value="fields _time,*">SHOW EXTENDED CPU STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_cpu" data-alt-label="HIDE EXTENDED CPU STATS" data-token-value="true">SHOW EXTENDED CPU STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_phymem" data-alt-label="HIDE EXTENDED MEMORY STATS" data-token-value="fields _time,*">SHOW EXTENDED MEMORY STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_phymem" data-alt-label="HIDE EXTENDED MEMORY STATS" data-token-value="true">SHOW EXTENDED MEMORY STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_virtualmem" data-alt-label="HIDE EXTENDED SWAP STATS" data-token-value="fields _time,*">SHOW EXTENDED SWAP STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_virtualmem" data-alt-label="HIDE EXTENDED SWAP STATS" data-token-value="true">SHOW EXTENDED SWAP STATS</button>
                 </div>
             </html>
         </panel>
@@ -424,14 +355,13 @@
         <panel>
             <chart>
                 <title>Deployment global % CPU stats over time</title>
-                <search>
+                <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
 | eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent
-| $show_cpu$
 | trendline sma5(cpu_load_percent) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -467,14 +397,13 @@
         <panel>
             <chart>
                 <title>Deployment per category % CPU stats over time</title>
-                <search>
+                <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
 | eval Sys_PCT=if(isnum(VP_Sys_PCT), VP_Sys_PCT, Sys_PCT), User_PCT=if(isnum(VP_User_PCT), VP_User_PCT, User_PCT), Wait_PCT=if(isnum(VP_Wait_PCT), VP_Wait_PCT, Wait_PCT), Idle_PCT=if(isnum(VP_Idle_PCT), VP_Idle_PCT, Idle_PCT)
 | timechart `nmon_span` avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT
-| $show_cpu$
 | fields _time,Idle_PCT,Wait_PCT,User_PCT,Sys_PCT</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -512,13 +441,12 @@
         <panel>
             <chart>
                 <title>By host global % CPU stats over time</title>
-                <search>
+                <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $OStype$ $host$
 | eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
-| timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent by host
-| $show_cpu$</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+| timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent by host</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -579,14 +507,13 @@
         <panel>
             <chart>
                 <title>Deployment physical memory MB usage per category over time</title>
-                <search>
+                <search depends="$show_phymem$">
                     <query>eventtype=nmon:performance:memory type=MEM $OStype$ $host$
 | dedup _time,host
 | stats sum(cached) AS cached, sum(buffers) AS buffers, sum(mem_free) AS mem_free, sum(mem_used_effective) AS mem_used_effective, sum(memtotal) AS memtotal by _time
-| $show_phymem$
 | timechart `nmon_span` avg(*) AS * | fields _time,mem_free,cached,buffers,mem_used_effective,memtotal</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -625,13 +552,12 @@
         <panel>
             <chart>
                 <title>Deployment physical memory % usage over time</title>
-                <search>
+                <search depends="$show_phymem$">
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$
 | timechart `nmon_span` avg(mem_used_effective_PCT) AS mem_used_effective_PCT
-| $show_phymem$
 | trendline sma5(mem_used_effective_PCT) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -669,12 +595,11 @@
         <panel>
             <chart>
                 <title>By host physical memory % usage over time</title>
-                <search>
+                <search depends="$show_phymem$">
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$
-| timechart `nmon_span` avg(mem_used_effective_PCT) AS mem_used_effective_PCT by host
-| $show_phymem$</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+| timechart `nmon_span` avg(mem_used_effective_PCT) AS mem_used_effective_PCT by host</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -735,14 +660,13 @@
         <panel>
             <chart>
                 <title>Deployment swap memory MB usage per category over time</title>
-                <search>
+                <search depends="$show_virtualmem$">
                     <query>eventtype=nmon:performance:memory type=MEM $OStype$ $host$
 | dedup _time,host
 | stats sum(swap_used) AS swap_used, sum(swap) AS swaptotal, sum(swap_free) AS swap_free by _time
-| $show_virtualmem$
 | timechart `nmon_span` avg(*) AS *</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -781,13 +705,12 @@
         <panel>
             <chart>
                 <title>Deployment swap memory % usage over time</title>
-                <search>
+                <search depends="$show_virtualmem$">
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$
 | timechart `nmon_span` avg(swap_used_effective_PCT) AS swap_used_effective_PCT
-| $show_virtualmem$
 | trendline sma5(swap_used_effective_PCT) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -825,12 +748,11 @@
         <panel>
             <chart>
                 <title>By host swap memory % usage over time</title>
-                <search>
+                <search depends="$show_virtualmem$">
                     <query>eventtype=nmon:performance type=MEM $OStype$ $host$
-| timechart `nmon_span` avg(swap_used_effective_PCT) AS swap_used_effective_PCT by host
-| $show_virtualmem$</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+| timechart `nmon_span` avg(swap_used_effective_PCT) AS swap_used_effective_PCT by host</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -885,14 +807,13 @@
         <panel>
             <single depends="$start_dg_stats_search$">
                 <title>Average deployment I/O per sec</title>
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGXFER $OStype$ $host$
 | dedup _time,host,device,disk_total_iops
 | stats sum(disk_total_iops) AS disk_total_iops by _time
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_total_iops) AS disk_total_iops | where isnotnull(disk_total_iops)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -914,14 +835,13 @@
             </single>
             <single depends="$start_disk_stats_search$">
                 <title>Average deployment I/O per sec</title>
-                <search>
+                <search depends="$start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKXFER $OStype$ $host$
 | dedup _time,host,value
 | stats sum(value) AS value by _time
-| fields $start_disk_stats_search$
 | timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -945,13 +865,12 @@
         <panel>
             <single depends="$start_dg_stats_search$">
                 <title>Average deployment % of time busy disks</title>
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGBUSY $OStype$ $host$
 | dedup _time,host,device,disk_busy_time_pct
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_busy_time_pct) AS disk_busy_time_pct | where isnotnull(disk_busy_time_pct)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -973,13 +892,12 @@
             </single>
             <single depends="$start_disk_stats_search$">
                 <title>Average deployment % of time busy disks</title>
-                <search>
+                <search depends="$start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $host$
 | dedup _time,host,value
-| fields $start_disk_stats_search$
 | timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1003,12 +921,11 @@
         <panel>
             <single depends="$start_dg_stats_search$">
                 <title>Average deployment disk data transfer size</title>
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGSIZE $OStype$ $host$
-| fields $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_block_size_KB) AS disk_block_size_KB | where isnotnull(disk_block_size_KB)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1030,12 +947,11 @@
             </single>
             <single depends="$start_disk_stats_search$">
                 <title>Average deployment disk data transfer size</title>
-                <search>
+                <search depends="$start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $host$
-| fields $start_disk_stats_search$
 | timechart `nmon_span` avg(value) AS value | where isnotnull(value)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1061,21 +977,21 @@
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_diskxfer" data-alt-label="HIDE EXTENDED DISKXFER STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKXFER STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_diskxfer" data-alt-label="HIDE EXTENDED DISKXFER STATS" data-token-value="true">SHOW EXTENDED DISKXFER STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_diskbusy" data-alt-label="HIDE EXTENDED DISKBUSY STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKBUSY STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_diskbusy" data-alt-label="HIDE EXTENDED DISKBUSY STATS" data-token-value="true">SHOW EXTENDED DISKBUSY STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_diskbsize" data-alt-label="HIDE EXTENDED DISKBSIZE STATS" data-token-value="fields _time,*">SHOW EXTENDED DISKBSIZE STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_diskbsize" data-alt-label="HIDE EXTENDED DISKBSIZE STATS" data-token-value="true">SHOW EXTENDED DISKBSIZE STATS</button>
                 </div>
             </html>
         </panel>
@@ -1097,16 +1013,14 @@
         <panel>
             <chart>
                 <title>Deployment global I/O per sec over time</title>
-                <search>
+                <search depends="$show_diskxfer$ $start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGXFER $OStype$ $host$
 | dedup _time,host,device,disk_total_iops
 | stats sum(disk_total_iops) AS disk_total_iops by _time
 | timechart `nmon_span` avg(disk_total_iops) AS iops
-| $show_diskxfer$
-| $start_dg_stats_search$
 | trendline sma5(iops) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1144,15 +1058,13 @@
         <panel>
             <chart>
                 <title>By host I/O per sec over time</title>
-                <search>
+                <search depends="$show_diskxfer$ $start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGXFER $OStype$ $host$
 | dedup _time,host,device,disk_total_iops
 | stats sum(disk_total_iops) AS disk_total_iops by _time,host
-| $show_diskxfer$
-| $start_dg_stats_search$
 | timechart `nmon_span` avg(disk_total_iops) AS iops by host</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1191,16 +1103,14 @@
         <panel>
             <chart>
                 <title>Deployment global I/O per sec over time</title>
-                <search>
+                <search depends="$show_diskxfer$ $start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKXFER $OStype$ $host$
 | dedup _time,host,device,value
 | stats sum(value) AS value by _time
 | timechart `nmon_span` avg(value) AS iops
-| $show_diskxfer$
-| $start_disk_stats_search$
 | trendline sma5(iops) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1238,15 +1148,13 @@
         <panel>
             <chart>
                 <title>By host I/O per sec over time</title>
-                <search>
+                <search depends="$show_diskxfer$ $start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKXFER $OStype$ $host$
 | dedup _time,host,value
 | stats sum(value) AS value by _time,host
-| $start_disk_stats_search$
-| $show_diskxfer$
 | timechart `nmon_span` avg(value) AS iops by host</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1307,15 +1215,13 @@
         <panel>
             <chart>
                 <title>Deployment global % time busy disk over time</title>
-                <search>
+                <search depends="$show_diskbusy$ $start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGBUSY $OStype$ $host$
 | dedup _time,host,device,disk_busy_time_pct
 | timechart `nmon_span` avg(disk_busy_time_pct) AS busy_disk
-| $show_diskbusy$
-| $start_dg_stats_search$
 | trendline sma5(busy_disk) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1353,14 +1259,12 @@
         <panel>
             <chart>
                 <title>By host % time busy disk over time</title>
-                <search>
+                <search depends="$show_diskbusy$ $start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGBUSY $OStype$ $host$
 | dedup _time,host,device,disk_busy_time_pct
-| $start_dg_stats_search$
-| $show_diskbusy$
 | timechart `nmon_span` avg(disk_busy_time_pct) AS busydisk by host</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1399,15 +1303,13 @@
         <panel>
             <chart>
                 <title>Deployment global % time busy disk over time</title>
-                <search>
+                <search depends="$show_diskbusy$ $start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $host$
 | dedup _time,host,value
 | timechart `nmon_span` avg(value) AS busy_disk
-| $show_diskbusy$
-| $start_disk_stats_search$
 | trendline sma5(busy_disk) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1445,14 +1347,12 @@
         <panel>
             <chart>
                 <title>By host % time busy disk over time</title>
-                <search>
+                <search depends="$show_diskbusy$ $start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKBUSY $OStype$ $host$
 | dedup _time,host,value
-| $start_disk_stats_search$
-| $show_diskbusy$
 | timechart `nmon_span` avg(value) AS busydisk by host</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1513,15 +1413,13 @@
         <panel>
             <chart>
                 <title>Deployment global disk data transfer (KBytes per transfer) over time</title>
-                <search>
+                <search depends="$show_diskbsize$ $start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGSIZE $OStype$ $host$
 | dedup _time,host,device,disk_block_size_KB
 | timechart `nmon_span` avg(disk_block_size_KB) AS tranfer_rate
-| $start_dg_stats_search$
-| $show_diskbsize$
 | trendline sma5(tranfer_rate) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1559,14 +1457,12 @@
         <panel>
             <chart>
                 <title>By host disk data transfer (KBytes per transfer) over time</title>
-                <search>
+                <search depends="$show_diskbsize$ $start_dg_stats_search$">
                     <query>eventtype=nmon:performance type=DGSIZE $OStype$ $host$
 | dedup _time,host,device,disk_block_size_KB
-| $start_dg_stats_search$
-| $show_diskbsize$
 | timechart `nmon_span` avg(disk_block_size_KB) AS tranfer_rate by host</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1605,15 +1501,13 @@
         <panel>
             <chart>
                 <title>Deployment global disk data transfer (KBytes per transfer) over time</title>
-                <search>
+                <search depends="$show_diskbsize$ $start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $host$
 | dedup _time,host,value
 | timechart `nmon_span` avg(value) AS tranfer_rate
-| $start_disk_stats_search$
-| $show_diskbsize$
 | trendline sma5(tranfer_rate) AS trend</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1651,14 +1545,12 @@
         <panel>
             <chart>
                 <title>By host disk data transfer (KBytes per transfer) over time</title>
-                <search>
+                <search depends="$show_diskbsize$ $start_disk_stats_search$">
                     <query>eventtype=nmon:performance type=DISKBSIZE $OStype$ $host$
 | dedup _time,host,value
-| $start_disk_stats_search$
-| $show_diskbsize$
 | timechart `nmon_span` avg(value) AS tranfer_rate by host</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1720,7 +1612,7 @@
         <panel>
             <single rejects="$show_null_top$">
                 <title>Average deployment CPU usage main process</title>
-                <search>
+                <search depends="$start_top_searches$">
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
 | dedup _time,host,Command,PID
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus, max(virtual_cpus) AS virtual_cpus by _time,host,Command,PID
@@ -1728,15 +1620,14 @@
 | where (pct_CPU&lt;=limit)
 | eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,host,Command
-| fields $start_top_searches$
 | eval value=(pct_CPU/100)
 | bucket _time `nmon_span`
 | stats max(value) As value by _time,host,Command
 | stats sum(value) AS value by _time,Command
 | stats avg(value) AS value by Command
 | sort - value</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1762,16 +1653,15 @@
         <panel>
             <single rejects="$show_null_top$">
                 <title>Average deployment Memory usage main process</title>
-                <search>
+                <search depends="$start_top_searches$">
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
 | dedup _time,host,Command,PID
-| eval mem_usage_mb=case(match(OStype, "AIX|Linux"), ((ResSet)/1024), match(OStype, "Solaris"), (ResSize/1024) )
+| eval mem_usage_mb=case(match(OStype, "Linux"), ((ResSet)/1024), match(OStype, "AIX"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,host,Command
-| fields $start_top_searches$
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by Command | sort - mem_usage_mb</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1804,8 +1694,8 @@
 | eval value=round((value/1000),3)
 | chart latest(value) AS value by traffic_type | eval value=round(value, 3)
 | fields value | transpose | eval value='row 1' + " / " + 'row 2' | fields value | where isnotnull(value)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1832,21 +1722,21 @@
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_cpuprocess" data-alt-label="HIDE EXTENDED CPU PROCESSES STATS" data-token-value="fields _time,*">SHOW EXTENDED CPU PROCESSES STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_cpuprocess" data-alt-label="HIDE EXTENDED CPU PROCESSES STATS" data-token-value="true">SHOW EXTENDED CPU PROCESSES STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_memprocess" data-alt-label="HIDE EXTENDED MEM PROCESSES STATS" data-token-value="fields _time,*">SHOW EXTENDED MEM PROCESSES STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_memprocess" data-alt-label="HIDE EXTENDED MEM PROCESSES STATS" data-token-value="true">SHOW EXTENDED MEM PROCESSES STATS</button>
                 </div>
             </html>
         </panel>
         <panel>
             <html>
                 <div class="custom-sub-nav" style="text-align: center;">
-                    <button class="button2_lowpadding glow" data-token-name="show_net" data-alt-label="HIDE EXTENDED NETWORK STATS" data-token-value="fields _time,*">SHOW EXTENDED NETWORK STATS</button>
+                    <button class="button2_lowpadding glow" data-token-name="show_net" data-alt-label="HIDE EXTENDED NETWORK STATS" data-token-value="true">SHOW EXTENDED NETWORK STATS</button>
                 </div>
             </html>
         </panel>
@@ -1868,7 +1758,7 @@
         <panel>
             <chart>
                 <title>Deployment TOP 10 CPU processes usage</title>
-                <search>
+                <search depends="$show_cpuprocess$">
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus, max(virtual_cpus) AS virtual_cpus by _time,host,Command,PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
@@ -1879,10 +1769,9 @@
 | bucket _time `nmon_span`
 | stats max(value) As value by _time,host,Command
 | stats sum(value) AS value by _time,Command
-| $show_cpuprocess$
 | timechart `nmon_span` limit=10 useother=f max(value) AS value by Command</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1920,7 +1809,7 @@
         <panel>
             <chart>
                 <title>By host TOP 10 CPU processes usage</title>
-                <search>
+                <search depends="$show_cpuprocess$">
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
 | stats max(pct_CPU) AS pct_CPU, max(logical_cpus) AS logical_cpus by _time,host,Command,PID
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
@@ -1928,10 +1817,9 @@
 | eval value=(pct_CPU/100)
 | where value&gt;0.01
 | eval key=host+":"+Command
-| $show_cpuprocess$
 | timechart `nmon_span` limit=10 useother=f max(value) As value by key</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -1992,16 +1880,15 @@
         <panel>
             <chart>
                 <title>Deployment TOP 10 Memory processes usage</title>
-                <search>
+                <search depends="$show_memprocess$">
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
 | dedup _time,host,Command,PID
-| eval mem_usage_mb=case(match(OStype, "Linux"), ((ResSet)/1024), match(OStype, "AIX"), ((ResData+ResText)/1024),  match(OStype, "Solaris"), (ResSize/1024) )
+| eval mem_usage_mb=case(match(OStype, "Linux"), ((ResSet)/1024), match(OStype, "AIX"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,host,Command
 | stats avg(mem_usage_mb) AS mem_usage_mb by _time,Command
-| $show_memprocess$
 | timechart `nmon_span` limit=10 useother=f max(mem_usage_mb) AS mem_usage_mb by Command</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -2039,17 +1926,16 @@
         <panel>
             <chart>
                 <title>By host TOP 10 Memory processes usage</title>
-                <search>
+                <search depends="$show_memprocess$">
                     <query>eventtype=nmon:performance type=TOP $OStype$ $host$ Command=*
 | dedup _time,host,Command,PID
-| eval mem_usage_mb=case(match(OStype, "Linux"), ((ResSet)/1024), match(OStype, "AIX"), ((ResData+ResText)/1024),  match(OStype, "Solaris"), (ResSize/1024) )
+| eval mem_usage_mb=case(match(OStype, "Linux"), ((ResSet)/1024), match(OStype, "AIX"), ((ResData+ResText)/1024), match(OStype, "Solaris"), (ResSize/1024) )
 | stats max(mem_usage_mb) AS mem_usage_mb by _time,host,Command,PID
 | stats sum(mem_usage_mb) As mem_usage_mb by _time,host,Command
 | eval key=host+":"+Command
-| $show_memprocess$
 | timechart `nmon_span` limit=10 useother=f max(mem_usage_mb) As mem_usage_mb by key</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -2110,14 +1996,13 @@
         <panel>
             <chart>
                 <title>Deployment Inbound/Outbound network traffic</title>
-                <search>
+                <search depends="$show_net$">
                     <query>eventtype=nmon:performance type=NET $OStype$ $host$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
-| $show_net$
 | eval value=case(traffic_type="Outbound", "-" . value, traffic_type="Inbound", value)
 | timechart `nmon_span` avg(value) AS KBps by traffic_type</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -2154,15 +2039,14 @@
         <panel>
             <chart>
                 <title>By host Inbound/Outbound network traffic</title>
-                <search>
+                <search depends="$show_net$">
                     <query>eventtype=nmon:performance type=NET $OStype$ $host$ device!=*lo*
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | eval key=host+":"+traffic_type
 | eval value=case(traffic_type="Outbound", "-" . value, traffic_type="Inbound", value)
-| $show_net$
 | timechart `nmon_span` useother=f limit=0 avg(value) AS KBps by key</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>

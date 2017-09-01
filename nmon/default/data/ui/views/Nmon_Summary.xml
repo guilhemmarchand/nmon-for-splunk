@@ -56,19 +56,6 @@
             </search>
             <fieldForLabel>host</fieldForLabel>
             <fieldForValue>host</fieldForValue>
-            <!--
-            Reset the form token changed
-            -->
-       		<change>
-                <unset token="CPU_datasource"></unset>
-                <unset token="CPU_datasource_minilabel"></unset>
-                <unset token="is_LPAR"></unset>
-                <unset token="is_not_LPAR"></unset>
-                <unset token="start_uptime_searches"></unset>
-                <unset token="start_disk_stats_search"></unset>
-                <unset token="start_dg_stats_search"></unset>
-                <unset token="start_df_storage_stats_search"></unset>
-       		</change>
         </input>
 
         <input type="dropdown" token="span" searchWhenChanged="true">
@@ -119,13 +106,16 @@
             <condition match="'result.is_past_search'==&quot;true&quot;">
                 <set token="form.refresh">0</set>
             </condition>
+            <condition match="'result.is_past_search'==&quot;false&quot;">
+                <unset token="form.refresh"></unset>
+            </condition>
         </progress>
     </search>
 
     <!-- OStype -->
 
     <search id="OSType_detection">
-        <query>eventtype=nmon:performance $host$ | head 1 | stats count by OStype | fields OStype</query>
+        <query>eventtype=nmon:performance host=$host$ | head 1 | stats count by OStype | fields OStype</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <progress>

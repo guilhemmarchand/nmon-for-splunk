@@ -1,70 +1,76 @@
 <form stylesheet="nmon:ui_simple.js,nmon:dark.css" hideFooter="true" hideSplunkBar="true" hideAppBar="true" hideChrome="true" hideEdit="true" hideTitle="true">
   <label>Dark MONITORING</label>
-  <fieldset submitButton="false">
+    <fieldset submitButton="false">
 
-      <input type="time" token="time">
-          <label></label>
-          <default>
-              <earliest>-24h@h</earliest>
-              <latest>now</latest>
-          </default>
-          <!--
-          Reset the form token changed
-          -->
-          <change>
-              <unset token="form.refresh"></unset>
-          </change>
-      </input>
+        <input type="time" token="time">
+            <label></label>
+            <default>
+                <earliest>-24h@h</earliest>
+                <latest>now</latest>
+            </default>
+        </input>
+
+        <input type="dropdown" token="refresh" searchWhenChanged="true">
+            <label></label>
+            <choice value="30s">30 sec</choice>
+            <choice value="60s">1 min</choice>
+            <choice value="300s">5 min</choice>
+            <choice value="0">none</choice>
+            <default>30s</default>
+        </input>
+
+        <input id="host" type="dropdown" token="host" searchWhenChanged="true">
+            <label></label>
+            <search id="hostsSearch">
+                <query>| tstats count as count WHERE `nmon_index` sourcetype=nmon_data by host | sort 0 host </query>
+                <earliest>$time.earliest$</earliest>
+                <latest>$time.latest$</latest>
+            </search>
+            <prefix>host="</prefix>
+            <suffix>"</suffix>
+            <fieldForLabel>host</fieldForLabel>
+            <fieldForValue>host</fieldForValue>
+            <selectFirstChoice>true</selectFirstChoice>
+        </input>
+
+    </fieldset>
 
     <!--
-    This input is an hidden input that intents to smartly configure the auto refresh feature
-    Assume that if the latest time range is higher or equal than 4 hours in delta with now, the auto refresh should be disabled.
-    As well, this form will be reset whenever the time range period is modified
+    Dynamic configuration
+    The following searches are being used to define various tokens using event handlers
     -->
 
-    <input type="dropdown" token="autorefresh_detection" depends="$hidden_element$" searchWhenChanged="true">
-        <label>Is past data search ?:</label>
-        <search>
-            <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
-            <earliest>$time.earliest$</earliest>
-            <latest>$time.latest$</latest>
-        </search>
-        <selectFirstChoice>true</selectFirstChoice>
-        <fieldForLabel>is_past_search</fieldForLabel>
-        <fieldForValue>is_past_search</fieldForValue>
-        <change>
-            <condition value="true">
+    <!-- autorefresh_detection -->
+
+    <search id="autorefresh_detection">
+        <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+        <earliest>$time.earliest$</earliest>
+        <latest>$time.latest$</latest>
+        <progress>
+            <condition match="'result.is_past_search'==&quot;true&quot;">
                 <set token="form.refresh">0</set>
             </condition>
-        </change>
-    </input>
+            <condition match="'result.is_past_search'==&quot;false&quot;">
+                <unset token="form.refresh"></unset>
+            </condition>
+        </progress>
+    </search>
 
-    <input type="dropdown" token="refresh" searchWhenChanged="true">
-        <label></label>
-        <choice value="30s">30 sec</choice>
-        <choice value="60s">1 min</choice>
-        <choice value="300s">5 min</choice>
-        <choice value="0">none</choice>
-        <default>30s</default>
-    </input>
+    <row>
+        <panel>
+            <html>
+                <div style="color: white;">
+                    <p>
+                        form.refresh is $form.refresh$
+                        refresh is $refresh$
+                    </p>
+                </div>
+            </html>
+        </panel>
+    </row>
 
-    <input id="host" type="dropdown" token="host" searchWhenChanged="true">
-      <label></label>
-      <search id="hostsSearch">
-          <query>| tstats count as count WHERE `nmon_index` sourcetype=nmon_data by host | sort 0 host </query>
-          <earliest>$time.earliest$</earliest>
-          <latest>$time.latest$</latest>
-      </search>
-      <prefix>host="</prefix>
-      <suffix>"</suffix>
-      <fieldForLabel>host</fieldForLabel>
-      <fieldForValue>host</fieldForValue>
-      <selectFirstChoice>true</selectFirstChoice>
-    </input>
 
-  </fieldset>
-
-  <row>
+    <row>
     <panel>
       <single>
         <search>
