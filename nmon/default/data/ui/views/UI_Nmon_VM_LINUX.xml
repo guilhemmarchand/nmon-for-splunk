@@ -88,8 +88,38 @@
             <choice value="range">Range</choice>
         </input>
 
+        <input type="dropdown" token="refresh" searchWhenChanged="true">
+            <label>Auto-refresh:</label>
+            <choice value="30s">30 sec</choice>
+            <choice value="60s">1 min</choice>
+            <choice value="300s">5 min</choice>
+            <choice value="0">none</choice>
+            <default>30s</default>
+        </input>        
+        
     </fieldset>
 
+    <!--
+    Dynamic configuration
+    The following searches are being used to define various tokens using event handlers
+    -->
+
+    <!-- autorefresh_detection -->
+
+    <search id="autorefresh_detection">
+        <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="'result.is_past_search'==&quot;true&quot;">
+                <set token="form.refresh">0</set>
+            </condition>
+            <condition match="'result.is_past_search'==&quot;false&quot;">
+                <unset token="form.refresh"></unset>
+            </condition>
+        </progress>
+    </search>      
+    
     <search id="Global">
         <query>| tstats `VM_Linux(max)` from datamodel=NMON_Data_VM where (nodename = Linux) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) `$timefilter$(Linux)`
 groupby _time, "Linux.frameID", host prestats=true span=1m
@@ -99,7 +129,7 @@ groupby _time, "Linux.frameID", host prestats=true span=1m
 | rename Linux.* AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
-        <refresh>30s</refresh>
+        <refresh>$refresh$</refresh>
         <refreshType>delay</refreshType>
     </search>
 
@@ -231,7 +261,7 @@ where (nodename = Linux) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host
 | stats $statsmode$(*) AS * by frameID, host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
-                    <refresh>30s</refresh>
+                    <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
