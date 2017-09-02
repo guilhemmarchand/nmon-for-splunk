@@ -26,6 +26,11 @@ pColor: pColor
         tableView.table.render();
     });
 
+    mvc.Components.get('tablebar1').getVisualization(function(tableView) {
+        tableView.table.addCellRenderer(new DataBarCellRenderer());
+        tableView.table.render();
+    });
+
     mvc.Components.get('tablebar2').getVisualization(function(tableView) {
         tableView.table.addCellRenderer(new DataBarCellRenderer());
         tableView.table.render();
