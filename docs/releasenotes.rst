@@ -30,7 +30,9 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 
 For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/releasenotes.html
 
-- feature: DF CIM parsing for improved file system monitoring and storage capacity planning
+- feature: DF_STORAGE and DF_INODES implementation in replacement of JFSFILE (extended file system utilisation statistics)
+- feature: New interface for STORAGE statistics management
+- fix: dynamic tokens in dashboard improvements
 - fix: Nmon Config datamodel OStype extraction #95
 
 ========
