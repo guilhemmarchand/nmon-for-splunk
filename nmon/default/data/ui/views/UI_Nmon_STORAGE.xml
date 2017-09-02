@@ -302,6 +302,14 @@
     <row>
         <panel>
 
+            <input type="dropdown" token="table_count">
+                <label>Nb table lines:</label>
+                <choice value="10">10</choice>
+                <choice value="50">50</choice>
+                <choice value="100">100</choice>
+                <default>10</default>
+            </input>
+
             <input type="dropdown" token="df_storage_monitor_unit" depends="$start_df_storage_search$" rejects="$start_jfs_storage_search$">
                 <label>Unit:</label>
                 <choice value="MB">MB</choice>
@@ -328,15 +336,15 @@
                 <title>Latest known values within the period for the following file systems:</title>
                 <search depends="$start_df_storage_search$" rejects="$start_jfs_storage_search$">
                     <query>| tstats latest(JFS.storage) AS storage, latest(JFS.storage_free) AS storage_free, latest(JFS.storage_used) AS storage_used, latest(JFS.storage_free_percent) AS storage_free_percent, latest(JFS.storage_used_percent) AS storage_used_percent from datamodel=NMON_Data_JFS
-where (nodename = JFS.DF_STORAGE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($mount$) (JFS.mount=$fsfilter$) groupby JFS.mount prestats=true
-| stats dedup_splitvals=t latest(JFS.storage) AS storage, latest(JFS.storage_free) AS storage_free, latest(JFS.storage_used) AS storage_used, latest(JFS.storage_free_percent) AS storage_free_percent, latest(JFS.storage_used_percent) AS storage_used_percent by JFS.mount
-| sort limit=0 mount
+where (nodename = JFS.DF_STORAGE) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($mount$) (JFS.mount=$fsfilter$) groupby host JFS.mount prestats=true
+| stats dedup_splitvals=t latest(JFS.storage) AS storage, latest(JFS.storage_free) AS storage_free, latest(JFS.storage_used) AS storage_used, latest(JFS.storage_free_percent) AS storage_free_percent, latest(JFS.storage_used_percent) AS storage_used_percent by host JFS.mount
+| sort limit=0 host
 | rename "JFS.mount" AS "mount"
-| fields mount, storage, storage_free,storage_used,storage_free_percent,storage_used_percent
+| fields host, mount, storage, storage_free,storage_used,storage_free_percent,storage_used_percent
 | foreach storage storage_free storage_used [ eval &lt;&lt;FIELD>> = round(('&lt;&lt;FIELD&gt;&gt;'$df_storage_unit_math$), 2) ]
 | rename storage as "storage ($df_storage_unit_legend$)", storage_free as "storage free ($df_storage_unit_legend$)", storage_used as "storage used ($df_storage_unit_legend$)", storage_free_percent as "storage free (%)", storage_used_percent as "storage used (%)"
 | eval UsedPct=if(isnum('storage used (%)'), 'storage used (%)', 0 )
-| fields mount, "storage ($df_storage_unit_legend$)", "storage free ($df_storage_unit_legend$)", "storage used ($df_storage_unit_legend$)", "storage free (%)", "storage used (%)", UsedPct
+| fields host, mount, "storage ($df_storage_unit_legend$)", "storage free ($df_storage_unit_legend$)", "storage used ($df_storage_unit_legend$)", "storage free (%)", "storage used (%)", UsedPct
 | appendpipe [ stats sum("storage ($df_storage_unit_legend$)") as "storage ($df_storage_unit_legend$)", sum("storage free ($df_storage_unit_legend$)") as "storage free ($df_storage_unit_legend$)", sum("storage used ($df_storage_unit_legend$)") as "storage used ($df_storage_unit_legend$)" ]
 | eval "storage free (%)" = if(isnull('storage free (%)'), (('storage free ($df_storage_unit_legend$)'/'storage ($df_storage_unit_legend$)')*100), 'storage free (%)'), "storage used (%)" = if(isnull('storage used (%)'), (('storage used ($df_storage_unit_legend$)'/'storage ($df_storage_unit_legend$)')*100), 'storage used (%)'), UsedPct = if(isnull(UsedPct), 'storage used (%)', UsedPct)
 | fillnull value="*** TOTAL GB / AVERAGE % ****" mount
@@ -350,7 +358,7 @@ where (nodename = JFS.DF_STORAGE) (host=$host-prefilter$) ($frameID$) ($osfilter
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
-                <option name="count">10</option>
+                <option name="count">$table_count$</option>
                 <option name="refresh.display">none</option>
                 <option name="percentagesRow">false</option>
                 <format type="color" field="storage used (%)">
@@ -378,7 +386,7 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frame
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
                 <option name="drilldown">cell</option>
-                <option name="count">10</option>
+                <option name="count">$table_count$</option>
                 <option name="refresh.display">none</option>
                 <option name="percentagesRow">true</option>
                 <format type="color" field="max_value">
