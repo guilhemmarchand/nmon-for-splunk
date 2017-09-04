@@ -29,23 +29,23 @@
 
       <input type="checkbox" token="itemfilter" searchWhenChanged="true">
         <label>Categories:</label>
-        <choice value="APPLICATION*">Application Internal</choice>
-        <choice value="CONFIGURATION DATA">Configuration Data</choice>
-        <choice value="CPU USAGE STATISTICS">CPU Usage</choice>
-        <choice value="KERNEL STATISTICS">Kernel Statistics</choice>
-        <choice value="PROCESSES STATISTICS">Processes Statistics</choice>
-        <choice value="MEMORY STATISTICS">Memory Statistics</choice>
-        <choice value="DISKS STATISTICS">Disks Statistics</choice>
-        <choice value="NETWORK*">Network Statistics</choice>
-        <choice value="PAGING STATISTICS">Paging Statistics</choice>
-        <choice value="FILESYSTEMS STATISTICS">FileSystems Statistics</choice>
-        <choice value="FIBER CHANNEL STATISTICS">Fiber Channel Statistics</choice>
-        <choice value="BLOCK STATISTICS">Block Statistics</choice>
-        <choice value="EXTERNAL COLLECTION">Nmon external collection</choice>
+        <choice value="APPLICATION*">Application internal</choice>
+        <choice value="CONFIGURATION DATA">Configuration data</choice>
+        <choice value="CPU USAGE STATISTICS">CPU utilisation</choice>
+        <choice value="KERNEL STATISTICS">Kernel statistics</choice>
+        <choice value="PROCESSES STATISTICS">Processes statistics</choice>
+        <choice value="MEMORY STATISTICS">Memory statistics</choice>
+        <choice value="DISKS STATISTICS">Disks statistics</choice>
+        <choice value="NETWORK*">Network statistics</choice>
+        <choice value="PAGING STATISTICS">Paging statistics</choice>
+        <choice value="FILESYSTEMS STATISTICS">FileSystems statistics</choice>
+        <choice value="FIBER CHANNEL STATISTICS">Fiber Channel statistics</choice>
+        <choice value="BLOCK STATISTICS">Block statistics</choice>
+        <choice value="VARIOUS SYSTEM STATISTICS">Various system statistics</choice>
         <valuePrefix>perf_item="</valuePrefix>
         <valueSuffix>"</valueSuffix>
         <delimiter> OR </delimiter>
-        <default>"APPLICATION*","CONFIGURATION DATA","CPU USAGE STATISTICS","KERNEL STATISTICS","PROCESSES STATISTICS","MEMORY STATISTICS","DISKS STATISTICS","NETWORK*","PAGING STATISTICS","FILESYSTEMS STATISTICS","FIBER CHANNEL STATISTICS","BLOCK STATISTICS","EXTERNAL COLLECTION"</default>
+        <default>"APPLICATION*","CONFIGURATION DATA","CPU USAGE STATISTICS","KERNEL STATISTICS","PROCESSES STATISTICS","MEMORY STATISTICS","DISKS STATISTICS","NETWORK*","PAGING STATISTICS","FILESYSTEMS STATISTICS","FIBER CHANNEL STATISTICS","BLOCK STATISTICS","VARIOUS SYSTEM STATISTICS"</default>
       </input>
 
     </panel>
@@ -66,9 +66,26 @@
       </html>
 
       <table>
-        <title>Brief Data Table:</title>
+        <title>Brief Data Table: click on a row to show the detail of metrics available</title>
         <search>
-          <query>| inputlookup data_dictionary | search $osfilter$ $itemfilter$ | stats count AS Nbr_items by main_type,index,sourcetype,perf_item</query>
+          <query>| inputlookup data_dictionary | search $osfilter$ $itemfilter$ | stats count AS Nbr_items by main_type,sourcetype,perf_item</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="count">50</option>
+        <drilldown>
+            <set token="drilldown_itemfilter">"$row.perf_item$"</set>
+            <set token="itemfilter">perf_item="$row.perf_item$"</set>
+            <set token="dendo_height">1500</set>
+        </drilldown>
+      </table>
+
+      <table depends="$drilldown_itemfilter$">
+        <title>Details:</title>
+        <search>
+          <query>| inputlookup data_dictionary | search $osfilter$ perf_item=$drilldown_itemfilter$ | table sourcetype,perf_item,description,"formula (or field name if not evaluated)"</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
