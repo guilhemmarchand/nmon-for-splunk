@@ -375,7 +375,8 @@ where (nodename = JFS.DF_INODES) (host=$host-prefilter$) ($frameID$) ($osfilter$
 | rename storage_inodes as "storage (nb inodes)", storage_free_inodes as "storage free (nb inodes)", storage_used_inodes as "storage used (nb inodes)", storage_free_inodes_percent as "storage inodes free (%)", storage_used_inodes_percent as "storage inodes used (%)"
 | eval UsedPct=if(isnum('storage inodes used (%)'), 'storage inodes used (%)', 0 )
 | fields host, mount, "storage (nb inodes)", "storage free (nb inodes)", "storage used (nb inodes)", "storage inodes free (%)", "storage inodes used (%)", UsedPct
-| foreach storage*%* UsedPct [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
+| foreach storage*%* UsedPct [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| fillnull value="N/A" "storage (nb inodes)", "storage free (nb inodes)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
