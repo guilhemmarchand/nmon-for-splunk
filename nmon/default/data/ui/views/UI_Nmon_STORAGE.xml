@@ -367,7 +367,7 @@ where (nodename = JFS.DF_STORAGE) (host=$host-prefilter$) ($frameID$) ($osfilter
                 <title>Latest known values within the period for the following file systems:</title>
                 <search depends="$start_df_inodes_search$">
                     <query>| tstats latest(JFS.storage_inodes) AS storage_inodes, latest(JFS.storage_free_inodes) AS storage_free_inodes, latest(JFS.storage_used_inodes) AS storage_used_inodes, latest(JFS.storage_free_inodes_percent) AS storage_free_inodes_percent, latest(JFS.storage_used_inodes_percent) AS storage_used_inodes_percent from datamodel=NMON_Data_JFS
-where (nodename = JFS.DF_INODES) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($mount$) (JFS.mount=$fsfilter$) (JFS.storage_inodes&gt;0) groupby host JFS.mount prestats=true
+where (nodename = JFS.DF_INODES) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($mount$) (JFS.mount=$fsfilter$) (JFS.storage_used_inodes&gt;0) groupby host JFS.mount prestats=true
 | stats dedup_splitvals=t latest(JFS.storage_inodes) AS storage_inodes, latest(JFS.storage_free_inodes) AS storage_free_inodes, latest(JFS.storage_used_inodes) AS storage_used_inodes, latest(JFS.storage_free_inodes_percent) AS storage_free_inodes_percent, latest(JFS.storage_used_inodes_percent) AS storage_used_inodes_percent by host JFS.mount
 | sort limit=0 host
 | rename "JFS.mount" AS "mount"
@@ -375,9 +375,6 @@ where (nodename = JFS.DF_INODES) (host=$host-prefilter$) ($frameID$) ($osfilter$
 | rename storage_inodes as "storage (nb inodes)", storage_free_inodes as "storage free (nb inodes)", storage_used_inodes as "storage used (nb inodes)", storage_free_inodes_percent as "storage inodes free (%)", storage_used_inodes_percent as "storage inodes used (%)"
 | eval UsedPct=if(isnum('storage inodes used (%)'), 'storage inodes used (%)', 0 )
 | fields host, mount, "storage (nb inodes)", "storage free (nb inodes)", "storage used (nb inodes)", "storage inodes free (%)", "storage inodes used (%)", UsedPct
-| appendpipe [ stats sum("storage (nb inodes)") as "storage (nb inodes)", sum("storage free (nb inodes)") as "storage free (nb inodes)", sum("storage used (nb inodes)") as "storage used (nb inodes)" ]
-| eval "storage inodes free (%)" = if(isnull('storage inodes free (%)'), (('storage free (nb inodes)'/'storage (nb inodes)')*100), 'storage inodes free (%)'), "storage inodes used (%)" = if(isnull('storage inodes used (%)'), (('storage used (nb inodes)'/'storage (nb inodes)')*100), 'storage inodes used (%)'), UsedPct = if(isnull(UsedPct), 'storage inodes used (%)', UsedPct)
-| fillnull value="*** TOTAL / AVERAGE % ****" mount
 | foreach storage*%* UsedPct [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
