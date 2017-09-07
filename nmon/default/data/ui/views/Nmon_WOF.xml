@@ -1765,7 +1765,6 @@
 | eval smt_threads=(logical_cpus/virtual_cpus) | eval pct_CPU=case(isnum(smt_threads) AND smt_threads&gt;="2", pct_CPU*1.2, isnum(smt_threads) AND smt_threads&gt;="4", pct_CPU*1.4, isnum(smt_threads), pct_CPU)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,host,Command
 | eval value=(pct_CPU/100)
-| where value&gt;0.01
 | bucket _time `nmon_span`
 | stats max(value) As value by _time,host,Command
 | stats sum(value) AS value by _time,Command
@@ -1815,7 +1814,6 @@
 | eval limit=(logical_cpus*100) | where (pct_CPU&lt;=limit)
 | stats sum(pct_CPU) As pct_CPU, last(logical_cpus) As logical_cpus by _time,host,Command
 | eval value=(pct_CPU/100)
-| where value&gt;0.01
 | eval key=host+":"+Command
 | timechart `nmon_span` limit=10 useother=f max(value) As value by key</query>
                     <earliest>$timerange.earliest$</earliest>
