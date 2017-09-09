@@ -956,7 +956,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 
     <row depends="$show_cpu$ $is_LPAR$ $is_AIX$">
         <panel>
-            <chart>
+            <chart rejects="$show_null_AIX_pooldata$">
                 <title>AIX LPAR Pools statistics</title>
                 <search depends="$show_cpu$ $is_LPAR$ $is_AIX$">
                     <query>| tstats max("CPU.poolCPUs") AS "CPU.poolCPUs" max("CPU.LPAR.Pool_usage") AS usage values("CPU.LPAR.Pool_id") AS "CPU.LPAR.Pool_id" from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR) (host=$host$) (CPU.PoolIdle!=0) groupby _time, "CPU.frameID", host prestats=true span=1m
@@ -967,6 +967,14 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
+                    <progress>
+                        <condition match="$job.resultCount$ == 0">
+                            <set token="show_null_AIX_pooldata">true</set>
+                        </condition>
+                        <condition>
+                            <unset token="show_null_AIX_pooldata"/>
+                        </condition>
+                    </progress>
                 </search>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -997,6 +1005,9 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="height">500</option>
                 <option name="refresh.display">none</option>
             </chart>
+            <html depends="$show_null_AIX_pooldata$">
+                <p style="color:blue;margin-left:30px;font-size:14px"><b>AIX LPAR Pools statistics:</b> Search returned no results, this partition might not be allowed to retrieve the pool statistics it belongs to.</p>
+            </html>
         </panel>
     </row>
 

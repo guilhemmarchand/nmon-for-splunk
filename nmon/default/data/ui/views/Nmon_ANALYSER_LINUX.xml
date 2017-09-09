@@ -125,6 +125,85 @@ groupby host prestats=true
         </panel>
     </row>
 
+    <!--
+    Dynamic configuration
+    The following searches are being used to define various tokens using event handlers
+    -->
+
+    <!-- CPU data source (CPU_ALL versus LPAR) -->
+
+    <search>
+        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) groupby host, "CPU.type" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "CPU.type"
+| sort limit=0 host
+| fields - _span
+| rename "CPU.type" AS type
+| fillnull Count
+| fields host, type, Count
+| sort - type
+| head 1
+| eval datasource=case(match(type, "LPAR"), "LPAR", match(type, "CPU_ALL"), "CPU_ALL")
+| eval CPU_datasource=case(datasource="CPU_ALL", "CPU_ALL usage", datasource="LPAR", "LPAR usage"), CPU_datasource_minilabel=case(datasource="CPU_ALL", "CPU % usage", datasource="LPAR", "partition vCPUs usage"), is_not_LPAR=case(datasource="CPU_ALL", "true"), is_LPAR=case(datasource="LPAR", "true")</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <preview>
+            <condition>
+                <set token="CPU_datasource">$result.CPU_datasource$</set>
+                <set token="CPU_datasource_minilabel">$result.CPU_datasource_minilabel$</set>
+            </condition>
+        </preview>
+        <progress>
+            <condition match="'result.is_LPAR'==&quot;true&quot;">
+                <set token="is_LPAR">true</set>
+                <unset token="is_not_LPAR"></unset>
+            </condition>
+            <condition match="'result.is_not_LPAR'==&quot;true&quot;">
+                <set token="is_not_LPAR">true</set>
+                <unset token="is_LPAR"></unset>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- DG data availability -->
+
+    <search>
+        <query>eventtype=nmon:performance type=DGXFER $host$ value&gt;0 | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                    <set token="start_disk_stats_search">_time,*</set>
+                    <unset token="start_dg_stats_search"></unset>
+            </condition>
+            <condition>
+                    <set token="start_dg_stats_search">_time,*</set>
+                    <unset token="start_disk_stats_search"></unset>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- DF_STORAGE data availability -->
+
+    <search>
+        <query>eventtype=nmon:performance type=DF_STORAGE $host$ | head 100 | stats count | where count&gt;0</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                    <set token="start_jfs_storage_search">true</set>
+                    <set token="storage_usage_datasource">JFSFILE</set>
+                    <set token="storage_inodes_usage_datasource">JFSINODE</set>
+                    <unset token="start_df_storage_search"></unset>
+            </condition>
+            <condition>
+                    <set token="start_df_storage_search">true</set>
+                    <set token="storage_usage_datasource">DF_STORAGE</set>
+                    <set token="storage_inodes_usage_datasource">DF_INODES</set>
+                    <unset token="start_jfs_storage_search"></unset>
+            </condition>
+        </progress>
+    </search>
+
     <!-- Configuration Search uses the nmon_inventory data over the report -->
 
     <search ref="NMON Inventory Linux" id="configSearch">
@@ -134,7 +213,7 @@ groupby host prestats=true
         <panel>
 
             <html>
-                <div style="text-align: center;">
+                <div class="dashseparator">
                     <h1>SYSTEM SUMMARY OVERVIEW</h1>
                 </div>
             </html>
@@ -226,35 +305,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
                 <choice value="avg">avg</choice>
             </input>
 
-            <!--
-            This input is an hidden input that will be used to detect if we have disks extended stats available (DG*)
-            Because DG stats will manage the Linux partitioning duplication, measures are more accurate and should
-            preferred rather than using standard DISK*
-            -->
-
-            <input type="dropdown" token="DG_detection" depends="$hidden_element$" searchWhenChanged="true">
-                <label>Detected DG events:</label>
-                <search>
-                    <query>eventtype=nmon:performance type=DGXFER $host$ value&gt;0 | head 100 | where isnum(value) | stats count</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <selectFirstChoice>true</selectFirstChoice>
-                <fieldForLabel>count</fieldForLabel>
-                <fieldForValue>count</fieldForValue>
-                <change>
-                    <condition value="0">
-                        <set token="start_disk_iops_search">_time,*</set>
-                        <unset token="start_dg_iops_search"></unset>
-                    </condition>
-                    <condition>
-                        <set token="start_dg_iops_search">_time,*</set>
-                        <unset token="start_disk_iops_search"></unset>
-                    </condition>
-                </change>
-            </input>
-
-            <input type="dropdown" token="dg_monitors" depends="$start_dg_iops_search$">
+            <input type="dropdown" token="dg_monitors" depends="$start_dg_stats_search$">
               <label></label>
               <choice value="disk_read_iops*,disk_write_iops*">read/write iops</choice>
               <choice value="disk_total_iops*">total_iops</choice>
@@ -263,9 +314,9 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
               <default>disk_read_iops*,disk_write_iops*</default>
             </input>
 
-            <chart depends="$start_dg_iops_search$">
+            <chart depends="$start_dg_stats_search$">
                 <title>I/O Per second</title>
-                <search>
+                <search depends="$start_dg_stats_search$">
                     <query>| tstats max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB from datamodel=NMON_Data_disks_dg where (nodename = dg) ($host$) groupby _time, host, dg.device prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max(dg.disk_total_iops) as disk_total_iops max(dg.disk_read_KB_per_sec) as disk_read_KB_per_sec max(dg.disk_write_KB_per_sec) as disk_write_KB_per_sec max(dg.disk_block_size_KB) as disk_block_size_KB by _time, host, dg.device
@@ -273,7 +324,6 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | stats sum(disk_*) as "disk_*" by _time,host
-| fields $start_dg_iops_search$
 | timechart `nmon_span` $statsmode$(disk_total_iops) as disk_total_iops, $statsmode$(disk_read_iops) as disk_read_iops, $statsmode$(disk_write_iops) as disk_write_iops
 | eval disk_write_iops = "-" . disk_write_iops | fields _time,$dg_monitors$</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -313,9 +363,9 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
                 </drilldown>
             </chart>
 
-            <chart depends="$start_disk_iops_search$">
+            <chart depends="$start_disk_stats_search$">
                 <title>I/O Per second</title>
-                <search>
+                <search depends="$start_disk_stats_search$">
                     <query>| tstats max("DISKXFER.value") AS DISKXFER.value from datamodel=NMON_Data_DISKXFER
 where (nodename = DISKXFER) ($host$)
 groupby _time, host, "DISKXFER.device" prestats=true span=1m
@@ -323,7 +373,6 @@ groupby _time, host, "DISKXFER.device" prestats=true span=1m
 | stats dedup_splitvals=t max("DISKXFER.value") AS DISKXFER.value by _time, host, "DISKXFER.device"
 | rename DISKXFER.device AS device, DISKXFER.value AS value
 | stats sum(value) As value by _time
-| fields $start_disk_iops_search$
 | timechart $span$ $statsmode$(value) AS $statsmode$_iops_usage</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -361,9 +410,11 @@ groupby _time, host, "DISKXFER.device" prestats=true span=1m
 
     <row>
         <html>
-            <div style="text-align: center;">
-                <img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
-                <h1>CPU Usage Statistics</h1>
+            <div class="dashseparator">
+                <div style="text-align: center; margin-top: 15px; margin-bottom: 10px;">
+                    <img src="../../static/app/nmon/icons/grey_theme/cpu.png" alt="CPU"/>
+                    <h1>CPU Usage Statistics</h1>
+                </div>
             </div>
         </html>
     </row>
@@ -508,34 +559,6 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
         </panel>
     </row>
 
-
-    <!-- LPAR management: Only show the LPAR is a partition -->
-
-    <row depends="$is_LPAR_input_hidden$">
-        <panel>
-            <input type="dropdown" token="is_LPAR_input" searchWhenChanged="true">
-                <label>Is LPAR:</label>
-                <search>
-                    <query>| tstats sum("CPU.is_CPU_ALL") AS CPU_ALL sum("CPU.is_LPAR_Linux") AS LPAR from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) groupby host prestats=true | stats dedup_splitvals=t sum("CPU.is_CPU_ALL") AS CPU_ALL sum("CPU.is_LPAR_Linux") AS LPAR by host | sort limit=0 host | fields - _span | fields host, CPU_ALL, LPAR
-| eval is_LPAR=if(LPAR>0, "True", "False") | fields is_LPAR</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
-                </search>
-                <selectFirstChoice>true</selectFirstChoice>
-                <fieldForLabel>is_LPAR</fieldForLabel>
-                <fieldForValue>is_LPAR</fieldForValue>
-                <change>
-                    <condition value="True">
-                        <set token="is_LPAR">_time,*</set>
-                    </condition>
-                    <condition value="False">
-                        <unset token="is_LPAR"></unset>
-                    </condition>
-                </change>
-            </input>
-        </panel>
-    </row>
-
     <row depends="$is_LPAR$">
         <panel>
 
@@ -558,7 +581,7 @@ avg("CPU.cpu_PCT") AS "CPU %"</query>
 
             <chart depends="$lpar_chart1$">
                 <title></title>
-                <search>
+                <search depends="$is_LPAR$">
                     <query>| tstats max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
 max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
 from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) ($host$)
@@ -566,7 +589,6 @@ groupby _time, host, "CPU.frameID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS lpar_vp_usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors
 max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, host, "CPU.frameID"
-| fields $is_LPAR$
 | timechart `nmon_span` useother=f limit=0 max(lpar_vp_usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -598,12 +620,11 @@ max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity
 
             <chart depends="$lpar_chart2$">
                 <title></title>
-                <search>
+                <search depends="$is_LPAR$ $lpar_chart2$">
                     <query>| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage
 from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) ($host$)
 groupby _time, "CPU.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS lpar_pool_vp_usage by _time, "CPU.frameID", host
-| fields $is_LPAR$
 | timechart `nmon_span` useother=f limit=0 max(lpar_pool_vp_usage) As lpar_pool_vp_usage max(CPU.lpar_pool_capacity) AS lpar_pool_capacity by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -637,9 +658,11 @@ groupby _time, "CPU.frameID", host prestats=true span=1m
 
     <row>
         <html>
-            <div style="text-align: center;">
-                <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="Process"/>
-                <h1>Process, Kernel, I/O Statistics</h1>
+            <div class="dashseparator">
+                <div style="text-align: center; margin-top: 15px; margin-bottom: 10px;">
+                    <img src="../../static/app/nmon/icons/grey_theme/process.png" alt="Process"/>
+                    <h1>Process, Kernel, I/O Statistics</h1>
+                </div>
             </div>
         </html>
     </row>
@@ -1670,13 +1693,13 @@ groupby _time, host prestats=true $span$
         </panel>
     </row>
 
-
-
     <row>
         <html>
-            <div style="text-align: center;">
-                <img src="../../static/app/nmon/icons/grey_theme/memory.png" alt="Memory"/>
-                <h1>MEMORY Usage Statistics</h1>
+            <div class="dashseparator">
+                <div style="text-align: center; margin-top: 15px; margin-bottom: 10px;">
+                    <img src="../../static/app/nmon/icons/grey_theme/memory.png" alt="Memory"/>
+                    <h1>MEMORY Usage Statistics</h1>
+                </div>
             </div>
         </html>
     </row>
@@ -1873,16 +1896,16 @@ groupby _time host prestats=true span=1m
         </panel>
     </row>
 
-
     <row>
         <html>
-            <div style="text-align: center;">
-                <img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="Drive"/>
-                <h1>DISKS and File-Systems Statistics</h1>
+            <div class="dashseparator">
+                <div style="text-align: center; margin-top: 15px; margin-bottom: 10px;">
+                    <img src="../../static/app/nmon/icons/grey_theme/drive.png" alt="Drive"/>
+                    <h1>DISKS and File-Systems Statistics</h1>
+                </div>
             </div>
         </html>
     </row>
-
 
     <row>
         <panel>
@@ -2584,24 +2607,73 @@ max(disk_write_sec) as disk_write_sec, max(disk_write_service_time_ms) as disk_w
 
             <input type="link" token="jfs_linkinput">
                 <label></label>
-                <choice value="jfsfile_summary">JFSFILE, % file systems used (summary)</choice>
-                <choice value="jfsfile_overtime">JFSFILE, % file systems used (over time)</choice>
-                <default>jfsfile_summary</default>
+                <choice value="jfs_chart1">Summary of file-systems utilization</choice>
+                <choice value="jfs_chart2">File-systems utilization over time</choice>
+                <choice value="jfs_chart3">File-systems inodes utilization over time</choice>
+                <default>jfs_chart1</default>
                 <change>
-                    <condition value="jfsfile_summary">
-                        <set token="show_jfsfile_summary">true</set>
-                        <unset token="show_jfsfile_overtime"></unset>
+                    <condition value="jfs_chart1">
+                        <set token="jfs_chart1">true</set>
+                        <unset token="jfs_chart2"></unset>
+                        <unset token="jfs_chart3"></unset>
                     </condition>
-                    <condition value="jfsfile_overtime">
-                        <set token="show_jfsfile_overtime">true</set>
-                        <unset token="show_jfsfile_summary"></unset>
+                    <condition value="jfs_chart2">
+                        <set token="jfs_chart2">true</set>
+                        <unset token="jfs_chart1"></unset>
+                        <unset token="jfs_chart3"></unset>
+                    </condition>
+                    <condition value="jfs_chart3">
+                        <set token="jfs_chart3">true</set>
+                        <unset token="jfs_chart1"></unset>
+                        <unset token="jfs_chart2"></unset>
                     </condition>
                 </change>
             </input>
 
-            <table depends="$show_jfsfile_summary$" id="tablebar">
-                <title></title>
-                <search>
+            <!--
+
+            ### file systems SUMMARY ###
+
+            file systems utilisation, either DF_STORAGE (default) or JFSFILE
+            -->
+
+            <!-- DF_STORAGE -->
+
+            <table id="tablebar" depends="$start_df_storage_search$ $jfs_chart1$">
+                <title>Data source: $storage_usage_datasource$</title>
+                <search depends="$start_df_storage_search$">
+                    <query>| tstats latest(JFS.storage) AS storage, latest(JFS.storage_free) AS storage_free, latest(JFS.storage_used) AS storage_used, latest(JFS.storage_free_percent) AS storage_free_percent, latest(JFS.storage_used_percent) AS storage_used_percent from datamodel=NMON_Data_JFS where (nodename = JFS.DF_STORAGE) ($host$) groupby JFS.mount prestats=true
+| stats dedup_splitvals=t latest(JFS.storage) AS storage, latest(JFS.storage_free) AS storage_free, latest(JFS.storage_used) AS storage_used, latest(JFS.storage_free_percent) AS storage_free_percent, latest(JFS.storage_used_percent) AS storage_used_percent by JFS.mount
+| sort limit=0 mount
+| rename "JFS.mount" AS "mount"
+| fields mount, storage, storage_free,storage_used,storage_free_percent,storage_used_percent
+| foreach storage, storage_free,storage_used [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;'/1024, 2) ]
+| foreach storage*percent [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| rename storage as "storage (GB)", storage_free as "storage free (GB)", storage_used as "storage used (GB)", storage_free_percent as "storage free (%)", storage_used_percent as "storage used (%)"
+| eval UsedPct=if(isnum('storage used (%)'), 'storage used (%)', 0 )
+| fields mount, "storage (GB)", "storage free (GB)", "storage used (GB)", "storage free (%)", "storage used (%)", UsedPct
+| appendpipe [ stats sum("storage (GB)") as "storage (GB)", sum("storage free (GB)") as "storage free (GB)", sum("storage used (GB)") as "storage used (GB)" ]
+| eval "storage free (%)" = if(isnull('storage free (%)'), (('storage free (GB)'/'storage (GB)')*100), 'storage free (%)'), "storage used (%)" = if(isnull('storage used (%)'), (('storage used (GB)'/'storage (GB)')*100), 'storage used (%)'), UsedPct = if(isnull(UsedPct), 'storage used (%)', UsedPct)
+| fillnull value="*** TOTAL GB / AVERAGE % ****" mount
+| foreach storage*%* UsedPct [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
+            </table>
+
+            <!-- JFSFILE -->
+
+            <table id="tablebar2" depends="$start_jfs_storage_search$ $jfs_chart1$">
+                <title>Data source: $storage_usage_datasource$</title>
+                <search depends="$start_jfs_storage_search$">
                     <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
 where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) ($host$) groupby _time, host, "JFS.device" prestats=true
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, "JFS.device"
@@ -2613,67 +2685,282 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) ($host$) groupby _time, host, "
 | rename max_value AS "Max value in period (%)", avg_value AS "Average value in period (%)", min_value AS "Min value in Period (%)"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="wrap">true</option>
                 <option name="rowNumbers">false</option>
                 <option name="dataOverlayMode">none</option>
-                <option name="drilldown">cell</option>
-                <option name="count">20</option>
+                <option name="drilldown">row</option>
+                <option name="count">10</option>
+                <option name="refresh.display">none</option>
             </table>
 
-            <input type="text" token="fsfilter" depends="$show_jfsfile_overtime$" searchWhenChanged="true">
-                <label>Filter FileSystems by pattern:</label>
+            <!--
+
+            ### file systems utilisation over time ###
+
+            file systems utilisation, either DF_STORAGE (default) or JFSFILE
+            -->
+
+            <!-- DF_STORAGE -->
+
+            <input type="text" token="df_storage_mount" depends="$start_df_storage_search$ $jfs_chart2$">
+              <label>mount</label>
+              <default>*</default>
+            </input>
+
+            <input type="dropdown" token="df_storage_monitor" depends="$start_df_storage_search$ $jfs_chart2$">
+                <label>Monitor:</label>
+                <choice value="storage">storage (volume size)</choice>
+                <choice value="storage_free">storage_free (volume free)</choice>
+                <choice value="storage_used">storage_used (volume used)</choice>
+                <choice value="storage_free_percent">storage_free_percent (%)</choice>
+                <choice value="storage_used_percent">storage_used_percent (%)</choice>
+                <default>storage_used_percent</default>
+                <change>
+                    <condition value="storage">
+                        <unset token="form.df_storage_monitor_unit"></unset>
+                        <set token="df_storage_show_unit">true</set>
+                        <unset token="df_storage_monitor_max_chart"></unset>
+                    </condition>
+                    <condition value="storage_free">
+                        <unset token="form.df_storage_monitor_unit"></unset>
+                        <set token="df_storage_show_unit">true</set>
+                        <unset token="df_storage_monitor_max_chart"></unset>
+                    </condition>
+                    <condition value="storage_used">
+                        <unset token="form.df_storage_monitor_unit"></unset>
+                        <set token="df_storage_show_unit">true</set>
+                        <unset token="df_storage_monitor_max_chart"></unset>
+                    </condition>
+                    <condition value="storage_free_percent">
+                        <set token="df_storage_unit">%</set>
+                        <unset token="df_storage_show_unit"></unset>
+                        <set token="df_storage_monitor_max_chart">101</set>
+                    </condition>
+                    <condition value="storage_used_percent">
+                        <set token="form.df_storage_monitor_unit">pct</set>
+                        <set token="df_storage_monitor_max_chart">101</set>
+                        <unset token="df_storage_show_unit"></unset>
+                    </condition>
+                </change>
+            </input>
+
+            <input type="dropdown" token="df_storage_monitor_unit" depends="$start_df_storage_search$ $df_storage_show_unit$ $jfs_chart2$">
+                <label>Unit:</label>
+                <choice value="MB">MB</choice>
+                <choice value="GB">GB</choice>
+                <choice value="TB">TB</choice>
+                <default>GB</default>
+                <change>
+                    <condition value="MB">
+                        <set token="df_storage_unit_math">value</set>
+                        <set token="df_storage_unit_legend">MB</set>
+                    </condition>
+                    <condition value="GB">
+                        <set token="df_storage_unit_math">value/1024</set>
+                        <set token="df_storage_unit_legend">GB</set>
+                    </condition>
+                    <condition value="TB">
+                        <set token="df_storage_unit_math">value/1024/1204</set>
+                        <set token="df_storage_unit_legend">TB</set>
+                    </condition>
+                    <condition value="pct">
+                        <set token="df_storage_unit_math">value</set>
+                        <set token="df_storage_unit_legend">pct</set>
+                    </condition>
+                </change>
+            </input>
+
+            <chart depends="$start_df_storage_search$ $jfs_chart2$">
+                <title>Data source: $storage_usage_datasource$</title>
+                <search depends="$start_df_storage_search$ $jfs_chart2$">
+                    <query>| tstats latest(JFS.$df_storage_monitor$) AS value from datamodel=NMON_Data_JFS where (nodename = JFS.DF_STORAGE) ($host$) (JFS.mount="$df_storage_mount$") groupby _time, JFS.mount prestats=true $span$
+| stats dedup_splitvals=t latest(JFS.$df_storage_monitor$) AS value by _time, JFS.mount
+| sort limit=0 _time
+| rename "JFS.mount" AS "mount" | eval value=$df_storage_unit_math$
+| timechart $span$ latest(value) as $df_storage_monitor$ by mount</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.text">$df_storage_unit_legend$</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">none</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">500</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">$df_storage_monitor_max_chart$</option>
+            </chart>
+
+            <!-- JFSFILE -->
+
+            <input type="text" token="jfs_storage_mount" searchWhenChanged="true" depends="$start_jfs_storage_search$ $jfs_chart2$">
+                <label>mount:</label>
                 <default>*</default>
                 <prefix>JFS.device="</prefix>
                 <suffix>"</suffix>
             </input>
 
-            <chart depends="$show_jfsfile_overtime$">
-                <title></title>
-                <search>
-                    <query>| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS
-where (nodename = JFS.JFSFILE) ($host$) ($fsfilter$) groupby _time, "JFS.device" prestats=true $span$
-| timechart $span$ limit=0 useother=f max("JFS.value") AS value by "JFS.device"</query>
+            <chart depends="$start_jfs_storage_search$ $jfs_chart2$">
+                <title>Data source: $storage_usage_datasource$</title>
+                <search depends="$start_jfs_storage_search$ $jfs_chart2$">
+                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) ($host$) ($jfs_storage_mount$) groupby _time, host, "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
+| rename "JFS.*" AS *
+| timechart $span$ limit=0 useother=f max(value) As value by device</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
                 </search>
                 <option name="charting.axisTitleX.visibility">visible</option>
                 <option name="charting.axisTitleY.visibility">visible</option>
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">line</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.nullValueMode">connect</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
                 <option name="charting.chart.stackMode">default</option>
                 <option name="charting.chart.style">shiny</option>
                 <option name="charting.drilldown">all</option>
                 <option name="charting.layout.splitSeries">0</option>
                 <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
-                <option name="charting.legend.placement">bottom</option>
-                <option name="height">680</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">500</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">Percentage (%)</option>
+                <option name="charting.axisTitleY.text">% Used</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <option name="charting.axisY.maximumNumber">100</option>
-                <drilldown target="search">
-                    <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=| tstats max("JFS.value") AS value from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) ($host$) groupby _time, "JFS.device" prestats=true span=1m
-| timechart span=1m limit=0 useother=f max("JFS.value") AS value by "JFS.device"&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
-                </drilldown>
+                <option name="refresh.display">none</option>
             </chart>
+
+            <!--
+
+            ### file systems inodes utilisation over time ###
+
+            file systems inodes utilisation, either DF_INODES (default) or JFSINODE
+            -->
+
+            <!-- DF_INODES -->
+
+            <input type="text" token="df_storage_mount" depends="$start_df_storage_search$ $jfs_chart3$">
+              <label>mount</label>
+              <default>*</default>
+            </input>
+
+            <input type="dropdown" token="chart_df_inodes_monitor" depends="$start_df_storage_search$ $jfs_chart3$">
+                <label>Monitor:</label>
+                <choice value="storage_inodes">storage_inodes (nb inodes)</choice>
+                <choice value="storage_free_inodes">storage_free_inodes (inodes free)</choice>
+                <choice value="storage_used_inodes">storage_used_inodes (inodes used)</choice>
+                <choice value="storage_free_inodes_percent">storage_free_inodes_percent (%)</choice>
+                <choice value="storage_used_inodes_percent">storage_used_inodes_percent (%)</choice>
+                <default>storage_used_inodes_percent</default>
+                <change>
+                    <condition value="storage_inodes">
+                        <set token="chart_df_inodes_unit_legend">nb inodes</set>
+                    </condition>
+                    <condition value="storage_free_inodes">
+                        <set token="chart_df_inodes_unit_legend">nb inodes</set>
+                    </condition>
+                    <condition value="storage_used_inodes">
+                        <set token="chart_df_inodes_unit_legend">nb inodes</set>
+                    </condition>
+                    <condition value="storage_free_inodes_percent">
+                        <set token="chart_df_inodes_unit_legend">pct</set>
+                    </condition>
+                    <condition value="storage_used_inodes_percent">
+                        <set token="chart_df_inodes_unit_legend">pct</set>
+                    </condition>
+                </change>
+            </input>
+
+            <chart depends="$start_df_storage_search$ $jfs_chart3$">
+                <title>Data source: $storage_inodes_usage_datasource$</title>
+                <search depends="$start_df_storage_search$ $jfs_chart3$">
+                    <query>| tstats latest(JFS.$chart_df_inodes_monitor$) AS value from datamodel=NMON_Data_JFS
+where (nodename = JFS.DF_INODES) ($host$) (JFS.mount="$df_storage_mount$") groupby _time, host, JFS.mount prestats=true $span$
+| stats dedup_splitvals=t latest(JFS.$chart_df_inodes_monitor$) AS value by _time, host, JFS.mount
+| sort limit=0 _time
+| rename "JFS.mount" AS "mount" | timechart $span$ latest(value) as $chart_df_inodes_monitor$ by mount</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.text">$chart_df_inodes_unit_legend$</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.axisY2.enabled">0</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">none</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="height">680</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">$chart_df_inodes_monitor_max_chart$</option>
+            </chart>
+
+            <!-- JFSINODE -->
+
+            <input type="text" token="jfs_storage_mount" searchWhenChanged="true" depends="$start_jfs_storage_search$ $jfs_chart3$">
+                <label>mount:</label>
+                <default>*</default>
+                <prefix>JFS.device="</prefix>
+                <suffix>"</suffix>
+            </input>
+
+            <html depends="$start_jfs_storage_search$ $jfs_chart3$">
+                <p style="color:blue;margin-left:30px;font-size:14px">File systems inodes statistics are not available for this server. (the TA-nmon version does not support DF_INODES external collection)</p>
+            </html>
 
         </panel>
     </row>
 
-
     <row>
         <html>
-            <div style="text-align: center;">
-                <img src="../../static/app/nmon/icons/grey_theme/network.png" alt="Network"/>
-                <h1>NETWORK Usage Statistics</h1>
+            <div class="dashseparator">
+                <div style="text-align: center; margin-top: 15px; margin-bottom: 10px;">
+                    <img src="../../static/app/nmon/icons/grey_theme/network.png" alt="Network"/>
+                    <h1>NETWORK Usage Statistics</h1>
+                </div>
             </div>
         </html>
     </row>
-
 
     <row>
         <panel>
