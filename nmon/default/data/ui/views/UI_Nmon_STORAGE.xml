@@ -544,7 +544,7 @@ where (nodename = JFS.DF_STORAGE) (host=$host-prefilter$) ($frameID$) ($osfilter
 | stats dedup_splitvals=t latest(JFS.$chart_df_storage_monitor$) AS value by _time, host, JFS.mount
 | sort limit=0 _time
 | rename "JFS.mount" AS "mount" | eval value=$chart_df_storage_unit_math$, key=host . ":" . mount
-| timechart $span$ $df_statsmode$(value) as $chart_df_storage_monitor$ by key</query>
+| timechart limit=0 useother=f $span$ $df_statsmode$(value) as $chart_df_storage_monitor$ by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -627,7 +627,7 @@ where (nodename = JFS.DF_INODES) (host=$host-prefilter$) ($frameID$) ($osfilter$
 | stats dedup_splitvals=t latest(JFS.$chart_df_inodes_monitor$) AS value by _time, host, JFS.mount
 | sort limit=0 _time
 | rename "JFS.mount" AS "mount" | eval key=host . ":" . mount
-| timechart $span$ $df_statsmode$(value) as $chart_df_inodes_monitor$ by key</query>
+| timechart limit=0 useother=f $span$ $df_statsmode$(value) as $chart_df_inodes_monitor$ by key</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
