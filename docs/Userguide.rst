@@ -148,6 +148,77 @@ It is being used in the "Data Dictionary" interface to provide a extensible view
    :alt: data_dic3.png
    :align: center
 
+--------------
+metric_catalog
+--------------
+
+**metric_catalog lookup : metric catalog definition**
+
+The "metric_catalog" lookup is a csv file provided by the Application, it contains various definition of metrics to be dynamically used by different interfaces.
+
+**The catalog contains the following definition:**
+
+* metric_name:
+
+a logical name of the metric, with the following naming convention: <metric context>.<nmon_section_name>.<metric_fieldname>.
+
+* metric_label:
+
+a contextual label that describes the metric.
+
+* is_AIX: [TRUE / FALSE]
+
+a boolean value defining compatibility for AIX systems.
+
+* is_Linux: [TRUE / FALSE]
+
+a boolean value defining compatibility for Linux systems.
+
+* is_Solaris: [TRUE / FALSE]
+
+a boolean value defining compatibility for Solaris systems.
+
+* metric_category:
+
+a technical context for the metric category, such as cpu / memory / stotage / network.
+
+* metric_has_device: [TRUE / FALSE]
+
+a boolean value defining if the metric has a device dimension available.
+
+* metric_device_field:
+
+the field name containing the device dimension.
+
+* metric_unit:
+
+the default metric unit.
+
+* metric_volume_unit_choice: [TRUE / FALSE]
+
+used by interfaces to dynamically provide a unit dropdown choice for unity conversion.
+
+* metric_dimension_filter:
+
+a string containing the SPL filters, such as "type=CPU_ALL" to be used within SPL native searches.
+
+* metric_value_field:
+
+the name of the field containing the metric value.
+
+* metric_dm:
+
+the data model name associated with this metric.
+
+* metric_dm_node:
+
+the data model node name associated with this metric.
+
+* metric_dm_prefix:
+
+the data model prefix name associated with this metric.
+
+
 ---------------------------
 nmon_data_asset_description
 ---------------------------

@@ -32,6 +32,8 @@ For the TA-nmon complete release notes: http://ta-nmon.readthedocs.io/en/latest/
 
 - feature: DF_STORAGE and DF_INODES implementation in replacement of JFSFILE (extended file system utilisation statistics)
 - feature: New interface for STORAGE statistics management
+- feature: metric_catalog lookup implementation
+- feature: review and refresh of various interfaces, including comparative and predictive interfaces
 - fix: dynamic tokens in dashboard improvements
 - fix: Nmon Config datamodel OStype extraction #95
 

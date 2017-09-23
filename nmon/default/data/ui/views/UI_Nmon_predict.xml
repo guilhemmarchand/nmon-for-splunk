@@ -56,6 +56,10 @@
         </panel>
     </row>
 
+    <search id="populate_metric">
+        <query>| inputlookup nmon_metric_catalog | search $lpar_filter$</query>
+    </search>
+
     <!--
     Dynamic configuration
     The following searches are being used to define various tokens using event handlers
@@ -101,8 +105,8 @@
 
     <!-- definition of metric related tokens -->
 
-    <search id="metric_definition">
-        <query>| inputlookup ui_predict_monitors | search metric_name=$metric_name$ $metric_for_os$</query>
+    <search id="basesearch_metric_definition" base="populate_metric">
+        <query>search metric_name=$metric_name$ $metric_for_os$</query>
         <progress>
             <condition>
                 <set token="metric_dm">$result.metric_dm$</set>
@@ -120,8 +124,8 @@
 
     <!-- analyse if the metric has a device notion -->
 
-    <search id="metric_device">
-        <query>| inputlookup ui_predict_monitors | search metric_name=$metric_name$ $metric_for_os$</query>
+    <search id="bassearch_metric_device" base="populate_metric">
+        <query>search metric_name=$metric_name$ $metric_for_os$</query>
         <progress>
             <condition match="'result.metric_has_device'==&quot;TRUE&quot;">
                 <set token="show_device">TRUE</set>
@@ -134,8 +138,8 @@
 
     <!-- analyse if the metric has a volume unit choice option -->
 
-    <search id="metric_volume_unit">
-        <query>| inputlookup ui_predict_monitors | search metric_name=$metric_name$ $metric_for_os$</query>
+    <search id="metric_volume_unit" base="populate_metric">
+        <query>search metric_name=$metric_name$ $metric_for_os$</query>
         <progress>
             <condition match="'result.metric_volume_unit_choice'==&quot;TRUE&quot;">
                 <set token="show_unit">TRUE</set>
@@ -148,13 +152,9 @@
 
     <!-- ################################ -->
 
-    <search id="populate_metric">
-        <query>| inputlookup ui_predict_monitors | search $lpar_filter$</query>
-    </search>
-
     <row>
         <panel id="settings1">
-            <title>Host and metric parameters:</title>
+            <title>Time range and server selection:</title>
 
             <input type="time" token="timerange" searchWhenChanged="true">
                 <label>Time Range:</label>
@@ -225,7 +225,6 @@
                 </search>
                 <prefix>host="</prefix>
                 <suffix>"</suffix>
-                <choice value="*">ALL Hosts</choice>
                 <fieldForLabel>host</fieldForLabel>
                 <fieldForValue>host</fieldForValue>
                 <!-- Enforce unset of token when host choice is done -->
@@ -234,6 +233,27 @@
                     <unset token="form.futurespan_choice"></unset>
                 </change>
             </input>
+
+            <!-- help boxes -->
+
+            <html depends="$host$" rejects="$is_detected$">
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - Please wait while identifying the operating system... - - - - - - - - - - </p>
+                </div>
+            </html>
+
+            <html rejects="$host$">
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select a server name in the host selector above - - - - - - - - - - </p>
+                </div>
+            </html>
+
+        </panel>
+    </row>
+
+    <row>
+        <panel id="settings2">
+            <title>Metric selection and parameters:</title>
 
             <input token="metric_category" type="dropdown" searchWhenChanged="true">
                 <label>METRIC CATEGORY:</label>
@@ -260,7 +280,9 @@
                 </change>
             </input>
 
-            <input token="metric_name" type="dropdown" searchWhenChanged="true">
+            <!-- the metric_name dropdown size will be increased using css -->
+
+            <input id="metric_name" token="metric_name" type="dropdown" searchWhenChanged="true">
                 <label>PERFORMANCE METRIC:</label>
                 <search base="populate_metric">
                     <query>search metric_category="$metric_category$" | table metric_name | sort 0 metric_name</query>
@@ -279,6 +301,21 @@
                     </condition>
                 </change>
             </input>
+
+            <!-- help boxes -->
+
+            <html depends="$is_detected$" rejects="$metric_name$">
+                <div class="red_help_user">
+                    <p> - - - - - - - - - - ACTION REQUIRED: please select a performance monitor in the selector above - - - - - - - - - - </p>
+                </div>
+            </html>
+
+        </panel>
+    </row>
+
+    <row depends="$show_device$">
+        <panel id="settings3">
+            <title>Devices selection:</title>
 
             <input id="device" type="dropdown" token="device" searchWhenChanged="true" depends="$show_device$">
                 <label>Device Selection:</label>
@@ -330,24 +367,6 @@
             </input>
 
             <!-- help boxes -->
-
-            <html depends="$host$" rejects="$is_detected$">
-                <div class="red_help_user">
-                    <p> - - - - - - - - - - Please wait while identifying the operating system... - - - - - - - - - - </p>
-                </div>
-            </html>
-
-            <html rejects="$host$">
-                <div class="red_help_user">
-                    <p> - - - - - - - - - - ACTION REQUIRED: please select a server name in the host selector above - - - - - - - - - - </p>
-                </div>
-            </html>
-
-            <html depends="$is_detected$" rejects="$metric_name$">
-                <div class="red_help_user">
-                    <p> - - - - - - - - - - ACTION REQUIRED: please select a performance monitor in the selector above - - - - - - - - - - </p>
-                </div>
-            </html>
 
             <html depends="$show_device$" rejects="$device$">
                 <div class="red_help_user">
