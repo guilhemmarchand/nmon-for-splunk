@@ -59,12 +59,12 @@
     <panel>
       <single>
         <search>
-          <query>| tstats max("CPU.cpu_PCT") AS pct_usage
+          <query>| tstats max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage
 from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("CPU.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnum(lpar_vp_PCT_usage), vp_usage, pct_usage)
+max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
+| eval usage=if(isnum(lpar_vp_PCT_usage), lpar_vp_PCT_usage, pct_usage)
 | timechart avg(usage) AS avg_cpu | where isnotnull(avg_cpu)</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
@@ -152,11 +152,11 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL"
       <chart>
         <search>
           <query>| tstats
-max("CPU.lpar_vp_PCT_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
+max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage
 from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL" OR CPU.type="LPAR") groupby _time, host prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t
-max("CPU.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
+max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
 | eval usage=if(isnum(lpar_vp_PCT_usage), lpar_vp_PCT_usage, pct_usage)
 | timechart `nmon_span` avg(usage) AS avg_cpu_pct</query>
           <earliest>$time.earliest$</earliest>
