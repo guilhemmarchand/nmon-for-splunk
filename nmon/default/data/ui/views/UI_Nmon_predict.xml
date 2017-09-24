@@ -329,8 +329,8 @@
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                 </search>
-                <prefix>$metric_device_field$="</prefix>
-                <suffix>"</suffix>
+                <choice value="*">Any</choice>
+                <default>*</default>
                 <fieldForLabel>$metric_device_field$</fieldForLabel>
                 <fieldForValue>$metric_device_field$</fieldForValue>
                 <change>
@@ -496,7 +496,7 @@
     </row>
 
     <search id="predicted_storage_saturation">
-        <query>eventtype=nmon:performance $metric_dimension_filter$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$)
+        <query>eventtype=nmon:performance $metric_dimension_filter$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($metric_device_field$="$device$")
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
 | eval storage=case(storage_metric_unit=="MB", storage, storage_metric_unit=="GB", storage/1024, storage_metric_unit=="TB", storage/1024/1024)
@@ -625,7 +625,7 @@
             <chart depends="$show_device$">
                 <title></title>
                 <search depends="$show_device$">
-                    <query>eventtype=nmon:performance $metric_dimension_filter$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$)
+                    <query>eventtype=nmon:performance $metric_dimension_filter$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($metric_device_field$="$device$")
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
 | eval storage=case(storage_metric_unit=="MB", storage, storage_metric_unit=="GB", storage/1024, storage_metric_unit=="TB", storage/1024/1024)

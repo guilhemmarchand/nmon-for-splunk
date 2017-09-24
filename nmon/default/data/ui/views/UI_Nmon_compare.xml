@@ -267,8 +267,8 @@
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange1.latest$</latest>
                 </search>
-                <prefix>$metric_device_field$="</prefix>
-                <suffix>"</suffix>
+                <choice value="*">Any</choice>
+                <default>*</default>
                 <fieldForLabel>$metric_device_field$</fieldForLabel>
                 <fieldForValue>$metric_device_field$</fieldForValue>
             </input>
@@ -342,10 +342,10 @@
                     <earliest>$TimeRange1.earliest$</earliest>
                     <latest>$TimeRange1.latest$</latest>
                 </search>
-                <prefix>$metric_device_field$="</prefix>
-                <suffix>"</suffix>
                 <fieldForLabel>$metric_device_field$</fieldForLabel>
                 <fieldForValue>$metric_device_field$</fieldForValue>
+                <choice value="*">Any</choice>
+                <default>*</default>
             </input>
 
         </panel>
@@ -405,7 +405,7 @@
     </search>
 
     <search id="KPIs_server_A_device" depends="$show_device$">
-        <query>eventtype=nmon:performance $host-prefilter1$ $osfilter1$ host=$host1$ $metric_dimension_filter$ $device1$ | search $frameID1$
+        <query>eventtype=nmon:performance $host-prefilter1$ $osfilter1$ host=$host1$ $metric_dimension_filter$ $metric_device_field$="$device1$" | search $frameID1$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
@@ -415,7 +415,7 @@
     </search>
 
     <search id="KPIs_server_B_device" depends="$show_device$">
-        <query>eventtype=nmon:performance $host-prefilter2$ $osfilter2$ host=$host2$ $metric_dimension_filter$ $device2$ | search $frameID2$
+        <query>eventtype=nmon:performance $host-prefilter2$ $osfilter2$ host=$host2$ $metric_dimension_filter$ $metric_device_field$="$device2$" | search $frameID2$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
@@ -688,7 +688,7 @@
 
             <chart depends="$show_device$">
                 <search depends="$show_device$">
-                    <query>eventtype=nmon:performance earliest="$TimeRange1.earliest$" latest="$TimeRange1.latest$" $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $device1$
+                    <query>eventtype=nmon:performance earliest="$TimeRange1.earliest$" latest="$TimeRange1.latest$" $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $metric_device_field$="$device1$"
 | search $frameID1$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
@@ -697,7 +697,7 @@
 | timechart $span$ limit=0 useother=f $statsmode$($metric_value_field$) As $TimeRange1_name$, $statsmode$(fake) As fake by key
 | fields _time,$TimeRange1_name$*
 | appendcols
-[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter2$ host=$host2$ $osfilter2$ $metric_dimension_filter$ $device1$
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter2$ host=$host2$ $osfilter2$ $metric_dimension_filter$ $metric_device_field$="$device2$"
 | search $frameID2$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
@@ -791,7 +791,7 @@
 
             <chart depends="$show_device$">
                 <search depends="$show_device$">
-                    <query>eventtype=nmon:performance $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $device1$ | search $frameID1$
+                    <query>eventtype=nmon:performance $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $metric_device_field$="$device1$" | search $frameID1$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
@@ -879,7 +879,7 @@
 
             <chart depends="$show_device$">
                 <search depends="$show_device$">
-                    <query>eventtype=nmon:performance $host-prefilter2$ host=$host2$ $osfilter2$ $metric_dimension_filter$ $device2$ | search $frameID2$
+                    <query>eventtype=nmon:performance $host-prefilter2$ host=$host2$ $osfilter2$ $metric_dimension_filter$ $metric_device_field$="$device2$" | search $frameID2$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
