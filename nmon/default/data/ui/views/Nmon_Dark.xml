@@ -106,8 +106,8 @@ groupby _time host prestats=true span=1m
         <panel>
             <single>
                 <search>
-                    <query>eventtype=nmon:performance type=UPTIME ($host$)
-| timechart avg(load_average_5min) as load_average_5min | where isnotnull(load_average_5min)</query>
+                    <query>| tstats avg(CPU.UPTIME.load_average_5min) AS load_average_5min from datamodel=NMON_Data_CPU where (nodename = CPU.UPTIME) ($host$) groupby _time prestats=true
+| timechart avg(CPU.UPTIME.load_average_5min) AS load_average_5min | where isnotnull(load_average_5min)</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -185,8 +185,8 @@ max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct
             <title>Load average</title>
             <chart>
                 <search>
-                    <query>eventtype=nmon:performance type=UPTIME ($host$)
-| timechart `nmon_span` avg(load_average_1min) as load_average_1min, avg(load_average_5min) as load_average_5min, avg(load_average_15min) as load_average_15min | fields _time,load_average_1min,load_average_5min,load_average_15min</query>
+                    <query>| tstats avg(CPU.UPTIME.load_average_1min) AS load_average_1min avg(CPU.UPTIME.load_average_5min) AS load_average_5min avg(CPU.UPTIME.load_average_15min) AS load_average_15min from datamodel=NMON_Data_CPU where (nodename = CPU.UPTIME) ($host$) groupby _time host prestats=true `nmon_span`
+| timechart `nmon_span` avg(CPU.UPTIME.load_average_1min) AS load_average_1min avg(CPU.UPTIME.load_average_5min) AS load_average_5min avg(CPU.UPTIME.load_average_15min) AS load_average_15min</query>
                     <earliest>$time.earliest$</earliest>
                     <latest>$time.latest$</latest>
                     <refresh>$refresh$</refresh>

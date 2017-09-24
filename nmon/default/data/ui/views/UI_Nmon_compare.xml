@@ -58,6 +58,20 @@
         </progress>
     </search>
 
+    <!-- analyse if the metric has a rate unit choice option -->
+
+    <search id="basesearch_metric_rate_unit" base="populate_metric">
+        <query>search metric_name=$metric_name$</query>
+        <progress>
+            <condition match="'result.metric_rate_unit_choice'==&quot;TRUE&quot;">
+                <set token="show_unit_rate">TRUE</set>
+            </condition>
+            <condition match="'result.metric_rate_unit_choice'==&quot;FALSE&quot;">
+                <unset token="show_unit_rate"></unset>
+            </condition>
+        </progress>
+    </search>
+
     <row>
 
         <panel>
@@ -180,6 +194,34 @@
                     <condition value="pct">
                         <set token="metric_math">value</set>
                         <set token="storage_metric_unit">pct</set>
+                    </condition>
+                </change>
+            </input>
+
+        </panel>
+    </row>
+
+    <row depends="$show_device$ $show_unit_rate$">
+        <panel>
+
+            <input type="dropdown" token="rate_unit">
+                <label>Unit:</label>
+                <choice value="KBps">KBps</choice>
+                <choice value="MBps">MBps</choice>
+                <choice value="GBps">GBps</choice>
+                <default>KBps</default>
+                <change>
+                    <condition value="KBps">
+                        <set token="metric_math">value</set>
+                        <set token="rate_metric_unit">KBps</set>
+                    </condition>
+                    <condition value="MBps">
+                        <set token="metric_math">value/1000</set>
+                        <set token="rate_metric_unit">MBps</set>
+                    </condition>
+                    <condition value="GBps">
+                        <set token="metric_math">value/1000/1000</set>
+                        <set token="rate_metric_unit">GBps</set>
                     </condition>
                 </change>
             </input>
@@ -404,7 +446,7 @@
         <latest>$TimeRange2.latest$</latest>
     </search>
 
-    <search id="KPIs_server_A_device" depends="$show_device$">
+    <search id="KPIs_server_A_device" depends="$show_device$ $show_unit$">
         <query>eventtype=nmon:performance $host-prefilter1$ $osfilter1$ host=$host1$ $metric_dimension_filter$ $metric_device_field$="$device1$" | search $frameID1$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
@@ -414,11 +456,31 @@
         <latest>$TimeRange1.latest$</latest>
     </search>
 
-    <search id="KPIs_server_B_device" depends="$show_device$">
+    <search id="KPIs_server_B_device" depends="$show_device$ $show_unit$">
         <query>eventtype=nmon:performance $host-prefilter2$ $osfilter2$ host=$host2$ $metric_dimension_filter$ $metric_device_field$="$device2$" | search $frameID2$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
+| stats avg($metric_value_field$) as avg, median($metric_value_field$) as median, max($metric_value_field$) as max</query>
+        <earliest>$TimeRange2.earliest$</earliest>
+        <latest>$TimeRange2.latest$</latest>
+    </search>
+
+    <search id="KPIs_server_A_device_rate" depends="$show_device$ $show_unit_rate$">
+        <query>eventtype=nmon:performance $host-prefilter1$ $osfilter1$ host=$host1$ $metric_dimension_filter$ $metric_device_field$="$device1$" | search $frameID1$
+| `$TimeFilter$`
+| eval rate_metric_unit="$rate_metric_unit$"
+| eval $metric_value_field$=case(rate_metric_unit=="KBps", $metric_value_field$, rate_metric_unit=="MBps", $metric_value_field$/1000, rate_metric_unit=="GBps", $metric_value_field$/1000/1000)
+| stats avg($metric_value_field$) as avg, median($metric_value_field$) as median, max($metric_value_field$) as max</query>
+        <earliest>$TimeRange1.earliest$</earliest>
+        <latest>$TimeRange1.latest$</latest>
+    </search>
+
+    <search id="KPIs_server_B_device_rate" depends="$show_device$ $show_unit_rate$">
+        <query>eventtype=nmon:performance $host-prefilter2$ $osfilter2$ host=$host2$ $metric_dimension_filter$ $metric_device_field$="$device2$" | search $frameID2$
+| `$TimeFilter$`
+| eval rate_metric_unit="$rate_metric_unit$"
+| eval $metric_value_field$=case(rate_metric_unit=="KBps", $metric_value_field$, rate_metric_unit=="MBps", $metric_value_field$/1000, rate_metric_unit=="GBps", $metric_value_field$/1000/1000)
 | stats avg($metric_value_field$) as avg, median($metric_value_field$) as median, max($metric_value_field$) as max</query>
         <earliest>$TimeRange2.earliest$</earliest>
         <latest>$TimeRange2.latest$</latest>
@@ -466,7 +528,7 @@
                 <option name="numberPrecision">0.00</option>
             </single>
 
-            <single depends="$show_device$">
+            <single depends="$show_device$ $show_unit$">
                 <search base="KPIs_server_A_device">
                     <query>fields avg</query>
                 </search>
@@ -476,7 +538,7 @@
                 <option name="numberPrecision">0.00</option>
             </single>
 
-            <single depends="$show_device$">
+            <single depends="$show_device$ $show_unit$">
                 <search base="KPIs_server_A_device">
                     <query>fields median</query>
                 </search>
@@ -486,13 +548,43 @@
                 <option name="numberPrecision">0.00</option>
             </single>
 
-            <single depends="$show_device$">
+            <single depends="$show_device$ $show_unit$">
                 <search base="KPIs_server_A_device">
                     <query>fields max</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="field">value</option>
                 <option name="underLabel">Max $storage_metric_unit$</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single depends="$show_device$ $show_unit_rate$">
+                <search base="KPIs_server_A_device_rate">
+                    <query>fields avg</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="field">value</option>
+                <option name="underLabel">Average $rate_metric_unit$</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single depends="$show_device$ $show_unit_rate$">
+                <search base="KPIs_server_A_device_rate">
+                    <query>fields median</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="field">value</option>
+                <option name="underLabel">Median $rate_metric_unit$</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single depends="$show_device$ $show_unit_rate$">
+                <search base="KPIs_server_A_device_rate">
+                    <query>fields max</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="field">value</option>
+                <option name="underLabel">Max $rate_metric_unit$</option>
                 <option name="numberPrecision">0.00</option>
             </single>
 
@@ -539,7 +631,7 @@
                 <option name="numberPrecision">0.00</option>
             </single>
 
-            <single depends="$show_device$">
+            <single depends="$show_device$ $show_unit$">
                 <search base="KPIs_server_B_device">
                     <query>fields avg</query>
                 </search>
@@ -549,7 +641,7 @@
                 <option name="numberPrecision">0.00</option>
             </single>
 
-            <single depends="$show_device$">
+            <single depends="$show_device$ $show_unit$">
                 <search base="KPIs_server_B_device">
                     <query>fields median</query>
                 </search>
@@ -559,13 +651,43 @@
                 <option name="numberPrecision">0.00</option>
             </single>
 
-            <single depends="$show_device$">
+            <single depends="$show_device$ $show_unit$">
                 <search base="KPIs_server_B_device">
                     <query>fields max</query>
                 </search>
                 <option name="drilldown">none</option>
                 <option name="field">value</option>
                 <option name="underLabel">Max $storage_metric_unit$</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single depends="$show_device$ $show_unit_rate$">
+                <search base="KPIs_server_B_device_rate">
+                    <query>fields avg</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="field">value</option>
+                <option name="underLabel">Average $rate_metric_unit$</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single depends="$show_device$ $show_unit_rate$">
+                <search base="KPIs_server_B_device_rate">
+                    <query>fields median</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="field">value</option>
+                <option name="underLabel">Median $rate_metric_unit$</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single depends="$show_device$ $show_unit_rate$">
+                <search base="KPIs_server_B_device_rate">
+                    <query>fields max</query>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="field">value</option>
+                <option name="underLabel">Max $rate_metric_unit$</option>
                 <option name="numberPrecision">0.00</option>
             </single>
 
@@ -678,7 +800,7 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
+                <option name="charting.axisTitleY.text">$metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -686,8 +808,8 @@
                 <option name="charting.axisY2.scale">inherit</option>
             </chart>
 
-            <chart depends="$show_device$">
-                <search depends="$show_device$">
+            <chart depends="$show_device$ $show_unit$">
+                <search depends="$show_device$ $show_unit$">
                     <query>eventtype=nmon:performance earliest="$TimeRange1.earliest$" latest="$TimeRange1.latest$" $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $metric_device_field$="$device1$"
 | search $frameID1$
 | `$TimeFilter$`
@@ -723,7 +845,52 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
+                <option name="charting.axisTitleY.text">$storage_metric_unit$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+
+            <chart depends="$show_device$ $show_unit_rate$">
+                <search depends="$show_device$ $show_unit_rate$">
+                    <query>eventtype=nmon:performance earliest="$TimeRange1.earliest$" latest="$TimeRange1.latest$" $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $metric_device_field$="$device1$"
+| search $frameID1$
+| `$TimeFilter$`
+| eval rate_metric_unit="$rate_metric_unit$"
+| eval $metric_value_field$=case(rate_metric_unit=="KBps", $metric_value_field$, rate_metric_unit=="MBps", $metric_value_field$/1000, rate_metric_unit=="GBps", $metric_value_field$/1000/1000)
+| eval key = host . ":" . $metric_device_field$
+| timechart $span$ limit=0 useother=f $statsmode$($metric_value_field$) As $TimeRange1_name$, $statsmode$(fake) As fake by key
+| fields _time,$TimeRange1_name$*
+| appendcols
+[ search eventtype=nmon:performance earliest="$TimeRange2.earliest$" latest="$TimeRange2.latest$" $host-prefilter2$ host=$host2$ $osfilter2$ $metric_dimension_filter$ $metric_device_field$="$device2$"
+| search $frameID2$
+| `$TimeFilter$`
+| eval rate_metric_unit="$rate_metric_unit$"
+| eval $metric_value_field$=case(rate_metric_unit=="KBps", $metric_value_field$, rate_metric_unit=="MBps", $metric_value_field$/1000, rate_metric_unit=="GBps", $metric_value_field$/1000/1000)
+| eval key = host . ":" . $metric_device_field$
+| timechart $span$ limit=0 useother=f $statsmode$($metric_value_field$) As $TimeRange2_name$, $statsmode$(fake) As fake by key
+| fields $TimeRange2_name$* ]</query>
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange1.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">$rate_metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -781,7 +948,7 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
+                <option name="charting.axisTitleY.text">$metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -789,8 +956,8 @@
                 <option name="charting.axisY2.scale">inherit</option>
             </chart>
 
-            <chart depends="$show_device$">
-                <search depends="$show_device$">
+            <chart depends="$show_device$ $show_unit$">
+                <search depends="$show_device$ $show_unit$">
                     <query>eventtype=nmon:performance $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $metric_device_field$="$device1$" | search $frameID1$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
@@ -815,7 +982,41 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
+                <option name="charting.axisTitleY.text">$storage_metric_unit$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+
+            <chart depends="$show_device$ $show_unit_rate$">
+                <search depends="$show_device$ $show_unit_rate$">
+                    <query>eventtype=nmon:performance $host-prefilter1$ host=$host1$ $osfilter1$ $metric_dimension_filter$ $metric_device_field$="$device1$" | search $frameID1$
+| `$TimeFilter$`
+| eval rate_metric_unit="$rate_metric_unit$"
+| eval $metric_value_field$=case(rate_metric_unit=="KBps", $metric_value_field$, rate_metric_unit=="MBps", $metric_value_field$/1000, rate_metric_unit=="GBps", $metric_value_field$/1000/1000)
+| eval key = host . ":" . $metric_device_field$
+| timechart $span$ limit=0 useother=f $statsmode$($metric_value_field$) As $TimeRange1_name$, $statsmode$(fake) As fake by key</query>
+                    <earliest>$TimeRange1.earliest$</earliest>
+                    <latest>$TimeRange1.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">$rate_metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -869,7 +1070,7 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
+                <option name="charting.axisTitleY.text">$metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -877,8 +1078,8 @@
                 <option name="charting.axisY2.scale">inherit</option>
             </chart>
 
-            <chart depends="$show_device$">
-                <search depends="$show_device$">
+            <chart depends="$show_device$ $show_unit$">
+                <search depends="$show_device$ $show_unit$">
                     <query>eventtype=nmon:performance $host-prefilter2$ host=$host2$ $osfilter2$ $metric_dimension_filter$ $metric_device_field$="$device2$" | search $frameID2$
 | `$TimeFilter$`
 | eval storage_metric_unit="$storage_metric_unit$"
@@ -903,7 +1104,41 @@
                 <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">$unity_minilabel$</option>
+                <option name="charting.axisTitleY.text">$storage_metric_unit$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+            </chart>
+
+            <chart depends="$show_device$ $show_unit_rate$">
+                <search depends="$show_device$ $show_unit_rate$">
+                    <query>eventtype=nmon:performance $host-prefilter2$ host=$host2$ $osfilter2$ $metric_dimension_filter$ $metric_device_field$="$device2$" | search $frameID2$
+| `$TimeFilter$`
+| eval rate_metric_unit="$rate_metric_unit$"
+| eval $metric_value_field$=case(rate_metric_unit=="KBps", $metric_value_field$, rate_metric_unit=="MBps", $metric_value_field$/1000, rate_metric_unit=="GBps", $metric_value_field$/1000/1000)
+| eval key = host . ":" . $metric_device_field$
+| timechart $span$ limit=0 useother=f $statsmode$($metric_value_field$) As $TimeRange2_name$, $statsmode$(fake) As fake by key</query>
+                    <earliest>$TimeRange2.earliest$</earliest>
+                    <latest>$TimeRange2.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">$rate_metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>

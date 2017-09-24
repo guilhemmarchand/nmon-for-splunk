@@ -138,7 +138,7 @@
 
     <!-- analyse if the metric has a volume unit choice option -->
 
-    <search id="metric_volume_unit" base="populate_metric">
+    <search id="basesearch_metric_volume_unit" base="populate_metric">
         <query>search metric_name=$metric_name$ $metric_for_os$</query>
         <progress>
             <condition match="'result.metric_volume_unit_choice'==&quot;TRUE&quot;">
@@ -146,6 +146,20 @@
             </condition>
             <condition match="'result.metric_volume_unit_choice'==&quot;FALSE&quot;">
                 <unset token="show_unit"></unset>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- analyse if the metric has a rate unit choice option -->
+
+    <search id="basesearch_metric_rate_unit" base="populate_metric">
+        <query>search metric_name=$metric_name$ $metric_for_os$</query>
+        <progress>
+            <condition match="'result.metric_rate_unit_choice'==&quot;TRUE&quot;">
+                <set token="show_unit_rate">TRUE</set>
+            </condition>
+            <condition match="'result.metric_rate_unit_choice'==&quot;FALSE&quot;">
+                <unset token="show_unit_rate"></unset>
             </condition>
         </progress>
     </search>
@@ -366,6 +380,28 @@
                 </change>
             </input>
 
+            <input type="dropdown" token="rate_unit" depends="$show_device$ $show_unit_rate$">
+                <label>Unit:</label>
+                <choice value="KBps">KBps</choice>
+                <choice value="MBps">MBps</choice>
+                <choice value="GBps">GBps</choice>
+                <default>KBps</default>
+                <change>
+                    <condition value="KBps">
+                        <set token="metric_math">value</set>
+                        <set token="rate_metric_unit">KBps</set>
+                    </condition>
+                    <condition value="MBps">
+                        <set token="metric_math">value/1000</set>
+                        <set token="rate_metric_unit">MBps</set>
+                    </condition>
+                    <condition value="GBps">
+                        <set token="metric_math">value/1000/1000</set>
+                        <set token="rate_metric_unit">GBps</set>
+                    </condition>
+                </change>
+            </input>
+
             <!-- help boxes -->
 
             <html depends="$show_device$" rejects="$device$">
@@ -376,6 +412,29 @@
 
         </panel>
     </row>
+
+
+
+    <row>
+        <panel>
+            <html>
+
+| tstats count AS Count from datamodel=$metric_dm$ where (nodename = $metric_dm_node$) (host=$host-prefilter$) ($metric_dm_prefix$.$frameID$) ($metric_dm_prefix$.$osfilter$) ($host$) groupby "$metric_dm_prefix$.$metric_device_field$" prestats=true
+| stats dedup_splitvals=t count AS Count by "$metric_dm_prefix$.$metric_device_field$"
+| sort limit=0 "$metric_dm_prefix$.$metric_device_field$"
+| fields - _span | fillnull Count | fields "$metric_dm_prefix$.$metric_device_field$"
+| rename "$metric_dm_prefix$.$metric_device_field$" AS $metric_device_field$
+
+                <br /><br /><br />
+
+                show_device is $show_device$ - show_unit_rate is $show_unit_rate$
+
+
+            </html>
+        </panel>
+    </row>
+
+
 
     <row>
         <panel id="predict1">
@@ -613,7 +672,7 @@
                 <option name="charting.chart.nullValueMode">gaps</option>
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
-                <option name="charting.axisTitleY.text">$label$</option>
+                <option name="charting.axisTitleY.text">$metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>
@@ -625,6 +684,39 @@
             <chart depends="$show_device$">
                 <title></title>
                 <search depends="$show_device$">
+                    <query>eventtype=nmon:performance $metric_dimension_filter$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($metric_device_field$="$device$")
+| timechart $interval$ $statsmode$($metric_value_field$) AS $metric_value_field$
+| predict $metric_value_field$ As predict algorithm=$algo$ $holdback$ $futurespan$ $upperlower$</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">$metric_unit$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.fieldColors">{"predict": 0x9d0eaf}</option>
+            </chart>
+
+            <chart depends="$show_device$ $show_unit$">
+                <title></title>
+                <search depends="$show_device$ $show_unit$">
                     <query>eventtype=nmon:performance $metric_dimension_filter$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($metric_device_field$="$device$")
 | eval storage_metric_unit="$storage_metric_unit$"
 | eval $metric_value_field$=case(storage_metric_unit=="MB", $metric_value_field$, storage_metric_unit=="GB", $metric_value_field$/1024, storage_metric_unit=="TB", $metric_value_field$/1024/1024)
@@ -651,6 +743,41 @@
                 <option name="height">680</option>
                 <option name="charting.axisTitleX.text">Time</option>
                 <option name="charting.axisTitleY.text">$storage_metric_unit$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="charting.fieldColors">{"storage": 0xFF0000, "predict": 0x9d0eaf}</option>
+            </chart>
+
+            <chart depends="$show_device$ $show_unit_rate$">
+                <title></title>
+                <search depends="$show_device$ $show_unit_rate$">
+                    <query>eventtype=nmon:performance $metric_dimension_filter$ (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($metric_device_field$="$device$")
+| eval rate_metric_unit="$rate_metric_unit$"
+| eval $metric_value_field$=case(rate_metric_unit=="KBps", $metric_value_field$, rate_metric_unit=="MBps", $metric_value_field$/1000, rate_metric_unit=="GBps", $metric_value_field$/1000/1000)
+| timechart $interval$ $statsmode$($metric_value_field$) AS $metric_value_field$
+| predict $metric_value_field$ As predict algorithm=$algo$ $holdback$ $futurespan$ $upperlower$</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">line</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">$rate_metric_unit$</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
                 <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
                 <option name="charting.axisTitleY2.visibility">visible</option>

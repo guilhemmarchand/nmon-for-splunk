@@ -514,7 +514,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
     <!-- nmon external UPTIME -->
 
     <search id="baseSearch_loadaverage" depends="$start_uptime_searches$">
-        <query>eventtype=nmon:performance type=UPTIME host=$host$
+        <query>| tstats max(CPU.UPTIME.load_average_1min) AS load_average_1min max(CPU.UPTIME.load_average_5min) AS load_average_5min max(CPU.UPTIME.load_average_15min) AS load_average_15min from datamodel=NMON_Data_CPU where (nodename = CPU.UPTIME) (host=$host$) groupby _time host prestats=true span=1m
+| stats dedup_splitvals=t max(CPU.UPTIME.load_average_1min) AS load_average_1min max(CPU.UPTIME.load_average_5min) AS load_average_5min max(CPU.UPTIME.load_average_15min) AS load_average_15min by _time, host
 | timechart $span$ avg(load_average_1min) as load_average_1min, avg(load_average_5min) as load_average_5min, avg(load_average_15min) as load_average_15min</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -581,9 +582,9 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
             </single>
             <single>
                 <search depends="$start_uptime_searches$">
-                    <query>eventtype=nmon:performance type=UPTIME host="$host$"
-| stats latest(uptime) as uptime_sec
-| eval uptime=if(uptime_sec&lt;86400, round((uptime_sec/3600), 2) . " hours", round((uptime_sec/86400), 2) . " days" )
+                    <query>| tstats latest(CPU.UPTIME.uptime) AS uptime from datamodel=NMON_Data_CPU where (nodename = CPU.UPTIME) (host=$host$) groupby host prestats=true
+| stats dedup_splitvals=t latest(CPU.UPTIME.uptime) AS uptime
+| eval uptime=if(uptime&lt;86400, round((uptime/3600), 2) . " hours", round((uptime/86400), 2) . " days" )
 | fields uptime</query>
                     <earliest>-15m</earliest>
                     <latest>now</latest>
@@ -623,18 +624,15 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="height">350</option>
             </chart>
             <table>
-                <search depends="$start_uptime_searches$">
-                    <query>eventtype=nmon:performance type=UPTIME host=$host$
-| stats latest(load_average_1min) as current_load_average_1min, avg(load_average_1min) as avg_load_average_1min, max(load_average_1min) as max_load_average_1min,
+                <search base="baseSearch_loadaverage" depends="$start_uptime_searches$">
+                    <query>stats latest(load_average_1min) as current_load_average_1min, avg(load_average_1min) as avg_load_average_1min, max(load_average_1min) as max_load_average_1min,
 latest(load_average_5min) as current_load_average_5min, avg(load_average_5min) as avg_load_average_5min, max(load_average_5min) as max_load_average_5min,
 latest(load_average_15min) as current_load_average_15min, avg(load_average_15min) as avg_load_average_15min, max(load_average_15min) as max_load_average_15min
-| foreach *avg* [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| foreach * [ eval &lt;&lt;FIELD&gt;&gt; = round('&lt;&lt;FIELD&gt;&gt;', 2) ]
 | eval "load average 1 min" =  "Current: " . current_load_average_1min . " Average: " . avg_load_average_1min . " Max: " . max_load_average_1min
 | eval "load average 5 min" = "Current: " . current_load_average_5min . " Average: " . avg_load_average_5min . " Max: " . max_load_average_5min
 | eval "load average 15 min" = "Current: " . current_load_average_15min . " Average: " . avg_load_average_15min . " Max: " . max_load_average_15min
 | fields "load average *min" | transpose | eval order=case(column="load average 1 min", 1, column="load average 5 min", 2, column="load average 15 min", 3) | sort order | rename column as "By", "row 1" as "Load average" | fields By, "Load average"</query>
-                    <earliest>$timerange.earliest$</earliest>
-                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
