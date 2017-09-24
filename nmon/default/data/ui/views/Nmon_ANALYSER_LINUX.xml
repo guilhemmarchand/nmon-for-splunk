@@ -133,33 +133,21 @@ groupby host prestats=true
     <!-- CPU data source (CPU_ALL versus LPAR) -->
 
     <search>
-        <query>| tstats count AS Count from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) groupby host, "CPU.type" prestats=true
-| stats dedup_splitvals=t count AS Count by host, "CPU.type"
-| sort limit=0 host
-| fields - _span
-| rename "CPU.type" AS type
-| fillnull Count
-| fields host, type, Count
-| sort - type
-| head 1
-| eval datasource=case(match(type, "LPAR"), "LPAR", match(type, "CPU_ALL"), "CPU_ALL")
-| eval CPU_datasource=case(datasource="CPU_ALL", "CPU_ALL usage", datasource="LPAR", "LPAR usage"), CPU_datasource_minilabel=case(datasource="CPU_ALL", "CPU % usage", datasource="LPAR", "partition vCPUs usage"), is_not_LPAR=case(datasource="CPU_ALL", "true"), is_LPAR=case(datasource="LPAR", "true")</query>
+        <query>eventtype=nmon:performance type=LPAR host=$host$ | head 100 | stats count | where count&gt;0</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
-        <preview>
-            <condition>
-                <set token="CPU_datasource">$result.CPU_datasource$</set>
-                <set token="CPU_datasource_minilabel">$result.CPU_datasource_minilabel$</set>
-            </condition>
-        </preview>
         <progress>
-            <condition match="'result.is_LPAR'==&quot;true&quot;">
-                <set token="is_LPAR">true</set>
-                <unset token="is_not_LPAR"></unset>
-            </condition>
-            <condition match="'result.is_not_LPAR'==&quot;true&quot;">
+            <condition match="$job.resultCount$ == 0">
                 <set token="is_not_LPAR">true</set>
                 <unset token="is_LPAR"></unset>
+                <set token="CPU_datasource">CPU_ALL usage</set>
+                <set token="CPU_datasource_minilabel">CPU % usage</set>
+            </condition>
+            <condition>
+                <set token="is_LPAR">true</set>
+                <unset token="is_not_LPAR"></unset>
+                <set token="CPU_datasource">LPAR usage</set>
+                <set token="CPU_datasource_minilabel">partition vCPUs usage</set>
             </condition>
         </progress>
     </search>
