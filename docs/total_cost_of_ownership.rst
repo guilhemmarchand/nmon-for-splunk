@@ -1,5 +1,4 @@
 
-
 .. _total_cost_of_ownership:
 
 =======================

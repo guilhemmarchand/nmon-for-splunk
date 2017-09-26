@@ -1,4 +1,6 @@
 
+.. _large_scale_deployment:
+
 =====================================
 Large scale deployment considerations
 =====================================
@@ -17,10 +19,12 @@ Data model acceleration
 Accelerated data models are massively used in the application, this implementation provides exceptional performances of searches, and a great user experience.
 However, data models have a cost in term of storage and system resources utilization for acceleration build and maintenance.
 
-**By default, data models are accelerated with the following settings:**
+**Splunk certification requirements prohibit the default activation of data models acceleration.**
 
-- metrics related data models are accelerated over a period of 1 year
-- others data models are accelerated over the last 30 days
+**Since version 1.9.12, none of the data models are accelerated by default, this is your responsibility to decide if you wish to do so, bellow are the recommended acceleration parameters:**
+
+- metrics related data models accelerated over a period of 1 year
+- non metrics data models accelerated over the last 30 days (Nmon config, Nmon processing)
 
 *nmon/default/datamodels.conf*
 
@@ -32,8 +36,6 @@ Restricting the acceleration period will helping reducing:
 
 - The amount of storage used per data model for the acceleration
 - The amount of time required for initial build or total rebuild of the acceleration, as well as the amount of system resources (CPU, memory) that are temporarily required on indexers to build the acceleration
-
-**CAUTION: Please do not restrict the "NMON Config" data model, it is very small and should always be accelerated over All time!**
 
 Note that The maintenance cost, which refers to operation that Splunk operates periodically to maintain the state of acceleration, will not necessary be different with a large or a small period.
 

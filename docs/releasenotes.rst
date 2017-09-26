@@ -17,6 +17,21 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.12:
+========
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+This is a major release of the Nmon application and the TA-nmon:
+
+Migration from 1.7.x and prior: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-7-x
+
+Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-9-x
+
+- fix: Splunk certification requirements update, avoid global default parameter in ui-prefs.conf (config file has been removed) #98
+- fix: Splunk certification requirements update, default activation of data model acceleration is now prohibited #98
+
+========
 V1.9.11:
 ========
 

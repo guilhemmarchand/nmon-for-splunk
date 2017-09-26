@@ -86,10 +86,12 @@ Summarization implementation
 
 Nmon for Splunk App intensively uses data model acceleration in almost every user interfaces, reports and dashboards.
 
-**By default, data models are accelerated with the following settings:**
+**Splunk certification requirements prohibit the default activation of data models acceleration.**
 
-- metrics related data models are accelerated over a period of 1 year
-- others data models are accelerated over the last 30 days
+**Since version 1.9.12, none of the data models are accelerated by default, this is your responsibility to decide if you wish to do so, bellow are the recommended acceleration parameters:**
+
+- metrics related data models accelerated over a period of 1 year
+- non metrics data models accelerated over the last 30 days (Nmon config, Nmon processing)
 
 Splunk Accelerated data models provide a great and efficient user experience.
 
@@ -99,6 +101,8 @@ The following report(s) use report acceleration feature:
 
 - Volume of Data indexed Today, accelerated for last 7 days
 - Number of notable events in Data Processing or Data Collect since last 24 Hours, accelerated for last 24 hours
+
+Please review the :ref:`large_scale_deployment` documentation.
 
 ------------------------------
 About Nmon Performance Monitor
