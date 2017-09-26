@@ -30,6 +30,7 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 
 - fix: Splunk certification requirements update, avoid global default parameter in ui-prefs.conf (config file has been removed) #98
 - fix: Splunk certification requirements update, default activation of data model acceleration is now prohibited #98
+- fix: DF_STORAGE vs JFSFILE compatibility for STORAGE UI and Dark monitoring
 
 ========
 V1.9.11:

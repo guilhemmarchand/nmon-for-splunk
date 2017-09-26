@@ -24,18 +24,26 @@
         </input>
 
         <input type="dropdown" token="datasource" searchWhenChanged="true">
-            <label>Source of data:</label>
+            <label>Metric collection:</label>
             <default>DF_STORAGE</default>
             <choice value="DF_STORAGE">DF_STORAGE (volume usage statistics)</choice>
+            <choice value="JFSFILE">JFSFILE (volume pct only usage statistics)</choice>
             <choice value="DF_INODES">DF_INODES (volume inodes usage statistics)</choice>
             <change>
                 <condition value="DF_STORAGE">
                         <set token="start_df_storage_search">true</set>
+                        <unset token="start_jfsfile_storage_search"></unset>
+                        <unset token="start_df_inodes_search"></unset>
+                </condition>
+                <condition value="JFSFILE">
+                        <set token="start_jfsfile_storage_search">true</set>
+                        <unset token="start_df_storage_search"></unset>
                         <unset token="start_df_inodes_search"></unset>
                 </condition>
                 <condition value="DF_INODES">
                         <set token="start_df_inodes_search">true</set>
                         <unset token="start_df_storage_search"></unset>
+                        <unset token="start_jfsfile_storage_search"></unset>
                 </condition>
             </change>
         </input>
@@ -86,7 +94,7 @@
             <fieldForValue>host</fieldForValue>
         </input>
 
-        <input type="multiselect" token="mount" searchWhenChanged="true">
+        <input type="multiselect" token="mount" searchWhenChanged="true" rejects="$start_jfsfile_storage_search$">
             <label>FS Selection:</label>
             <!-- Populating Data Model Search -->
             <search>
@@ -105,6 +113,27 @@
             <default>*</default>
             <fieldForLabel>JFS.mount</fieldForLabel>
             <fieldForValue>JFS.mount</fieldForValue>
+        </input>
+
+        <input type="multiselect" token="device" searchWhenChanged="true" depends="$start_jfsfile_storage_search$">
+            <label>FS Selection:</label>
+            <!-- Populating Data Model Search -->
+            <search id="DisksbaseSearch">
+                <query>| tstats count AS Count from datamodel=NMON_Data_JFS where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) groupby host, "JFS.device" prestats=true
+| stats dedup_splitvals=t count AS Count by host, "JFS.device"
+| sort limit=0 host
+| fields - _span
+| fillnull Count | fields JFS.device | dedup JFS.device | sort JFS.device</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
+            <valuePrefix>JFS.device="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">ALL FS</choice>
+            <default>*</default>
+            <fieldForLabel>JFS.device</fieldForLabel>
+            <fieldForValue>JFS.device</fieldForValue>
         </input>
 
         <input type="text" token="fsfilter" searchWhenChanged="true">
@@ -363,7 +392,44 @@ where (nodename = JFS.DF_STORAGE) (host=$host-prefilter$) ($frameID$) ($osfilter
                 </format>
             </table>
 
-            <table id="tablebar1" depends="$start_df_inodes_search$">
+            <table id="tablebar1" depends="$start_jfsfile_storage_search$">
+                <title></title>
+                <search depends="$start_jfsfile_storage_search$">
+                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) (JFS.device=$fsfilter$) groupby _time, host, "JFS.device" prestats=true
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
+| rename "JFS.device" AS device, "JFS.value" AS value
+| stats max(value) AS max_value, avg(value) AS avg_value, min(value) AS min_value, latest(value) AS UsedPct by  host, "device"
+| sort limit=0 host
+| eval value=round(value,2)
+| fields host,device,max_value, avg_value, min_value, UsedPct | eval avg_value=round(avg_value,2)</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="wrap">true</option>
+                <option name="rowNumbers">false</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">cell</option>
+                <option name="count">$table_count$</option>
+                <option name="refresh.display">none</option>
+                <option name="percentagesRow">false</option>
+                <format type="color" field="max_value">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="avg_value">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="min_value">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+            </table>
+
+            <table id="tablebar2" depends="$start_df_inodes_search$">
                 <title>Latest known values within the period for the following file systems:</title>
                 <search depends="$start_df_inodes_search$">
                     <query>| tstats latest(JFS.storage_inodes) AS storage_inodes, latest(JFS.storage_free_inodes) AS storage_free_inodes, latest(JFS.storage_used_inodes) AS storage_used_inodes, latest(JFS.storage_free_inodes_percent) AS storage_free_inodes_percent, latest(JFS.storage_used_inodes_percent) AS storage_used_inodes_percent from datamodel=NMON_Data_JFS
@@ -578,7 +644,56 @@ where (nodename = JFS.DF_STORAGE) (host=$host-prefilter$) ($frameID$) ($osfilter
 
         </panel>
 
-        <panel id="fs2" depends="$start_df_inodes_search$">
+        <panel id="fs2" depends="$start_jfsfile_storage_search$">
+            <title>File systems utilization evolution over time</title>
+
+            <input type="dropdown" token="df_statsmode" searchWhenChanged="true">
+                <label>calculation mode:</label>
+                <default>latest</default>
+                <choice value="latest">Latest value by time bucket</choice>
+                <choice value="max">Max</choice>
+                <choice value="avg">Avg</choice>
+                <choice value="min">Min</choice>
+                <choice value="median">Median</choice>
+                <choice value="mode">Mode</choice>
+                <choice value="range">Range</choice>
+            </input>
+
+            <chart>
+                <search depends="$start_jfsfile_storage_search$ $charting$">
+                    <query>| tstats max("JFS.value") AS JFS.value from datamodel=NMON_Data_JFS
+where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (host=$host-prefilter$) ($frameID$) ($osfilter$) ($host$) ($device$) (JFS.device=$fsfilter$) groupby _time, host, "JFS.device" prestats=true span=1m
+| stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
+| rename "JFS.*" AS *
+| eval key=host+":"+device
+| timechart $span$ limit=0 useother=f $df_statsmode$(value) As value by key</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <refresh>$refresh$</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="height">680</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">% Used</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisY.maximumNumber">100</option>
+            </chart>
+        </panel>
+
+        <panel id="fs3" depends="$start_df_inodes_search$">
             <title>File systems inodes utilization evolution over time</title>
 
             <input type="dropdown" token="df_statsmode" searchWhenChanged="true">
