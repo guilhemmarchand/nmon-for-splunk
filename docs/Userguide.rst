@@ -681,7 +681,7 @@ Since the major release V1.7, the span management macro were renamed from "inlin
 ::
 
     [nmon_span]
-    definition = [ search index="nmon" sourcetype="nmon_data" | head 1 | addinfo\
+    definition = [ | stats count | addinfo\
     | eval earliest=if(info_min_time == "0.000", info_search_time,info_min_time)\
     | eval latest=if(info_max_time == "+Infinity", info_search_time,info_max_time)\
     | eval searchStartTIme=strftime(earliest,"%a %d %B %Y %H:%M")\
@@ -740,6 +740,7 @@ Since the major release V1.7, the span management macro were renamed from "inlin
     | return span ]
     iseval = 0
 
+
 **They key is modifying that part of the macro code:**
 
 ::
@@ -759,7 +760,7 @@ For example, if you want the span value to be never less than 4 minutes (the eva
 ::
 
     [nmon_span]
-    definition = [ search index="nmon" sourcetype="nmon_data" | head 1 | addinfo\
+    definition = [ | stats count | addinfo\
     | eval earliest=if(info_min_time == "0.000", info_search_time,info_min_time)\
     | eval latest=if(info_max_time == "+Infinity", info_search_time,info_max_time)\
     | eval searchStartTIme=strftime(earliest,"%a %d %B %Y %H:%M")\
