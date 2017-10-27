@@ -31,6 +31,7 @@ Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.ht
 - fix: CONFIG DF dead link in home pages (was replaced by STORAGE ui in 1.9.12)
 - fix: props.conf and Nmon config datamodel issue with AIX combo cpu #100
 - fix: Nmon Summary dashboard - nmon_span referenced instead of variable #102
+- Feature request: allow deactivation for auto-refresh feature #103
 
 ========
 V1.9.12:
