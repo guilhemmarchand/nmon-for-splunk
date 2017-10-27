@@ -2,7 +2,7 @@
     <label>Dark MONITORING</label>
     <fieldset submitButton="false">
 
-        <input type="time" token="time">
+        <input type="time" token="timerange">
             <label></label>
             <default>
                 <earliest>-24h@h</earliest>
@@ -23,8 +23,8 @@
             <label></label>
             <search id="hostsSearch">
                 <query>| tstats count as count WHERE `nmon_index` sourcetype=nmon_data by host | sort 0 host </query>
-                <earliest>$time.earliest$</earliest>
-                <latest>$time.latest$</latest>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
             </search>
             <prefix>host="</prefix>
             <suffix>"</suffix>
@@ -43,8 +43,8 @@
 
     <search id="autorefresh_detection">
         <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
-        <earliest>$time.earliest$</earliest>
-        <latest>$time.latest$</latest>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
         <progress>
             <condition match="'result.is_past_search'==&quot;true&quot;">
                 <set token="form.refresh">0</set>
@@ -59,8 +59,8 @@
 
     <search>
         <query>eventtype=nmon:performance type=DF_STORAGE $host$ | head 100 | stats count | where count&gt;0</query>
-        <earliest>$time.earliest$</earliest>
-        <latest>$time.latest$</latest>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
         <progress>
             <condition match="$job.resultCount$ == 0">
                     <set token="start_jfs_storage_search">true</set>
@@ -84,8 +84,8 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL"
 max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
 | eval usage=if(isnum(lpar_vp_PCT_usage), lpar_vp_PCT_usage, pct_usage)
 | timechart avg(usage) AS avg_cpu | where isnotnull(avg_cpu)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -106,8 +106,8 @@ max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct
 groupby _time host prestats=true span=1m
 | stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, host
 | timechart avg(mem_used_effective_PCT) AS avg_mem | where isnotnull(avg_mem)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -126,8 +126,8 @@ groupby _time host prestats=true span=1m
                 <search>
                     <query>| tstats avg(CPU.UPTIME.load_average_5min) AS load_average_5min from datamodel=NMON_Data_CPU where (nodename = CPU.UPTIME) ($host$) groupby _time prestats=true
 | timechart avg(CPU.UPTIME.load_average_5min) AS load_average_5min | where isnotnull(load_average_5min)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -148,8 +148,8 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL"
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.Wait_PCT") AS wait_pct by _time, host
 | timechart avg(wait_pct) AS wait_pct | where isnotnull(wait_pct)</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -177,8 +177,8 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) ($host$) (CPU.type="CPU_ALL"
 max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
 | eval usage=if(isnum(lpar_vp_PCT_usage), lpar_vp_PCT_usage, pct_usage)
 | timechart `nmon_span` avg(usage) AS avg_cpu_pct</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -205,8 +205,8 @@ max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct
                 <search>
                     <query>| tstats avg(CPU.UPTIME.load_average_1min) AS load_average_1min avg(CPU.UPTIME.load_average_5min) AS load_average_5min avg(CPU.UPTIME.load_average_15min) AS load_average_15min from datamodel=NMON_Data_CPU where (nodename = CPU.UPTIME) ($host$) groupby _time host prestats=true `nmon_span`
 | timechart `nmon_span` avg(CPU.UPTIME.load_average_1min) AS load_average_1min avg(CPU.UPTIME.load_average_5min) AS load_average_5min avg(CPU.UPTIME.load_average_15min) AS load_average_15min</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -232,8 +232,8 @@ max("CPU.LPAR.lpar_vp_PCT_usage") AS lpar_vp_PCT_usage max("CPU.cpu_PCT") AS pct
                 <search>
                     <query>eventtype="nmon:performance" type=PROCCOUNT ($host$)
 | timechart `nmon_span` avg(nb_running_processes) as running_processes</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -271,8 +271,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
 | stats sum(pct_CPU) As pct_CPU,last(logical_cpus) As logical_cpus by _time,Command
 | eval usage_per_core=(pct_CPU/100) | stats sum(usage_per_core) As usage_per_core by _time,Command
 | timechart `nmon_span` useother=f limit="20" max(usage_per_core) as "CPU Usage per core" by Command</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -301,8 +301,8 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
 groupby _time host prestats=true span=1m
 | stats dedup_splitvals=t max(MEM.mem_used_effective_PCT) AS mem_used_effective_PCT max(MEM.swap_used_effective_PCT) AS swap_used_effective_PCT by _time, host
 | timechart `nmon_span` dedup_splitvals=t avg(mem_used_effective_PCT) AS mem_used, avg(swap_used_effective_PCT) AS swap_used</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -336,8 +336,8 @@ groupby _time, host, "NET_Data_types.device" prestats=true span=1m
 | eval traffic_type=case(match(device, ".+read.+"), "Inbound", match(device, ".+write.+"), "Outbound")
 | eval value=case(traffic_type="Outbound", "-" . value, traffic_type="Inbound", value)
 | timechart `nmon_span` avg(value) as value by traffic_type</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -367,8 +367,8 @@ where (nodename = JFS.DF_STORAGE) (JFS.storage_used_percent>0) (JFS.mount!="/tmp
 | sort limit=0 _time
 | rename "JFS.mount" AS "mount"
 | timechart limit=0 useother=f `nmon_span` latest(value) as storage_used_percent by mount</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -396,8 +396,8 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.device!="/tmp") (JFS.devic
 | stats dedup_splitvals=t max("JFS.value") AS JFS.value by _time, host, "JFS.device"
 | rename "JFS.*" AS *
 | timechart limit=0 useother=f `nmon_span` latest(value) As storage_used_percent by device</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
@@ -429,8 +429,8 @@ where (nodename = JFS.JFSFILE) (JFS.value&gt;=0) (JFS.device!="/tmp") (JFS.devic
 | eval value=if(isnum('DG_total_iops'), 'DG_total_iops', 'DISKXFER_total_iops')
 | fields _time, hostname, value
 | timechart `nmon_span` avg(value) as avg_iops</query>
-                    <earliest>$time.earliest$</earliest>
-                    <latest>$time.latest$</latest>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
                     <refreshType>delay</refreshType>
                 </search>
