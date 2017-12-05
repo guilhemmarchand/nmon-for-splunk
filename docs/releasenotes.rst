@@ -17,6 +17,38 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.14:
+========
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+This is a major release of the Nmon application and the TA-nmon:
+
+Migration from 1.7.x and prior: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-7-x
+
+Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-9-x
+
+- fix: NMON_Data_PAGE data model issue: Comparator '=' has an invalid term #106
+
+========
+V1.9.13:
+========
+
+**CAUTION: For Splunk 6.5 and later (for prior versions of Splunk, see requirements below)**
+
+This is a major release of the Nmon application and the TA-nmon:
+
+Migration from 1.7.x and prior: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-7-x
+
+Migration from 1.8.x: http://nmon-for-splunk.readthedocs.io/en/latest/upgrade.html#migrating-from-release-prior-to-version-1-9-x
+
+- fix: CONFIG DF dead link in home pages (was replaced by STORAGE ui in 1.9.12)
+- fix: props.conf and Nmon config datamodel issue with AIX combo cpu #100
+- fix: Nmon Summary dashboard - nmon_span referenced instead of variable #102
+- feature request: allow deactivation for auto-refresh feature #103
+- fix: Summary dashboard stacking issues with Splunk 7 #104
+
+========
 V1.9.12:
 ========
 

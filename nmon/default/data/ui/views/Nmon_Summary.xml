@@ -99,7 +99,7 @@
     <!-- autorefresh_detection -->
 
     <search id="autorefresh_detection">
-        <query>| stats c | addinfo |  eval now=now(), delta_now=now-info_max_time, is_past_search=if(delta_now>=14400, "true", "false") | fields is_past_search</query>
+        <query>`auto_refresh`</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <progress>
@@ -692,7 +692,7 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | stats sum(disk_*) as "disk_*" by _time,host
-| timechart `nmon_span` max(disk_total_iops) As "max Total I/O", avg(disk_total_iops) As "avg Total I/O"</query>
+| timechart $span$ max(disk_total_iops) As "max Total I/O", avg(disk_total_iops) As "avg Total I/O"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -994,7 +994,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <query>| tstats max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux) (host=$host$) groupby _time, host, "CPU.frameID" prestats=true span=1m
 | bucket _time span=1m
 | stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS usage max("CPU.LPAR_Linux.partition_active_processors") AS partition_active_processors max("CPU.LPAR_Linux.partition_entitled_capacity") AS partition_entitled_capacity by _time, host, "CPU.frameID"
-| timechart `nmon_span` max(usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
+| timechart $span$ max(usage) AS PhysicalCPU max(partition_entitled_capacity) As partition_entitled_capacity, max(partition_active_processors) As partition_active_processors</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1040,7 +1040,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <query>| tstats max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage from datamodel=NMON_Data_CPU where (nodename = CPU.LPAR_Linux.LPAR_Linux_Pool) (host=$host$) groupby _time, "CPU.frameID", host prestats=true span=1m
 | stats dedup_splitvals=t max("CPU.lpar_pool_capacity") AS "CPU.lpar_pool_capacity" max("CPU.lpar_pool_vp_usage") AS usage by _time, "CPU.frameID", host
 | rename CPU.lpar_pool_vp_usage AS usage
-| timechart `nmon_span` max(usage) As usage max(CPU.lpar_pool_capacity) AS poolCPUs</query>
+| timechart $span$ max(usage) As usage max(CPU.lpar_pool_capacity) AS poolCPUs</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1161,7 +1161,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | stats sum(disk_*) as "disk_*" by _time,host
-| timechart `nmon_span` avg(disk_total_iops) as disk_total_iops | trendline sma5(disk_total_iops) AS trend</query>
+| timechart $span$ avg(disk_total_iops) as disk_total_iops | trendline sma5(disk_total_iops) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1197,7 +1197,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGXFER host=$host$
-| timechart `nmon_span` limit=0 useother=f avg(disk_total_iops) as disk_total_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+| timechart $span$ limit=0 useother=f avg(disk_total_iops) as disk_total_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
         </panel>
@@ -1212,7 +1212,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | fields host, device, disk_*
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
 | stats sum(disk_*) as "disk_*" by _time,host
-| timechart `nmon_span` avg(disk_read_iops) as disk_read_iops avg(disk_write_iops) as disk_write_iops</query>
+| timechart $span$ avg(disk_read_iops) as disk_read_iops avg(disk_write_iops) as disk_write_iops</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1250,7 +1250,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE OR type=DGREAD OR type=DGWRITE host=$host$
 | stats max(disk_*) as "disk_*" by _time,host,device
 | eval disk_read_iops=(disk_read_KB_per_sec/disk_block_size_KB), disk_write_iops=(disk_write_KB_per_sec/disk_block_size_KB)
-| timechart `nmon_span` limit=0 useother=f avg(disk_read_iops) as disk_read_iops, avg(disk_write_iops) as disk_write_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+| timechart $span$ limit=0 useother=f avg(disk_read_iops) as disk_read_iops, avg(disk_write_iops) as disk_write_iops by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
         </panel>
@@ -1267,7 +1267,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| timechart `nmon_span` avg(disk_busy_time_pct) as disk_busy_time_pct | trendline sma5(disk_busy_time_pct) AS trend</query>
+| timechart $span$ avg(disk_busy_time_pct) as disk_busy_time_pct | trendline sma5(disk_busy_time_pct) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1303,7 +1303,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGBUSY host=$host$
-| timechart `nmon_span` limit=0 useother=f avg(disk_busy_time_pct) as disk_busy_time_pct by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+| timechart $span$ limit=0 useother=f avg(disk_busy_time_pct) as disk_busy_time_pct by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
         </panel>
@@ -1317,7 +1317,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| timechart `nmon_span` avg(disk_block_size_KB) as disk_block_size_KB | trendline sma5(disk_block_size_KB) AS trend</query>
+| timechart $span$ avg(disk_block_size_KB) as disk_block_size_KB | trendline sma5(disk_block_size_KB) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1353,7 +1353,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGSIZE host=$host$
-| timechart `nmon_span` limit=0 useother=f avg(disk_block_size_KB) as disk_block_size_KB by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+| timechart $span$ limit=0 useother=f avg(disk_block_size_KB) as disk_block_size_KB by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
         </panel>
@@ -1370,7 +1370,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| timechart `nmon_span` avg(disk_read_KB_per_sec) as disk_read_KB_per_sec avg(disk_write_KB_per_sec) as disk_write_KB_per_sec</query>
+| timechart $span$ avg(disk_read_KB_per_sec) as disk_read_KB_per_sec avg(disk_write_KB_per_sec) as disk_write_KB_per_sec</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1406,7 +1406,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREAD OR type=DGWRITE host=$host$
-| timechart `nmon_span` limit=0 useother=f max(disk_read_KB_per_sec) as disk_read_KB_per_sec max(disk_write_KB_per_sec) as disk_write_KB_per_sec by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+| timechart $span$ limit=0 useother=f max(disk_read_KB_per_sec) as disk_read_KB_per_sec max(disk_write_KB_per_sec) as disk_write_KB_per_sec by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
         </panel>
@@ -1420,7 +1420,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
 | rename "dg.device" AS device
 | fields host, device, disk_*
 | stats avg(disk_*) as "disk_*" by _time,host
-| timechart `nmon_span` avg(disk_read_service_time_ms) as disk_read_service_time_ms avg(disk_write_service_time_ms) as disk_write_service_time_ms</query>
+| timechart $span$ avg(disk_read_service_time_ms) as disk_read_service_time_ms avg(disk_write_service_time_ms) as disk_write_service_time_ms</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -1456,7 +1456,7 @@ avg("CPU.Wait_PCT") AS "Wait %"</query>
                 <option name="refresh.display">none</option>
                 <drilldown target="search">
                     <link>search?earliest=$timerange.earliest$&amp;latest=$timerange.latest$&amp;q=eventtype=nmon:performance type=DGREADSERV OR type=DGWRITESERV host=$host$
-| timechart `nmon_span` limit=0 useother=f max(disk_read_service_time_ms) as disk_read_service_time_ms max(disk_write_service_time_ms) as disk_write_service_time_ms by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
+| timechart $span$ limit=0 useother=f max(disk_read_service_time_ms) as disk_read_service_time_ms max(disk_write_service_time_ms) as disk_write_service_time_ms by device&amp;display.general.type=visualizations&amp;display.page.search.tab=visualizations&amp;display.visualizations.charting.chart=line</link>
                 </drilldown>
             </chart>
         </panel>
@@ -1726,7 +1726,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
                 <option name="charting.axisX.scale">linear</option>
                 <option name="charting.axisY.scale">linear</option>
                 <option name="charting.chart">area</option>
-                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.nullValueMode">0</option>
                 <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
                 <option name="charting.chart.stackMode">stacked</option>
                 <option name="charting.chart.style">shiny</option>
@@ -1783,7 +1783,7 @@ max("TOP_ALLOS.pct_CPU") AS pct_CPU by _time, host, "TOP_ALLOS.logical_cpus", "T
         <query>| tstats `memory_linux_dm(max)` from datamodel=NMON_Data_MEM where (nodename = MEM.Linux) (host=$host$)
 groupby _time host prestats=true span=1m
 | stats dedup_splitvals=t `memory_linux_dm(max)` by _time, host
-| timechart `nmon_span` dedup_splitvals=t avg(*) AS *</query>
+| timechart $span$ dedup_splitvals=t avg(*) AS *</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
         <refresh>$refresh$</refresh>
