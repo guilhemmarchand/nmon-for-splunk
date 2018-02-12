@@ -293,11 +293,11 @@ Copy each file and directory to its destination by respecting the files and dire
 
     chown -R nmon:nmon /etc/nmon-logger; chmod -R 0755 /etc/nmon-logger
 
-    chown nmon:nmon /etc/cron.d/nmon-logger; chmod 0644 /etc/cron.d/nmon-logger
+    chown root:root /etc/cron.d/nmon-logger; chmod 0644 /etc/cron.d/nmon-logger
 
-    chown nmon:nmon /etc/logrotate.d/nmon-logger; chmod 0644 /etc/logrotate.d/nmon-logger
+    chown root:root /etc/logrotate.d/nmon-logger; chmod 0644 /etc/logrotate.d/nmon-logger
 
-    chown nmon:nmon /etc/rsyslog.d/20-nmon-logger.conf; chmod 0644 /etc/rsyslog.d/20-nmon-logger.conf
+    chown root:root /etc/rsyslog.d/20-nmon-logger.conf; chmod 0644 /etc/rsyslog.d/20-nmon-logger.conf
 
 ++++++++++++++++++++++++++++++++++++++++
 OPTIONAL : Verification on end server(s)

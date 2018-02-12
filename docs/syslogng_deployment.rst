@@ -308,11 +308,11 @@ Ansible Playbooks are available in the Git repository, with Ansible the nmon-log
 
     chown -R nmon:nmon /etc/nmon-logger; chmod -R 0755 /etc/nmon-logger
 
-    chown nmon:nmon /etc/cron.d/nmon-logger; chmod 0644 /etc/cron.d/nmon-logger
+    chown root:root /etc/cron.d/nmon-logger; chmod 0644 /etc/cron.d/nmon-logger
 
-    chown nmon:nmon /etc/logrotate.d/nmon-logger; chmod 0644 /etc/logrotate.d/nmon-logger
+    chown root:root /etc/logrotate.d/nmon-logger; chmod 0644 /etc/logrotate.d/nmon-logger
 
-    chown nmon:nmon /etc/syslog-ng/conf.d/nmon-logger.conf; chmod 0644 /etc/syslog-ng/conf.d/nmon-logger.conf
+    chown root:root /etc/syslog-ng/conf.d/nmon-logger.conf; chmod 0644 /etc/syslog-ng/conf.d/nmon-logger.conf
 
 ++++++++++++++++++++++++++++++++++++++++
 OPTIONAL : Verification on end server(s)
