@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>frameID mapping management interface</title>
+    <title>Configuration of the file system exclusion per server</title>
     <link rel="shortcut icon" href="/en-US/static/@9DEE210D3C0EC367AC37995A355F1389DE0F4C59CE83FF3C7722ABCD83B3FFE0/img/favicon.ico" />
     <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/build/css/bootstrap-enterprise.css" />
     <link rel="stylesheet" type="text/css" href="{{SPLUNKWEB_URL_PREFIX}}/static/css/build/pages/dashboard-simple-bootstrap.min.css" />
@@ -31,8 +31,8 @@ styles in <div> tags, similar to Bootstrap's grid system.
 </header>
 <div class="dashboard-body container-fluid main-section-body" data-role="main">
     <div class="dashboard-header clearfix">
-        <h2>Management of the Nmon frameID mapping</h2>
-        <p>Use this interface to associate a server with a frame identifier (frameID) at search time</p>
+        <h2>Configuration and management of per server file system exclusion</h2>
+        <p>Use this interface to automatically exclude specific file systems from file system usage alerting</p>
     </div>
 
     <div id="row_single_info" class="dashboard-row dashboard-row1">
@@ -41,13 +41,13 @@ styles in <div> tags, similar to Bootstrap's grid system.
                 <h2 class="panel-title"></h2>
 
                 <div class="panel-element-row">
-                    <div id="element_unset_frameID" class="dashboard-element single" style="width: 33.33%">
+                    <div id="element_unset_exclusions" class="dashboard-element single" style="width: 33.33%">
                         <div class="panel-body"></div>
                     </div>
-                    <div id="element_delta_frameID" class="dashboard-element single" style="width: 33.33%">
+                    <div id="element_nb_hosts" class="dashboard-element single" style="width: 33.33%">
                         <div class="panel-body"></div>
                     </div>
-                    <div id="element_duplicated_hosts" class="dashboard-element single" style="width: 33.33%">
+                    <div id="element_nb_mount" class="dashboard-element single" style="width: 33.33%">
                         <div class="panel-body"></div>
                     </div>
                 </div>
@@ -83,43 +83,41 @@ styles in <div> tags, similar to Bootstrap's grid system.
                                         <div class="modal-body">
 
                                             <div style="text-align: center;">
-                                                <h1>FRAMEID MAPPING MANAGEMENT</h1>
+                                                <h1>ALERTING PER SERVER FILE-SYSTEM EXCLUSION</h1>
                                             </div>
 
                                             <div>
 
-                                                <h3>The frameID mapping management interface allows to configure frameID mapping on a per server basis:</h3>
+                                                <h3>The alerting per server file-system exclusion management interface allows you to configure Nmon alerting features for:</h3>
                                                 <lu>
-                                                    <li>logically link a server with a frame identifier</li>
-                                                    <li>to be used as a search filters to filter out groups of server depending in your needs</li>
-                                                    <li>to be used for analytic purposes to perform advanced calculations and aggregations</li>
+                                                    <li>exclusion of file-systems from alerting on a per server and per file-system basis</li>
                                                 </lu>
                                                 <br />
 
-                                                <br />
-                                                <div style="text-align: center;">
-                                                    <img src="../../static/app/nmon/diagrams/frameID_mapping.png" alt="frameID_mapping.png">
+                                                <div class="list">
+                                                    <h4>file-systems exclusion:</h4>
+                                                    <br />
+                                                    <lu>
+                                                        <li>mount: mount point of the Unix file-system</li>
+                                                        <li>exclude: (true/false) explicit exclusion (default)</li>
+                                                    </lu>
                                                 </div>
+
+                                                <br />
                                                 <br />
 
+                                                <h3>When a server is matched within the <span style="color: indianred">nmon_alerting_filesystem_per_server_exclusion</span> KVstore lookup, the file-system will automatically be excluded.</h3>
+
+                                                <h3>You can use <span style="color: indianred">wildcards to match multiple file-systems at once, and case is insensitive</span>.</h3>
+
+                                                <br />
+                                                <h3>Lookup access:</h3>
+
+                                                <pre>| inputlookup nmon_alerting_filesystem_per_server_exclusion</pre>
+
+                                                <br>
                                             </div>
 
-                                            <div style="text-align:left;">
-                                                <h1>Related links:</h1>
-                                            </div>
-
-                                            <div style="text-align: center;" class="cat_title">
-                                                <a target="_blank" href="search?q=%7C%20inputlookup%20nmon_frameID_mapping%0A%7C%20fields%20frameID%2Cserialnum%2Chost%2C*" class="tryitbtnxl">nmon_frameID_mapping collection »
-                                                </a>
-                                                <a target="_blank" href="Manage_alerting_threshold" class="tryitbtnxl">per server alerting threshold »
-                                                </a>
-                                                <a target="_blank" href="Manage_alerting_threshold_filesystem" class="tryitbtnxl">per server file-systems alerting threshold »
-                                                </a>
-                                                <a target="_blank" href="Manage_file_systems_global_exclusion" class="tryitbtnxl">global file-system alerting exclusion »
-                                                </a>
-                                                <a target="_blank" href="Manage_file_systems_exclusion" class="tryitbtnxl">per server file-system alerting exclusion »
-                                                </a>
-                                            </div>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
@@ -135,22 +133,57 @@ styles in <div> tags, similar to Bootstrap's grid system.
         </div>
     </div>
 
+    <div id="row_show_lookup_inventory" class="dashboard-row dashboard-row_show_lookup_inventory">
+        <div id="panel_togglepanel_true_show_lookup_inventory" class="dashboard-cell" style="width: 100%;">
+            <div class="dashboard-panel clearfix">
+                <h2 class="panel-title">Servers and file-systems inventory</h2>
+
+                <div class="panel-element-row">
+                    <div id="element_table_show_lookup_inventory" class="dashboard-element table" style="width: 100%">
+
+                        <div class="fieldset">
+                            <h3 style="color: indianred;">You can search any existing server using the optional fields, fill the filters and press enter. To pre-fill fields for an addition, click on any row of the table:</h3>
+                            <br /><br />
+                            <div class="input input-text" id="input_inventory_search_frameid">
+                                <label>Search frameID:</label>
+                            </div>
+                            <div class="input input-text" id="input_inventory_search_serialnum">
+                                <label>Search serialnum:</label>
+                            </div>
+                            <div class="input input-text" id="input_inventory_search_host">
+                                <label>Search host:</label>
+                            </div>
+                            <div class="input input-text" id="input_inventory_search_mount">
+                                <label>Search mount point:</label>
+                            </div>
+                            <div class="input input-text" id="input_inventory_search_filesystem">
+                                <label>Search filesystem:</label>
+                            </div>
+                        </div>
+
+                        <div class="panel-body"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="row_show_lookup_content" class="dashboard-row dashboard-row_show_lookup_content">
         <div id="panel_togglepanel_show_lookup_content" class="dashboard-cell" style="width: 100%;">
             <div class="dashboard-panel clearfix">
-                <h2 class="panel-title">NMON frameID mapping collection content</h2>
+                <h2 class="panel-title">Exclusion table - currently configured exclusions</h2>
 
                 <div class="panel-element-row">
                     <div id="element_table_show_lookup_content" class="dashboard-element table" style="width: 100%">
 
                         <div class="fieldset">
-
-                            <h3 style="color: indianred;">The table shows frameID mapping entries currently configured. To search for an entry, fill the filters and press enter. To pre-fill for addition, modification and deletion, click on any row of the table</h3>
+                            <h3 style="color: indianred;">The exclusion table shows exclusions currently configured. To search for an entry, fill the filters and press enter. To pre-fill for addition, modification and deletion, click on any row of the table</h3>
+                            <h3 style="color: indianred;">You can add a new exclusion entry, mount point is <b>case insensitive and accepts wildcards</b> to match multiple mount points at once</h3>
                             <br /><br />
 
                             <div>
                                 <hr>
-                                <p style="color: gray;"><i>Search for servers in collection:</i></p>
+                                <p style="color: gray;"><i>Search for existing exclusions:</i></p>
                             </div>
 
                             <div class="input input-text" id="input_search_keyid">
@@ -165,13 +198,15 @@ styles in <div> tags, similar to Bootstrap's grid system.
                             <div class="input input-text" id="input_search_host">
                                 <label>Search host:</label>
                             </div>
-                            <div class="input input-text" id="input_search_host_description">
-                                <label>Search host_description:</label>
+                            <div class="input input-text" id="input_search_mount">
+                                <label>Search mount point:</label>
                             </div>
+
                             <div>
                                 <hr>
-                                <p style="color: gray;"><i>Remove or modify existing mapping definitions:</i></p>
+                                <p style="color: gray;"><i>Remove or modify exclusions:</i></p>
                             </div>
+
                             <div style="text-align: right;">
                                 <div class="input input-text" id="input_selected_key">
                                     <label>Click on any table's row to fill Key ID:</label>
@@ -180,8 +215,9 @@ styles in <div> tags, similar to Bootstrap's grid system.
                                     <button class="btn btn-primary submit">Delete this entry</button>
                                 </div>
                             </div>
+
                             <div style="text-align: right;">
-                                <div class="input input-text" id="input_modify_frameid">
+                                <div class="input input-text" id="input_modify_frameID">
                                     <label>Enter the frameID:</label>
                                 </div>
                                 <div class="input input-text" id="input_modify_serialnum">
@@ -190,17 +226,19 @@ styles in <div> tags, similar to Bootstrap's grid system.
                                 <div class="input input-text" id="input_modify_host">
                                     <label>Enter the host:</label>
                                 </div>
-                                <div class="input input-text" id="input_modify_host_description">
-                                    <label>Enter the host_description:</label>
+                                <div class="input input-text" id="input_modify_mount">
+                                    <label>Enter the mount point:</label>
                                 </div>
                                 <div class="form-submit" id="btn_modify_content">
                                     <button class="btn btn-primary submit">Modify this entry</button>
                                 </div>
                             </div>
+
                             <div>
                                 <hr>
-                                <p style="color: gray;"><i>Add a new mapping definition:</i></p>
+                                <p style="color: gray;"><i>Add a new exclusion:</i></p>
                             </div>
+
                             <div style="text-align: right;">
                                 <div class="input input-text" id="input_add_frameid">
                                     <label>Enter the frameID:</label>
@@ -211,33 +249,17 @@ styles in <div> tags, similar to Bootstrap's grid system.
                                 <div class="input input-text" id="input_add_host">
                                     <label>Enter the host:</label>
                                 </div>
-                                <div class="input input-text" id="input_add_host_description">
-                                    <label>Enter the host_description:</label>
+                                <div class="input input-text" id="input_add_mount">
+                                    <label>Enter the mount point to be exluded:</label>
                                 </div>
                                 <div class="form-submit" id="btn_add_content">
                                     <button class="btn btn-primary submit">Add this entry</button>
                                 </div>
                             </div>
+
                         </div>
 
                         <div class="panel-body"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="row_missing_content_table" class="dashboard-row dashboard-row_missing_content_table" data-depends="$show_null_missing_frameID$">
-        <div id="panel_togglepanel_true_missing_content_table" class="dashboard-cell" style="width: 100%;">
-            <div class="dashboard-panel clearfix">
-                <h2 class="panel-title"># Missing # entries</h2>
-                <div class="fieldset">
-                    <h3 style="color: indianred;">Missing frameIDs - The following host(s) have missing entries in the collection, please run the report "Generate NMON frameID mapping lookup table" or manually add the relevant entry (click on the row to pre-fill fields for addition)</h3>
-                    <br /><br />
-                    <div class="panel-element-row">
-                        <div id="element_table_missing_content" class="dashboard-element table" style="width: 100%">
-                            <div class="panel-body"></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -394,47 +416,26 @@ require([
 
         var search1 = new SearchManager({
             "id": "search1",
-            "earliest_time": "0",
-            "status_buckets": 0,
+            "earliest_time": "-24h",
             "sample_ratio": 1,
-            "latest_time": "now",
+            "status_buckets": 0,
             "cancelOnUnload": true,
-            "search": "| inputlookup nmon_frameID_mapping | $user_selection$ | search frameID=* serialnum=* host=* host_description=* | eval  KeyID = _key | table KeyID,frameID,serialnum,host,host_description,*",
+            "latest_time": "now",
+            "search": "| inputlookup nmon_alerting_filesystem_per_server_exclusion | where exclude=\"true\" | stats count",
             "app": utils.getCurrentApp(),
             "auto_cancel": 90,
             "preview": true,
             "runWhenTimeIsUndefined": false
         }, {tokens: true, tokenNamespace: "submitted"});
 
-        new SearchEventHandler({
-            managerid: "search1",
-            event: "progress",
-            conditions: [
-                {
-                    attr: "match",
-                    value: "'job.resultCount' == 0",
-                    actions: [
-                        {"type": "set", "token": "show_null_unset_frameID", "value": "True"}
-                    ]
-                },
-                {
-                    attr: "any",
-                    value: "*",
-                    actions: [
-                        {"type": "unset", "token": "show_null_unset_frameID"}
-                    ]
-                }
-            ]
-        });
-
         var search2 = new SearchManager({
             "id": "search2",
-            "earliest_time": "-24h",
-            "sample_ratio": 1,
+            "earliest_time": "0",
             "status_buckets": 0,
-            "cancelOnUnload": true,
+            "sample_ratio": 1,
             "latest_time": "now",
-            "search": "| inputlookup nmon_frameID_mapping | where frameID=host | stats dc(host) as count",
+            "cancelOnUnload": true,
+            "search": "| inputlookup nmon_alerting_filesystem_per_server_exclusion | search _key=$search_keyID$ frameID=$search_frameID$ serialnum=$search_serialnum$ host=$search_host$ mount=$search_mount$ | eval KeyID = _key | table KeyID,frameID,serialnum,host,mount,exclude",
             "app": utils.getCurrentApp(),
             "auto_cancel": 90,
             "preview": true,
@@ -443,12 +444,12 @@ require([
 
         var search3 = new SearchManager({
             "id": "search3",
-            "earliest_time": "0",
+            "earliest_time": "-7d",
             "status_buckets": 0,
             "sample_ratio": 1,
             "latest_time": "now",
             "cancelOnUnload": true,
-            "search": "| inputlookup nmon_frameID_mapping | search _key=$search_keyID$ frameID=$search_frameID$ serialnum=$search_serialnum$ host=$search_host$ host_description=$search_host_description$ | eval  KeyID = _key | table KeyID,frameID,serialnum,host,host_description,*",
+            "search": "| inputlookup nmon_alerting_filesystem_per_server_exclusion | where exclude=\"true\" | stats dc(host) as dcount",
             "app": utils.getCurrentApp(),
             "auto_cancel": 90,
             "preview": true,
@@ -462,7 +463,7 @@ require([
             "sample_ratio": 1,
             "latest_time": "now",
             "cancelOnUnload": true,
-            "search": "| inputlookup nmon_frameID_mapping | stats dc(host) as host_in_lookup | appendcols [ | tstats dc(host) as host_in_data WHERE `nmon_index` sourcetype=nmon_data ] | eval delta=if(host_in_lookup>host_in_data, host_in_lookup-host_in_data, host_in_data-host_in_lookup) | fields delta",
+            "search": "| inputlookup nmon_alerting_filesystem_per_server_exclusion | where exclude=\"true\" | stats dc(mount) as dcount",
             "app": utils.getCurrentApp(),
             "auto_cancel": 90,
             "preview": true,
@@ -476,49 +477,14 @@ require([
             "sample_ratio": 1,
             "latest_time": "now",
             "cancelOnUnload": true,
-            "search": "| inputlookup nmon_frameID_mapping | stats count by host | where count>1 | stats dc(host) as count",
+            "search": "`def_filesystem_inventory_for_exclusion` | search frameID=$form.inventory_search_frameID$ serialnum=$form.inventory_search_serialnum$ host=$form.inventory_search_host$ mount=$form.inventory_search_mount$ filesystem=$form.inventory_search_filesystem$",
             "app": utils.getCurrentApp(),
             "auto_cancel": 90,
             "preview": true,
             "runWhenTimeIsUndefined": false
         }, {tokens: true, tokenNamespace: "submitted"});
 
-        var search6 = new SearchManager({
-            "id": "search6",
-            "earliest_time": "-7d",
-            "status_buckets": 0,
-            "sample_ratio": 1,
-            "latest_time": "now",
-            "cancelOnUnload": true,
-            "search": "eventtype=nmon:performance | stats values(serialnum) as serialnum by host | lookup nmon_frameID_mapping host as host OUTPUT frameID | where isnull(frameID)",
-            "app": utils.getCurrentApp(),
-            "auto_cancel": 90,
-            "preview": true,
-            "runWhenTimeIsUndefined": false
-        }, {tokens: true, tokenNamespace: "submitted"});
-
-        new SearchEventHandler({
-            managerid: "search6",
-            event: "progress",
-            conditions: [
-                {
-                    attr: "match",
-                    value: "'job.resultCount' == 0",
-                    actions: [
-                        {"type": "unset", "token": "show_null_missing_frameID"}
-                    ]
-                },
-                {
-                    attr: "any",
-                    value: "*",
-                    actions: [
-                        {"type": "set", "token": "show_null_missing_frameID", "value": "True"}
-                    ]
-                }
-            ]
-        });
-
-        //
+            //
         // SPLUNK LAYOUT
         //
 
@@ -544,37 +510,8 @@ require([
         // VIEWS: VISUALIZATION ELEMENTS
         //
 
-        var element_table_modify_content = new TableElement({
-            "id": "element_table_modify_content",
-            "count": 10,
-            "dataOverlayMode": "none",
-            "drilldown": "row",
-            "percentagesRow": "false",
-            "rowNumbers": "false",
-            "totalsRow": "false",
-            "wrap": "true",
-            "managerid": "search1",
-            "el": $('#element_table_modify_content')
-        }, {tokens: true, tokenNamespace: "submitted"}).render();
-
-        element_table_modify_content.on("click", function(e) {
-            if (e.field !== undefined) {
-                e.preventDefault();
-                setToken("modify_key", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("modify_frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("modify_serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("modify_host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("modify_host_description", TokenUtils.replaceTokenNames("$row.host_description$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_key", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_host_description", TokenUtils.replaceTokenNames("$row.host_description$", _.extend(submittedTokenModel.toJSON(), e.data)));
-            }
-        });
-
-        var element_unset_frameID = new SingleElement({
-            "id": "element_unset_frameID",
+        var element_unset_exclusions = new SingleElement({
+            "id": "element_unset_exclusions",
             "unitPosition": "after",
             "numberPrecision": "0",
             "drilldown": "all",
@@ -586,31 +523,31 @@ require([
             "showSparkline": "1",
             "colorMode": "none",
             "trendColorInterpretation": "standard",
-            "underLabel": "Number of frameID undefined (frameID=hostname)",
+            "underLabel": "Number of file systems exclusion configured",
             "useThousandSeparators": "1",
             "rangeColors": "[\"0x3F6FDE\",\"0x3F6FDE\"]",
-            "managerid": "search2",
-            "el": $('#element_unset_frameID')
+            "managerid": "search1",
+            "el": $('#element_unset_exclusions')
         }, {tokens: true, tokenNamespace: "submitted"}).render();
 
-        element_unset_frameID.on("click", function(e) {
+        element_unset_exclusions.on("click", function(e) {
             if (e.field !== undefined) {
                 e.preventDefault();
-                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_frameID_mapping | where frameID=host", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
+                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_alerting_filesystem_per_server_exclusion | where exclude=\"true\" | stats count", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
                 utils.redirect(url);
             }
         });
 
         var element_table_show_lookup_content = new TableElement({
             "id": "element_table_show_lookup_content",
-            "count": 10,
+            "count": 5,
             "dataOverlayMode": "none",
             "drilldown": "row",
             "percentagesRow": "false",
             "rowNumbers": "false",
             "totalsRow": "false",
             "wrap": "true",
-            "managerid": "search3",
+            "managerid": "search2",
             "el": $('#element_table_show_lookup_content')
         }, {tokens: true, tokenNamespace: "submitted"}).render();
 
@@ -619,103 +556,176 @@ require([
                 e.preventDefault();
                 // Populate input form for deletion and addition
                 setToken("KeyID", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("mount", TokenUtils.replaceTokenNames("$row.mount$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("form.KeyID", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.mount", TokenUtils.replaceTokenNames("$row.mount$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 // Populate inputs form for modification
                 setToken("modify_key", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("modify_frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("modify_serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("modify_host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("modify_host_description", TokenUtils.replaceTokenNames("$row.host_description$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_key", TokenUtils.replaceTokenNames("$row.KeyID$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.modify_host_description", TokenUtils.replaceTokenNames("$row.host_description$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("modify_mount", TokenUtils.replaceTokenNames("$row.mount$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.input_modify_frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.input_modify_serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.input_modify_host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.input_modify_mount", TokenUtils.replaceTokenNames("$row.mount$", _.extend(submittedTokenModel.toJSON(), e.data)));
             }
         });
 
-        var element_delta_frameID = new SingleElement({
-            "id": "element_delta_frameID",
-            "unitPosition": "after",
-            "numberPrecision": "0",
-            "drilldown": "all",
-            "useColors": "1",
-            "trendDisplayMode": "absolute",
-            "rangeValues": "[0]",
-            "colorBy": "value",
-            "showTrendIndicator": "1",
-            "showSparkline": "1",
-            "colorMode": "none",
-            "trendColorInterpretation": "standard",
-            "underLabel": "Number of host(s) in delta (more hosts in data or more hosts in collection)",
-            "useThousandSeparators": "1",
-            "rangeColors": "[\"0x3F6FDE\",\"0x3F6FDE\"]",
-            "managerid": "search4",
-            "el": $('#element_delta_frameID')
-        }, {tokens: true, tokenNamespace: "submitted"}).render();
-
-        element_delta_frameID.on("click", function(e) {
-            if (e.field !== undefined) {
-                e.preventDefault();
-                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_frameID_mapping | stats dc(host) as host_in_lookup | appendcols [ | tstats dc(host) as host_in_data WHERE `nmon_index` sourcetype=nmon_data ] | eval delta=if(host_in_lookup>host_in_data, host_in_lookup-host_in_data, host_in_data-host_in_lookup)", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
-                utils.redirect(url);
-            }
-        });
-
-        var element_duplicated_hosts = new SingleElement({
-            "id": "element_duplicated_hosts",
-            "unitPosition": "after",
-            "numberPrecision": "0",
-            "drilldown": "all",
-            "useColors": "1",
-            "trendDisplayMode": "absolute",
-            "rangeValues": "[0]",
-            "colorBy": "value",
-            "showTrendIndicator": "1",
-            "showSparkline": "1",
-            "colorMode": "none",
-            "trendColorInterpretation": "standard",
-            "underLabel": "Number of host(s) with duplicated entries in the collection",
-            "useThousandSeparators": "1",
-            "rangeColors": "[\"0x3F6FDE\",\"0x3F6FDE\"]",
-            "managerid": "search5",
-            "el": $('#element_duplicated_hosts')
-        }, {tokens: true, tokenNamespace: "submitted"}).render();
-
-        element_duplicated_hosts.on("click", function(e) {
-            if (e.field !== undefined) {
-                e.preventDefault();
-                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_frameID_mapping | stats count by host | where count>1", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
-                utils.redirect(url);
-            }
-        });
-
-        var element_table_missing_content = new TableElement({
-            "id": "element_table_missing_content",
-            "count": 10,
+        var element_table_show_lookup_inventory = new TableElement({
+            "id": "element_table_show_lookup_inventory",
+            "count": 5,
             "dataOverlayMode": "none",
             "drilldown": "row",
             "percentagesRow": "false",
             "rowNumbers": "false",
             "totalsRow": "false",
             "wrap": "true",
-            "managerid": "search6",
-            "el": $('#element_table_missing_content')
-        }, {tokens: true, tokenNamespace: "submitted"}).render()
+            "managerid": "search5",
+            "el": $('#element_table_show_lookup_inventory')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
 
-        element_table_missing_content.on("click", function(e) {
+        element_table_show_lookup_inventory.on("click", function(e) {
             if (e.field !== undefined) {
                 e.preventDefault();
+                // Populate input form for addition
+                setToken("frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
+                setToken("form.frameID", TokenUtils.replaceTokenNames("$row.frameID$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("form.serialnum", TokenUtils.replaceTokenNames("$row.serialnum$", _.extend(submittedTokenModel.toJSON(), e.data)));
                 setToken("form.host", TokenUtils.replaceTokenNames("$row.host$", _.extend(submittedTokenModel.toJSON(), e.data)));
-                setToken("form.host_description", "none");
+            }
+        });
+
+        var element_nb_hosts = new SingleElement({
+            "id": "element_nb_hosts",
+            "unitPosition": "after",
+            "numberPrecision": "0",
+            "drilldown": "all",
+            "useColors": "1",
+            "trendDisplayMode": "absolute",
+            "rangeValues": "[0]",
+            "colorBy": "value",
+            "showTrendIndicator": "1",
+            "showSparkline": "1",
+            "colorMode": "none",
+            "trendColorInterpretation": "standard",
+            "underLabel": "Number of servers with file system exclusions configured",
+            "useThousandSeparators": "1",
+            "rangeColors": "[\"0x3F6FDE\",\"0x3F6FDE\"]",
+            "managerid": "search3",
+            "el": $('#element_nb_hosts')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        element_nb_hosts.on("click", function(e) {
+            if (e.field !== undefined) {
+                e.preventDefault();
+                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_alerting_filesystem_per_server_exclusion | where exclude=\"true\" | stats dc(host) as dcount", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
+                utils.redirect(url);
+            }
+        });
+
+        var element_nb_mount = new SingleElement({
+            "id": "element_nb_mount",
+            "unitPosition": "after",
+            "numberPrecision": "0",
+            "drilldown": "all",
+            "useColors": "1",
+            "trendDisplayMode": "absolute",
+            "rangeValues": "[0]",
+            "colorBy": "value",
+            "showTrendIndicator": "1",
+            "showSparkline": "1",
+            "colorMode": "none",
+            "trendColorInterpretation": "standard",
+            "underLabel": "Number of distinct mount points excluded",
+            "useThousandSeparators": "1",
+            "rangeColors": "[\"0x3F6FDE\",\"0x3F6FDE\"]",
+            "managerid": "search4",
+            "el": $('#element_nb_mount')
+        }, {tokens: true, tokenNamespace: "submitted"}).render();
+
+        element_nb_mount.on("click", function(e) {
+            if (e.field !== undefined) {
+                e.preventDefault();
+                var url = TokenUtils.replaceTokenNames("{{SPLUNKWEB_URL_PREFIX}}/app/nmon/search?q=| inputlookup nmon_alerting_filesystem_per_server_exclusion | where exclude=\"true\" | stats dc(mount) as dcount", _.extend(submittedTokenModel.toJSON(), e.data), TokenUtils.getEscaper('url'), TokenUtils.getFilters(mvc.Components));
+                utils.redirect(url);
             }
         });
 
         //
         // VIEWS: FORM INPUTS
+        //
+
+        // inventory searches
+
+        var input_inventory_search_frameid = new TextInput({
+            "id": "input_inventory_search_frameid",
+            "value": "$form.inventory_search_frameID$",
+            "default": "*",
+            "searchWhenChanged": true,
+            "el": $('#input_inventory_search_frameid')
+        }, {tokens: true}).render();
+
+        input_inventory_search_frameid.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_inventory_search_frameid);
+        });
+
+        var input_inventory_search_serialnum = new TextInput({
+            "id": "input_inventory_search_serialnum",
+            "value": "$form.inventory_search_serialnum$",
+            "default": "*",
+            "searchWhenChanged": true,
+            "el": $('#input_inventory_search_serialnum')
+        }, {tokens: true}).render();
+
+        input_inventory_search_serialnum.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_inventory_search_serialnum);
+        });
+
+        var input_inventory_search_host = new TextInput({
+            "id": "input_inventory_search_host",
+            "value": "$form.inventory_search_host$",
+            "default": "*",
+            "searchWhenChanged": true,
+            "el": $('#input_inventory_search_host')
+        }, {tokens: true}).render();
+
+        input_inventory_search_host.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_inventory_search_host);
+        });
+
+        var input_inventory_search_mount = new TextInput({
+            "id": "input_inventory_search_mount",
+            "value": "$form.inventory_search_mount$",
+            "default": "*",
+            "searchWhenChanged": true,
+            "el": $('#input_inventory_search_mount')
+        }, {tokens: true}).render();
+
+        input_inventory_search_mount.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_inventory_search_mount);
+        });
+
+        var input_inventory_search_filesystem = new TextInput({
+            "id": "input_inventory_search_filesystem",
+            "value": "$form.inventory_search_filesystem$",
+            "default": "*",
+            "searchWhenChanged": true,
+            "el": $('#input_inventory_search_filesystem')
+        }, {tokens: true}).render();
+
+        input_inventory_search_filesystem.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_inventory_search_filesystem);
+        });
+
         //
 
         var input_add_frameid = new TextInput({
@@ -748,14 +758,14 @@ require([
             FormUtils.handleValueChange(input_add_host);
         });
 
-        var input_add_host_description = new TextInput({
-            "id": "input_add_host_description",
-            "value": "$form.host_description$",
-            "el": $('#input_add_host_description')
+        var input_add_mount = new TextInput({
+            "id": "input_add_mount",
+            "value": "$form.mount$",
+            "el": $('#input_add_mount')
         }, {tokens: true}).render();
 
-        input_add_host_description.on("change", function(newValue) {
-            FormUtils.handleValueChange(input_add_host_description);
+        input_add_mount.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_add_mount);
         });
 
         var input_selected_key = new TextInput({
@@ -816,31 +826,31 @@ require([
             FormUtils.handleValueChange(input_search_host);
         });
 
-        var input_search_host_description = new TextInput({
-            "id": "input_search_host_description",
-            "value": "$form.search_host_description$",
+        var input_search_mount = new TextInput({
+            "id": "input_search_mount",
+            "value": "$form.search_mount$",
             "default": "*",
             "searchWhenChanged": true,
-            "el": $('#input_search_host_description')
+            "el": $('#input_search_mount')
         }, {tokens: true}).render();
 
-        input_search_host_description.on("change", function(newValue) {
-            FormUtils.handleValueChange(input_search_host_description);
+        input_search_mount.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_search_mount);
         });
 
-        var input_modify_frameid = new TextInput({
-            "id": "input_modify_frameid",
-            "value": "$form.modify_frameID$",
-            "el": $('#input_modify_frameid')
+        var input_modify_frameID = new TextInput({
+            "id": "input_modify_frameID",
+            "value": "$form.input_modify_frameID$",
+            "el": $('#input_modify_frameID')
         }, {tokens: true}).render();
 
-        input_modify_frameid.on("change", function(newValue) {
-            FormUtils.handleValueChange(input_modify_frameid);
+        input_modify_frameID.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_modify_frameID);
         });
 
         var input_modify_serialnum = new TextInput({
             "id": "input_modify_serialnum",
-            "value": "$form.modify_serialnum$",
+            "value": "$form.input_modify_serialnum$",
             "el": $('#input_modify_serialnum')
         }, {tokens: true}).render();
 
@@ -850,7 +860,7 @@ require([
 
         var input_modify_host = new TextInput({
             "id": "input_modify_host",
-            "value": "$form.modify_host$",
+            "value": "$form.input_modify_host$",
             "el": $('#input_modify_host')
         }, {tokens: true}).render();
 
@@ -858,37 +868,14 @@ require([
             FormUtils.handleValueChange(input_modify_host);
         });
 
-        var input_modify_host_description = new TextInput({
-            "id": "input_modify_host_description",
-            "value": "$form.modify_host_description$",
-            "el": $('#input_modify_host_description')
+        var input_modify_mount = new TextInput({
+            "id": "input_modify_mount",
+            "value": "$form.input_modify_mount$",
+            "el": $('#input_modify_mount')
         }, {tokens: true}).render();
 
-        input_modify_host_description.on("change", function(newValue) {
-            FormUtils.handleValueChange(input_modify_host_description);
-        });
-
-        var input_add_frameid5 = new RadioGroupInput({
-            "id": "input_add_frameid5",
-            "choices": [
-                {"value": "where (frameID=host)", "label": "Show only undefined frameID"},
-                {"value": "search frameID=*", "label": "Show all content"}
-            ],
-            "selectFirstChoice": false,
-            "default": "where (frameID=host)",
-            "searchWhenChanged": true,
-            "value": "$form.user_selection$",
-            "el": $('#input_add_frameid5')
-        }, {tokens: true}).render();
-
-        input_add_frameid5.on("change", function(newValue) {
-            FormUtils.handleValueChange(input_add_frameid5);
-        });
-
-        DashboardController.onReady(function() {
-            if (!submittedTokenModel.has('earliest') && !submittedTokenModel.has('latest')) {
-                submittedTokenModel.set({ earliest: '0', latest: '' });
-            }
+        input_modify_mount.on("change", function(newValue) {
+            FormUtils.handleValueChange(input_modify_mount);
         });
 
         //
@@ -920,33 +907,21 @@ require([
 
                     if (result) {
 
-                        // Get the value of the key ID field
-
                         // Delete the record that corresponds to the key ID using
                         // the del method to send a DELETE request
                         // to the storage/collections/data/{collection}/ endpoint
-                        service.del("storage/collections/data/kv_nmon_frameID_mapping/" + encodeURIComponent(form_keyid))
+                        service.del("storage/collections/data/kv_nmon_alerting_filesystem_per_server_exclusion/" + encodeURIComponent(form_keyid))
                             .done(function() {
                                 // Run the search again to update the table
                                 search1.startSearch();
                                 search2.startSearch();
                                 search3.startSearch();
                                 search4.startSearch();
-                                search5.startSearch();
-                                search6.startSearch();
 
                                 // clear the form
-                                // modification
                                 $("#input_selected_key input[type=text]").val("");
-                                $("#input_modify_frameid input[type=text]").val("");
-                                $("#input_modify_serialnum input[type=text]").val("");
-                                $("#input_modify_host input[type=text]").val("");
-                                $("#input_modify_host_description input[type=text]").val("");
-                                // addtion
-                                $("#input_add_frameid input[type=text]").val("");
-                                $("#input_add_serialnum input[type=text]").val("");
-                                $("#input_add_host input[type=text]").val("");
-                                $("#input_add_host_description input[type=text]").val("");
+                                // clear the value
+                                form_keyid=null;
 
                             });
 
@@ -969,81 +944,70 @@ require([
             var form_frameID = tokens.get("frameID");
             var form_serialnum = tokens.get("serialnum");
             var form_host = tokens.get("host");
-            var form_host_description = tokens.get("host_description");
+            var form_mount = tokens.get("mount");
 
             // Create a dictionary to store the field names and values
             var record = {
                 "frameID": form_frameID,
                 "serialnum": form_serialnum,
                 "host": form_host,
-                "host_description": form_host_description
+                "mount": form_mount,
+                "exclude": "true"
             };
 
             if (!form_frameID || !form_frameID.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the frameID value is empty !</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the frameID value is empty ! Please first click on any entry in the table</h3>");
             }
 
             else if (!form_serialnum || !form_serialnum.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the serialnum value is empty !</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the serialnum value is empty ! Please first click on any entry in the table</h3>");
             }
 
             else if (!form_host || !form_host.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the host value is empty !</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the host value is empty ! Please first click on any entry in the table</h3>");
             }
 
-            else if (!form_host_description || !form_host_description.length) {
-                // fill with a default value
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the host_description value is empty !</h3>");
+            else if (!form_mount || !form_mount.length) {
+                // Show an error message
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the mount point value is empty ! Please first click on any entry in the table</h3>");
             }
 
-            else {
+            else
+            {
 
                 bootbox.confirm("<h3 style=\"color: indianred;\">Confirm addition?</h3>", function(result){
 
                     if (result) {
 
-                    // Use the request method to send a REST POST request
-                    // to the storage/collections/data/{collection}/entry_key endpoint
-                    service.request(
-                        "storage/collections/data/kv_nmon_frameID_mapping/",
-                        "POST",
-                        null,
-                        null,
-                        JSON.stringify(record),
-                        {"Content-Type": "application/json"},
-                        null)
-                            .done(function() {
-                                 // Run the search again to update the table
-                                search1.startSearch();
-                                search2.startSearch();
-                                search3.startSearch();
-                                search4.startSearch();
-                                search5.startSearch();
-                                search6.startSearch();
+                        // Use the request method to send a REST POST request
+                        // to the storage/collections/data/{collection}/ endpoint
+                        service.request(
+                            "storage/collections/data/kv_nmon_alerting_filesystem_per_server_exclusion/",
+                            "POST",
+                            null,
+                            null,
+                            JSON.stringify(record),
+                            {"Content-Type": "application/json"},
+                            null)
+                                .done(function() {
+                                     // Run the search again to update the table
+                                    search1.startSearch();
+                                    search2.startSearch();
+                                    search3.startSearch();
+                                    search4.startSearch();
 
-                                // clear the form
-                                // modification
-                                $("#input_selected_key input[type=text]").val("");
-                                $("#input_modify_frameid input[type=text]").val("");
-                                $("#input_modify_serialnum input[type=text]").val("");
-                                $("#input_modify_host input[type=text]").val("");
-                                $("#input_modify_host_description input[type=text]").val("");
-                                // addtion
-                                $("#input_add_frameid input[type=text]").val("");
-                                $("#input_add_serialnum input[type=text]").val("");
-                                $("#input_add_host input[type=text]").val("");
-                                $("#input_add_host_description input[type=text]").val("");
-
-                            });
+                                    // No need to clear form fields
+                                });
 
                     }
 
                 });
 
             }
+
         });
 
         //
@@ -1055,86 +1019,80 @@ require([
 
             // When the Submit button is clicked, get all the form fields by accessing token values
             var tokens = mvc.Components.get("default");
-            var form_keyid = tokens.get("KeyID");
-            var form_modify_frameID = tokens.get("modify_frameID");
-            var form_modify_serialnum = tokens.get("modify_serialnum");
-            var form_modify_host = tokens.get("modify_host");
-            var form_modify_host_description = tokens.get("modify_host_description");
+            var modify_key = tokens.get("KeyID");
+            var modify_frameID = tokens.get("input_modify_frameID");
+            var modify_serialnum = tokens.get("input_modify_serialnum");
+            var modify_host = tokens.get("input_modify_host");
+            var modify_mount = tokens.get("input_modify_mount");
 
             // Create the endpoint URL
-            var myendpoint_URl = "storage/collections/data/kv_nmon_frameID_mapping/" + form_keyid;
+            var myendpoint_URl = "storage/collections/data/kv_nmon_alerting_filesystem_per_server_exclusion/" + modify_key;
 
             // Create a dictionary to store the field names and values
             var record = {
-                "frameID": form_modify_frameID,
-                "serialnum": form_modify_serialnum,
-                "host": form_modify_host,
-                "host_description": form_modify_host_description
+                "frameID": modify_frameID,
+                "serialnum": modify_serialnum,
+                "host": modify_host,
+                "mount": modify_mount,
+                "exclude": "true"
             };
 
-            if (!form_keyid || !form_keyid.length) {
+            if (!modify_key || !modify_key.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the KeyID value is empty ! Please first click on any entry in the table</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the KeyID value is empty !</h3>");
             }
 
-            else if (!form_modify_frameID || !form_modify_frameID.length) {
+            else if (!modify_frameID || !modify_frameID.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the frameID value is empty ! Please first click on any entry in the table</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the frameID value is empty !</h3>");
             }
 
-            else if (!form_modify_serialnum || !form_modify_serialnum.length) {
+            else if (!modify_serialnum || !modify_serialnum.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the serialnum value is empty ! Please first click on any entry in the table</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the serialnum value is empty !</h3>");
             }
 
-            else if (!form_modify_host || !form_modify_host.length) {
+            else if (!modify_host || !modify_host.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the host value is empty ! Please first click on any entry in the table</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the host value is empty !</h3>");
             }
 
-            else if (!form_modify_host_description || !form_modify_host_description.length) {
+            else if (!modify_mount || !modify_mount.length) {
                 // Show an error message
-                bootbox.alert("<h3 style=\"color: indianred;\">Error: the host_description value is empty ! Please first click on any entry in the table</h3>");
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: the mount point value is empty !</h3>");
             }
 
-            else {
+            else
+            {
 
                 bootbox.confirm("<h3 style=\"color: indianred;\">Confirm modification?</h3>", function(result){
 
                     if (result) {
 
-                    // Use the request method to send a REST POST request
-                    // to the storage/collections/data/{collection}/entry_key endpoint
-                    service.request(
-                        myendpoint_URl,
-                        "POST",
-                        null,
-                        null,
-                        JSON.stringify(record),
-                        {"Content-Type": "application/json"},
-                        null)
-                            .done(function() {
-                                 // Run the search again to update the table
-                                search1.startSearch();
-                                search2.startSearch();
-                                search3.startSearch();
-                                search4.startSearch();
-                                search5.startSearch();
-                                search6.startSearch();
+                        // Use the request method to send a REST POST request
+                        // to the storage/collections/data/{collection}/entry_key endpoint
+                        service.request(
+                            myendpoint_URl,
+                            "POST",
+                            null,
+                            null,
+                            JSON.stringify(record),
+                            {"Content-Type": "application/json"},
+                            null)
+                                .done(function() {
+                                     // Run the search again to update the table
+                                    search1.startSearch();
+                                    search2.startSearch();
+                                    search3.startSearch();
+                                    search4.startSearch();
 
-                                // Clear the form fields
-                                // modification
-                                $("#input_selected_key input[type=text]").val("");
-                                $("#input_modify_frameid input[type=text]").val("");
-                                $("#input_modify_serialnum input[type=text]").val("");
-                                $("#input_modify_host input[type=text]").val("");
-                                $("#input_modify_host_description input[type=text]").val("");
-                                // addtion
-                                $("#input_add_frameid input[type=text]").val("");
-                                $("#input_add_serialnum input[type=text]").val("");
-                                $("#input_add_host input[type=text]").val("");
-                                $("#input_add_host_description input[type=text]").val("");
-                            });
+                                    // Clear the form fields
+                                    $("#input_selected_key input[type=text]").val("");
+                                    $("#input_modify_frameID input[type=text]").val("");
+                                    $("#input_modify_serialnum input[type=text]").val("");
+                                    $("#input_modify_host input[type=text]").val("");
+                                    $("#input_modify_mount input[type=text]").val("");
+                                });
 
                     }
 
