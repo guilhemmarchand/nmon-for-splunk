@@ -1,8 +1,8 @@
 define([
             'jquery',
             'underscore',
-            'vizapi/SplunkVisualizationBase',
-            'vizapi/SplunkVisualizationUtils',
+            'api/SplunkVisualizationBase',
+            'api/SplunkVisualizationUtils',
             'd3',
             '../contrib/bullet'
         ],
@@ -26,9 +26,9 @@ define([
         }
         return str;
     };
- 
+
     return SplunkVisualizationBase.extend({
- 
+
         initialize: function() {
             SplunkVisualizationBase.prototype.initialize.apply(this, arguments);
 
@@ -61,7 +61,7 @@ define([
             this.splitFieldName = data.fields[0]['name'];
 
             _.each(rows, function(row) {
-                if (_.isNaN(+row[1]) || _.isNaN(+row[2]) || _.isNaN(+row[3]) || 
+                if (_.isNaN(+row[1]) || _.isNaN(+row[2]) || _.isNaN(+row[3]) ||
                     _.isNaN(+row[4]) || (row[5] && _.isNaN(+row[5]))) {
                     throw new SplunkVisualizationBase.VisualizationError(
                         'Check the Statistics tab. To generate a bullet graph, values in the <metric_value>, <range_low>, <range_med>, <range_high> fields must be numeric.'
@@ -69,7 +69,7 @@ define([
                 }
 
                 result.push({
-                    title: row[0],
+                    title: vizUtils.escapeHtml(row[0]),
                     ranges: [+row[2], +row[3], +row[4]],
                     measures: [+row[1]],
                     markers: [row[5] ? +row[5] : false]
@@ -79,7 +79,7 @@ define([
 
             return result;
         },
- 
+
         updateView: function(data, config) {
 
             if (!data || data.length < 1) {
@@ -87,6 +87,8 @@ define([
             }
 
             this.$el.empty();
+
+            this.useDrilldown = this._isEnabledDrilldown(config);
 
             var bulletColor = this._getEscapedProperty('bulletColor', config) || '#333';
             var targetMarkerColor = this._getEscapedProperty('targetMarkerColor', config) || '#333';
@@ -100,14 +102,20 @@ define([
 
             var bulletHeight = 30;
 
+            var bulletClass = 'bullet';
+            if (this.useDrilldown) {
+                bulletClass += ' bullet-drilldown';
+            }
+
             var chart = d3.bullet()
                 .width(width)
                 .height(bulletHeight);
 
+
             var svg = d3.select(this.el).selectAll('svg')
                     .data(data)
                 .enter().append('svg')
-                    .attr('class', 'bullet')
+                    .attr('class', bulletClass)
                     .attr('width', width + margin.left + margin.right)
                     .attr('height', bulletHeight + margin.top + margin.bottom)
                 .append('g')
@@ -155,7 +163,7 @@ define([
         _graphClick: function(d){
             if(d3.event.defaultPrevented) {
                 return;
-            } 
+            }
 
             var payload = {
                 action: SplunkVisualizationBase.FIELD_VALUE_DRILLDOWN,
@@ -181,7 +189,13 @@ define([
         _getEscapedProperty: function(name, config) {
             var propertyValue = config[this.getPropertyNamespaceInfo().propertyNamespace + name];
             return vizUtils.escapeHtml(propertyValue);
-        }
+        },
 
+        _isEnabledDrilldown: function(config) {
+            if (config['display.visualizations.custom.drilldown'] && config['display.visualizations.custom.drilldown'] === 'all') {
+                return true;
+            }
+            return false;
+        }
     });
 });

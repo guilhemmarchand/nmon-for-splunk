@@ -1,7 +1,7 @@
 # Horseshoe Meter
 
 Documentation:
-http://docs.splunk.com/Documentation/CustomViz/1.0.0/HorsehoeMeter/HorseshoeMeterIntro
+http://docs.splunk.com/Documentation/HorseshoeMeter/1.2.0/HorseshoeMeterViz/HorseshoeMeterIntro
 
 ##Sample searches
 ```

@@ -1,7 +1,7 @@
 # Bullet Graph
 
 Documentation:
-http://docs.splunk.com/Documentation/CustomViz/1.0.0/BulletGraph/BulletGraphIntro
+http://docs.splunk.com/Documentation/BulletGraph/1.2.0/BulletGraphViz/BulletGraphIntro
 
 ## Sample Searches
 

@@ -17,6 +17,18 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.16:
+========
+
+**Version 1.9.16 - multiple updates #112**
+
+- review props.conf sourcetypes definition for Splunk best practices
+- update of horseshoe-meter and bullet-graph to their latest version
+- removal of calendar heatmap views managing processing and nmon data availability
+- New dashboard: Heatmap daily CPU usage calendar with drilldown
+- New alerting scheme with multi-layer KVstore based: Threshold management, frameID mapping and thresholds templating
+
+========
 V1.9.15:
 ========
 
