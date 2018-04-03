@@ -1,0 +1,321 @@
+<form script="autodiscover.js,custom_layout.js" stylesheet="ui_simple.css" isVisible="true">
+    <label>Dashboard heatmap calendar daily CPU usage</label>
+    <description>This dashboard provides mass visualization of daily peak CPU utilization with top hosts drilldown features</description>
+
+    <fieldset autoRun="false" submitButton="false">
+
+        <input type="time" token="timerange" searchWhenChanged="true">
+            <label>Time Range:</label>
+            <default>
+                <earliestTime>-30d@d</earliestTime>
+                <latestTime>now</latestTime>
+            </default>
+        </input>
+
+        <input type="dropdown" token="timefilter" searchWhenChanged="true">
+            <label>Time Filtering:</label>
+            <choice value="No_Filter">No Filter (24/24, 7/7)</choice>
+            <choice value="Day_BusinessDays_8h-19h">Day Business (08h-19h)</choice>
+            <choice value="Day_WeekEnd_8h-19h">Day WE (08h-19h)</choice>
+            <choice value="Day_AllDays_8h-19h">Day Week (08h-19h)</choice>
+            <choice value="Night_BusinessDays_19h-8h">Night Business (19h-08h)</choice>
+            <choice value="Night_WeekEnd_19h-8h">Night WE (19h-08h)</choice>
+            <choice value="Night_AllDays_19h-8h">Night All Days (19h-08h)</choice>
+            <default>No_Filter</default>
+        </input>
+
+        <input type="dropdown" token="osfilter" searchWhenChanged="true">
+            <label>Filter OS Type:</label>
+            <default>*</default>
+            <prefix>OStype="</prefix>
+            <suffix>"</suffix>
+            <choice value="*">Any OS</choice>
+            <choice value="AIX">AIX</choice>
+            <choice value="Linux">Linux</choice>
+            <choice value="Solaris">Solaris</choice>
+        </input>
+
+        <input id="frameID" type="multiselect" token="frameID" searchWhenChanged="true">
+            <label>Frame IDs:</label>
+            <!-- Populating Data Model Search -->
+            <search base="populate">
+                <query>stats count by frameID | dedup frameID | sort 0 frameID</query>
+            </search>
+            <valuePrefix>frameID="</valuePrefix>
+            <valueSuffix>"</valueSuffix>
+            <delimiter> OR </delimiter>
+            <choice value="*">Any</choice>
+            <default>*</default>
+            <fieldForLabel>frameID</fieldForLabel>
+            <fieldForValue>frameID</fieldForValue>
+        </input>
+
+        <input type="text" token="host-prefilter" searchWhenChanged="true">
+            <label>Optional: Filter hosts populating</label>
+            <default>*</default>
+        </input>
+
+		<input id="host" type="multiselect" token="host" searchWhenChanged="true">
+		    <label>Hosts Selection:</label>
+		    <!-- Populating Data Model Search -->
+		    <search base="populate">
+		        <query>search $frameID$ host=$host-prefilter$
+	| stats count by host | dedup host | sort 0 host</query>
+		    </search>
+		    <valuePrefix>host="</valuePrefix>
+		    <valueSuffix>"</valueSuffix>
+		    <delimiter> OR </delimiter>
+		    <choice value="*">ALL Hosts</choice>
+		    <fieldForLabel>host</fieldForLabel>
+		    <fieldForValue>host</fieldForValue>
+		    <change>
+		        <condition>
+		            <unset token="form.host_query_input"></unset>
+		        </condition>
+		    </change>
+		</input>
+
+		<!-- hidden form that handles the advanced definition of hosts selection -->
+
+		<input id="host_query_input" type="dropdown" token="host_query" searchWhenChanged="true" depends="$hidden_form$">
+		    <label>Hosts Selection:</label>
+		    <search base="populate">
+		        <query>search $host$ $frameID$
+	| stats values(host) as host
+	| format | fields - host | rename search as host</query>
+		    </search>
+		    <selectFirstChoice>true</selectFirstChoice>
+		    <fieldForLabel>host</fieldForLabel>
+		    <fieldForValue>host</fieldForValue>
+		</input>
+
+        <input type="dropdown" token="statsmode" searchWhenChanged="true">
+            <label>Stats mode:</label>
+            <default>avg</default>
+            <choice value="max">Max</choice>
+            <choice value="avg">Avg</choice>
+            <choice value="min">Min</choice>
+            <choice value="median">Median</choice>
+            <choice value="mode">Mode</choice>
+            <choice value="range">Range</choice>
+        </input>
+
+    </fieldset>
+
+    <!-- BaseSearch for post processing -->
+
+    <!-- Base Searches for PostProcessing -->
+
+    <search id="populate">
+        <query>| tstats count where `nmon_index` groupby host | fields - count
+| `mapping_frameID`
+| lookup nmon_inventory hostname as host OUTPUT OStype | search $osfilter$
+| sort 0 host</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <search id="daily_usage">
+        <query>eventtype="nmon:performance" (type=CPU_ALL OR type=LPAR) $host_query$
+| eval cpu_load_percent=(Sys_PCT+User_PCT+Wait_PCT), lpar_load_percent = case(OStype=="AIX", round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2), OStype=="Linux", round((PhysicalCPU/partition_active_processors*100),2))
+| eval cpu_load_percent=if(isnum(lpar_load_percent), lpar_load_percent, cpu_load_percent)
+| timechart span=1d $statsmode$(cpu_load_percent) AS cpu_load_percent | eval cpu_load_percent=round(cpu_load_percent, 3)</query>
+        <earliest>$timerange.earliest$</earliest>
+        <latest>$timerange.latest$</latest>
+    </search>
+
+    <row>
+
+        <panel>
+            <title>Daily average CPU percentage utilization</title>
+
+            <single>
+                <search base="daily_usage">
+                    <query>stats max(cpu_load_percent) AS value | eval value=round(value,0)</query>
+                </search>
+                <option name="unit">%</option>
+                <option name="underLabel">Max daily CPU %</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single>
+                <search base="daily_usage">
+                    <query>stats avg(cpu_load_percent) AS value | eval value=round(value,0)</query>
+                </search>
+                <option name="unit">%</option>
+                <option name="underLabel">Avg CPU % over period</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single>
+                <search base="daily_usage">
+                    <query>stats median(cpu_load_percent) AS value | eval value=round(value,0)</query>
+                </search>
+                <option name="unit">%</option>
+                <option name="underLabel">Median CPU % over period</option>
+                <option name="numberPrecision">0.00</option>
+            </single>
+
+            <single>
+                <search base="daily_usage">
+                    <query>sort 0 - cpu_load_percent | head 1 | eval time=strftime(_time, "%d/%m/%Y") | fields time</query>
+                </search>
+                <option name="underLabel">Peak day (dd/mm/YYYY)</option>
+            </single>
+
+            <html>
+                <div id="calendarheatmap" class="splunk-view" data-require="app/nmon/components/calendarheatmap/calendarheatmap" data-options='{
+          "managerid": "daily_usage",
+          "domain": "month",
+          "subDomain": "x_day",
+          "subDomainTextFormat": "%d",
+          "cellRadius": "5"
+        }'>
+                </div>
+            </html>
+        </panel>
+
+    </row>
+
+    <row>
+        <panel>
+            <title>Daily CPU percentage utilization over time- Active drilldown: click on a day to see top consuming hosts</title>
+            <chart>
+                <search base="daily_usage">
+                    <query>sort 0 _time</query>
+                </search>
+                <option name="charting.chart.columnSpacing">5</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">column</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">default</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">bottom</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="height">350</option>
+                <option name="charting.axisTitleY.text">% CPU usage</option>
+                <option name="charting.axisY.minimumNumber">0</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <drilldown>
+                    <set token="show_hosts_drilldown">true</set>
+                    <set token="drilldown_earliest">$earliest$</set>
+                    <set token="drilldown_latest">$latest$</set>
+                </drilldown>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$show_hosts_drilldown$">
+        <panel>
+            <title>TOP hosts drilldown</title>
+            <input type="dropdown" token="chart" searchWhenChanged="true">
+                <label>Select a type of chart:</label>
+                <default>line</default>
+                <choice value="area">Area</choice>
+                <choice value="line">Line</choice>
+                <choice value="column">Column</choice>
+                <choice value="bar">Bar</choice>
+            </input>
+            <input type="dropdown" token="charting.chart.nullValueMode" searchWhenChanged="true">
+                <label>Missing Data:</label>
+                <default>gaps</default>
+                <choice value="gaps">Gaps</choice>
+                <choice value="connect">Connect</choice>
+                <choice value="zero">Zero</choice>
+            </input>
+            <input type="dropdown" token="chart.stackingmode" searchWhenChanged="true">
+                <label>Select a stacking mode:</label>
+                <default>unstacked</default>
+                <choice value="stacked">stacked (lines excluded)</choice>
+                <choice value="stacked100">100% stacked (lines excluded)</choice>
+                <choice value="unstacked">unstacked</choice>
+            </input>
+            <input type="dropdown" token="charting.legend.placement" searchWhenChanged="true">
+                <label>Legend placement:</label>
+                <default>bottom</default>
+                <choice value="bottom">Bottom</choice>
+                <choice value="top">Top</choice>
+                <choice value="left">left</choice>
+                <choice value="right">right</choice>
+                <choice value="center">center</choice>
+                <choice value="none">none</choice>
+            </input>
+            <input type="dropdown" token="span" searchWhenChanged="true">
+                <label>Span:</label>
+                <default>`nmon_span`</default>
+                <choice value="`nmon_span`">auto</choice>
+                <choice value="span=1m">1 minute</choice>
+                <choice value="span=2m">2 minutes</choice>
+                <choice value="span=3m">3 minutes</choice>
+                <choice value="span=4m">4 minutes</choice>
+                <choice value="span=5m">5 minutes</choice>
+                <choice value="span=10m">10 minutes</choice>
+                <choice value="span=15m">15 minutes</choice>
+                <choice value="span=30m">30 minutes</choice>
+                <choice value="span=1h">1 hour</choice>
+                <choice value="span=2h">2 hours</choice>
+                <choice value="span=12h">12 hours</choice>
+                <choice value="span=4h">4 hours</choice>
+                <choice value="span=1d">1 day</choice>
+                <choice value="span=2d">2 days</choice>
+                <choice value="span=1w">7 days</choice>
+                <choice value="span=1mon">1 month</choice>
+            </input>
+            <input type="checkbox" token="cpu_scale" searchWhenChanged="true">
+                <label></label>
+                <default>0</default>
+                <choice value="0">Starts scale at 0 %</choice>
+            </input>
+            <input type="checkbox" token="cpu_scaleend" searchWhenChanged="true">
+                <label></label>
+                <default>100</default>
+                <choice value="100">Ends scale at 100 %</choice>
+            </input>
+            <chart>
+                <search depends="$show_hosts_drilldown$">
+                    <query>eventtype="nmon:performance" (type=CPU_ALL OR type=LPAR) $host_query$
+| eval cpu_load_percent=(Sys_PCT+User_PCT+Wait_PCT), lpar_load_percent = case(OStype=="AIX", round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2), OStype=="Linux", round((PhysicalCPU/partition_active_processors*100),2))
+| eval cpu_load_percent=if(isnum(lpar_load_percent), lpar_load_percent, cpu_load_percent)
+| timechart $span$ useother=f limit=40 $statsmode$(cpu_load_percent) AS cpu_load_percent by host</query>
+                    <earliest>$drilldown_earliest$</earliest>
+                    <latest>$drilldown_latest$</latest>
+                </search>
+                <option name="charting.axisTitleX.visibility">visible</option>
+                <option name="charting.axisTitleY.visibility">visible</option>
+                <option name="charting.axisX.scale">linear</option>
+                <option name="charting.axisY.scale">linear</option>
+                <option name="charting.chart">$chart$</option>
+                <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+                <option name="charting.chart.stackMode">$chart.stackingmode$</option>
+                <option name="charting.chart.style">shiny</option>
+                <option name="charting.drilldown">all</option>
+                <option name="charting.layout.splitSeries">0</option>
+                <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+                <option name="charting.legend.placement">$charting.legend.placement$</option>
+                <option name="charting.chart.nullValueMode">$charting.chart.nullValueMode$</option>
+                <option name="height">350</option>
+                <option name="charting.axisTitleX.text">Time</option>
+                <option name="charting.axisTitleY.text">% CPU usage</option>
+                <option name="charting.axisY.minimumNumber">$cpu_scale$</option>
+                <option name="charting.axisY.maximumNumber">$cpu_scaleend$</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+                <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+                <option name="charting.axisTitleY2.visibility">visible</option>
+                <option name="charting.axisY2.enabled">false</option>
+                <option name="charting.axisY2.scale">inherit</option>
+                <option name="refresh.display">none</option>
+            </chart>
+        </panel>
+    </row>
+
+</form>
