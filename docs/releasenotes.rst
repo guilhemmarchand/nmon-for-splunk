@@ -27,6 +27,7 @@ V1.9.16:
 - removal of calendar heatmap views managing processing and nmon data availability
 - New dashboard: Heatmap daily CPU usage calendar with drilldown
 - New alerting scheme with multi-layer KVstore based: Threshold management, frameID mapping and thresholds templating
+- Splunk 7.1 minor compatibility issues
 
 ========
 V1.9.15:
