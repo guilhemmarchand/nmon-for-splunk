@@ -8,7 +8,11 @@ Nmon Performance Monitor is entirely compatible with a Splunk Cloud deployment, 
 
 However, please note that Splunk does not allow any application to monitor Cloud instances performances, such as the deployment matrix differs from on premise installations.
 
-**Nmon Performance Monitor is a vetted Cloud application, that will be deployed by Splunk Cloud staff on demand.**
+**Nmon Performance Monitor is a vetted Cloud application, that can be deployed by Cloud Ops teams or in self-service.**
+
+**The PA-nmon_light is a simple package that contains indexing time parsing configuration for Splunk Cloud indexers, and should be deployed by Cloud Ops teams.**
+
+**INDEX CREATION: The index must be created manually using self-services, or on behalf of you by Cloud Ops. The default index model uses an index called "nmon".**
 
 *Matrix deployment for Splunk Cloud:*
 
@@ -30,13 +34,13 @@ You will then deploy the TA-nmon addon to your servers to send nmon data to Splu
 Step 1: Deploy Nmon Core Application to Splunk Cloud
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Splunk Cloud staff will deploy the Nmon core application to your search head nodes.
+Splunk Cloud staff will deploy the Nmon core application to your search head node, or if available the application can be deployed by self-services.
 
 Step 2: Deploy the PA-nmon_light to indexers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The PA-nmon_light has to be deployed on Splunk inndexers by Splunk Cloud staff.
-This package creates the nmon index and embeds all configuration required at indexing time.
+The PA-nmon_light has to be deployed on Splunk indexers by Splunk Cloud Ops.
+This package contains all required configurations for parsing at indexing time.
 
 Step 3: Deploy the TA-nmon to Heavy or Universal Forwarders
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
