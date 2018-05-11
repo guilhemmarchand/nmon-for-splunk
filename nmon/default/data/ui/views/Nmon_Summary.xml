@@ -8,6 +8,9 @@
                 <earliestTime>-24h</earliestTime>
                 <latestTime>now</latestTime>
             </default>
+            <change>
+                <unset token="form.refresh"></unset>
+            </change>
         </input>
 
         <input type="dropdown" token="osfilter" searchWhenChanged="true">
@@ -82,11 +85,14 @@
 
         <input type="dropdown" token="refresh" searchWhenChanged="true">
             <label>Auto-refresh:</label>
-            <choice value="30s">30 sec</choice>
-            <choice value="60s">1 min</choice>
-            <choice value="300s">5 min</choice>
-            <choice value="0">none</choice>
-            <default>30s</default>
+            <fieldForLabel>label</fieldForLabel>
+            <fieldForValue>value</fieldForValue>
+            <selectFirstChoice>true</selectFirstChoice>
+            <search>
+                <query>| `def_auto_refresh`</query>
+                <earliest>$timerange.earliest$</earliest>
+                <latest>$timerange.latest$</latest>
+            </search>
         </input>
 
     </fieldset>
@@ -95,22 +101,6 @@
     Dynamic configuration
     The following searches are being used to define various tokens using event handlers
     -->
-
-    <!-- autorefresh_detection -->
-
-    <search id="autorefresh_detection">
-        <query>`auto_refresh`</query>
-        <earliest>$timerange.earliest$</earliest>
-        <latest>$timerange.latest$</latest>
-        <progress>
-            <condition match="'result.is_past_search'==&quot;true&quot;">
-                <set token="form.refresh">0</set>
-            </condition>
-            <condition match="'result.is_past_search'==&quot;false&quot;">
-                <unset token="form.refresh"></unset>
-            </condition>
-        </progress>
-    </search>
 
     <!-- OStype -->
 
