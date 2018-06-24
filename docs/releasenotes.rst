@@ -25,6 +25,7 @@ V1.9.17:
 - fix: JQuery vulnerability issue for the integrated viz addons (bullet chart amd radial meter, CVE-2016-10707/CVE-2015-9251) #114
 - fix: KVstore collections management interfaces improvements #115
 - fix: Nav improvement: merge search and builtin menu into search menu #116
+- fix: Nmon summary improvement #117
 
 ========
 V1.9.16:
