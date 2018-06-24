@@ -35,13 +35,21 @@ Companies using this great piece are kindly invited to subscribe for a professio
 Github
 ++++++
 
-**The Nmon Performance application is hosted on Github:**
+**nmon-for-splunk (front-end application for search heads)**
 
 * https://github.com/guilhemmarchand/nmon-for-splunk
 
-**The TA-nmon, technical addon for Nmon Performance application, is hosted on Github:**
+**TA-nmon (Technology Addon)**
 
 * https://github.com/guilhemmarchand/TA-nmon
+
+**TA-nmon-hec (Technology Addon HEC version)**
+
+* https://github.com/guilhemmarchand/TA-nmon-hec
+
+**PA-nmon_light (Support Addon for indexers)**
+
+* https://github.com/guilhemmarchand/PA-nmon_light
 
 Use Github to open an issue for errors and bugs to be reported, or to ask for enhancements requests.
 
@@ -56,10 +64,6 @@ Splunk Answers
 Access previous messages of users or open your own discussion for the Nmon core application:
 
 * http://answers.splunk.com/answers/app/1753
-
-Access previous messages of users or open your own discussion for the TA-nmon technical addon:
-
-* https://splunkbase.splunk.com/app/3248
 
 ++++++++++++++++++++
 Google Group Support

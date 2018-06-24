@@ -46,7 +46,6 @@ Documentation:
    installation_windows
    installation_standalone
    installation_distributed
-   installation_shpooling
    installation_shcluster
    installation_splunkcloud
    installation_central_repositories
@@ -55,6 +54,7 @@ Documentation:
    hec_deployment
    rsyslog_deployment
    syslogng_deployment
+   frameID_mapping
    Userguide
    total_cost_of_ownership
    large_scale_deployment

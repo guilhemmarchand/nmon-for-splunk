@@ -2,17 +2,34 @@
 Download
 ########
 
-Official Splunk certified release
-=================================
 
-The official and Splunk certified release of the Nmon core application can be downloaded from Splunk Base: https://splunkbase.splunk.com/app/1753
+nmon-for-splunk (front-end application for search heads)
+========================================================
 
-TA-nmon
-=======
+Download with Splunk Base at the following URL:
 
-The official release of the TA-nmon can be downloaded from Splunk Base: https://splunkbase.splunk.com/app/3248
+* https://splunkbase.splunk.com/app/1753
 
-Note: The TA-nmon is NOT Splunk certified for some reasons, specially because it contains various binaries, and this would restrict the TA-nmon features.
+TA-nmon (Technology Addon)
+==========================
+
+Download with Splunk Base at the following URL:
+
+* https://splunkbase.splunk.com/app/3248
+
+TA-nmon-hec (Technology Addon HEC version)
+==========================================
+
+Download with Splunk Base at the following URL:
+
+* https://splunkbase.splunk.com/app/3668
+
+PA-nmon_light (Support Addon for indexers)
+==========================================
+
+Download with Splunk Base at the following URL:
+
+* https://splunkbase.splunk.com/app/4067
 
 Github releases
 ===============
@@ -36,23 +53,30 @@ The TA-nmon has also its own Github project: https://github.com/guilhemmarchand/
 
 **Downloading and installing from Github:**
 
-For the Nmon core application:
+**nmon-for-splunk (front-end application for search heads)**
 
-- Visit the Git repository: https://github.com/guilhemmarchand/nmon-for-splunk
-- Download the latest tgz archive available at the root of the project page
-- Install the application as usual
+Download the latest tgz archive at the root of the repository:
 
-For the TA-nmon add-on:
+* https://github.com/guilhemmarchand/nmon-for-splunk
 
-- Visit the Git repository: https://github.com/guilhemmarchand/TA-nmon
-- Download the latest tgz archive available at the root of the project page
-- Install the application as usual
+**TA-nmon (Technology Addon)**
 
-For the PA-nmon_light add-on:
+Download the latest tgz archive at the root of the repository:
 
-- Visit the Git repository: https://github.com/guilhemmarchand/PA-nmon_light
-- Download the latest tgz archive available at the root of the project page
-- Install the application as usual
+* https://github.com/guilhemmarchand/TA-nmon
+
+**TA-nmon-hec (Technology Addon HEC version)**
+
+Download the latest tgz archive at the root of the repository:
+
+* https://github.com/guilhemmarchand/TA-nmon-hec
+
+**PA-nmon_light (Support Addon for indexers)**
+
+Download the latest tgz archive at the root of the repository:
+
+* https://github.com/guilhemmarchand/PA-nmon_light
+
 
 Stopped releases for old Splunk versions
 ========================================

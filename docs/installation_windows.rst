@@ -8,26 +8,23 @@ Running on Windows
 
 **It is NOT possible to generate Nmon data of a Windows machine!**
 
-**But you can install and run Nmon Performance app over Windows in various conditions:**
+**But you can install and run the applications on Windows for different purposes:**
 
-* Within a distributed deployment architecture (for any role)
++----------------------+---------------------+------------------------+-------------------------+
+| Splunk roles         | nmon-for-splunk     | PA-nmon_light          |  TA-nmon                |
+|                      |                     |                        |                         |
++======================+=====================+========================+=========================+
+| Search head          |     X               |                        |                         |
++----------------------+---------------------+------------------------+-------------------------+
+| Indexer              |                     |    X                   |                         |
++----------------------+---------------------+------------------------+-------------------------+
+| Master node          |                     |                        |                         |
++----------------------+---------------------+------------------------+-------------------------+
+| Deployment server    |                     | Conditional            |    Conditional          |
++----------------------+---------------------+------------------------+-------------------------+
+| Heavy Forwarder      |                     | Conditional            |                         |
++----------------------+---------------------+------------------------+-------------------------+
+| Universal Forwarder  |                     |                        |    X                    |
++----------------------+---------------------+------------------------+-------------------------+
 
-* In standalone instance with Universal Forwarders clients running the TA-nmon
-
-* In distributed / standalone instance to manage cold nmon files generated out of Splunk
-
-100% of application features are available on Windows hosts running Nmon Performance.
-
-**1. Install the Python interpreter for Windows (version 2.x)**
-
-Download and Install Python 2.x package for Windows from: https://www.python.org/download
-
-**2. If you intend to manage nmon file locally on the Windows server, install the TA-nmon**
-
-After installation, you must use specific version of inputs.conf and props.conf (in the TA-nmon directory)
-
-* Copy the inputs.conf_forWindows.spec file from default to local/inputs.conf in the TA-nmon directory
-
-* Copy the props.conf_forWindows.spec file from default to local/props.conf in the TA-nmon directory
-
-**3. Restart Splunk.**
+* Using Windows as a deployment server to push applications to Unix/Linux based servers is strongly discouraged as required file permissions will be lost, and manual actions would be required

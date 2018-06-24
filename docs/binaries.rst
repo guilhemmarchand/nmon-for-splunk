@@ -5,19 +5,49 @@
 Scripts and Binaries
 ====================
 
-**Scripts and Binaries embedded in Nmon Performance Monitor:**
+**This depends on the stack component:**
 
-*The Nmon core application does not collect or generate any performance and configuration data, and does not contain any related scripts or binaries*
++--------------------------------------------+-------------------------------------------------------------------------+
+| Component name                             |                     Contains scripts and binaries ?                     |
+|                                            |                                                                         |
++============================================+=========================================================================+
+| nmon-for-splunk                            | No                                                                      |
++--------------------------------------------+-------------------------------------------------------------------------+
+| PA-nmon_light                              | No                                                                      |
++--------------------------------------------+-------------------------------------------------------------------------+
+| TA-nmon                                    | Yes                                                                     |
++--------------------------------------------+-------------------------------------------------------------------------+
+| TA-nmon-hec                                | Yes                                                                     |
++--------------------------------------------+-------------------------------------------------------------------------+
 
-**Technical addon: please consult the TA-nmon dedicated documentation:**
+***************
+nmon-for-splunk
+***************
+
+The core front-end application does **NOT** contain any kind of script or binary.
+
+*************
+PA-nmon_light
+*************
+
+The Support Add-on does **NOT** contain any kind of script or binaries.
+
+****************
+Technical Addons
+****************
+
+**The Technical Add-on contains various scripts and binaries:**
 
 * http://ta-nmon.readthedocs.io
 
-However, the Nmon core application contains scripted tools to be used for advanced customization purposes, as described above.
+* http://ta-nmon-hec.readthedocs.io
 
-************************************
-Embedded Scripts in technical addons
-************************************
+****************
+Additional tools
+****************
+
+Customizer script
+=================
 
 * resources/Nmon_SplunkApp_Customize.py.gz:
 
@@ -25,11 +55,14 @@ This Python script (must be uncompressed before execution) is a tool provided to
 
 Detailed documentation: :ref:`Nmon_SplunkApp_Customize_py`
 
-****************
-Additional tools
-****************
+https://github.com/guilhemmarchand/nmon-for-splunk/blob/master/nmon/resources/Nmon_SplunkApp_Customize.py.gz
 
-* create_agent.py available in the Git repository https://github.com/guilhemmarchand/TA-nmon:
+Create agent script
+===================
+
+* create_agent.py available in the Git repositories:
+
+https://github.com/guilhemmarchand/TA-nmon
 
 This Python script is a tool provided to create different version of the TA-nmon technical addon.
 

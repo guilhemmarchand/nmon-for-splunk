@@ -8,25 +8,19 @@ Deploy to single server instance
 Installation for standalone instance
 ------------------------------------
 
-**Standalone deployment: A single Splunk instance does all**
+**Standalone deployment: A single Splunk instance performs all roles**
 
-*Software components:*
++--------------------------------------------+---------------------+------------------------+-------------------------+
+| Splunk roles                               | nmon-for-splunk     | PA-nmon_light          |  TA-nmon-*              |
++============================================+=====================+========================+=========================+
+| Standalone                                 |     X               |    X (optional)        |    X (optional)         |
++--------------------------------------------+---------------------+------------------------+-------------------------+
 
-* **Core App**: This is the full package you download in Splunk Base (tgz archive)
+*optional: The Technical Add-on provide nmon performance and configuration collection for the host than runs the add-on, which is optional*
 
-* **PA-nmon_light**: Available in the Git repository https://github.com/guilhemmarchand/PA-nmon_light (tgz archive)
+**If you are new to Splunk, checkout:**
 
-* **TA-nmon**: Available in Splunk base https://splunkbase.splunk.com/app/3248 and https://github.com/guilhemmarchand/TA-nmon (tgz archive)
-
-+------------------------+------------+---------------+-------------------+
-| Splunk Instance        | Core App   | PA-nmon_light | TA-nmon           |
-| (role description)     |            |               |                   |
-+========================+============+===============+===================+
-| Standalone             |     X      |               | X (optional)      |
-+------------------------+------------+---------------+-------------------+
-
-*optional: The TA-nmon provides nmon performance and configuration collection for the host than runs the add-on, which is optional*
-
+https://docs.splunk.com/Documentation/Add-ons/released/Overview/Singleserverinstall
 
 VIDEO TUTORIAL
 ==============

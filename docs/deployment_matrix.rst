@@ -5,55 +5,61 @@ Deployment Matrix
 What goes where ?
 -----------------
 
-*Software components:*
+Application stack components
+++++++++++++++++++++++++++++
 
-* **Core App**: This is the full package you download in Splunk Base (tgz archive)
++--------------------------------------------+--------------------------------------------------------------+--------------------------------+
+| Component name                             |                     Purpose                                  |   Installation                 |
+|                                            |                                                              |                                |
++============================================+==============================================================+================================+
+| nmon-for-splunk                            | Front-user core application                                  | Search Heads                   |
++--------------------------------------------+--------------------------------------------------------------+--------------------------------+
+| PA-nmon_light                              | Support Add-on for index-time configurations                 | Indexers / intermediate HF     |
++--------------------------------------------+--------------------------------------------------------------+--------------------------------+
+| TA-nmon                                    | Technical Add-on for metrics and inventory generation        | Each monitored server          |
++--------------------------------------------+--------------------------------------------------------------+--------------------------------+
+| TA-nmon-hec                                | Technical Add-on for metrics and inventory generation        | Each monitored server          |
++--------------------------------------------+--------------------------------------------------------------+--------------------------------+
 
-* **PA-nmon_light**: Available in the Git repository https://github.com/guilhemmarchand/PA-nmon_light (tgz archive)
+**ONLY** one technical addon must be deployed on the same host, **BUT** you can mix any both types of addons in your deployment.
 
-* **TA-nmon**: Available in Splunk base https://splunkbase.splunk.com/app/3248 and https://github.com/guilhemmarchand/TA-nmon (tgz archive)
+Splunk Standalone deployment
+++++++++++++++++++++++++++++
 
-*Notes:*
+**A standalone Splunk installation means that all the Splunk roles are performed by the same instance, most likely for testing and development purposes.**
 
-* The TA-nmon_selfmode is deprecated since the unarchive_cmd feature isn't used anymore
-* The PA-nmon is deprecated since the TA-nmon operates now in clustered indexers
++--------------------------------------------+---------------------+------------------------+-------------------------+
+| Splunk roles                               | nmon-for-splunk     | PA-nmon_light          |  TA-nmon-*              |
++============================================+=====================+========================+=========================+
+| Standalone                                 |     X               |    X (optional)        |    X (optional)         |
++--------------------------------------------+---------------------+------------------------+-------------------------+
 
-**Standalone deployment: A single Splunk instance does all**
+*The Technical Add-ons provide performance and configuration collection for the host than runs the add-on, which is optional*
 
-+--------------------------------------------+---------------------+---------------------+---------------------+
-| Splunk Instance                            | Core App            | PA-nmon_light       | TA-nmon             |
-| (role)                                     |                     |                     |                     |
-+============================================+=====================+=====================+=====================+
-| Standalone                                 |     X               |    X (optional)     |    X (optional)     |
-+--------------------------------------------+---------------------+---------------------+---------------------+
+Distributed deployment
+++++++++++++++++++++++
 
-*The TA-nmon provides performance and configuration collection for the host than runs the add-on, which is optional*
+**A Splunk distributed deployment is a Splunk infrastructure where specific Splunk roles are dedicated to specific instances.**
 
-**Distributed deployment:**
+*For more information:*
+http://docs.splunk.com/Documentation/Splunk/latest/Deploy/Indexercluster
 
-+--------------------------------------------+---------------------+---------------------+---------------------+
-| Splunk Instance                            | Core App            | PA-nmon_light       | TA-nmon             |
-| (role)                                     |                     |                     |                     |
-+============================================+=====================+=====================+=====================+
-| Search head (single or clustered)          |     X               |                     |    X (optional)     |
-+--------------------------------------------+---------------------+---------------------+---------------------+
-| Indexer (single or clustered)              |                     |    X                |    X (optional)     |
-+--------------------------------------------+---------------------+---------------------+---------------------+
-| Master node                                |                     |                     |    X (optional)     |
-+--------------------------------------------+---------------------+---------------------+---------------------+
-| Deployment servers                         |                     |                     |    X (optional)     |
-+--------------------------------------------+---------------------+---------------------+---------------------+
-| Heavy Forwarder                            |                     |                     |    X                |
-+--------------------------------------------+---------------------+---------------------+---------------------+
-| Universal Forwarder                        |                     |                     |    X                |
-+--------------------------------------------+---------------------+---------------------+---------------------+
+The application stack is fully compatible with any kind of Splunk distributed deployment.
 
-*The TA-nmon provides performance and configuration collection for the host than runs the add-on, which is optional*
++----------------------+---------------------+----------------------------+-----------------------------+
+| Splunk roles         | nmon-for-splunk     | PA-nmon_light              |  TA-nmon-*                  |
++======================+=====================+============================+=============================+
+| Search head          |   X                 |                            |    X (optional)             |
++----------------------+---------------------+----------------------------+-----------------------------+
+| Indexer              |                     |  X                         |    X (optional)             |
++----------------------+---------------------+----------------------------+-----------------------------+
+| Master node          |                     |                            |    X (optional)             |
++----------------------+---------------------+----------------------------+-----------------------------+
+| Deployment server    |                     |                            |    X (optional)             |
++----------------------+---------------------+----------------------------+-----------------------------+
+| Heavy Forwarder      |                     | X (if TA is not installed) |    X                        |
++----------------------+---------------------+----------------------------+-----------------------------+
+| Universal Forwarder  |                     |                            |    X                        |
++----------------------+---------------------+----------------------------+-----------------------------+
 
-**FAQ:**
-
-* What is the difference between the PA-nmon_light and the TA-nmon ?
-
-The PA-nmon_light does not contain any binaries, scripts or inputs. It is designed to be installed on indexers. (standalone or clustered)
-
-This package will define the default "nmon" index and the relevant configuration items at indexing time.
+*The Technical Add-on provides performance and configuration collection for the host than runs the add-on, which is optional*
