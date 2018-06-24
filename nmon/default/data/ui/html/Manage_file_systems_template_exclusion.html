@@ -167,9 +167,9 @@ styles in <div> tags, similar to Bootstrap's grid system.
                                     <br /><br />
                                 </div>
                             </div>
-                            <div style="text-align: right;">
+                            <div style="text-align: right; margin-bottom: 15px;">
                                 <div class="input input-text" id="input_selected_key">
-                                    <label>Click on any table's row to fill Key ID:</label>
+                                    <label>Click on any row to fill the Key ID:</label>
                                 </div>
                                 <div class="form-submit" id="btn_remove_content">
                                     <button class="btn btn-primary submit">Delete the selected entry</button>
@@ -705,11 +705,18 @@ require([
 
                 // Create a dictionary to store the field names and values
                 var frameID = result;
+                var frameID_lgn = result.length;
 
               }
 
+              if (!frameID_lgn>0) {
+                bootbox.alert("<h3 style=\"color: indianred;\">Error: Your entry is invalid or empty !</h3>");
+              }
+
+              else {
+
                 // When the Submit button is clicked, open prompt
-                bootbox.prompt("Please enter the new mount point to be excluded: <br /><i style=\"color: indianred;\">You can use wildcards to match multiple file-systems at once, and case is insensitive</i>", function(result){
+                bootbox.prompt("Please enter the new mount point to be excluded: <br /> <br /><i style=\"color: indianred;\">You can use wildcards to match multiple file-systems at once, and case is insensitive</i>", function(result){
 
                   if (result) {
 
@@ -718,36 +725,51 @@ require([
 
                     // Create a dictionary to store the field names and values
                     var mount = result;
+                    var mount_lgn = result.length;
 
                   }
 
-                    // Create a dictionary to store the field names and values
-                    var record = {
-                        "frameID": frameID,
-                        "mount": mount,
-                        "exclude": "true"
+                  if (!mount_lgn>0) {
+                    bootbox.alert("<h3 style=\"color: indianred;\">Error: Your entry is invalid or empty !</h3>");
+                  }
+
+                  else {
+
+                        // Create a dictionary to store the field names and values
+                        var record = {
+                            "frameID": frameID,
+                            "mount": mount,
+                            "exclude": "true"
+                        }
+
+                        if (frameID_lgn>0 && mount_lgn>0) {
+
+                            // Use the request method to send a REST POST request
+                            // to the storage/collections/data/{collection}/ endpoint
+                            service.request(
+                                "storage/collections/data/kv_nmon_alerting_filesystem_template_exclusion/",
+                                "POST",
+                                null,
+                                null,
+                                JSON.stringify(record),
+                                {"Content-Type": "application/json"},
+                                null)
+                                    .done(function() {
+                                         // Run the search again to update the table
+                                        search1.startSearch();
+                                        search2.startSearch();
+                                        search3.startSearch();
+                                        search4.startSearch();
+
+                                    });
+
+                        }
+
                     }
 
-                    // Use the request method to send a REST POST request
-                    // to the storage/collections/data/{collection}/ endpoint
-                    service.request(
-                        "storage/collections/data/kv_nmon_alerting_filesystem_template_exclusion/",
-                        "POST",
-                        null,
-                        null,
-                        JSON.stringify(record),
-                        {"Content-Type": "application/json"},
-                        null)
-                            .done(function() {
-                                 // Run the search again to update the table
-                                search1.startSearch();
-                                search2.startSearch();
-                                search3.startSearch();
-                                search4.startSearch();
-
-                            });
-
                  })
+
+                }
 
              })
 
