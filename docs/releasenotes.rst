@@ -17,6 +17,14 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.17:
+========
+
+**Version 1.9.17**
+
+- JQuery vulnerability issue for the integrated viz addons (bullet chart amd radial meter, CVE-2016-10707/CVE-2015-9251) #114
+
+========
 V1.9.16:
 ========
 

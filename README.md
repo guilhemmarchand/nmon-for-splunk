@@ -1,6 +1,6 @@
 # Performance Monitor for Unix and Linux Systems
 
-Copyright 2014 Guilhem Marchand	
+Copyright 2014-2018 Guilhem Marchand
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
