@@ -641,7 +641,8 @@ from datamodel=NMON_Data_CPU where (nodename = CPU) (host=$host$) (CPU.type="CPU
 | bucket _time span=1m
 | stats dedup_splitvals=t
 max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnum(vp_usage), vp_usage, pct_usage)
+| eventstats count(eval(vp_usage>0)) as count_lpar
+| eval usage=if(count_lpar>0,  vp_usage, pct_usage)
 | timechart $span$ max(usage) AS "Max CPU usage" avg(usage) AS "Avg CPU usage"</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

@@ -226,7 +226,8 @@
                 <title>Average deployment CPU % usage</title>
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $osfilter$ $host$
-| eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| eventstats count(eval(lpar_vp_usage_PCT>0)) as count_lpar by host
+| eval cpu_load_percent=if(count_lpar>0, lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `nmon_span` avg(cpu_load_percent) AS value | where isnotnull(value)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -347,7 +348,8 @@
                 <title>Deployment global % CPU stats over time</title>
                 <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $osfilter$ $host$
-| eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| eventstats count(eval(lpar_vp_usage_PCT>0)) as count_lpar by host
+| eval cpu_load_percent=if(count_lpar>0,  lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent
 | trendline sma5(cpu_load_percent) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -389,7 +391,8 @@
                 <title>Deployment per category % CPU stats over time</title>
                 <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $osfilter$ $host$
-| eval Sys_PCT=if(isnum(VP_Sys_PCT), VP_Sys_PCT, Sys_PCT), User_PCT=if(isnum(VP_User_PCT), VP_User_PCT, User_PCT), Wait_PCT=if(isnum(VP_Wait_PCT), VP_Wait_PCT, Wait_PCT), Idle_PCT=if(isnum(VP_Idle_PCT), VP_Idle_PCT, Idle_PCT)
+| eventstats count(eval(lpar_vp_usage_PCT>0)) as count_lpar by host
+| eval Sys_PCT=if(count_lpar>0, VP_Sys_PCT, Sys_PCT), User_PCT=if(count_lpar>0, VP_User_PCT, User_PCT), Wait_PCT=if(count_lpar>0, VP_Wait_PCT, Wait_PCT), Idle_PCT=if(count_lpar>0, VP_Idle_PCT, Idle_PCT)
 | timechart `nmon_span` avg(Sys_PCT) AS Sys_PCT, avg(User_PCT) AS User_PCT, avg(Wait_PCT) AS Wait_PCT, avg(Idle_PCT) AS Idle_PCT
 | fields _time,Idle_PCT,Wait_PCT,User_PCT,Sys_PCT</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -433,7 +436,8 @@
                 <title>By host global % CPU stats over time</title>
                 <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $osfilter$ $host$
-| eval cpu_load_percent=if(isnum(lpar_vp_usage_PCT), lpar_vp_usage_PCT, cpu_load_percent)
+| eventstats count(eval(lpar_vp_usage_PCT>0)) as count_lpar by host
+| eval cpu_load_percent=if(count_lpar>0, lpar_vp_usage_PCT, cpu_load_percent)
 | timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>

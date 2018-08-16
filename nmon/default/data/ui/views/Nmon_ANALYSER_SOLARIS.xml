@@ -186,13 +186,9 @@ groupby host prestats=true
             <chart>
                 <title>CPU Usage</title>
                 <search>
-                    <query>| tstats
-max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage
-from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.type="LPAR") ($host$) groupby _time, host prestats=true span=1m
+                    <query>| tstats max("CPU.cpu_PCT") AS usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL") ($host$) groupby _time, host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t
-max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnum(vp_usage), vp_usage, pct_usage)
+| stats dedup_splitvals=t max("CPU.cpu_PCT") AS usage by _time, host
 | timechart $span$ $statsmode$(usage) AS $statsmode$_cpu_usage</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -215,10 +211,9 @@ max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, h
                 <option name="charting.axisTitleY.text">CPU Usage</option>
                 <option name="charting.axisY.minimumNumber">0</option>
                 <drilldown target="search">
-                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL" OR CPU.type="LPAR") ($host$) groupby _time, host prestats=true span=1m
+                    <link>search?earliest=$earliest$&amp;latest=$latest$&amp;q=| tstats max("CPU.cpu_PCT") AS usage from datamodel=NMON_Data_CPU where (nodename = CPU) (CPU.type="CPU_ALL") ($host$) groupby _time, host prestats=true span=1m
 | bucket _time span=1m
-| stats dedup_splitvals=t max("CPU.lpar_vp_usage") AS vp_usage max("CPU.cpu_PCT") AS pct_usage by _time, host
-| eval usage=if(isnum(vp_usage), vp_usage, pct_usage)
+| stats dedup_splitvals=t max("CPU.cpu_PCT") AS usage by _time, host
 | timechart span=1m $statsmode$(usage) AS $statsmode$_usage</link>
                 </drilldown>
             </chart>

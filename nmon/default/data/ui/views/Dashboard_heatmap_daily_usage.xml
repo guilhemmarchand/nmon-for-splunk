@@ -118,7 +118,8 @@
     <search id="daily_usage">
         <query>eventtype="nmon:performance" (type=CPU_ALL OR type=LPAR) $host_query$
 | eval cpu_load_percent=(Sys_PCT+User_PCT+Wait_PCT), lpar_load_percent = case(OStype=="AIX", round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2), OStype=="Linux", round((PhysicalCPU/partition_active_processors*100),2))
-| eval cpu_load_percent=if(isnum(lpar_load_percent), lpar_load_percent, cpu_load_percent)
+| eventstats count(eval(lpar_load_percent>0)) as count_lpar by host
+| eval cpu_load_percent=if(count_lpar>0, lpar_load_percent, cpu_load_percent)
 | timechart span=1d $statsmode$(cpu_load_percent) AS cpu_load_percent | eval cpu_load_percent=round(cpu_load_percent, 3)</query>
         <earliest>$timerange.earliest$</earliest>
         <latest>$timerange.latest$</latest>
@@ -285,7 +286,8 @@
                 <search depends="$show_hosts_drilldown$">
                     <query>eventtype="nmon:performance" (type=CPU_ALL OR type=LPAR) $host_query$
 | eval cpu_load_percent=(Sys_PCT+User_PCT+Wait_PCT), lpar_load_percent = case(OStype=="AIX", round((VP_User_PCT+VP_Sys_PCT+VP_Wait_PCT+VP_Idle_PCT),2), OStype=="Linux", round((PhysicalCPU/partition_active_processors*100),2))
-| eval cpu_load_percent=if(isnum(lpar_load_percent), lpar_load_percent, cpu_load_percent)
+| eventstats count(eval(lpar_load_percent>0)) as count_lpar by host
+| eval cpu_load_percent=if(count_lpar>0, lpar_load_percent, cpu_load_percent)
 | timechart $span$ useother=f limit=40 $statsmode$(cpu_load_percent) AS cpu_load_percent by host</query>
                     <earliest>$drilldown_earliest$</earliest>
                     <latest>$drilldown_latest$</latest>
