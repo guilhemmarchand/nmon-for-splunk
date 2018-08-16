@@ -17,6 +17,15 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.18:
+========
+
+**Version 1.9.18**
+
+- fix: AIX lpar measurement issue in some queries when comparing to cpu_all #118
+- fix: Safecenter - user feedback on headings color #119
+
+========
 V1.9.17:
 ========
 
