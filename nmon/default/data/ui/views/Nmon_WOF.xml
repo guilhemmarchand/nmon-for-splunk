@@ -227,8 +227,8 @@
                 <search>
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $osfilter$ $host$
 | eventstats count(eval(lpar_vp_usage_PCT>0)) as count_lpar by host
-| eval cpu_load_percent=if(count_lpar>0, lpar_vp_usage_PCT, cpu_load_percent)
-| timechart `nmon_span` avg(cpu_load_percent) AS value | where isnotnull(value)</query>
+| eval usage=if(count_lpar>0, lpar_vp_usage_PCT, cpu_load_percent)
+| timechart `nmon_span` avg(usage) AS value | where isnotnull(value)</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
@@ -349,8 +349,8 @@
                 <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $osfilter$ $host$
 | eventstats count(eval(lpar_vp_usage_PCT>0)) as count_lpar by host
-| eval cpu_load_percent=if(count_lpar>0,  lpar_vp_usage_PCT, cpu_load_percent)
-| timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent
+| eval usage=if(count_lpar>0,  lpar_vp_usage_PCT, cpu_load_percent)
+| timechart `nmon_span` avg(usage) AS cpu_load_percent
 | trendline sma5(cpu_load_percent) AS trend</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
@@ -437,8 +437,8 @@
                 <search depends="$show_cpu$">
                     <query>eventtype=nmon:performance (type=CPU_ALL OR type=LPAR) $osfilter$ $host$
 | eventstats count(eval(lpar_vp_usage_PCT>0)) as count_lpar by host
-| eval cpu_load_percent=if(count_lpar>0, lpar_vp_usage_PCT, cpu_load_percent)
-| timechart `nmon_span` avg(cpu_load_percent) AS cpu_load_percent by host</query>
+| eval usage=if(count_lpar>0, lpar_vp_usage_PCT, cpu_load_percent)
+| timechart `nmon_span` avg(usage) AS cpu_load_percent by host</query>
                     <earliest>$timerange.earliest$</earliest>
                     <latest>$timerange.latest$</latest>
                     <refresh>$refresh$</refresh>
