@@ -17,6 +17,14 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.19:
+========
+
+**Version 1.9.19**
+
+- fix: Solaris NMON ANALYSER view issue with drilldown field names causing URL malformed #121
+
+========
 V1.9.18:
 ========
 
