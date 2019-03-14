@@ -58,36 +58,36 @@ jobs:
           name: run appinspect
           command: |
             cd nmon-for-splunk
-            rm -rf nmon-for-splunk/.git
-            rm -rf nmon-for-splunk/.circleci
-            rm -rf nmon-for-splunk/.gitignore
-            tar -zcvf nmon-for-splunk.tar.gz nmon-for-splunk
+            rm -rf nmon/.git
+            rm -rf nmon/.circleci
+            rm -rf nmon/.gitignore
+            tar -zcvf nmon.tar.gz nmon
             mkdir dist
-            cp nmon-for-splunk.tar.gz dist/
+            cp nmon.tar.gz dist/
             cd ../
             cd appinspect-latest
             pwd
             ls -ltr
             source venv/bin/activate
-            splunk-appinspect inspect ../nmon-for-splunk/nmon-for-splunk.tar.gz --included-tags=cloud
+            splunk-appinspect inspect ../nmon-for-splunk/nmon.tar.gz --included-tags=cloud
       - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "nmon-for-splunk/nmon-for-splunk/default/app.conf" }}
+          key: deps1-{{ .Branch }}-{{ checksum "nmon-for-splunk/nmon/default/app.conf" }}
           paths:
             - "venv"
       - persist_to_workspace:
           root: nmon-for-splunk/dist/
           paths:
-              - nmon-for-splunk.tar.gz
+              - nmon.tar.gz
   publish-github-release:
     docker:
       - image: cibuilds/github:0.10
     steps:
       - attach_workspace:
-          at: ~/nmon-for-splunk/dist/nmon-for-splunk.tar.gz
+          at: ~/nmon-for-splunk/dist/nmon.tar.gz
       - run:
           name: publish release on github
           command: |
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${CIRCLE_TAG} ~/nmon-for-splunk/dist/nmon-for-splunk.tar.gz
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${CIRCLE_TAG} ~/nmon-for-splunk/dist/nmon.tar.gz
 workflows:
   version: 2.1
   validate-and-build:
