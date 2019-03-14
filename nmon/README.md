@@ -1,9 +1,3 @@
-# Kafka Smart Monitoring for Splunk
-
-| branch | build status |
-| ---    | ---          |
-| master | [![master status](https://circleci.com/gh/guilhemmarchand/nmon-for-splunk/tree/master.svg?style=svg)](https://circleci.com/gh/guilhemmarchand/nmon-for-splunk/tree/master)
-
 # Performance Monitor for Unix and Linux Systems
 
 Copyright 2014 Guilhem Marchand	

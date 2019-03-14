@@ -1,3 +1,7 @@
+| branch | build status |
+| ---    | ---          |
+| master | [![master status](https://circleci.com/gh/guilhemmarchand/nmon-for-splunk/tree/master.svg?style=svg)](https://circleci.com/gh/guilhemmarchand/nmon-for-splunk/tree/master)
+
 # Performance Monitor for Unix and Linux Systems
 
 Copyright 2014-2018 Guilhem Marchand
