@@ -17,6 +17,14 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.20:
+========
+
+**Version 1.9.20**
+
+- fix: AIX - field alias for VP_Idle_PCT results in missing field after Splunk behaviour change regarding field aliasing to non existing fields #122
+
+========
 V1.9.19:
 ========
 
