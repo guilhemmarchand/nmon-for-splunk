@@ -17,6 +17,15 @@ What has been fixed by release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ========
+V1.9.21:
+========
+
+**Version 1.9.21**
+
+- Splunk 8.0.0 modal compatibility issues due to DOM purify #124
+- UARG dead links in menu nav bar #125
+
+========
 V1.9.20:
 ========
 
